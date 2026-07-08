@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+  /* Single brand accent — actions, active states, highlights ONLY */
+  --color-accent: #2dd4bf;
+  --color-accent-dim: #14b8a6;
+
+  /* Green/red reserved exclusively for price movement, calm shades */
+  --color-gain: #34d399;
+  --color-loss: #f87171;
+}
+
+html,
+body {
+  margin: 0;
+  background-color: var(--color-zinc-950);
+  color: var(--color-zinc-100);
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Price tick: subtle settle-in when a value changes (paired with color flash). */
+@keyframes bw-tick {
+  from {
+    transform: translateY(-3px);
+    opacity: 0.35;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.price-tick {
+  display: inline-block;
+  animation: bw-tick 0.35s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .price-tick {
+    animation: none;
+  }
+}
