@@ -1,3 +1,21 @@
+import { useAuth } from '../state/AuthContext'
+import { PersonIcon } from './Icons'
+
+/* Profile avatar: signed-in users get their email initial, guests a person glyph. */
+export function AvatarButton({ onClick, className = '' }) {
+  const { user } = useAuth()
+  const initial = user?.email?.[0]?.toUpperCase()
+  return (
+    <button
+      onClick={onClick}
+      aria-label="Profile"
+      className={`flex h-9 w-9 items-center justify-center rounded-full bg-zinc-800 text-sm font-semibold text-zinc-300 transition-colors active:bg-zinc-700 ${className}`}
+    >
+      {initial ?? <PersonIcon size={18} />}
+    </button>
+  )
+}
+
 /* Screen header: title on the left, profile avatar top-right (every tab). */
 export default function Header({ title, brand = false, onOpenProfile }) {
   return (
@@ -14,13 +32,7 @@ export default function Header({ title, brand = false, onOpenProfile }) {
       ) : (
         <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
       )}
-      <button
-        onClick={onOpenProfile}
-        aria-label="Profile"
-        className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-800 text-sm font-semibold text-zinc-300 transition-colors active:bg-zinc-700"
-      >
-        M
-      </button>
+      <AvatarButton onClick={onOpenProfile} />
     </header>
   )
 }

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useWaitlist } from '../state/WaitlistContext'
+import { useAuth } from '../state/AuthContext'
 import FeedbackSheet from './FeedbackSheet'
+import SignInSheet from './SignInSheet'
 import {
   CloseIcon,
   BellIcon,
@@ -8,12 +10,16 @@ import {
   MoonIcon,
   WalletIcon,
   HelpIcon,
+  LogoutIcon,
+  PersonIcon,
 } from '../components/Icons'
 import { ListRow } from '../components/shared'
 
 export default function ProfileSheet({ onClose, onGoToTrade }) {
   const { entry } = useWaitlist()
+  const { user, available, signOut } = useAuth()
   const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const [signInOpen, setSignInOpen] = useState(false)
   return (
     <div className="fixed inset-0 z-50 mx-auto flex max-w-md items-end justify-center">
       <button
@@ -25,23 +31,42 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
         <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-zinc-800" />
 
         <div className="flex items-center justify-between px-4 pt-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-zinc-800 text-base font-semibold text-zinc-300">
-              M
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-base font-semibold text-zinc-300">
+              {user ? user.email[0].toUpperCase() : <PersonIcon size={20} />}
             </div>
-            <div>
-              <div className="font-semibold">Guest</div>
-              <div className="text-xs text-zinc-500">No account needed to track</div>
+            <div className="min-w-0">
+              <div className="truncate font-semibold">{user ? user.email : 'Guest'}</div>
+              <div className="text-xs text-zinc-500">
+                {user ? 'Folders & alerts synced across devices' : 'No account needed to track'}
+              </div>
             </div>
           </div>
           <button
             onClick={onClose}
             aria-label="Close"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-zinc-400 active:bg-zinc-800"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-zinc-400 active:bg-zinc-800"
           >
             <CloseIcon size={18} />
           </button>
         </div>
+
+        {available && !user && (
+          <button
+            onClick={() => setSignInOpen(true)}
+            className="mx-4 mt-4 flex w-[calc(100%-32px)] items-center justify-between gap-3 rounded-2xl bg-zinc-900 p-4 text-left transition-colors active:bg-zinc-800"
+          >
+            <div>
+              <div className="text-sm font-semibold">Sync across devices</div>
+              <div className="mt-0.5 text-xs text-zinc-500">
+                Sign in and your folders & alerts follow you
+              </div>
+            </div>
+            <span className="shrink-0 rounded-full bg-accent px-3.5 py-1.5 text-[13px] font-semibold text-zinc-950">
+              Sign in
+            </span>
+          </button>
+        )}
 
         <div className="mx-4 mt-4 rounded-2xl bg-zinc-900 p-4">
           {entry ? (
@@ -83,12 +108,16 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
             label="Help & feedback"
             onClick={() => setFeedbackOpen(true)}
           />
+          {user && (
+            <ListRow icon={<LogoutIcon size={20} />} label="Sign out" onClick={() => signOut()} />
+          )}
         </div>
 
         <div className="px-4 pt-3 text-center text-[11px] text-zinc-600">BlockWatch v0.1 · MVP preview</div>
       </div>
 
       {feedbackOpen && <FeedbackSheet onClose={() => setFeedbackOpen(false)} />}
+      {signInOpen && <SignInSheet onClose={() => setSignInOpen(false)} />}
     </div>
   )
 }

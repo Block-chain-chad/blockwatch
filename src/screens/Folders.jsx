@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import Header from '../components/Header'
+import Header, { AvatarButton } from '../components/Header'
 import { usePrices } from '../state/PricesContext'
 import { useFolders, useFolder } from '../state/FoldersContext'
 import { folderDayChange } from '../lib/prices'
@@ -161,13 +161,7 @@ export function FolderDetail({ folderId, onBack, onOpenProfile, onOpenAsset }) {
           >
             <DotsIcon size={20} />
           </button>
-          <button
-            onClick={onOpenProfile}
-            aria-label="Profile"
-            className="mr-2 flex h-9 w-9 items-center justify-center rounded-full bg-zinc-800 text-sm font-semibold text-zinc-300 active:bg-zinc-700"
-          >
-            M
-          </button>
+          <AvatarButton onClick={onOpenProfile} className="mr-2" />
         </div>
       </header>
 

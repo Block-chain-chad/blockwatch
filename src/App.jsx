@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { track } from './services/analytics'
+import { AuthProvider } from './state/AuthContext'
 import { PricesProvider } from './state/PricesContext'
 import { FoldersProvider } from './state/FoldersContext'
 import { WaitlistProvider } from './state/WaitlistContext'
@@ -62,6 +63,7 @@ export default function App() {
   }
 
   return (
+    <AuthProvider>
     <PricesProvider>
       <AlertsProvider>
       <FoldersProvider>
@@ -97,5 +99,6 @@ export default function App() {
       </FoldersProvider>
       </AlertsProvider>
     </PricesProvider>
+    </AuthProvider>
   )
 }

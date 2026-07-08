@@ -127,6 +127,20 @@ export const HelpIcon = (p) => (
   </Base>
 )
 
+export const PersonIcon = (p) => (
+  <Base {...p}>
+    <circle cx="12" cy="8" r="3.5" />
+    <path d="M5.5 19.5c1-3.2 3.5-4.8 6.5-4.8s5.5 1.6 6.5 4.8" />
+  </Base>
+)
+
+export const LogoutIcon = (p) => (
+  <Base {...p}>
+    <path d="M14 4H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h7" />
+    <path d="M17 8.5 20.5 12 17 15.5M20 12h-9" />
+  </Base>
+)
+
 export const CheckCircleIcon = (p) => (
   <Base {...p}>
     <circle cx="12" cy="12" r="9" />

@@ -1,9 +1,37 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { usePrices } from './PricesContext'
+import { useAuth } from './AuthContext'
+import { supabase } from '../services/supabase'
 import { premiumPct } from '../lib/prices'
 
 const STORAGE_KEY = 'bw.alerts.v1'
 const MAX_EVENTS = 50
+const SYNC_DEBOUNCE_MS = 800
+
+// Mirror the signed-in user's rules to Supabase (fired events and read-state
+// stay device-local — notifications are a per-device concern).
+async function pushRules(userId, rules) {
+  try {
+    const entries = Object.entries(rules)
+    if (entries.length > 0) {
+      await supabase.from('user_alerts').upsert(
+        entries.map(([assetId, r]) => ({
+          user_id: userId,
+          asset_id: assetId,
+          threshold: r.threshold,
+          updated_at: new Date().toISOString(),
+        }))
+      )
+    }
+    let del = supabase.from('user_alerts').delete().eq('user_id', userId)
+    if (entries.length > 0) {
+      del = del.not('asset_id', 'in', `(${entries.map(([id]) => `"${id}"`).join(',')})`)
+    }
+    await del
+  } catch {
+    // offline / not configured — next change retries
+  }
+}
 
 function load() {
   try {
@@ -34,8 +62,11 @@ const AlertsContext = createContext(null)
  */
 export function AlertsProvider({ children }) {
   const { assets } = usePrices()
+  const { user, ready } = useAuth()
   const [store, setStore] = useState(load)
   const storeRef = useRef(store)
+  const hydratedForRef = useRef(null)
+  const syncTimerRef = useRef(null)
 
   useEffect(() => {
     storeRef.current = store
@@ -45,6 +76,49 @@ export function AlertsProvider({ children }) {
       // storage unavailable — alerts still work for the session
     }
   }, [store])
+
+  // Signed in: server rules replace local on sign-in (import local ones when
+  // the account is fresh). Signing out keeps the last-known rules on the
+  // device — logging out shouldn't silently kill someone's alerts.
+  useEffect(() => {
+    if (!ready) return
+    let cancelled = false
+
+    async function hydrate() {
+      if (!user) {
+        hydratedForRef.current = null
+        return
+      }
+      if (hydratedForRef.current === user.id) return
+      const { data, error } = await supabase.from('user_alerts').select('asset_id,threshold')
+      if (cancelled) return
+      hydratedForRef.current = user.id
+      if (error) return // offline: keep local rules; sync resumes on next change
+      if (data.length > 0) {
+        setStore((prev) => ({
+          ...prev,
+          rules: Object.fromEntries(data.map((r) => [r.asset_id, { threshold: Number(r.threshold) }])),
+          states: {}, // re-arm so already-drifted assets fire fresh on this device
+        }))
+      } else {
+        const rules = storeRef.current.rules
+        if (Object.keys(rules).length > 0) pushRules(user.id, rules)
+      }
+    }
+
+    hydrate()
+    return () => {
+      cancelled = true
+    }
+  }, [user, ready])
+
+  // Debounced mirror of rule changes while signed in.
+  useEffect(() => {
+    const identity = user?.id
+    if (!identity || hydratedForRef.current !== identity) return
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current)
+    syncTimerRef.current = setTimeout(() => pushRules(identity, storeRef.current.rules), SYNC_DEBOUNCE_MS)
+  }, [store.rules, user])
 
   // Evaluate every rule whenever prices refresh (or rules change).
   useEffect(() => {
