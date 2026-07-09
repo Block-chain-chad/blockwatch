@@ -34,7 +34,16 @@ function nearest(series, t) {
  * crosshair snaps to the nearest data points and the readout above shows
  * both prices plus the gap at that time.
  */
-export default function DualLineChart({ token, stock, premium = [], loading, error, onRetry }) {
+export default function DualLineChart({
+  token,
+  stock,
+  premium = [],
+  loading,
+  error,
+  onRetry,
+  showToken = true,
+  showStock = true,
+}) {
   const svgRef = useRef(null)
   const [scrubT, setScrubT] = useState(null)
 
@@ -58,7 +67,11 @@ export default function DualLineChart({ token, stock, premium = [], loading, err
     )
   }
 
-  const all = [...token, ...stock]
+  const tokenVisible = showToken
+  const stockVisible = showStock && stock.length >= 2
+  // Scale to the visible lines only — hiding one zooms into the other.
+  const scaled = [...(tokenVisible ? token : []), ...(stockVisible ? stock : [])]
+  const all = scaled.length >= 2 ? scaled : token
   const t0 = Math.min(...all.map((p) => p.t))
   const t1 = Math.max(...all.map((p) => p.t))
   const vMin = Math.min(...all.map((p) => p.v))
@@ -77,13 +90,15 @@ export default function DualLineChart({ token, stock, premium = [], loading, err
     return t0 + frac * (t1 - t0)
   }
 
-  const scrubToken = scrubT != null ? nearest(token, scrubT) : null
-  const scrubStock = scrubT != null && stock.length >= 2 ? nearest(stock, scrubT) : null
+  const scrubToken = scrubT != null && tokenVisible ? nearest(token, scrubT) : null
+  const scrubStock = scrubT != null && stockVisible ? nearest(stock, scrubT) : null
   const scrubGap = scrubT != null && premium.length > 0 ? nearest(premium, scrubT) : null
+  const scrubAnchor = scrubToken ?? scrubStock
   const showClock = t1 - t0 <= 8 * 86_400_000 // intraday-ish ranges get a time of day
+  // Display times snap to clean 5-minute marks (data samples land on odd minutes).
   const scrubLabel =
-    scrubToken &&
-    new Date(scrubToken.t).toLocaleString(
+    scrubAnchor &&
+    new Date(showClock ? Math.round(scrubAnchor.t / 300_000) * 300_000 : scrubAnchor.t).toLocaleString(
       'en-US',
       showClock
         ? { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }
@@ -94,13 +109,15 @@ export default function DualLineChart({ token, stock, premium = [], loading, err
     <div>
       {/* Readout row: fixed height so scrubbing never shifts layout */}
       <div className="flex h-5 items-center justify-between px-2 text-[11px] tabular-nums">
-        {scrubToken ? (
+        {scrubAnchor ? (
           <>
             <span className="text-zinc-500">{scrubLabel}</span>
-            <span className="flex items-center gap-1 text-zinc-200">
-              <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-              {formatPrice(scrubToken.v)}
-            </span>
+            {scrubToken && (
+              <span className="flex items-center gap-1 text-zinc-200">
+                <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                {formatPrice(scrubToken.v)}
+              </span>
+            )}
             {scrubStock && (
               <span className="flex items-center gap-1 text-zinc-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-zinc-500" />
@@ -145,7 +162,7 @@ export default function DualLineChart({ token, stock, premium = [], loading, err
         <text x={W - PAD} y={H - 8} textAnchor="end" fontSize="10" fill="#52525b">
           {formatPrice(vMin)}
         </text>
-        {stock.length >= 2 && (
+        {stockVisible && (
           <path
             d={linePath(stock, x, y)}
             fill="none"
@@ -155,19 +172,21 @@ export default function DualLineChart({ token, stock, premium = [], loading, err
             strokeLinejoin="round"
           />
         )}
-        <path
-          d={linePath(token, x, y)}
-          fill="none"
-          stroke="#2dd4bf"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        {scrubToken && (
+        {tokenVisible && (
+          <path
+            d={linePath(token, x, y)}
+            fill="none"
+            stroke="#2dd4bf"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        )}
+        {scrubAnchor && (
           <>
             <line
-              x1={x(scrubToken.t)}
-              x2={x(scrubToken.t)}
+              x1={x(scrubAnchor.t)}
+              x2={x(scrubAnchor.t)}
               y1={PAD}
               y2={H - PAD}
               stroke="#52525b"
@@ -176,7 +195,9 @@ export default function DualLineChart({ token, stock, premium = [], loading, err
             {scrubStock && (
               <circle cx={x(scrubStock.t)} cy={y(scrubStock.v)} r="3.5" fill="#71717a" />
             )}
-            <circle cx={x(scrubToken.t)} cy={y(scrubToken.v)} r="3.5" fill="#2dd4bf" />
+            {scrubToken && (
+              <circle cx={x(scrubToken.t)} cy={y(scrubToken.v)} r="3.5" fill="#2dd4bf" />
+            )}
           </>
         )}
       </svg>

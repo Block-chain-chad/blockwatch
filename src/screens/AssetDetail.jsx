@@ -25,6 +25,15 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
   const [alertOpen, setAlertOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [chartRetry, setChartRetry] = useState(0)
+  const [visibleLines, setVisibleLines] = useState({ token: true, stock: true })
+
+  // Legend taps solo a line; at least one always stays visible.
+  function toggleLine(key) {
+    setVisibleLines((v) => {
+      const next = { ...v, [key]: !v[key] }
+      return next.token || next.stock ? next : v
+    })
+  }
   const asset = useAsset(assetId)
   const { marketOpen, assets } = usePrices()
   const { folders, watchlistIds, toggleWatchlist } = useFolders()
@@ -128,17 +137,29 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
           loading={chart.loading}
           error={chart.error}
           onRetry={() => setChartRetry((n) => n + 1)}
+          showToken={visibleLines.token}
+          showStock={visibleLines.stock}
         />
-        <div className="flex items-center justify-center gap-5 pt-2 text-xs text-zinc-500">
+        <div className="flex items-center justify-center gap-4 pt-2 text-xs text-zinc-500">
           {asset.underlying && chart.stock.length >= 2 && (
-            <span className="flex items-center gap-1.5">
+            <button
+              onClick={() => toggleLine('stock')}
+              className={`flex items-center gap-1.5 rounded-full px-2 py-1 transition-all active:bg-zinc-900 ${
+                visibleLines.stock ? '' : 'opacity-40'
+              }`}
+            >
               <span className="h-0.5 w-4 rounded bg-zinc-500" /> {asset.underlying} stock
               {chart.stockIsFlat && <span className="text-zinc-600">(last close)</span>}
-            </span>
+            </button>
           )}
-          <span className="flex items-center gap-1.5">
+          <button
+            onClick={() => toggleLine('token')}
+            className={`flex items-center gap-1.5 rounded-full px-2 py-1 transition-all active:bg-zinc-900 ${
+              visibleLines.token ? '' : 'opacity-40'
+            }`}
+          >
             <span className="h-0.5 w-4 rounded bg-accent" /> {asset.ticker} token
-          </span>
+          </button>
         </div>
       </div>
 
