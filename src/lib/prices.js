@@ -3,6 +3,18 @@
 // Within ±0.05% we call it 1:1 parity.
 export const PARITY_BAND = 0.05
 
+// Below this 24h volume a token's price moves on a handful of trades, so its
+// premium/change is noise, not signal. Calibrated against the seed universe
+// (healthy assets trade $130k–$14M/day; the flagged tail trades $1k–$46k).
+export const THIN_VOLUME_USD = 50_000
+
+// NAV-based products (no listed underlying) are exempt: their price is set by
+// the issuer's net asset value, not by on-market trading, so low exchange
+// volume doesn't make the displayed price untrustworthy.
+export function isThinlyTraded(asset) {
+  return asset.underlying != null && asset.volume24h != null && asset.volume24h < THIN_VOLUME_USD
+}
+
 // Premium/discount = (tokenPrice − stockPrice) / stockPrice, as a percent.
 // Null when either side is missing (e.g. stock feed not wired yet, or NAV-based token).
 export function premiumPct(asset) {

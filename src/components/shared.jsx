@@ -1,4 +1,4 @@
-import { premiumPct, PARITY_BAND } from '../lib/prices'
+import { premiumPct, PARITY_BAND, isThinlyTraded } from '../lib/prices'
 import { SearchIcon, ChevronRight } from './Icons'
 import PriceText from './PriceText'
 import { formatPrice, formatPct, changeColor } from '../lib/format'
@@ -7,38 +7,39 @@ export { formatPrice, formatPct, changeColor }
 
 /*
  * Premium/discount pill: green premium, red discount, gray "1:1" parity.
- * Until the stock feed lands (step 3) premium is unknowable, so the pill falls
- * back to the token's live 24h change (still price movement → green/red is ok).
+ * NAV-based assets (no premium possible) fall back to the token's live 24h
+ * change. Thinly traded assets render muted — their gap is noise, and painting
+ * it green/red would present it as signal.
  */
 export function PremiumPill({ asset }) {
   const p = premiumPct(asset)
+  const thin = isThinlyTraded(asset)
+  const value = p ?? asset.dayChange
 
-  if (p == null) {
-    if (asset.dayChange == null) {
-      return (
-        <span className="inline-block h-3.5 w-12 animate-pulse rounded-full bg-zinc-800 align-middle" />
-      )
-    }
-    const cls =
-      asset.dayChange > 0 ? 'bg-gain/10 text-gain' : asset.dayChange < 0 ? 'bg-loss/10 text-loss' : 'bg-zinc-800 text-zinc-400'
+  if (value == null) {
     return (
-      <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium tabular-nums ${cls}`}>
-        {formatPct(asset.dayChange)}
-      </span>
+      <span className="inline-block h-3.5 w-12 animate-pulse rounded-full bg-zinc-800 align-middle" />
     )
   }
 
-  if (Math.abs(p) < PARITY_BAND) {
+  if (p != null && Math.abs(p) < PARITY_BAND && !thin) {
     return (
       <span className="inline-block rounded-full bg-zinc-800 px-2 py-0.5 text-xs font-medium tabular-nums text-zinc-400">
         1:1
       </span>
     )
   }
-  const cls = p > 0 ? 'bg-gain/10 text-gain' : 'bg-loss/10 text-loss'
+
+  const cls = thin
+    ? 'bg-zinc-800 text-zinc-500'
+    : value > 0
+      ? 'bg-gain/10 text-gain'
+      : value < 0
+        ? 'bg-loss/10 text-loss'
+        : 'bg-zinc-800 text-zinc-400'
   return (
     <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium tabular-nums ${cls}`}>
-      {formatPct(p)}
+      {formatPct(value)}
     </span>
   )
 }
@@ -54,6 +55,7 @@ export function AssetRow({ asset, onOpen }) {
         <div className="text-[15px] font-semibold text-zinc-100">{asset.ticker}</div>
         <div className="truncate text-xs text-zinc-500">
           {asset.issuer} · {asset.chain}
+          {isThinlyTraded(asset) && <span className="text-zinc-600"> · thin trading</span>}
         </div>
       </div>
       <div className="w-[72px] text-right">

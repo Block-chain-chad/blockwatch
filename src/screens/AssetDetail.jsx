@@ -9,7 +9,7 @@ import DualLineChart from '../components/DualLineChart'
 import { useChartData, CHART_RANGES } from '../hooks/useChartData'
 import { useStockInfo } from '../hooks/useStockInfo'
 import { formatCompact } from '../lib/format'
-import { premiumPct } from '../lib/prices'
+import { premiumPct, isThinlyTraded } from '../lib/prices'
 import { ChevronLeft, ChevronDown, ShareIcon, PlusIcon, BellIcon } from '../components/Icons'
 import { formatPrice, formatPct, PremiumPill, changeColor } from '../components/shared'
 import PriceText from '../components/PriceText'
@@ -91,6 +91,17 @@ export default function AssetDetail({ assetId, onBack }) {
           </div>
         </div>
       </div>
+
+      {isThinlyTraded(asset) && (
+        <div className="mx-4 mt-4 rounded-xl bg-zinc-900 p-3.5">
+          <p className="text-xs leading-relaxed text-zinc-400">
+            <span className="font-medium text-zinc-300">Thinly traded</span> — about{' '}
+            {asset.volume24h != null ? formatCompact(asset.volume24h) : 'very little'} changed
+            hands in 24h, so small trades can move this token's price. Treat the gap vs{' '}
+            {asset.underlying} as noisy, not as a real mispricing.
+          </p>
+        </div>
+      )}
 
       <div className="mt-5 px-2">
         <DualLineChart

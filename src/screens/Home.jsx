@@ -3,7 +3,7 @@ import Header from '../components/Header'
 import UpdatedAgo from '../components/UpdatedAgo'
 import OnboardingTip from '../components/OnboardingTip'
 import { usePrices } from '../state/PricesContext'
-import { premiumPct } from '../lib/prices'
+import { premiumPct, isThinlyTraded } from '../lib/prices'
 import {
   AssetRow,
   FilterChips,
@@ -20,10 +20,12 @@ export default function Home({ onOpenProfile, onOpenAsset, onOpenSearch }) {
   const { assets } = usePrices()
   const visible = filterAssets(assets, filter)
 
-  // Avg premium needs the stock feed (step 3); until then the card shows the
-  // universe's average live 24h move so it isn't a dead metric.
-  const premiums = assets.map(premiumPct).filter((p) => p != null)
-  const changes = assets.map((a) => a.dayChange).filter((c) => c != null)
+  // Avg premium excludes thinly traded assets — one illiquid token printing a
+  // wild gap would swing the whole universe average. (24h-change fallback for
+  // when the stock feed is empty applies the same rule.)
+  const liquid = assets.filter((a) => !isThinlyTraded(a))
+  const premiums = liquid.map(premiumPct).filter((p) => p != null)
+  const changes = liquid.map((a) => a.dayChange).filter((c) => c != null)
   const hasPremiums = premiums.length > 0
   const avg = hasPremiums
     ? premiums.reduce((s, p) => s + p, 0) / premiums.length
