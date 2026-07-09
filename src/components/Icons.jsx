@@ -119,6 +119,13 @@ export const MoonIcon = (p) => (
   </Base>
 )
 
+export const InfoIcon = (p) => (
+  <Base {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 11v5.5M12 7.6h.01" />
+  </Base>
+)
+
 export const HelpIcon = (p) => (
   <Base {...p}>
     <circle cx="12" cy="12" r="9" />

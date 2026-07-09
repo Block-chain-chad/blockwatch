@@ -4,6 +4,7 @@ import { useAuth } from '../state/AuthContext'
 import FeedbackSheet from './FeedbackSheet'
 import SignInSheet from './SignInSheet'
 import AppearanceSheet from './AppearanceSheet'
+import AboutSheet from './AboutSheet'
 import { getThemePref } from '../lib/theme'
 import {
   CloseIcon,
@@ -12,6 +13,7 @@ import {
   MoonIcon,
   WalletIcon,
   HelpIcon,
+  InfoIcon,
   LogoutIcon,
   PersonIcon,
 } from '../components/Icons'
@@ -23,6 +25,7 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [signInOpen, setSignInOpen] = useState(false)
   const [appearanceOpen, setAppearanceOpen] = useState(false)
+  const [aboutOpen, setAboutOpen] = useState(false)
   const themeLabel = { dark: 'Dark', light: 'Light', system: 'System' }[getThemePref()]
   return (
     <div className="fixed inset-0 z-50 mx-auto flex max-w-md items-end justify-center">
@@ -111,6 +114,11 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
             label="Help & feedback"
             onClick={() => setFeedbackOpen(true)}
           />
+          <ListRow
+            icon={<InfoIcon size={20} />}
+            label="About BlockWatch"
+            onClick={() => setAboutOpen(true)}
+          />
           {user && (
             <ListRow icon={<LogoutIcon size={20} />} label="Sign out" onClick={() => signOut()} />
           )}
@@ -122,6 +130,7 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
       {feedbackOpen && <FeedbackSheet onClose={() => setFeedbackOpen(false)} />}
       {signInOpen && <SignInSheet onClose={() => setSignInOpen(false)} />}
       {appearanceOpen && <AppearanceSheet onClose={() => setAppearanceOpen(false)} />}
+      {aboutOpen && <AboutSheet onClose={() => setAboutOpen(false)} />}
     </div>
   )
 }
