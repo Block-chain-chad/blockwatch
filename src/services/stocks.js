@@ -127,12 +127,21 @@ const DEV_INFO_PATHS = {
   earnings: '/stock/earnings',
 }
 
+function devInfoUrl(kind, symbol) {
+  if (kind === 'news') {
+    const to = new Date().toISOString().slice(0, 10)
+    const from = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10)
+    return `https://finnhub.io/api/v1/company-news?symbol=${symbol}&from=${from}&to=${to}&token=${FINNHUB_KEY}`
+  }
+  return `https://finnhub.io/api/v1${DEV_INFO_PATHS[kind]}?symbol=${symbol}&token=${FINNHUB_KEY}`
+}
+
 async function fetchInfo(kind, ticker) {
   const symbol = encodeURIComponent(ticker)
   const url = IS_PROD
     ? `/api/finnhub?kind=${kind}&symbol=${symbol}`
     : FINNHUB_KEY
-      ? `https://finnhub.io/api/v1${DEV_INFO_PATHS[kind]}?symbol=${symbol}&token=${FINNHUB_KEY}`
+      ? devInfoUrl(kind, symbol)
       : null
   if (!url) return null
   const hit = infoCache.get(url)
@@ -165,6 +174,23 @@ export async function getEarnings(ticker) {
   const rows = await fetchInfo('earnings', ticker)
   if (!Array.isArray(rows) || rows.length === 0) return null
   return rows.filter((r) => r.actual != null).slice(0, 4)
+}
+
+/** Last week's headlines for the underlying: [{ id, headline, source, url, at }] */
+export async function getCompanyNews(ticker) {
+  const rows = await fetchInfo('news', ticker)
+  if (!Array.isArray(rows)) return null
+  const items = rows
+    .filter((r) => r.headline && r.url)
+    .slice(0, 5)
+    .map((r) => ({
+      id: r.id ?? r.url,
+      headline: r.headline,
+      source: r.source || 'News',
+      url: r.url,
+      at: (r.datetime || 0) * 1000,
+    }))
+  return items.length > 0 ? items : null
 }
 
 export function loadStockCache() {

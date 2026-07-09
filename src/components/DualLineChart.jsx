@@ -1,4 +1,5 @@
-import { formatPrice } from '../lib/format'
+import { useRef, useState } from 'react'
+import { formatPrice, formatPct, changeColor } from '../lib/format'
 
 const W = 360
 const H = 180
@@ -10,19 +11,40 @@ function linePath(series, x, y) {
     .join(' ')
 }
 
+function nearest(series, t) {
+  if (series.length === 0) return null
+  let best = series[0]
+  let bestDist = Math.abs(t - best.t)
+  for (const p of series) {
+    const d = Math.abs(p.t - t)
+    if (d < bestDist) {
+      best = p
+      bestDist = d
+    }
+  }
+  return best
+}
+
 /*
  * The signature visual: real stock vs. token price, overlaid on a shared
  * time + dollar scale so the premium/discount gap is visible at a glance.
  * Token = accent, stock = neutral gray. Series: [{ t, v }].
+ *
+ * Scrubbing: drag (touch) or hover (mouse) to inspect any moment — a
+ * crosshair snaps to the nearest data points and the readout above shows
+ * both prices plus the gap at that time.
  */
-export default function DualLineChart({ token, stock, loading, error, onRetry }) {
+export default function DualLineChart({ token, stock, premium = [], loading, error, onRetry }) {
+  const svgRef = useRef(null)
+  const [scrubT, setScrubT] = useState(null)
+
   if (loading) {
-    return <div className="mx-1 h-[180px] animate-pulse rounded-2xl bg-zinc-900" />
+    return <div className="mx-1 h-[204px] animate-pulse rounded-2xl bg-zinc-900" />
   }
 
   if (error || token.length < 2) {
     return (
-      <div className="mx-1 flex h-[180px] flex-col items-center justify-center rounded-2xl bg-zinc-900/60 px-6 text-center">
+      <div className="mx-1 flex h-[204px] flex-col items-center justify-center rounded-2xl bg-zinc-900/60 px-6 text-center">
         <p className="text-sm text-zinc-400">
           We couldn't load the chart right now — prices above are still live.
         </p>
@@ -48,44 +70,116 @@ export default function DualLineChart({ token, stock, loading, error, onRetry })
   const x = (t) => PAD + ((t - t0) / (t1 - t0 || 1)) * (W - PAD * 2)
   const y = (v) => H - PAD - ((v - lo) / (hi - lo)) * (H - PAD * 2)
 
+  function timeFromPointer(clientX) {
+    const rect = svgRef.current.getBoundingClientRect()
+    const vx = ((clientX - rect.left) / rect.width) * W
+    const frac = Math.min(1, Math.max(0, (vx - PAD) / (W - PAD * 2)))
+    return t0 + frac * (t1 - t0)
+  }
+
+  const scrubToken = scrubT != null ? nearest(token, scrubT) : null
+  const scrubStock = scrubT != null && stock.length >= 2 ? nearest(stock, scrubT) : null
+  const scrubGap = scrubT != null && premium.length > 0 ? nearest(premium, scrubT) : null
+  const showClock = t1 - t0 <= 8 * 86_400_000 // intraday-ish ranges get a time of day
+  const scrubLabel =
+    scrubToken &&
+    new Date(scrubToken.t).toLocaleString(
+      'en-US',
+      showClock
+        ? { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }
+        : { month: 'short', day: 'numeric', year: 'numeric' }
+    )
+
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" aria-label="Stock vs. token price chart">
-      {[0.25, 0.5, 0.75].map((f) => (
-        <line
-          key={f}
-          x1={PAD}
-          x2={W - PAD}
-          y1={H * f}
-          y2={H * f}
-          stroke="#27272a"
-          strokeWidth="1"
-          strokeDasharray="3 5"
-        />
-      ))}
-      <text x={W - PAD} y="12" textAnchor="end" fontSize="10" fill="#52525b">
-        {formatPrice(vMax)}
-      </text>
-      <text x={W - PAD} y={H - 8} textAnchor="end" fontSize="10" fill="#52525b">
-        {formatPrice(vMin)}
-      </text>
-      {stock.length >= 2 && (
+    <div>
+      {/* Readout row: fixed height so scrubbing never shifts layout */}
+      <div className="flex h-5 items-center justify-between px-2 text-[11px] tabular-nums">
+        {scrubToken ? (
+          <>
+            <span className="text-zinc-500">{scrubLabel}</span>
+            <span className="flex items-center gap-1 text-zinc-200">
+              <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+              {formatPrice(scrubToken.v)}
+            </span>
+            {scrubStock && (
+              <span className="flex items-center gap-1 text-zinc-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-zinc-500" />
+                {formatPrice(scrubStock.v)}
+              </span>
+            )}
+            {scrubGap && (
+              <span className={changeColor(scrubGap.v)}>{formatPct(scrubGap.v)}</span>
+            )}
+          </>
+        ) : (
+          <span className="text-zinc-700">Touch and hold the chart to inspect</span>
+        )}
+      </div>
+      <svg
+        ref={svgRef}
+        viewBox={`0 0 ${W} ${H}`}
+        className="w-full cursor-crosshair"
+        style={{ touchAction: 'none' }}
+        aria-label="Stock vs. token price chart"
+        onPointerDown={(e) => setScrubT(timeFromPointer(e.clientX))}
+        onPointerMove={(e) => setScrubT(timeFromPointer(e.clientX))}
+        onPointerUp={() => setScrubT(null)}
+        onPointerLeave={() => setScrubT(null)}
+        onPointerCancel={() => setScrubT(null)}
+      >
+        {[0.25, 0.5, 0.75].map((f) => (
+          <line
+            key={f}
+            x1={PAD}
+            x2={W - PAD}
+            y1={H * f}
+            y2={H * f}
+            stroke="#27272a"
+            strokeWidth="1"
+            strokeDasharray="3 5"
+          />
+        ))}
+        <text x={W - PAD} y="12" textAnchor="end" fontSize="10" fill="#52525b">
+          {formatPrice(vMax)}
+        </text>
+        <text x={W - PAD} y={H - 8} textAnchor="end" fontSize="10" fill="#52525b">
+          {formatPrice(vMin)}
+        </text>
+        {stock.length >= 2 && (
+          <path
+            d={linePath(stock, x, y)}
+            fill="none"
+            stroke="#71717a"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        )}
         <path
-          d={linePath(stock, x, y)}
+          d={linePath(token, x, y)}
           fill="none"
-          stroke="#71717a"
-          strokeWidth="1.8"
+          stroke="#2dd4bf"
+          strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-      )}
-      <path
-        d={linePath(token, x, y)}
-        fill="none"
-        stroke="#2dd4bf"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+        {scrubToken && (
+          <>
+            <line
+              x1={x(scrubToken.t)}
+              x2={x(scrubToken.t)}
+              y1={PAD}
+              y2={H - PAD}
+              stroke="#52525b"
+              strokeWidth="1"
+            />
+            {scrubStock && (
+              <circle cx={x(scrubStock.t)} cy={y(scrubStock.v)} r="3.5" fill="#71717a" />
+            )}
+            <circle cx={x(scrubToken.t)} cy={y(scrubToken.v)} r="3.5" fill="#2dd4bf" />
+          </>
+        )}
+      </svg>
+    </div>
   )
 }

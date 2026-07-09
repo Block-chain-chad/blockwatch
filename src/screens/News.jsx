@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import Header from '../components/Header'
+import DailyDigest from '../components/DailyDigest'
 import { newsFeed } from '../data/mock'
 import { useAlerts } from '../state/AlertsContext'
 import { usePrices } from '../state/PricesContext'
@@ -22,6 +23,8 @@ export default function News({ onOpenProfile, onOpenAsset }) {
   return (
     <div className="pb-24">
       <Header title="News" onOpenProfile={onOpenProfile} />
+
+      <DailyDigest onOpenAsset={onOpenAsset} />
 
       {noRulesYet && (
         <div className="mx-4 mb-2 mt-1 rounded-2xl bg-zinc-900 p-4">

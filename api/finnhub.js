@@ -8,6 +8,8 @@ const ALLOWED = {
   profile: { path: '/stock/profile2', cache: 's-maxage=86400, stale-while-revalidate=86400' },
   recommendation: { path: '/stock/recommendation', cache: 's-maxage=21600, stale-while-revalidate=86400' },
   earnings: { path: '/stock/earnings', cache: 's-maxage=21600, stale-while-revalidate=86400' },
+  // company-news gets its date window computed server-side (last 7 days)
+  news: { path: '/company-news', cache: 's-maxage=1800, stale-while-revalidate=3600' },
 }
 
 export default async function handler(req, res) {
@@ -19,9 +21,16 @@ export default async function handler(req, res) {
   }
   if (!key) return res.status(503).json({ error: 'stock feed not configured' })
 
+  let extra = ''
+  if (kind === 'news') {
+    const to = new Date().toISOString().slice(0, 10)
+    const from = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10)
+    extra = `&from=${from}&to=${to}`
+  }
+
   try {
     const upstream = await fetch(
-      `https://finnhub.io/api/v1${spec.path}?symbol=${encodeURIComponent(symbol)}&token=${key}`
+      `https://finnhub.io/api/v1${spec.path}?symbol=${encodeURIComponent(symbol)}${extra}&token=${key}`
     )
     if (!upstream.ok) return res.status(upstream.status).json({ error: 'upstream error' })
     const data = await upstream.json()

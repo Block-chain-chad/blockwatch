@@ -9,7 +9,7 @@ import DualLineChart from '../components/DualLineChart'
 import PremiumChart from '../components/PremiumChart'
 import { useChartData, CHART_RANGES } from '../hooks/useChartData'
 import { useStockInfo } from '../hooks/useStockInfo'
-import { formatCompact } from '../lib/format'
+import { formatCompact, timeAgo } from '../lib/format'
 import { premiumPct, isThinlyTraded } from '../lib/prices'
 import { ChevronLeft, ChevronDown, ShareIcon, PlusIcon, BellIcon, StarIcon } from '../components/Icons'
 import { formatPrice, formatPct, PremiumPill, changeColor } from '../components/shared'
@@ -124,6 +124,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
         <DualLineChart
           token={chart.token}
           stock={chart.stock}
+          premium={chart.premium}
           loading={chart.loading}
           error={chart.error}
           onRetry={() => setChartRetry((n) => n + 1)}
@@ -334,6 +335,33 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
           </div>
           <p className="mt-1.5 px-1 text-[11px] text-zinc-600">
             Quarterly results for {asset.underlying}, the stock this token tracks.
+          </p>
+        </div>
+      )}
+
+      {info.news?.length > 0 && (
+        <div className="px-4 pt-6">
+          <h3 className="text-sm font-semibold text-zinc-300">Latest {asset.underlying} news</h3>
+          <div className="mt-1 divide-y divide-zinc-900 rounded-2xl bg-zinc-900/60 px-4">
+            {info.news.map((n) => (
+              <a
+                key={n.id}
+                href={n.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block py-3 transition-opacity active:opacity-60"
+              >
+                <div className="line-clamp-2 text-[13px] font-medium leading-snug text-zinc-100">
+                  {n.headline}
+                </div>
+                <div className="mt-1 text-[11px] text-zinc-600">
+                  {n.source} · {timeAgo(n.at)}
+                </div>
+              </a>
+            ))}
+          </div>
+          <p className="mt-1.5 px-1 text-[11px] text-zinc-600">
+            Coverage of {asset.underlying}, the stock this token tracks. Links open the source.
           </p>
         </div>
       )}
