@@ -64,17 +64,17 @@ export default function PremiumChart({ premium }) {
           x2={W - PAD}
           y1={y0}
           y2={y0}
-          stroke="#3f3f46"
+          className="stroke-zinc-700"
           strokeWidth="1"
           strokeDasharray="3 5"
         />
-        <text x={W - PAD} y={Math.max(y0 - 4, 9)} textAnchor="end" fontSize="9" fill="#52525b">
+        <text x={W - PAD} y={Math.max(y0 - 4, 9)} textAnchor="end" fontSize="9" className="fill-zinc-600">
           1:1
         </text>
         <path
           d={path}
           fill="none"
-          stroke="#34d399"
+          className="stroke-gain"
           strokeWidth="1.6"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -83,7 +83,7 @@ export default function PremiumChart({ premium }) {
         <path
           d={path}
           fill="none"
-          stroke="#f87171"
+          className="stroke-loss"
           strokeWidth="1.6"
           strokeLinecap="round"
           strokeLinejoin="round"

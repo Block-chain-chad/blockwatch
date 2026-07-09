@@ -65,6 +65,68 @@ export async function fetchTokenHistory(id, days) {
   return data
 }
 
+// --- New listings discovery -------------------------------------------------
+// Tokens in the issuer categories that we don't track yet — "recently
+// tokenized" for users, an expansion to-do list for us. Cached 6h (listings
+// don't change often) with a localStorage copy for instant paint.
+const LISTINGS_KEY = 'bw.newListings.v1'
+const LISTINGS_TTL = 6 * 60 * 60_000
+const LISTING_CATEGORIES = [
+  { id: 'xstocks-ecosystem', issuer: 'xStocks' },
+  { id: 'ondo-tokenized-assets', issuer: 'Ondo' },
+]
+
+export async function fetchNewListings(excludeIds) {
+  try {
+    const raw = localStorage.getItem(LISTINGS_KEY)
+    if (raw) {
+      const cached = JSON.parse(raw)
+      if (cached?.at && Date.now() - cached.at < LISTINGS_TTL) return cached.data
+    }
+  } catch {
+    // no cache — fetch fresh
+  }
+
+  const headers = { accept: 'application/json' }
+  if (DEMO_KEY) headers['x-cg-demo-api-key'] = DEMO_KEY
+  const settled = await Promise.allSettled(
+    LISTING_CATEGORIES.map(async (cat) => {
+      const res = await fetch(
+        `${API_BASE}/coins/markets?vs_currency=usd&category=${cat.id}&order=market_cap_desc&per_page=30`,
+        { headers }
+      )
+      if (!res.ok) return []
+      const rows = await res.json()
+      return rows.map((r) => ({ ...r, _issuer: cat.issuer }))
+    })
+  )
+  const seen = new Set(excludeIds)
+  const data = []
+  for (const s of settled) {
+    if (s.status !== 'fulfilled') continue
+    for (const r of s.value) {
+      if (seen.has(r.id) || r.current_price == null) continue
+      seen.add(r.id)
+      data.push({
+        id: r.id,
+        ticker: (r.symbol ?? '').toUpperCase(),
+        name: r.name,
+        price: r.current_price,
+        marketCap: r.market_cap ?? 0,
+        issuer: r._issuer,
+      })
+    }
+  }
+  data.sort((a, b) => b.marketCap - a.marketCap)
+  const top = data.slice(0, 8)
+  try {
+    localStorage.setItem(LISTINGS_KEY, JSON.stringify({ at: Date.now(), data: top }))
+  } catch {
+    // cache miss is fine
+  }
+  return top
+}
+
 export function loadPriceCache() {
   try {
     const raw = localStorage.getItem(CACHE_KEY)

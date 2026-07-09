@@ -151,22 +151,22 @@ export default function DualLineChart({
             x2={W - PAD}
             y1={H * f}
             y2={H * f}
-            stroke="#27272a"
+            className="stroke-zinc-800"
             strokeWidth="1"
             strokeDasharray="3 5"
           />
         ))}
-        <text x={W - PAD} y="12" textAnchor="end" fontSize="10" fill="#52525b">
+        <text x={W - PAD} y="12" textAnchor="end" fontSize="10" className="fill-zinc-600">
           {formatPrice(vMax)}
         </text>
-        <text x={W - PAD} y={H - 8} textAnchor="end" fontSize="10" fill="#52525b">
+        <text x={W - PAD} y={H - 8} textAnchor="end" fontSize="10" className="fill-zinc-600">
           {formatPrice(vMin)}
         </text>
         {stockVisible && (
           <path
             d={linePath(stock, x, y)}
             fill="none"
-            stroke="#71717a"
+            className="stroke-zinc-500"
             strokeWidth="1.8"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -176,7 +176,7 @@ export default function DualLineChart({
           <path
             d={linePath(token, x, y)}
             fill="none"
-            stroke="#2dd4bf"
+            className="stroke-accent"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -189,14 +189,14 @@ export default function DualLineChart({
               x2={x(scrubAnchor.t)}
               y1={PAD}
               y2={H - PAD}
-              stroke="#52525b"
+              className="stroke-zinc-600"
               strokeWidth="1"
             />
             {scrubStock && (
-              <circle cx={x(scrubStock.t)} cy={y(scrubStock.v)} r="3.5" fill="#71717a" />
+              <circle cx={x(scrubStock.t)} cy={y(scrubStock.v)} r="3.5" className="fill-zinc-500" />
             )}
             {scrubToken && (
-              <circle cx={x(scrubToken.t)} cy={y(scrubToken.v)} r="3.5" fill="#2dd4bf" />
+              <circle cx={x(scrubToken.t)} cy={y(scrubToken.v)} r="3.5" className="fill-accent" />
             )}
           </>
         )}

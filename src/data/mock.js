@@ -39,9 +39,3 @@ export const newsFeed = [
 
 export const popularSearches = ['NVDA', 'TSLA', 'SPY', 'AAPL', 'COIN']
 
-export const recentlyTokenized = [
-  { ticker: 'PLTR', name: 'Palantir', issuer: 'xStocks', chain: 'Solana' },
-  { ticker: 'AMD', name: 'AMD', issuer: 'xStocks', chain: 'Solana' },
-  { ticker: 'HOOD', name: 'Robinhood', issuer: 'xStocks', chain: 'Solana' },
-]
-

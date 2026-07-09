@@ -3,6 +3,8 @@ import { useWaitlist } from '../state/WaitlistContext'
 import { useAuth } from '../state/AuthContext'
 import FeedbackSheet from './FeedbackSheet'
 import SignInSheet from './SignInSheet'
+import AppearanceSheet from './AppearanceSheet'
+import { getThemePref } from '../lib/theme'
 import {
   CloseIcon,
   BellIcon,
@@ -20,6 +22,8 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
   const { user, available, signOut } = useAuth()
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [signInOpen, setSignInOpen] = useState(false)
+  const [appearanceOpen, setAppearanceOpen] = useState(false)
+  const themeLabel = { dark: 'Dark', light: 'Light', system: 'System' }[getThemePref()]
   return (
     <div className="fixed inset-0 z-50 mx-auto flex max-w-md items-end justify-center">
       <button
@@ -95,7 +99,12 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
         <div className="mt-4 divide-y divide-zinc-900">
           <ListRow icon={<BellIcon size={20} />} label="Notifications" value="On" />
           <ListRow icon={<GlobeIcon size={20} />} label="Display currency" value="USD" />
-          <ListRow icon={<MoonIcon size={20} />} label="Appearance" value="Dark" />
+          <ListRow
+            icon={<MoonIcon size={20} />}
+            label="Appearance"
+            value={themeLabel}
+            onClick={() => setAppearanceOpen(true)}
+          />
           <ListRow icon={<WalletIcon size={20} />} label="Connect wallet" value="Coming soon" muted />
           <ListRow
             icon={<HelpIcon size={20} />}
@@ -112,6 +121,7 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
 
       {feedbackOpen && <FeedbackSheet onClose={() => setFeedbackOpen(false)} />}
       {signInOpen && <SignInSheet onClose={() => setSignInOpen(false)} />}
+      {appearanceOpen && <AppearanceSheet onClose={() => setAppearanceOpen(false)} />}
     </div>
   )
 }

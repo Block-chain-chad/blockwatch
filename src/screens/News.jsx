@@ -1,11 +1,12 @@
 import { useEffect } from 'react'
 import Header from '../components/Header'
 import DailyDigest from '../components/DailyDigest'
+import LearnCards from '../components/LearnCards'
 import { newsFeed } from '../data/mock'
 import { useAlerts } from '../state/AlertsContext'
 import { usePrices } from '../state/PricesContext'
 import { BellIcon, GlobeIcon } from '../components/Icons'
-import { formatPct, timeAgo } from '../lib/format'
+import { formatPct, formatPrice, timeAgo } from '../lib/format'
 
 export default function News({ onOpenProfile, onOpenAsset }) {
   const { events, rules, markSeen } = useAlerts()
@@ -25,6 +26,8 @@ export default function News({ onOpenProfile, onOpenAsset }) {
       <Header title="News" onOpenProfile={onOpenProfile} />
 
       <DailyDigest onOpenAsset={onOpenAsset} />
+
+      <LearnCards />
 
       {noRulesYet && (
         <div className="mx-4 mb-2 mt-1 rounded-2xl bg-zinc-900 p-4">
@@ -52,20 +55,36 @@ export default function News({ onOpenProfile, onOpenAsset }) {
             >
               <span
                 className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-                  item.premium > 0 ? 'bg-gain/10 text-gain' : 'bg-loss/10 text-loss'
+                  (item.type === 'price' ? item.direction === 'above' : item.premium > 0)
+                    ? 'bg-gain/10 text-gain'
+                    : 'bg-loss/10 text-loss'
                 }`}
               >
                 <BellIcon size={18} />
               </span>
               <div className="min-w-0 flex-1">
-                <div className="text-[14px] font-medium leading-snug">
-                  {item.ticker} drifted{' '}
-                  <span className="tabular-nums">{formatPct(item.premium)}</span> from{' '}
-                  {item.underlying}
-                </div>
-                <div className="mt-0.5 text-xs text-zinc-500">
-                  Crossed your ±{item.threshold}% drift alert.
-                </div>
+                {item.type === 'price' ? (
+                  <>
+                    <div className="text-[14px] font-medium leading-snug">
+                      {item.ticker} crossed{' '}
+                      <span className="tabular-nums">{formatPrice(item.target)}</span>
+                    </div>
+                    <div className="mt-0.5 text-xs text-zinc-500">
+                      Your price target hit — trading at {formatPrice(item.price)}.
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-[14px] font-medium leading-snug">
+                      {item.ticker} drifted{' '}
+                      <span className="tabular-nums">{formatPct(item.premium)}</span> from{' '}
+                      {item.underlying}
+                    </div>
+                    <div className="mt-0.5 text-xs text-zinc-500">
+                      Crossed your ±{item.threshold}% drift alert.
+                    </div>
+                  </>
+                )}
                 <div className="mt-1 text-[11px] text-zinc-600">Price alert · {timeAgo(item.at)}</div>
               </div>
             </button>

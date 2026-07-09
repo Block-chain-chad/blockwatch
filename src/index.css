@@ -10,6 +10,25 @@
   --color-loss: #f87171;
 }
 
+/* Light theme: remap the gray scale + calm the reserved colors for white
+   backgrounds. Everything referencing zinc/accent/gain/loss flips with it. */
+html.light {
+  --color-zinc-950: #ffffff;
+  --color-zinc-900: #f4f4f5;
+  --color-zinc-800: #e4e4e7;
+  --color-zinc-700: #d4d4d8;
+  --color-zinc-600: #94949e;
+  --color-zinc-500: #6d6d78;
+  --color-zinc-400: #55555e;
+  --color-zinc-300: #3d3d44;
+  --color-zinc-200: #29292e;
+  --color-zinc-100: #161619;
+  --color-accent: #0d9488;
+  --color-accent-dim: #0f766e;
+  --color-gain: #059669;
+  --color-loss: #dc2626;
+}
+
 html,
 body {
   margin: 0;

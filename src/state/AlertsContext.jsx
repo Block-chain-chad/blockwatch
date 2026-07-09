@@ -8,8 +8,45 @@ const STORAGE_KEY = 'bw.alerts.v1'
 const MAX_EVENTS = 50
 const SYNC_DEBOUNCE_MS = 800
 
+// A rule can hold two independent alert types per asset:
+//   drift: { threshold }         — |premium| crosses ±threshold%; re-arms when
+//                                  the gap comes back inside the band.
+//   price: { target, direction } — token price crosses the target; one-shot,
+//                                  removes itself after firing.
+function migrateRules(raw) {
+  const out = {}
+  for (const [id, r] of Object.entries(raw ?? {})) {
+    if (!r) continue
+    if (r.drift || r.price) out[id] = r
+    else if (r.threshold != null) out[id] = { drift: { threshold: r.threshold } } // pre-price-alert shape
+  }
+  return out
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (parsed && typeof parsed === 'object') {
+        return {
+          states: {},
+          events: [],
+          lastSeenAt: 0,
+          ...parsed,
+          rules: migrateRules(parsed.rules),
+        }
+      }
+    }
+  } catch {
+    // corrupted storage — start fresh
+  }
+  return { rules: {}, states: {}, events: [], lastSeenAt: 0 }
+}
+
 // Mirror the signed-in user's rules to Supabase (fired events and read-state
-// stay device-local — notifications are a per-device concern).
+// stay device-local — notifications are a per-device concern). The legacy
+// threshold column keeps a value for older rows; the full rule lives in jsonb.
 async function pushRules(userId, rules) {
   try {
     const entries = Object.entries(rules)
@@ -18,7 +55,8 @@ async function pushRules(userId, rules) {
         entries.map(([assetId, r]) => ({
           user_id: userId,
           asset_id: assetId,
-          threshold: r.threshold,
+          threshold: r.drift?.threshold ?? 0,
+          rule: r,
           updated_at: new Date().toISOString(),
         }))
       )
@@ -29,36 +67,17 @@ async function pushRules(userId, rules) {
     }
     await del
   } catch {
-    // offline / not configured — next change retries
+    // offline / migration not run yet — next change retries
   }
-}
-
-function load() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (parsed && typeof parsed === 'object') {
-        return { rules: {}, states: {}, events: [], lastSeenAt: 0, ...parsed }
-      }
-    }
-  } catch {
-    // corrupted storage — start fresh
-  }
-  return { rules: {}, states: {}, events: [], lastSeenAt: 0 }
 }
 
 const AlertsContext = createContext(null)
 
 /**
- * Premium-drift alerts. A rule is one symmetric threshold per asset:
- * "tell me when |premium| crosses ±X%".
- *
- * Crossing semantics (state machine per rule, 'inside' | 'outside' the band):
- * an event fires on the inside→outside transition, then the rule re-arms only
- * after the premium comes back inside — so a lingering drift alerts once, not
- * on every poll. A rule created while the asset is already outside fires on
- * the next evaluation (instant feedback), because its state starts 'inside'.
+ * Price alerts. Drift rules are a state machine per asset ('inside'/'outside'
+ * the band) so a lingering gap alerts once, not on every poll; a rule created
+ * while already outside fires on the next evaluation. Price-target rules are
+ * one-shot: fire and self-remove.
  */
 export function AlertsProvider({ children }) {
   const { assets } = usePrices()
@@ -90,14 +109,18 @@ export function AlertsProvider({ children }) {
         return
       }
       if (hydratedForRef.current === user.id) return
-      const { data, error } = await supabase.from('user_alerts').select('asset_id,threshold')
+      const { data, error } = await supabase.from('user_alerts').select('asset_id,threshold,rule')
       if (cancelled) return
       hydratedForRef.current = user.id
       if (error) return // offline: keep local rules; sync resumes on next change
       if (data.length > 0) {
         setStore((prev) => ({
           ...prev,
-          rules: Object.fromEntries(data.map((r) => [r.asset_id, { threshold: Number(r.threshold) }])),
+          rules: migrateRules(
+            Object.fromEntries(
+              data.map((r) => [r.asset_id, r.rule ?? { threshold: Number(r.threshold) }])
+            )
+          ),
           states: {}, // re-arm so already-drifted assets fire fresh on this device
         }))
       } else {
@@ -127,55 +150,102 @@ export function AlertsProvider({ children }) {
     if (ruleIds.length === 0) return
 
     let changed = false
+    const rules = { ...s.rules }
     const states = { ...s.states }
     const events = [...s.events]
 
     for (const assetId of ruleIds) {
       const asset = assets.find((a) => a.id === assetId)
       if (!asset) continue
-      const p = premiumPct(asset)
-      if (p == null) continue // price feed not ready — don't move the state machine
+      const rule = rules[assetId]
 
-      const outside = Math.abs(p) >= s.rules[assetId].threshold
-      const prev = states[assetId] ?? 'inside'
-      if (outside && prev === 'inside') {
-        events.unshift({
-          id: `${assetId}-${Date.now()}`,
-          kind: 'alert',
-          assetId,
-          ticker: asset.ticker,
-          underlying: asset.underlying,
-          premium: p,
-          threshold: s.rules[assetId].threshold,
-          at: Date.now(),
-        })
-        if (events.length > MAX_EVENTS) events.length = MAX_EVENTS
-        changed = true
+      if (rule.drift) {
+        const p = premiumPct(asset)
+        if (p != null) {
+          const outside = Math.abs(p) >= rule.drift.threshold
+          const prev = states[assetId] ?? 'inside'
+          if (outside && prev === 'inside') {
+            events.unshift({
+              id: `${assetId}-d-${Date.now()}`,
+              kind: 'alert',
+              type: 'drift',
+              assetId,
+              ticker: asset.ticker,
+              underlying: asset.underlying,
+              premium: p,
+              threshold: rule.drift.threshold,
+              at: Date.now(),
+            })
+            changed = true
+          }
+          const next = outside ? 'outside' : 'inside'
+          if (next !== prev) {
+            states[assetId] = next
+            changed = true
+          }
+        }
       }
-      const next = outside ? 'outside' : 'inside'
-      if (next !== prev) {
-        states[assetId] = next
-        changed = true
+
+      if (rule.price && asset.tokenPrice != null) {
+        const { target, direction } = rule.price
+        const crossed = direction === 'above' ? asset.tokenPrice >= target : asset.tokenPrice <= target
+        if (crossed) {
+          events.unshift({
+            id: `${assetId}-p-${Date.now()}`,
+            kind: 'alert',
+            type: 'price',
+            assetId,
+            ticker: asset.ticker,
+            target,
+            direction,
+            price: asset.tokenPrice,
+            at: Date.now(),
+          })
+          // one-shot: the rule removes itself
+          const next = { ...rule }
+          delete next.price
+          if (next.drift) rules[assetId] = next
+          else {
+            delete rules[assetId]
+            delete states[assetId]
+          }
+          changed = true
+        }
       }
     }
 
-    if (changed) setStore((prev) => ({ ...prev, states, events }))
+    if (events.length > MAX_EVENTS) events.length = MAX_EVENTS
+    if (changed) setStore((prev) => ({ ...prev, rules, states, events }))
   }, [assets, store.rules])
 
-  function setAlert(assetId, threshold) {
+  function setDriftAlert(assetId, threshold) {
     setStore((prev) => {
       const states = { ...prev.states }
       delete states[assetId] // reset to 'inside' so an already-drifted asset fires right away
-      return { ...prev, rules: { ...prev.rules, [assetId]: { threshold } }, states }
+      const rule = { ...prev.rules[assetId], drift: { threshold } }
+      return { ...prev, rules: { ...prev.rules, [assetId]: rule }, states }
     })
   }
 
-  function removeAlert(assetId) {
+  function setPriceAlert(assetId, target, direction) {
     setStore((prev) => {
+      const rule = { ...prev.rules[assetId], price: { target, direction } }
+      return { ...prev, rules: { ...prev.rules, [assetId]: rule } }
+    })
+  }
+
+  function removeAlert(assetId, kind) {
+    setStore((prev) => {
+      const rule = { ...prev.rules[assetId] }
+      delete rule[kind]
       const rules = { ...prev.rules }
       const states = { ...prev.states }
-      delete rules[assetId]
-      delete states[assetId]
+      if (rule.drift || rule.price) rules[assetId] = rule
+      else {
+        delete rules[assetId]
+        delete states[assetId]
+      }
+      if (kind === 'drift') delete states[assetId]
       return { ...prev, rules, states }
     })
   }
@@ -188,7 +258,15 @@ export function AlertsProvider({ children }) {
 
   return (
     <AlertsContext.Provider
-      value={{ rules: store.rules, events: store.events, unread, setAlert, removeAlert, markSeen }}
+      value={{
+        rules: store.rules,
+        events: store.events,
+        unread,
+        setDriftAlert,
+        setPriceAlert,
+        removeAlert,
+        markSeen,
+      }}
     >
       {children}
     </AlertsContext.Provider>

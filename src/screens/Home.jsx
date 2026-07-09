@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Header from '../components/Header'
 import UpdatedAgo from '../components/UpdatedAgo'
 import OnboardingTip from '../components/OnboardingTip'
+import { MoonIcon } from '../components/Icons'
 import { usePrices } from '../state/PricesContext'
 import { useFolders } from '../state/FoldersContext'
 import { premiumPct, isThinlyTraded } from '../lib/prices'
@@ -15,6 +16,39 @@ import {
   changeColor,
 } from '../components/shared'
 import { formatCompact } from '../lib/format'
+
+/*
+ * Overnight session strip: while the US market sleeps, tokens keep trading —
+ * the biggest drift vs last close is the story only this app can tell.
+ * Hidden entirely during market hours.
+ */
+function OvernightStrip({ onOpenAsset }) {
+  const { assets, marketOpen } = usePrices()
+  if (marketOpen) return null
+  const candidates = assets
+    .filter((a) => !isThinlyTraded(a))
+    .map((a) => ({ asset: a, p: premiumPct(a) }))
+    .filter((x) => x.p != null && Math.abs(x.p) >= 0.15)
+  if (candidates.length === 0) return null
+  const top = candidates.reduce((m, x) => (Math.abs(x.p) > Math.abs(m.p) ? x : m))
+  return (
+    <button
+      onClick={() => onOpenAsset(top.asset)}
+      className="mx-4 mt-4 flex w-[calc(100%-32px)] items-center gap-3 rounded-2xl bg-zinc-900 px-4 py-3 text-left transition-colors active:bg-zinc-800"
+    >
+      <MoonIcon size={16} className="shrink-0 text-zinc-500" />
+      <span className="min-w-0 flex-1 text-xs leading-snug text-zinc-400">
+        Overnight session — tokens trade while the market sleeps. Biggest drift right now:
+      </span>
+      <span className="shrink-0 text-right">
+        <span className="block text-[13px] font-semibold">{top.asset.ticker}</span>
+        <span className={`block text-xs font-medium tabular-nums ${changeColor(top.p)}`}>
+          {formatPct(top.p)}
+        </span>
+      </span>
+    </button>
+  )
+}
 
 export default function Home({ onOpenProfile, onOpenAsset, onOpenSearch }) {
   const [filter, setFilter] = useState('all')
@@ -71,6 +105,8 @@ export default function Home({ onOpenProfile, onOpenAsset, onOpenSearch }) {
           <div className="mt-2 h-9 w-40 animate-pulse rounded bg-zinc-800" />
         )}
       </div>
+
+      <OvernightStrip onOpenAsset={onOpenAsset} />
 
       <div className="grid grid-cols-2 gap-3 px-4 pb-4 pt-4">
         <div className="rounded-2xl bg-zinc-900 p-4">

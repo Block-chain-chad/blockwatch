@@ -44,6 +44,13 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
   const p = premiumPct(asset)
   const memberCount = folders.filter((f) => f.assetIds.includes(asset.id)).length
   const alertRule = rules[asset.id]
+  const alertLabel = !alertRule
+    ? 'Set alert'
+    : alertRule.drift && alertRule.price
+      ? '2 alerts set'
+      : alertRule.drift
+        ? `Alert at ±${alertRule.drift.threshold}%`
+        : `Alert at ${formatPrice(alertRule.price.target)}`
   const inWatchlist = watchlistIds.includes(asset.id)
   // Same underlying, different issuer — the cross-issuer comparison.
   const siblings = asset.underlying
@@ -193,7 +200,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
             className="flex items-center justify-center gap-2 rounded-xl bg-zinc-900 py-3 text-sm font-medium text-zinc-100 transition-colors active:bg-zinc-800"
           >
             <BellIcon size={17} className="text-accent" />
-            {alertRule ? `Alert at ±${alertRule.threshold}%` : 'Set alert'}
+            {alertLabel}
           </button>
         )}
       </div>

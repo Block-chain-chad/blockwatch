@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
-import { popularSearches, recentlyTokenized } from '../data/mock'
+import { popularSearches } from '../data/mock'
 import { usePrices } from '../state/PricesContext'
 import { useFolders } from '../state/FoldersContext'
 import { track } from '../services/analytics'
+import { fetchNewListings } from '../services/coingecko'
+import { SEED_IDS } from '../data/seedAssets'
+import { formatPrice } from '../lib/format'
 import { SearchIcon, PlusIcon, CheckCircleIcon } from '../components/Icons'
 
 /*
@@ -69,9 +72,22 @@ function ResultRow({ asset, fallbackTicker, subtitle, pickerFolder, watchlistIds
 
 export default function SearchOverlay({ onClose, onOpenAsset, pickerFolderId = null }) {
   const [query, setQuery] = useState('')
+  const [listings, setListings] = useState([])
   const { assets } = usePrices()
   const { folders, watchlistIds, toggleWatchlist, toggleAssetInFolder } = useFolders()
   const pickerFolder = pickerFolderId ? folders.find((f) => f.id === pickerFolderId) : null
+
+  // Live discovery: issuer-category tokens we don't track yet.
+  useEffect(() => {
+    if (pickerFolderId) return
+    let cancelled = false
+    fetchNewListings(SEED_IDS).then((rows) => {
+      if (!cancelled) setListings(rows)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [pickerFolderId])
 
   const q = query.trim().toLowerCase()
   const results = q
@@ -145,23 +161,33 @@ export default function SearchOverlay({ onClose, onOpenAsset, pickerFolderId = n
               })}
             </div>
 
-            <h3 className="px-4 pb-2 pt-6 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              Recently tokenized
-            </h3>
-            <div className="divide-y divide-zinc-900">
-              {recentlyTokenized.map((r) => {
-                const asset = assets.find((a) => a.underlying === r.ticker)
-                return (
-                  <ResultRow
-                    key={r.ticker}
-                    asset={asset}
-                    fallbackTicker={r.ticker}
-                    subtitle={`${r.name} — ${r.issuer}, ${r.chain}`}
-                    {...rowProps}
-                  />
-                )
-              })}
-            </div>
+            {listings.length > 0 && (
+              <>
+                <h3 className="px-4 pb-2 pt-6 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  Recently tokenized
+                </h3>
+                <div className="divide-y divide-zinc-900">
+                  {listings.map((l) => (
+                    <div key={l.id} className="flex items-center gap-3 px-4 py-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[15px] font-semibold">{l.ticker}</div>
+                        <div className="truncate text-xs text-zinc-500">
+                          {l.name} — {l.issuer}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-[13px] tabular-nums text-zinc-300">
+                          {formatPrice(l.price)}
+                        </div>
+                        <div className="text-[10px] uppercase tracking-wide text-zinc-600">
+                          tracking soon
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </>
         ) : results.length > 0 ? (
           <div className="divide-y divide-zinc-900 pt-2">
