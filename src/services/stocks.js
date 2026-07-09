@@ -107,8 +107,12 @@ export async function getStockHistory(ticker, cfg) {
   const result = json?.chart?.result?.[0]
   const times = result?.timestamp ?? []
   const closes = result?.indicators?.quote?.[0]?.close ?? []
+  // Candles are stamped at their OPEN time but we plot CLOSE prices — shift
+  // intraday stamps to the interval's end so scrubbing "7:55" shows the price
+  // that actually printed around 7:55 (matters on fast tape).
+  const shiftMs = { '5m': 300_000, '30m': 1_800_000 }[cfg.interval] ?? 0
   const data = times
-    .map((t, i) => ({ t: t * 1000, v: closes[i] }))
+    .map((t, i) => ({ t: t * 1000 + shiftMs, v: closes[i] }))
     .filter((p) => p.v != null)
   historyCache.set(key, { at: Date.now(), data })
   return data
