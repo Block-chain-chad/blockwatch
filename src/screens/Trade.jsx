@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Header from '../components/Header'
 import { useWaitlist } from '../state/WaitlistContext'
-import { LockIcon } from '../components/Icons'
+import { LockIcon, CheckCircleIcon } from '../components/Icons'
 
 export default function Trade({ onOpenProfile }) {
   const { entry, join } = useWaitlist()
@@ -35,18 +35,14 @@ export default function Trade({ onOpenProfile }) {
 
         {entry ? (
           <div className="mt-8 w-full max-w-xs rounded-2xl bg-zinc-900 p-5 text-left">
-            <div className="text-xs uppercase tracking-wide text-zinc-500">You're on the list</div>
-            {entry.position != null ? (
-              <div className="mt-1 text-3xl font-semibold tabular-nums text-accent">
-                #{entry.position}
-              </div>
-            ) : (
-              <div className="mt-1 text-lg font-semibold text-accent">Spot reserved</div>
-            )}
+            <div className="flex items-center gap-2">
+              <CheckCircleIcon size={22} className="text-accent" />
+              <span className="text-lg font-semibold">You're on the list</span>
+            </div>
             <p className="mt-2 text-xs leading-relaxed text-zinc-500">
-              {entry.position != null
-                ? `${entry.email} — we'll email you the moment trading opens. Check back — your position is your place in line.`
-                : `${entry.email} is saved on this device. We couldn't reach the waitlist server just now — we'll sync your position automatically.`}
+              {entry.pendingSync
+                ? `${entry.email} is saved on this device. We couldn't reach the waitlist server just now — we'll finish signing you up automatically.`
+                : `${entry.email} — we'll email you the moment trading opens.`}
             </p>
           </div>
         ) : (

@@ -72,17 +72,11 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
           {entry ? (
             <>
               <div className="text-xs uppercase tracking-wide text-zinc-500">Trading waitlist</div>
-              {entry.position != null ? (
-                <div className="mt-1 text-2xl font-semibold tabular-nums text-accent">
-                  #{entry.position}
-                </div>
-              ) : (
-                <div className="mt-1 text-lg font-semibold text-accent">Spot reserved</div>
-              )}
+              <div className="mt-1 text-lg font-semibold text-accent">You're on the list</div>
               <div className="mt-1 text-xs text-zinc-500">
-                {entry.position != null
-                  ? "You're in line — we'll email you at launch."
-                  : 'Saved on this device — position syncs automatically.'}
+                {entry.pendingSync
+                  ? 'Saved on this device — finishing signup automatically.'
+                  : "We'll email you the moment trading opens."}
               </div>
             </>
           ) : (
