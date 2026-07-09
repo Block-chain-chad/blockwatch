@@ -14,8 +14,35 @@ export const CHART_RANGES = {
 }
 
 /**
- * Loads both lines of the signature chart for an asset + range.
- * Returns { loading, error, token, stock, stockIsFlat }.
+ * Premium history: for each token price point, the % gap vs the most recent
+ * stock price at that moment. Stock quotes only exist during market hours, so
+ * we forward-fill (nights/weekends measure against the last close — the same
+ * semantic the live premium pill uses when markets are closed).
+ * Uses the UNCLIPPED stock series so early-window token points can reference
+ * the prior session's close.
+ */
+function buildPremiumSeries(token, stockRaw, fallbackStockPrice) {
+  const src =
+    stockRaw.length > 0
+      ? stockRaw
+      : fallbackStockPrice != null
+        ? [{ t: 0, v: fallbackStockPrice }]
+        : []
+  if (src.length === 0 || token.length < 2) return []
+  const out = []
+  let i = 0
+  for (const p of token) {
+    while (i + 1 < src.length && src[i + 1].t <= p.t) i++
+    if (src[i].t > p.t) continue // token point precedes all stock data
+    out.push({ t: p.t, v: ((p.v - src[i].v) / src[i].v) * 100 })
+  }
+  return out
+}
+
+/**
+ * Loads both lines of the signature chart for an asset + range, plus the
+ * derived premium-history series (no extra API calls).
+ * Returns { loading, error, token, stock, premium, stockIsFlat }.
  *
  * The token trades 24/7 but the stock only during market hours, so the stock
  * series is clipped to the token's time window. If no stock candles fall
@@ -29,6 +56,7 @@ export function useChartData(asset, range, retryKey = 0) {
     error: false,
     token: [],
     stock: [],
+    premium: [],
     stockIsFlat: false,
   })
 
@@ -57,9 +85,13 @@ export function useChartData(asset, range, retryKey = 0) {
           ]
           stockIsFlat = true
         }
-        setState({ loading: false, error: false, token, stock, stockIsFlat })
+        const premium = asset.underlying
+          ? buildPremiumSeries(token, stockRaw, asset.stockPrice)
+          : []
+        setState({ loading: false, error: false, token, stock, premium, stockIsFlat })
       } catch {
-        if (!cancelled) setState({ loading: false, error: true, token: [], stock: [], stockIsFlat: false })
+        if (!cancelled)
+          setState({ loading: false, error: true, token: [], stock: [], premium: [], stockIsFlat: false })
       }
     }
 

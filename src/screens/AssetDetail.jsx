@@ -6,6 +6,7 @@ import AddToFolderSheet from '../overlays/AddToFolderSheet'
 import SetAlertSheet from '../overlays/SetAlertSheet'
 import ShareSheet from '../overlays/ShareSheet'
 import DualLineChart from '../components/DualLineChart'
+import PremiumChart from '../components/PremiumChart'
 import { useChartData, CHART_RANGES } from '../hooks/useChartData'
 import { useStockInfo } from '../hooks/useStockInfo'
 import { formatCompact } from '../lib/format'
@@ -123,6 +124,8 @@ export default function AssetDetail({ assetId, onBack }) {
           </span>
         </div>
       </div>
+
+      {!chart.loading && !chart.error && <PremiumChart premium={chart.premium} />}
 
       <div className="flex justify-center gap-2 px-4 pt-4">
         {RANGES.map((r) => (
