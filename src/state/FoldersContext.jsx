@@ -6,6 +6,26 @@ const ANON_KEY = 'bw.folders.v1'
 const TOAST_MS = 5000
 const SYNC_DEBOUNCE_MS = 800
 
+// The Home watchlist is a reserved, hidden folder: it reuses all the folder
+// machinery (persistence, account sync, undo toasts, sign-in import) without
+// appearing in the Folders tab or the add-to-folder sheet.
+export const WATCHLIST_ID = '__watchlist__'
+
+const SEED_WATCHLIST = {
+  id: WATCHLIST_ID,
+  name: 'Watchlist',
+  assetIds: [
+    'nvidia-xstock',
+    'apple-xstock',
+    'tesla-xstock',
+    'sp500-xstock',
+    'nasdaq-xstock',
+    'coinbase-xstock',
+    'microsoft-xstock',
+    'amazon-xstock',
+  ],
+}
+
 // Cold start: first launch pre-loads "Popular" so the app is alive immediately.
 const SEED_FOLDERS = [
   {
@@ -15,17 +35,24 @@ const SEED_FOLDERS = [
   },
 ]
 
+// Older stored data (and fresh server accounts) may predate the watchlist —
+// make sure it exists.
+function ensureWatchlist(folders) {
+  if (folders.some((f) => f.id === WATCHLIST_ID)) return folders
+  return [SEED_WATCHLIST, ...folders]
+}
+
 function loadLocal(key = ANON_KEY) {
   try {
     const raw = localStorage.getItem(key)
     if (raw) {
       const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed)) return parsed
+      if (Array.isArray(parsed)) return ensureWatchlist(parsed)
     }
   } catch {
     // corrupted storage — fall through to seed
   }
-  return key === ANON_KEY ? SEED_FOLDERS : null
+  return key === ANON_KEY ? ensureWatchlist(SEED_FOLDERS) : null
 }
 
 function saveLocal(key, folders) {
@@ -130,7 +157,7 @@ export function FoldersProvider({ children }) {
       }
       if (data.length > 0) {
         hydratedForRef.current = user.id
-        setFolders(data.map((r) => ({ id: r.id, name: r.name, assetIds: r.asset_ids ?? [] })))
+        setFolders(ensureWatchlist(data.map((r) => ({ id: r.id, name: r.name, assetIds: r.asset_ids ?? [] }))))
       } else {
         // Fresh account: import whatever this device already had ("import my folders").
         const device = loadLocal()
@@ -199,7 +226,22 @@ export function FoldersProvider({ children }) {
     if (removing) showUndoToast(`Removed from “${folder.name}”`, prev)
   }
 
-  const value = { folders, toast, undo, createFolder, renameFolder, deleteFolder, toggleAssetInFolder }
+  // Consumers see only real user folders; the watchlist has its own API.
+  const userFolders = folders.filter((f) => f.id !== WATCHLIST_ID)
+  const watchlistIds = folders.find((f) => f.id === WATCHLIST_ID)?.assetIds ?? []
+  const toggleWatchlist = (assetId) => toggleAssetInFolder(WATCHLIST_ID, assetId)
+
+  const value = {
+    folders: userFolders,
+    watchlistIds,
+    toggleWatchlist,
+    toast,
+    undo,
+    createFolder,
+    renameFolder,
+    deleteFolder,
+    toggleAssetInFolder,
+  }
   return <FoldersContext.Provider value={value}>{children}</FoldersContext.Provider>
 }
 

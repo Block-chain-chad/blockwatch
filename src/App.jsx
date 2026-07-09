@@ -73,7 +73,12 @@ export default function App() {
           <TabBar tab={tab} onChange={switchTab} />
 
           {openAssetId && (
-            <AssetDetail assetId={openAssetId} onBack={() => setOpenAssetId(null)} />
+            <AssetDetail
+              key={openAssetId} // remount on switch: fresh scroll + chart state
+              assetId={openAssetId}
+              onBack={() => setOpenAssetId(null)}
+              onSwitchAsset={setOpenAssetId}
+            />
           )}
           {showSearch && (
             <SearchOverlay

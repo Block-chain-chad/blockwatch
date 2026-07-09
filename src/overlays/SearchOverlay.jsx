@@ -6,15 +6,71 @@ import { track } from '../services/analytics'
 import { SearchIcon, PlusIcon, CheckCircleIcon } from '../components/Icons'
 
 /*
- * Search over the tokenized-asset universe.
- * Default mode: tap a result to open its detail screen.
- * Picker mode (pickerFolderId set): taps toggle folder membership instead —
+ * Search over the tokenized-asset universe (Home shows only your watchlist;
+ * this is where the full directory lives).
+ * Default mode: tap a row for its detail; the trailing icon adds/removes it
+ * from your watchlist.
+ * Picker mode (pickerFolderId set): the whole row toggles folder membership —
  * used by "Add assets" inside a folder.
  */
+
+function ResultRow({ asset, fallbackTicker, subtitle, pickerFolder, watchlistIds, toggle, onOpen }) {
+  const included = asset
+    ? pickerFolder
+      ? pickerFolder.assetIds.includes(asset.id)
+      : watchlistIds.includes(asset.id)
+    : false
+  const icon = included ? (
+    <CheckCircleIcon size={22} className="text-accent" />
+  ) : pickerFolder ? (
+    <span className="h-[22px] w-[22px] rounded-full border border-zinc-700" />
+  ) : (
+    <PlusIcon size={20} className="text-accent" />
+  )
+  const body = (
+    <div className="min-w-0 flex-1">
+      <div className="text-[15px] font-semibold">{asset ? asset.ticker : fallbackTicker}</div>
+      <div className="truncate text-xs text-zinc-500">{subtitle}</div>
+    </div>
+  )
+
+  // Picker mode: whole row toggles. Default mode: body opens detail, icon toggles watchlist.
+  if (pickerFolder) {
+    return (
+      <button
+        onClick={() => asset && toggle(asset)}
+        className="flex w-full items-center gap-3 px-4 py-3 text-left active:bg-zinc-900"
+      >
+        {body}
+        {asset && icon}
+      </button>
+    )
+  }
+  return (
+    <div className="flex items-stretch">
+      <button
+        onClick={() => asset && onOpen(asset)}
+        className="flex min-w-0 flex-1 items-center px-4 py-3 text-left active:bg-zinc-900"
+      >
+        {body}
+      </button>
+      {asset && (
+        <button
+          onClick={() => toggle(asset)}
+          aria-label={included ? `Remove ${asset.ticker} from watchlist` : `Add ${asset.ticker} to watchlist`}
+          className="flex items-center px-4 transition-colors active:bg-zinc-900"
+        >
+          {icon}
+        </button>
+      )}
+    </div>
+  )
+}
+
 export default function SearchOverlay({ onClose, onOpenAsset, pickerFolderId = null }) {
   const [query, setQuery] = useState('')
   const { assets } = usePrices()
-  const { folders, toggleAssetInFolder } = useFolders()
+  const { folders, watchlistIds, toggleWatchlist, toggleAssetInFolder } = useFolders()
   const pickerFolder = pickerFolderId ? folders.find((f) => f.id === pickerFolderId) : null
 
   const q = query.trim().toLowerCase()
@@ -39,26 +95,11 @@ export default function SearchOverlay({ onClose, onOpenAsset, pickerFolderId = n
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q])
 
-  function rowAction(asset) {
-    if (!asset) return
-    if (pickerFolder) {
-      toggleAssetInFolder(pickerFolder.id, asset.id)
-    } else {
-      onOpenAsset(asset)
-    }
-  }
+  const toggle = pickerFolder
+    ? (asset) => toggleAssetInFolder(pickerFolder.id, asset.id)
+    : (asset) => toggleWatchlist(asset.id)
 
-  function RowIcon({ asset }) {
-    if (!asset) return null
-    if (pickerFolder) {
-      return pickerFolder.assetIds.includes(asset.id) ? (
-        <CheckCircleIcon size={22} className="text-accent" />
-      ) : (
-        <span className="h-[22px] w-[22px] rounded-full border border-zinc-700" />
-      )
-    }
-    return <PlusIcon size={18} className="text-accent" />
-  }
+  const rowProps = { pickerFolder, watchlistIds, toggle, onOpen: onOpenAsset }
 
   return (
     <div className="fixed inset-0 z-40 mx-auto flex max-w-md flex-col bg-zinc-950">
@@ -93,19 +134,13 @@ export default function SearchOverlay({ onClose, onOpenAsset, pickerFolderId = n
               {popularSearches.map((t) => {
                 const asset = assets.find((a) => a.underlying === t)
                 return (
-                  <button
+                  <ResultRow
                     key={t}
-                    onClick={() => rowAction(asset)}
-                    className="flex w-full items-center gap-3 px-4 py-3 text-left active:bg-zinc-900"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="text-[15px] font-semibold">{asset ? asset.ticker : t}</div>
-                      <div className="text-xs text-zinc-500">
-                        {asset ? `${asset.name} — ${asset.issuer}, ${asset.chain}` : ''}
-                      </div>
-                    </div>
-                    <RowIcon asset={asset} />
-                  </button>
+                    asset={asset}
+                    fallbackTicker={t}
+                    subtitle={asset ? `${asset.name} — ${asset.issuer}, ${asset.chain}` : ''}
+                    {...rowProps}
+                  />
                 )
               })}
             </div>
@@ -117,21 +152,13 @@ export default function SearchOverlay({ onClose, onOpenAsset, pickerFolderId = n
               {recentlyTokenized.map((r) => {
                 const asset = assets.find((a) => a.underlying === r.ticker)
                 return (
-                  <button
+                  <ResultRow
                     key={r.ticker}
-                    onClick={() => rowAction(asset)}
-                    className="flex w-full items-center gap-3 px-4 py-3 text-left active:bg-zinc-900"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="text-[15px] font-semibold">
-                        {asset ? asset.ticker : r.ticker}
-                      </div>
-                      <div className="text-xs text-zinc-500">
-                        {r.name} — {r.issuer}, {r.chain}
-                      </div>
-                    </div>
-                    <RowIcon asset={asset} />
-                  </button>
+                    asset={asset}
+                    fallbackTicker={r.ticker}
+                    subtitle={`${r.name} — ${r.issuer}, ${r.chain}`}
+                    {...rowProps}
+                  />
                 )
               })}
             </div>
@@ -139,19 +166,12 @@ export default function SearchOverlay({ onClose, onOpenAsset, pickerFolderId = n
         ) : results.length > 0 ? (
           <div className="divide-y divide-zinc-900 pt-2">
             {results.map((a) => (
-              <button
+              <ResultRow
                 key={a.id}
-                onClick={() => rowAction(a)}
-                className="flex w-full items-center gap-3 px-4 py-3 text-left active:bg-zinc-900"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="text-[15px] font-semibold">{a.ticker}</div>
-                  <div className="text-xs text-zinc-500">
-                    {a.name} — {a.issuer}, {a.chain}
-                  </div>
-                </div>
-                <RowIcon asset={a} />
-              </button>
+                asset={a}
+                subtitle={`${a.name} — ${a.issuer}, ${a.chain}`}
+                {...rowProps}
+              />
             ))}
           </div>
         ) : (

@@ -127,6 +127,15 @@ export const HelpIcon = (p) => (
   </Base>
 )
 
+export const StarIcon = ({ filled = false, ...p }) => (
+  <Base {...p}>
+    <path
+      d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8L12 3.6Z"
+      fill={filled ? 'currentColor' : 'none'}
+    />
+  </Base>
+)
+
 export const PersonIcon = (p) => (
   <Base {...p}>
     <circle cx="12" cy="8" r="3.5" />

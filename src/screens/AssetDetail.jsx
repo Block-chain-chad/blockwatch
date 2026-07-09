@@ -11,14 +11,14 @@ import { useChartData, CHART_RANGES } from '../hooks/useChartData'
 import { useStockInfo } from '../hooks/useStockInfo'
 import { formatCompact } from '../lib/format'
 import { premiumPct, isThinlyTraded } from '../lib/prices'
-import { ChevronLeft, ChevronDown, ShareIcon, PlusIcon, BellIcon } from '../components/Icons'
+import { ChevronLeft, ChevronDown, ShareIcon, PlusIcon, BellIcon, StarIcon } from '../components/Icons'
 import { formatPrice, formatPct, PremiumPill, changeColor } from '../components/shared'
 import PriceText from '../components/PriceText'
 import UpdatedAgo from '../components/UpdatedAgo'
 
 const RANGES = Object.keys(CHART_RANGES)
 
-export default function AssetDetail({ assetId, onBack }) {
+export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
   const [range, setRange] = useState('1D')
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [foldersOpen, setFoldersOpen] = useState(false)
@@ -26,8 +26,8 @@ export default function AssetDetail({ assetId, onBack }) {
   const [shareOpen, setShareOpen] = useState(false)
   const [chartRetry, setChartRetry] = useState(0)
   const asset = useAsset(assetId)
-  const { marketOpen } = usePrices()
-  const { folders } = useFolders()
+  const { marketOpen, assets } = usePrices()
+  const { folders, watchlistIds, toggleWatchlist } = useFolders()
   const { rules } = useAlerts()
   const chart = useChartData(asset ?? { id: assetId }, range, chartRetry)
   const info = useStockInfo(asset?.underlying)
@@ -35,6 +35,11 @@ export default function AssetDetail({ assetId, onBack }) {
   const p = premiumPct(asset)
   const memberCount = folders.filter((f) => f.assetIds.includes(asset.id)).length
   const alertRule = rules[asset.id]
+  const inWatchlist = watchlistIds.includes(asset.id)
+  // Same underlying, different issuer — the cross-issuer comparison.
+  const siblings = asset.underlying
+    ? assets.filter((a) => a.underlying === asset.underlying && a.id !== asset.id)
+    : []
 
   return (
     <div className="fixed inset-0 z-30 mx-auto max-w-md overflow-y-auto bg-zinc-950 pb-10">
@@ -46,13 +51,24 @@ export default function AssetDetail({ assetId, onBack }) {
           <ChevronLeft size={20} />
           <span className="text-[15px]">Back</span>
         </button>
-        <button
-          onClick={() => setShareOpen(true)}
-          aria-label="Share"
-          className="mr-2 flex h-9 w-9 items-center justify-center rounded-full text-zinc-300 transition-colors active:bg-zinc-800"
-        >
-          <ShareIcon size={19} />
-        </button>
+        <div className="mr-2 flex items-center gap-1">
+          <button
+            onClick={() => toggleWatchlist(asset.id)}
+            aria-label={inWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
+            className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors active:bg-zinc-800 ${
+              inWatchlist ? 'text-accent' : 'text-zinc-300'
+            }`}
+          >
+            <StarIcon size={19} filled={inWatchlist} />
+          </button>
+          <button
+            onClick={() => setShareOpen(true)}
+            aria-label="Share"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-zinc-300 transition-colors active:bg-zinc-800"
+          >
+            <ShareIcon size={19} />
+          </button>
+        </div>
       </header>
 
       <div className="px-4">
@@ -173,6 +189,45 @@ export default function AssetDetail({ assetId, onBack }) {
           </span>
         </div>
       </div>
+
+      {siblings.length > 0 && (
+        <div className="px-4 pt-6">
+          <h3 className="text-sm font-semibold text-zinc-300">Also tokenized by</h3>
+          <div className="mt-1 divide-y divide-zinc-900 rounded-2xl bg-zinc-900/60">
+            {siblings.map((s) => {
+              const diff =
+                s.tokenPrice != null && asset.tokenPrice != null
+                  ? ((s.tokenPrice - asset.tokenPrice) / asset.tokenPrice) * 100
+                  : null
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => onSwitchAsset(s.id)}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors active:bg-zinc-900"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[15px] font-semibold">{s.ticker}</div>
+                    <div className="truncate text-xs text-zinc-500">
+                      {s.issuer} · {s.chain}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-medium">
+                      <PriceText value={s.tokenPrice} />
+                    </div>
+                    {diff != null && (
+                      <div className="text-xs tabular-nums text-zinc-500">
+                        {formatPct(diff)} vs this one
+                      </div>
+                    )}
+                  </div>
+                  <ChevronDown size={16} className="-rotate-90 text-zinc-600" />
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {(asset.volume24h != null || asset.marketCap != null || info.profile) && (
         <div className="px-4 pt-6">
