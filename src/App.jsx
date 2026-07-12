@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { track } from './services/analytics'
-import { AuthProvider } from './state/AuthContext'
+import { AuthProvider, useAuth } from './state/AuthContext'
+import PasswordSheet from './overlays/PasswordSheet'
 import { PricesProvider } from './state/PricesContext'
 import { FoldersProvider } from './state/FoldersContext'
 import { WaitlistProvider } from './state/WaitlistContext'
@@ -14,6 +15,13 @@ import Trade from './screens/Trade'
 import AssetDetail from './screens/AssetDetail'
 import SearchOverlay from './overlays/SearchOverlay'
 import ProfileSheet from './overlays/ProfileSheet'
+
+/* When the user arrives via a password-recovery email link, prompt for the new password. */
+function RecoveryGate() {
+  const { recovery, clearRecovery } = useAuth()
+  if (!recovery) return null
+  return <PasswordSheet recoveryMode onClose={clearRecovery} />
+}
 
 export default function App() {
   const [tab, setTab] = useState('home')
@@ -99,6 +107,7 @@ export default function App() {
             />
           )}
           <UndoToast />
+          <RecoveryGate />
         </div>
       </WaitlistProvider>
       </FoldersProvider>
