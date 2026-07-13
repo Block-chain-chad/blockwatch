@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { track } from './services/analytics'
+import AccessGate from './components/AccessGate'
 import { AuthProvider, useAuth } from './state/AuthContext'
 import PasswordSheet from './overlays/PasswordSheet'
 import { PricesProvider } from './state/PricesContext'
@@ -71,6 +72,7 @@ export default function App() {
   }
 
   return (
+    <AccessGate>
     <AuthProvider>
     <PricesProvider>
       <AlertsProvider>
@@ -114,5 +116,6 @@ export default function App() {
       </AlertsProvider>
     </PricesProvider>
     </AuthProvider>
+    </AccessGate>
   )
 }
