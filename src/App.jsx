@@ -78,7 +78,8 @@ export default function App() {
       <AlertsProvider>
       <FoldersProvider>
       <WaitlistProvider>
-        <div className="mx-auto min-h-screen max-w-md bg-zinc-950 md:border-x md:border-zinc-900">
+        {/* dvh, not vh: mobile URL bars collapse and 100vh layouts jump */}
+        <div className="mx-auto min-h-dvh max-w-md bg-zinc-950 md:border-x md:border-zinc-900">
           {screen}
           <TabBar tab={tab} onChange={switchTab} />
 

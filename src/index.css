@@ -35,6 +35,9 @@ body {
   background-color: var(--color-zinc-950);
   color: var(--color-zinc-100);
   -webkit-tap-highlight-color: transparent;
+  /* No rubber-band bounce or accidental pull-to-refresh — the app shell
+     should feel bolted down, only its lists scroll. */
+  overscroll-behavior-y: none;
 }
 
 body {
@@ -42,6 +45,18 @@ body {
     "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Kill the double-tap-to-zoom gesture (and its 300ms tap delay). */
+  touch-action: manipulation;
+  /* Long-pressing buttons/labels shouldn't start text selection like a web
+     page; typing fields opt back in below. */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input,
+textarea {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 /* Price tick: subtle settle-in when a value changes (paired with color flash). */

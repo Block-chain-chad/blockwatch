@@ -44,7 +44,7 @@ export default function AccessGate({ children }) {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center bg-zinc-950 px-8">
+    <div className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center bg-zinc-950 px-8">
       <svg width="44" height="44" viewBox="0 0 32 32" aria-hidden="true">
         <rect width="32" height="32" rx="8" fill="#18181b" />
         <path d="M8 21 L13 14 L17 17 L24 8" stroke="#2dd4bf" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
