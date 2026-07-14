@@ -6,6 +6,9 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
+    // Honor an externally assigned port (e.g. Claude Code's preview pane sets
+    // PORT so parallel sessions don't fight over 5173); default otherwise.
+    port: Number(process.env.PORT) || 5173,
     proxy: {
       // Dev-only stock-quote fallback: Yahoo's public endpoint has no CORS
       // headers, so the dev server relays it. Production uses Finnhub (key in
