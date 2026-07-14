@@ -3,6 +3,8 @@
 // execute join_waitlist(email) (see supabase/waitlist.sql); it cannot read the
 // table, so stored emails stay private.
 
+import { API_BASE } from './apiBase'
+
 // Accept the bare project URL, tolerating a pasted trailing slash or /rest/v1 path.
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL ?? '').replace(/\/(rest\/v1\/?)?$/, '')
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -16,7 +18,7 @@ export const waitlistConfigured = IS_PROD || Boolean(SUPABASE_URL && SUPABASE_AN
 /** Insert-or-fetch the email's spot; returns the 1-based position number. */
 export async function joinWaitlist(email) {
   if (IS_PROD) {
-    const res = await fetch('/api/waitlist-join', {
+    const res = await fetch(`${API_BASE}/api/waitlist-join`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),

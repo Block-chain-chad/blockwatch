@@ -11,6 +11,8 @@
 // Returned shape per ticker: { price, prevClose, asOf } — asOf is ms epoch of
 // the quote (when markets are closed this is the last close).
 
+import { API_BASE } from './apiBase'
+
 const FINNHUB_KEY = import.meta.env.VITE_FINNHUB_API_KEY
 // In production every stock call goes through our own /api serverless proxy
 // (key server-side, responses CDN-cached). Dev talks to providers directly.
@@ -47,7 +49,7 @@ async function fetchYahooDev(ticker) {
 }
 
 async function fetchApiQuote(ticker) {
-  const res = await fetch(`/api/finnhub?kind=quote&symbol=${encodeURIComponent(ticker)}`)
+  const res = await fetch(`${API_BASE}/api/finnhub?kind=quote&symbol=${encodeURIComponent(ticker)}`)
   if (!res.ok) throw new Error(`quote ${res.status}`)
   const q = await res.json()
   const price = q.c || q.pc
@@ -99,7 +101,7 @@ export async function getStockHistory(ticker, cfg) {
 
   const symbol = ticker.replace('.', '-')
   const url = IS_PROD
-    ? `/api/history?symbol=${encodeURIComponent(symbol)}&interval=${cfg.interval}&range=${cfg.yrange}`
+    ? `${API_BASE}/api/history?symbol=${encodeURIComponent(symbol)}&interval=${cfg.interval}&range=${cfg.yrange}`
     : `/yfin/v8/finance/chart/${symbol}?interval=${cfg.interval}&range=${cfg.yrange}`
   const res = await fetch(url)
   if (!res.ok) throw new Error(`Yahoo history ${res.status}`)
@@ -143,7 +145,7 @@ function devInfoUrl(kind, symbol) {
 async function fetchInfo(kind, ticker) {
   const symbol = encodeURIComponent(ticker)
   const url = IS_PROD
-    ? `/api/finnhub?kind=${kind}&symbol=${symbol}`
+    ? `${API_BASE}/api/finnhub?kind=${kind}&symbol=${symbol}`
     : FINNHUB_KEY
       ? devInfoUrl(kind, symbol)
       : null
