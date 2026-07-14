@@ -8,7 +8,7 @@
 // in Resend for this). A missing RESEND_API_KEY degrades gracefully: joins
 // still work, welcomes just don't send.
 
-const WELCOME_HTML = `
+const welcomeHtml = (siteUrl, siteHost) => `
 <div style="font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;color:#18181b">
   <div style="font-size:15px;font-weight:700;letter-spacing:-0.2px;margin-bottom:24px">BlockWatch</div>
   <h1 style="font-size:22px;margin:0 0 12px">You're on the list ✓</h1>
@@ -20,13 +20,13 @@ const WELCOME_HTML = `
     Meanwhile, the tracker is free: live tokenized stock prices, side by side
     with the real thing.
   </p>
-  <a href="https://blockwatch.app"
+  <a href="${siteUrl}"
      style="display:inline-block;background:#0d9488;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:12px 24px;border-radius:10px">
     Open BlockWatch
   </a>
   <p style="font-size:12px;line-height:1.6;color:#a1a1aa;margin:32px 0 0">
     You're receiving this because this address joined the waitlist at
-    blockwatch.app. Wasn't you? Just ignore this email.
+    ${siteHost}. Wasn't you? Just ignore this email.
   </p>
 </div>
 `
@@ -63,6 +63,12 @@ export default async function handler(req, res) {
   // (Rejoining from a second device re-sends the welcome; harmless.)
   const resendKey = process.env.RESEND_API_KEY
   if (resendKey) {
+    // Link back to wherever this deployment actually serves from — the
+    // *.vercel.app URL during the gated beta, blockwatch.app automatically
+    // once the custom domain is connected. Vercel routes requests by Host,
+    // so this header is always one of the project's own domains.
+    const siteHost = req.headers.host || 'blockwatch.app'
+    const siteUrl = `https://${siteHost}`
     try {
       await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -74,7 +80,7 @@ export default async function handler(req, res) {
           from: 'BlockWatch <contact@blockwatch.app>',
           to: [email],
           subject: "You're on the BlockWatch waitlist",
-          html: WELCOME_HTML,
+          html: welcomeHtml(siteUrl, siteHost),
         }),
       })
     } catch {
