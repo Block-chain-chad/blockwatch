@@ -70,7 +70,7 @@ export default async function handler(req, res) {
     const siteHost = req.headers.host || 'blockwatch.app'
     const siteUrl = `https://${siteHost}`
     try {
-      await fetch('https://api.resend.com/emails', {
+      const sendRes = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${resendKey}`,
@@ -83,9 +83,16 @@ export default async function handler(req, res) {
           html: welcomeHtml(siteUrl, siteHost),
         }),
       })
-    } catch {
-      // logged nowhere on purpose — the join succeeded, that's what matters
+      if (!sendRes.ok) {
+        console.error('welcome email rejected:', sendRes.status, await sendRes.text())
+      }
+    } catch (err) {
+      // The join succeeded, that's what matters — but leave a trace in the
+      // function logs so send failures are debuggable instead of invisible.
+      console.error('welcome email failed:', err)
     }
+  } else {
+    console.warn('RESEND_API_KEY not set; welcome email skipped for', email)
   }
 
   res.setHeader('Cache-Control', 'no-store')
