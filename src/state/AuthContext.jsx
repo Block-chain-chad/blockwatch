@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { supabase } from '../services/supabase'
+import { supabase, pendingRecovery } from '../services/supabase'
 
 const AuthContext = createContext({ session: null, ready: true, available: false })
 
@@ -19,6 +19,8 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (!supabase) return
+    // Recovery may have fired before we mounted (see services/supabase.js).
+    if (pendingRecovery) setRecovery(true)
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session ?? null)
       setReady(true)
