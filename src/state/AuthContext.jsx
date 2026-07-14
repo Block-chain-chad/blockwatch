@@ -48,7 +48,12 @@ export function AuthProvider({ children }) {
     if (error) throw error
   }
 
-  /** Returns true when email confirmation is still pending (no session yet). */
+  /**
+   * Returns 'signed-in' (session started), 'confirm' (confirmation email
+   * sent), or 'exists' — the address already has an account. In that last
+   * case Supabase sends no email at all (by design, so signup can't be used
+   * to probe which emails are registered), so the UI must not promise one.
+   */
   async function signUpPassword(email, password) {
     if (!supabase) throw new Error('auth not configured')
     const { data, error } = await supabase.auth.signUp({
@@ -57,7 +62,10 @@ export function AuthProvider({ children }) {
       options: { emailRedirectTo: window.location.origin },
     })
     if (error) throw error
-    return !data.session
+    if (data.session) return 'signed-in'
+    // Existing accounts come back as a placeholder user with no identities.
+    if (!data.user?.identities?.length) return 'exists'
+    return 'confirm'
   }
 
   async function resetPassword(email) {

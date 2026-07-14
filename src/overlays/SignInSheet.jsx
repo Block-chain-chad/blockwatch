@@ -31,14 +31,20 @@ export default function SignInSheet({ onClose }) {
         await signInPassword(email, password)
         onClose()
       } else {
-        const needsConfirm = await signUpPassword(email, password)
-        if (needsConfirm) {
+        const result = await signUpPassword(email, password)
+        if (result === 'signed-in') {
+          onClose()
+        } else if (result === 'exists') {
+          setMode('signin')
+          setNote({
+            kind: 'error',
+            text: 'That email already has an account — sign in with its password, or use “Forgot password?” to set one.',
+          })
+        } else {
           setNote({
             kind: 'sent',
             text: `Almost there — we emailed ${email.trim()}. Click the link inside to confirm your account and you'll be signed in.`,
           })
-        } else {
-          onClose()
         }
       }
     } catch (err) {
