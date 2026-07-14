@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useAsset, usePrices } from '../state/PricesContext'
+import { useAsset, usePrices, useAssetSubscription } from '../state/PricesContext'
+import { ASSETS } from '../data/universe'
 import { useFolders } from '../state/FoldersContext'
 import { useAlerts } from '../state/AlertsContext'
 import AddToFolderSheet from '../overlays/AddToFolderSheet'
@@ -38,6 +39,17 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
   }
   const asset = useAsset(assetId)
   const { marketOpen, assets } = usePrices()
+
+  // This asset + its cross-issuer siblings (same underlying) need live token
+  // prices and the underlying's quote — long-tail assets aren't polled
+  // otherwise. Sibling ids come from the static universe so the list is
+  // stable regardless of what data has arrived.
+  const staticAsset = ASSETS.find((a) => a.id === assetId)
+  const subIds = staticAsset?.underlying
+    ? ASSETS.filter((a) => a.underlying === staticAsset.underlying).map((a) => a.id)
+    : [assetId]
+  useAssetSubscription(`detail:${assetId}`, subIds)
+
   const { folders, watchlistIds, toggleWatchlist } = useFolders()
   const { rules } = useAlerts()
   const chart = useChartData(asset ?? { id: assetId }, range, chartRetry)
@@ -227,9 +239,11 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
               {v}
             </span>
           ))}
-          <span className="rounded-full bg-zinc-900 px-3 py-1.5 text-xs text-zinc-400">
-            {asset.chain}
-          </span>
+          {asset.chain && (
+            <span className="rounded-full bg-zinc-900 px-3 py-1.5 text-xs text-zinc-400">
+              {asset.chain}
+            </span>
+          )}
         </div>
       </div>
 
@@ -251,7 +265,8 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
                   <div className="min-w-0 flex-1">
                     <div className="text-[15px] font-semibold">{s.ticker}</div>
                     <div className="truncate text-xs text-zinc-500">
-                      {s.issuer} · {s.chain}
+                      {s.issuer}
+                      {s.chain ? ` · ${s.chain}` : ''}
                     </div>
                   </div>
                   <div className="text-right">
@@ -314,7 +329,8 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
             {info.profile.finnhubIndustry && ` operates in ${info.profile.finnhubIndustry}`}
             {info.profile.exchange && `, listed on ${info.profile.exchange}`}
             {info.profile.ipo && ` and publicly traded since ${info.profile.ipo.slice(0, 4)}`}.{' '}
-            {asset.ticker} is a token that tracks its share price on {asset.chain}.
+            {asset.ticker} is a token that tracks its share price
+            {asset.chain ? ` on ${asset.chain}` : ''}.
           </p>
         </div>
       )}
@@ -432,10 +448,12 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
                 <dt className="text-zinc-500">Issuer</dt>
                 <dd className="text-zinc-300">{asset.issuer}</dd>
               </div>
-              <div className="flex justify-between">
-                <dt className="text-zinc-500">Chain</dt>
-                <dd className="text-zinc-300">{asset.chain}</dd>
-              </div>
+              {asset.chain && (
+                <div className="flex justify-between">
+                  <dt className="text-zinc-500">Chain</dt>
+                  <dd className="text-zinc-300">{asset.chain}</dd>
+                </div>
+              )}
               <div className="flex justify-between">
                 <dt className="text-zinc-500">Underlying</dt>
                 <dd className="text-zinc-300">{asset.underlying ?? 'NAV-based'}</dd>

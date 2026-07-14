@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import Header, { AvatarButton } from '../components/Header'
-import { usePrices } from '../state/PricesContext'
+import { usePrices, useAssetSubscription } from '../state/PricesContext'
 import { useFolders, useFolder } from '../state/FoldersContext'
 import { folderDayChange } from '../lib/prices'
 import {
@@ -136,6 +136,9 @@ export function FolderDetail({ folderId, onBack, onOpenProfile, onOpenAsset }) {
   const { assets } = usePrices()
   const { renameFolder, deleteFolder } = useFolders()
   const folder = useFolder(folderId)
+
+  // Member rows show premium pills — quotes only flow for subscribed assets.
+  useAssetSubscription(`folder:${folderId}`, folder?.assetIds ?? [])
 
   if (!folder) return null // deleted (and not undone) — App routes back to the list
 

@@ -10,9 +10,11 @@ export const THIN_VOLUME_USD = 50_000
 
 // NAV-based products (no listed underlying) are exempt: their price is set by
 // the issuer's net asset value, not by on-market trading, so low exchange
-// volume doesn't make the displayed price untrustworthy.
+// volume doesn't make the displayed price untrustworthy. Unknown volume is
+// treated as thin — in a 700-asset universe the tokens with no volume data
+// are exactly the dead ones whose prices are stale garbage.
 export function isThinlyTraded(asset) {
-  return asset.underlying != null && asset.volume24h != null && asset.volume24h < THIN_VOLUME_USD
+  return asset.underlying != null && (asset.volume24h == null || asset.volume24h < THIN_VOLUME_USD)
 }
 
 // Premium/discount = (tokenPrice − stockPrice) / stockPrice, as a percent.

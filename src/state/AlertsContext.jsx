@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
-import { usePrices } from './PricesContext'
+import { usePrices, useAssetSubscription } from './PricesContext'
 import { useAuth } from './AuthContext'
 import { supabase } from '../services/supabase'
 import { premiumPct } from '../lib/prices'
@@ -83,6 +83,11 @@ export function AlertsProvider({ children }) {
   const { assets } = usePrices()
   const { user, ready } = useAuth()
   const [store, setStore] = useState(load)
+
+  // Drift alerts compare token vs stock price, and stock quotes only flow for
+  // subscribed assets — so every asset with a rule stays subscribed even when
+  // no screen is showing it.
+  useAssetSubscription('alert-rules', Object.keys(store.rules))
   const storeRef = useRef(store)
   const hydratedForRef = useRef(null)
   const syncTimerRef = useRef(null)

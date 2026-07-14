@@ -43,7 +43,11 @@ async function makeCardBlob(asset) {
   // asset identity
   ctx.fillStyle = '#71717a'
   ctx.font = '400 44px sans-serif'
-  ctx.fillText(`${asset.name} · ${asset.issuer} on ${asset.chain}`, 84, 360)
+  ctx.fillText(
+    `${asset.name} · ${asset.issuer}${asset.chain ? ` on ${asset.chain}` : ''}`,
+    84,
+    360
+  )
   ctx.fillStyle = '#f4f4f5'
   ctx.font = '700 110px sans-serif'
   ctx.fillText(asset.ticker, 84, 480)
@@ -135,7 +139,8 @@ export default function ShareSheet({ asset, onClose }) {
             <span className="text-xs font-semibold text-zinc-300">BlockWatch</span>
           </div>
           <div className="mt-3 text-xs text-zinc-500">
-            {asset.name} · {asset.issuer} on {asset.chain}
+            {asset.name} · {asset.issuer}
+            {asset.chain ? ` on ${asset.chain}` : ''}
           </div>
           <div className="text-xl font-bold">{asset.ticker}</div>
           {p != null ? (

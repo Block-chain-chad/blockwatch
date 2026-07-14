@@ -3,7 +3,7 @@ import Header from '../components/Header'
 import UpdatedAgo from '../components/UpdatedAgo'
 import OnboardingTip from '../components/OnboardingTip'
 import { MoonIcon } from '../components/Icons'
-import { usePrices } from '../state/PricesContext'
+import { usePrices, useAssetSubscription } from '../state/PricesContext'
 import { useFolders } from '../state/FoldersContext'
 import { premiumPct, isThinlyTraded } from '../lib/prices'
 import {
@@ -25,10 +25,12 @@ import { formatCompact } from '../lib/format'
 function OvernightStrip({ onOpenAsset }) {
   const { assets, marketOpen } = usePrices()
   if (marketOpen) return null
+  // Sanity band: no real tokenized stock drifts 20% overnight — bigger gaps
+  // are stale prints on illiquid tokens, not a story worth telling.
   const candidates = assets
     .filter((a) => !isThinlyTraded(a))
     .map((a) => ({ asset: a, p: premiumPct(a) }))
-    .filter((x) => x.p != null && Math.abs(x.p) >= 0.15)
+    .filter((x) => x.p != null && Math.abs(x.p) >= 0.15 && Math.abs(x.p) <= 20)
   if (candidates.length === 0) return null
   const top = candidates.reduce((m, x) => (Math.abs(x.p) > Math.abs(m.p) ? x : m))
   return (
@@ -54,6 +56,10 @@ export default function Home({ onOpenProfile, onOpenAsset, onOpenSearch }) {
   const [filter, setFilter] = useState('all')
   const { assets } = usePrices()
   const { watchlistIds } = useFolders()
+
+  // Watchlist rows need stock quotes for their premium pills — quotes only
+  // flow for subscribed assets.
+  useAssetSubscription('home-watchlist', watchlistIds)
 
   // Home is YOUR watchlist, not the whole universe — the directory lives
   // behind search. Metric cards reflect the watchlist too.

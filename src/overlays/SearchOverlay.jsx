@@ -4,7 +4,7 @@ import { usePrices } from '../state/PricesContext'
 import { useFolders } from '../state/FoldersContext'
 import { track } from '../services/analytics'
 import { fetchNewListings } from '../services/coingecko'
-import { SEED_IDS } from '../data/seedAssets'
+import { ASSET_IDS } from '../data/universe'
 import { formatPrice } from '../lib/format'
 import { SearchIcon, PlusIcon, CheckCircleIcon } from '../components/Icons'
 import AssetLogo from '../components/AssetLogo'
@@ -85,7 +85,7 @@ export default function SearchOverlay({ onClose, onOpenAsset, pickerFolderId = n
   useEffect(() => {
     if (pickerFolderId) return
     let cancelled = false
-    fetchNewListings(SEED_IDS).then((rows) => {
+    fetchNewListings(ASSET_IDS).then((rows) => {
       if (!cancelled) setListings(rows)
     })
     return () => {
@@ -158,7 +158,11 @@ export default function SearchOverlay({ onClose, onOpenAsset, pickerFolderId = n
                     key={t}
                     asset={asset}
                     fallbackTicker={t}
-                    subtitle={asset ? `${asset.name} — ${asset.issuer}, ${asset.chain}` : ''}
+                    subtitle={
+                      asset
+                        ? `${asset.name} — ${asset.issuer}${asset.chain ? `, ${asset.chain}` : ''}`
+                        : ''
+                    }
                     {...rowProps}
                   />
                 )
@@ -199,7 +203,7 @@ export default function SearchOverlay({ onClose, onOpenAsset, pickerFolderId = n
               <ResultRow
                 key={a.id}
                 asset={a}
-                subtitle={`${a.name} — ${a.issuer}, ${a.chain}`}
+                subtitle={`${a.name} — ${a.issuer}${a.chain ? `, ${a.chain}` : ''}`}
                 {...rowProps}
               />
             ))}

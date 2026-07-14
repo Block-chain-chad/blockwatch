@@ -10,10 +10,43 @@ const CACHE_KEY = 'bw.priceCache.v1'
 export const POLL_MS = 60_000
 
 /**
- * Fetch current market data for a list of coin ids in a single request.
+ * Fetch current market data for a list of coin ids. /coins/markets caps at
+ * 250 ids per request, so larger universes go out as parallel chunks; a chunk
+ * failing only blanks its own ids (caller merges over previous data).
  * Returns { [id]: { tokenPrice, change24h, marketCap } }.
+ * Throws only when every chunk fails.
  */
 export async function fetchTokenMarkets(ids) {
+  // Chunk by both count (API cap: 250) and joined length — CoinGecko ids can
+  // run 50+ chars and the ids= param has to stay inside sane URL limits.
+  const MAX_JOINED = 5_000
+  const chunks = []
+  let current = []
+  let length = 0
+  for (const id of ids) {
+    if (current.length >= 250 || length + id.length > MAX_JOINED) {
+      chunks.push(current)
+      current = []
+      length = 0
+    }
+    current.push(id)
+    length += id.length + 1
+  }
+  if (current.length > 0) chunks.push(current)
+
+  const settled = await Promise.allSettled(chunks.map(fetchMarketsChunk))
+  const map = {}
+  let anyOk = false
+  for (const s of settled) {
+    if (s.status !== 'fulfilled') continue
+    anyOk = true
+    Object.assign(map, s.value)
+  }
+  if (!anyOk) throw new Error('CoinGecko: all chunks failed')
+  return map
+}
+
+async function fetchMarketsChunk(ids) {
   const params = new URLSearchParams({
     vs_currency: 'usd',
     ids: ids.join(','),
