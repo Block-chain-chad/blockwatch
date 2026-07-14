@@ -9,15 +9,25 @@ function ago(ms) {
   return `${Math.round(m / 60)}h ago`
 }
 
-/* Live "Updated Xs ago" label; self-ticks so the rest of the app doesn't re-render. */
+/*
+ * Live "Updated Xs ago" label; self-ticks so the rest of the app doesn't
+ * re-render. Tappable: impatient thumbs can force a refresh even though the
+ * app polls on its own.
+ */
 export default function UpdatedAgo({ className = '' }) {
-  const { lastFetchAt, status, marketOpen } = usePrices()
+  const { lastFetchAt, status, marketOpen, refresh } = usePrices()
   const [, setTick] = useState(0)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     const t = setInterval(() => setTick((n) => n + 1), 1000)
     return () => clearInterval(t)
   }, [])
+
+  // Fresh data arrived → the manual refresh is done.
+  useEffect(() => {
+    setRefreshing(false)
+  }, [lastFetchAt])
 
   if (!lastFetchAt) {
     return (
@@ -30,11 +40,21 @@ export default function UpdatedAgo({ className = '' }) {
   }
 
   const closedNote = marketOpen ? '' : ' · US market closed — stock prices at last close'
+  const label = refreshing
+    ? 'Refreshing…'
+    : status === 'stale'
+      ? `Connection hiccup — showing prices from ${ago(Date.now() - lastFetchAt)}. Retrying…`
+      : `Updated ${ago(Date.now() - lastFetchAt)}${closedNote} · tap to refresh`
+
   return (
-    <div className={`text-xs text-zinc-600 ${className}`}>
-      {status === 'stale'
-        ? `Connection hiccup — showing prices from ${ago(Date.now() - lastFetchAt)}. Retrying…`
-        : `Updated ${ago(Date.now() - lastFetchAt)}${closedNote}`}
-    </div>
+    <button
+      onClick={() => {
+        setRefreshing(true)
+        refresh()
+      }}
+      className={`block w-full text-xs text-zinc-600 transition-colors active:text-zinc-400 ${className}`}
+    >
+      {label}
+    </button>
   )
 }

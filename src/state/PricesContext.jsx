@@ -38,6 +38,7 @@ export function PricesProvider({ children }) {
   })
   const tokenFetchRef = useRef(tokenState.lastFetchAt)
   const stockFetchRef = useRef(stockState.at)
+  const refreshRef = useRef(null)
 
   useEffect(() => {
     let tokenTimer = null
@@ -60,13 +61,13 @@ export function PricesProvider({ children }) {
       }
     }
 
-    async function tickStocks() {
+    async function tickStocks(force = false) {
       // Closed market + reasonably fresh close on hand → skip the network.
       const closedAndFresh =
         !isUsMarketOpen() &&
         stockFetchRef.current &&
         Date.now() - stockFetchRef.current < CLOSED_MARKET_REFRESH_MS
-      if (closedAndFresh) return
+      if (closedAndFresh && !force) return
       try {
         const data = await getStockPrices(UNDERLYING_TICKERS)
         if (cancelled) return
@@ -112,10 +113,15 @@ export function PricesProvider({ children }) {
     }
 
     start()
+    refreshRef.current = () => {
+      tickTokens()
+      tickStocks(true)
+    }
     document.addEventListener('visibilitychange', onVisibility)
     return () => {
       cancelled = true
       stop()
+      refreshRef.current = null
       document.removeEventListener('visibilitychange', onVisibility)
     }
   }, [])
@@ -130,6 +136,7 @@ export function PricesProvider({ children }) {
       status: tokenState.status,
       stocksAt: stockState.at,
       marketOpen: isUsMarketOpen(),
+      refresh: () => refreshRef.current?.(),
     }
   }, [tokenState, stockState])
 

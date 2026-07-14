@@ -1,6 +1,7 @@
 import { premiumPct, PARITY_BAND, isThinlyTraded } from '../lib/prices'
 import { SearchIcon, ChevronRight } from './Icons'
 import PriceText from './PriceText'
+import AssetLogo from './AssetLogo'
 import { formatPrice, formatPct, changeColor } from '../lib/format'
 
 export { formatPrice, formatPct, changeColor }
@@ -44,17 +45,19 @@ export function PremiumPill({ asset }) {
   )
 }
 
-/* One watchlist row: ticker + issuer/chain, stock vs. token price, premium pill. */
+/* One watchlist row: logo, ticker + company name, stock vs. token price, premium pill.
+   Company name over chain jargon in the primary view — recognition first. */
 export function AssetRow({ asset, onOpen }) {
   return (
     <button
       onClick={() => onOpen(asset)}
-      className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors active:bg-zinc-900"
+      className="flex w-full items-center gap-2.5 px-4 py-3 text-left transition-colors active:bg-zinc-900"
     >
+      <AssetLogo asset={asset} size={34} />
       <div className="min-w-0 flex-1">
         <div className="text-[15px] font-semibold text-zinc-100">{asset.ticker}</div>
         <div className="truncate text-xs text-zinc-500">
-          {asset.issuer} · {asset.chain}
+          {asset.name} · {asset.issuer}
           {isThinlyTraded(asset) && <span className="text-zinc-600"> · thin trading</span>}
         </div>
       </div>

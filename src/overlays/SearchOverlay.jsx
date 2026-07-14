@@ -7,6 +7,7 @@ import { fetchNewListings } from '../services/coingecko'
 import { SEED_IDS } from '../data/seedAssets'
 import { formatPrice } from '../lib/format'
 import { SearchIcon, PlusIcon, CheckCircleIcon } from '../components/Icons'
+import AssetLogo from '../components/AssetLogo'
 
 /*
  * Search over the tokenized-asset universe (Home shows only your watchlist;
@@ -31,10 +32,13 @@ function ResultRow({ asset, fallbackTicker, subtitle, pickerFolder, watchlistIds
     <PlusIcon size={20} className="text-accent" />
   )
   const body = (
-    <div className="min-w-0 flex-1">
-      <div className="text-[15px] font-semibold">{asset ? asset.ticker : fallbackTicker}</div>
-      <div className="truncate text-xs text-zinc-500">{subtitle}</div>
-    </div>
+    <>
+      {asset && <AssetLogo asset={asset} size={32} />}
+      <div className="min-w-0 flex-1">
+        <div className="text-[15px] font-semibold">{asset ? asset.ticker : fallbackTicker}</div>
+        <div className="truncate text-xs text-zinc-500">{subtitle}</div>
+      </div>
+    </>
   )
 
   // Picker mode: whole row toggles. Default mode: body opens detail, icon toggles watchlist.
@@ -42,7 +46,7 @@ function ResultRow({ asset, fallbackTicker, subtitle, pickerFolder, watchlistIds
     return (
       <button
         onClick={() => asset && toggle(asset)}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left active:bg-zinc-900"
+        className="flex w-full items-center gap-2.5 px-4 py-3 text-left active:bg-zinc-900"
       >
         {body}
         {asset && icon}
@@ -53,7 +57,7 @@ function ResultRow({ asset, fallbackTicker, subtitle, pickerFolder, watchlistIds
     <div className="flex items-stretch">
       <button
         onClick={() => asset && onOpen(asset)}
-        className="flex min-w-0 flex-1 items-center px-4 py-3 text-left active:bg-zinc-900"
+        className="flex min-w-0 flex-1 items-center gap-2.5 px-4 py-3 text-left active:bg-zinc-900"
       >
         {body}
       </button>

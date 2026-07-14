@@ -10,13 +10,15 @@ import PremiumChart from '../components/PremiumChart'
 import { useChartData, CHART_RANGES } from '../hooks/useChartData'
 import { useStockInfo } from '../hooks/useStockInfo'
 import { formatCompact, timeAgo } from '../lib/format'
-import { premiumPct, isThinlyTraded } from '../lib/prices'
+import { isThinlyTraded } from '../lib/prices'
 import { ChevronLeft, ChevronDown, ShareIcon, PlusIcon, BellIcon, StarIcon } from '../components/Icons'
 import { formatPrice, formatPct, PremiumPill, changeColor } from '../components/shared'
 import PriceText from '../components/PriceText'
 import UpdatedAgo from '../components/UpdatedAgo'
+import AssetLogo from '../components/AssetLogo'
 
 const RANGES = Object.keys(CHART_RANGES)
+const RANGE_WORDS = { '1D': 'today', '1W': 'past week', '1M': 'past month', '3M': 'past 3 months', '1Y': 'past year' }
 
 export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
   const [range, setRange] = useState('1D')
@@ -41,7 +43,6 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
   const chart = useChartData(asset ?? { id: assetId }, range, chartRetry)
   const info = useStockInfo(asset?.underlying)
   if (!asset) return null
-  const p = premiumPct(asset)
   const memberCount = folders.filter((f) => f.assetIds.includes(asset.id)).length
   const alertRule = rules[asset.id]
   const alertLabel = !alertRule
@@ -88,16 +89,34 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
       </header>
 
       <div className="px-4">
-        <div className="text-sm text-zinc-500">
-          {asset.name} · {asset.issuer}
+        <div className="flex items-center gap-3">
+          <AssetLogo asset={asset} size={40} />
+          <div className="min-w-0">
+            <div className="truncate text-sm text-zinc-500">
+              {asset.name} · {asset.issuer}
+            </div>
+            <h1 className="text-2xl font-semibold tracking-tight">{asset.ticker}</h1>
+          </div>
         </div>
-        <h1 className="text-2xl font-semibold tracking-tight">{asset.ticker}</h1>
 
         <div className="mt-3 flex items-end justify-between">
           <div>
             <div className="text-3xl font-semibold">
               <PriceText value={asset.tokenPrice} skeletonWidth="w-28" />
             </div>
+            {(() => {
+              // Robinhood-style range summary: how it's moved over the selected zoom.
+              if (chart.token.length < 2) return null
+              const first = chart.token[0].v
+              const last = chart.token[chart.token.length - 1].v
+              const pct = ((last - first) / first) * 100
+              return (
+                <div className={`mt-1 text-sm font-medium tabular-nums ${changeColor(pct)}`}>
+                  {last >= first ? '▲' : '▼'} {formatPrice(Math.abs(last - first))} ({formatPct(pct)}){' '}
+                  <span className="font-normal text-zinc-500">{RANGE_WORDS[range]}</span>
+                </div>
+              )
+            })()}
             <div className="mt-1 flex items-center gap-2 text-sm text-zinc-500">
               {asset.underlying ? (
                 <span>
@@ -116,11 +135,6 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
           </div>
           <div className="text-right">
             <PremiumPill asset={asset} />
-            {asset.dayChange != null && p != null && (
-              <div className={`mt-1 text-xs tabular-nums ${changeColor(asset.dayChange)}`}>
-                {formatPct(asset.dayChange)} today
-              </div>
-            )}
           </div>
         </div>
       </div>

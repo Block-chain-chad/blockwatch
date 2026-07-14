@@ -161,10 +161,53 @@ async function fetchInfo(kind, ticker) {
   }
 }
 
-/** Company profile: { name, finnhubIndustry, exchange, ipo, marketCapitalization (millions), weburl } */
+/** Company profile: { name, finnhubIndustry, exchange, ipo, marketCapitalization (millions), weburl, logo } */
 export async function getStockProfile(ticker) {
   const p = await fetchInfo('profile', ticker)
   return p && p.name ? p : null
+}
+
+// --- Company logos ----------------------------------------------------------
+// Logo URLs practically never change, so they live in localStorage for 30 days
+// ('' = known-missing, e.g. ETFs — cached too so we don't re-ask every load).
+const LOGO_KEY = 'bw.logos.v1'
+const LOGO_TTL = 30 * 24 * 60 * 60_000
+const logoInflight = new Map()
+
+function readLogoCache() {
+  try {
+    const raw = localStorage.getItem(LOGO_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (parsed?.at && Date.now() - parsed.at < LOGO_TTL) return parsed.data
+    }
+  } catch {
+    // fall through
+  }
+  return null
+}
+
+/** Resolve a company logo URL for a ticker (null when none exists). */
+export async function getLogo(ticker) {
+  if (!ticker) return null
+  const cache = readLogoCache() ?? {}
+  if (ticker in cache) return cache[ticker] || null
+
+  if (logoInflight.has(ticker)) return logoInflight.get(ticker)
+  const promise = (async () => {
+    const profile = await fetchInfo('profile', ticker)
+    const url = profile?.logo || ''
+    try {
+      const current = readLogoCache() ?? {}
+      localStorage.setItem(LOGO_KEY, JSON.stringify({ at: Date.now(), data: { ...current, [ticker]: url } }))
+    } catch {
+      // cache miss is fine
+    }
+    logoInflight.delete(ticker)
+    return url || null
+  })()
+  logoInflight.set(ticker, promise)
+  return promise
 }
 
 /** Latest analyst recommendation counts: { strongBuy, buy, hold, sell, strongSell, period } */
