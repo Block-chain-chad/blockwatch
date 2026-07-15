@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { getStockProfile, getAnalystRecs, getEarnings, getCompanyNews } from '../services/stocks'
+import { getStockProfile, getAnalystRecs, getEarnings, getCompanyNews, getKeyMetrics } from '../services/stocks'
 
-const EMPTY = { loading: false, profile: null, recs: null, earnings: null, news: null }
+const EMPTY = { loading: false, profile: null, recs: null, earnings: null, news: null, metrics: null }
 
 /**
  * Company info for the detail screen (about, analyst ratings, earnings, news).
@@ -24,8 +24,9 @@ export function useStockInfo(underlying) {
       getAnalystRecs(underlying),
       getEarnings(underlying),
       getCompanyNews(underlying),
-    ]).then(([profile, recs, earnings, news]) => {
-      if (!cancelled) setInfo({ loading: false, profile, recs, earnings, news })
+      getKeyMetrics(underlying),
+    ]).then(([profile, recs, earnings, news, metrics]) => {
+      if (!cancelled) setInfo({ loading: false, profile, recs, earnings, news, metrics })
     })
     return () => {
       cancelled = true

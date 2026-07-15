@@ -21,8 +21,23 @@ import AssetLogo from '../components/AssetLogo'
 const RANGES = Object.keys(CHART_RANGES)
 const RANGE_WORDS = { '1D': 'today', '1W': 'past week', '1M': 'past month', '3M': 'past 3 months', '1Y': 'past year' }
 
+/* One row of the Key statistics disclosure; hides itself when the value is missing. */
+function StatRow({ label, value }) {
+  if (value == null) return null
+  return (
+    <div className="flex justify-between">
+      <dt className="text-zinc-500">{label}</dt>
+      <dd className="tabular-nums text-zinc-300">{value}</dd>
+    </div>
+  )
+}
+
+const compactNum = (n) =>
+  Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(n)
+
 export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
   const [range, setRange] = useState('1D')
+  const [statsOpen, setStatsOpen] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [foldersOpen, setFoldersOpen] = useState(false)
   const [alertOpen, setAlertOpen] = useState(false)
@@ -316,6 +331,65 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
                 <div className="text-[11px] text-zinc-500">Industry</div>
                 <div className="mt-0.5 truncate text-sm font-medium">{info.profile.finnhubIndustry}</div>
               </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {asset.underlying && (asset.stockQuote || info.metrics) && (
+        <div className="px-4 pt-6">
+          <div className="rounded-2xl bg-zinc-900/60">
+            <button
+              onClick={() => setStatsOpen((o) => !o)}
+              className="flex w-full items-center justify-between px-4 py-3.5 text-sm font-medium text-zinc-300"
+            >
+              Key statistics
+              <ChevronDown
+                size={18}
+                className={`text-zinc-500 transition-transform ${statsOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+            {statsOpen && (
+              <dl className="space-y-2.5 px-4 pb-4 text-sm">
+                <StatRow
+                  label="Previous close"
+                  value={asset.stockQuote?.prevClose != null ? formatPrice(asset.stockQuote.prevClose) : null}
+                />
+                <StatRow
+                  label="Open"
+                  value={asset.stockQuote?.open != null ? formatPrice(asset.stockQuote.open) : null}
+                />
+                <StatRow
+                  label="Day range"
+                  value={
+                    asset.stockQuote?.dayLow != null && asset.stockQuote?.dayHigh != null
+                      ? `${formatPrice(asset.stockQuote.dayLow)} – ${formatPrice(asset.stockQuote.dayHigh)}`
+                      : null
+                  }
+                />
+                <StatRow
+                  label="52-week range"
+                  value={
+                    info.metrics?.low52 != null && info.metrics?.high52 != null
+                      ? `${formatPrice(info.metrics.low52)} – ${formatPrice(info.metrics.high52)}`
+                      : null
+                  }
+                />
+                <StatRow label="P/E ratio (TTM)" value={info.metrics?.pe != null ? info.metrics.pe.toFixed(1) : null} />
+                <StatRow label="EPS (TTM)" value={info.metrics?.eps != null ? formatPrice(info.metrics.eps) : null} />
+                <StatRow
+                  label="Dividend yield"
+                  value={info.metrics?.divYield != null ? `${info.metrics.divYield.toFixed(2)}%` : null}
+                />
+                <StatRow label="Beta" value={info.metrics?.beta != null ? info.metrics.beta.toFixed(2) : null} />
+                <StatRow
+                  label="Avg volume (10d)"
+                  value={info.metrics?.avgVolume10d != null ? `${compactNum(info.metrics.avgVolume10d)} shares` : null}
+                />
+                <p className="pt-1 text-[11px] leading-relaxed text-zinc-600">
+                  Figures describe {asset.underlying}, the stock this token tracks.
+                </p>
+              </dl>
             )}
           </div>
         </div>

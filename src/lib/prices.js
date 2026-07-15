@@ -39,6 +39,7 @@ export function mergeAssets(seed, priceMap, stockMap) {
       ...s,
       tokenPrice: p?.tokenPrice ?? null,
       stockPrice: q?.price ?? null,
+      stockQuote: q ?? null, // full quote (prevClose/open/day range) for the detail screen
       dayChange: p?.change24h ?? null,
       marketCap: p?.marketCap ?? null,
       volume24h: p?.volume24h ?? null,

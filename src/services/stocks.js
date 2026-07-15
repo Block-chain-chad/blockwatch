@@ -31,7 +31,14 @@ async function fetchFinnhub(ticker) {
   const q = await res.json()
   const price = q.c || q.pc
   if (!price) throw new Error('Finnhub: empty quote')
-  return { price, prevClose: q.pc ?? null, asOf: (q.t || 0) * 1000 || Date.now() }
+  return {
+    price,
+    prevClose: q.pc ?? null,
+    open: q.o || null,
+    dayHigh: q.h || null,
+    dayLow: q.l || null,
+    asOf: (q.t || 0) * 1000 || Date.now(),
+  }
 }
 
 async function fetchYahooDev(ticker) {
@@ -44,6 +51,9 @@ async function fetchYahooDev(ticker) {
   return {
     price: meta.regularMarketPrice,
     prevClose: meta.chartPreviousClose ?? null,
+    open: null, // not in Yahoo's chart meta — dev-only fallback, rows cope
+    dayHigh: meta.regularMarketDayHigh ?? null,
+    dayLow: meta.regularMarketDayLow ?? null,
     asOf: (meta.regularMarketTime || 0) * 1000 || Date.now(),
   }
 }
@@ -54,7 +64,14 @@ async function fetchApiQuote(ticker) {
   const q = await res.json()
   const price = q.c || q.pc
   if (!price) throw new Error('empty quote')
-  return { price, prevClose: q.pc ?? null, asOf: (q.t || 0) * 1000 || Date.now() }
+  return {
+    price,
+    prevClose: q.pc ?? null,
+    open: q.o || null,
+    dayHigh: q.h || null,
+    dayLow: q.l || null,
+    asOf: (q.t || 0) * 1000 || Date.now(),
+  }
 }
 
 const fetchQuote = IS_PROD ? fetchApiQuote : FINNHUB_KEY ? fetchFinnhub : fetchYahooDev
@@ -131,6 +148,7 @@ const DEV_INFO_PATHS = {
   profile: '/stock/profile2',
   recommendation: '/stock/recommendation',
   earnings: '/stock/earnings',
+  metric: '/stock/metric',
 }
 
 function devInfoUrl(kind, symbol) {
@@ -139,7 +157,8 @@ function devInfoUrl(kind, symbol) {
     const from = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10)
     return `https://finnhub.io/api/v1/company-news?symbol=${symbol}&from=${from}&to=${to}&token=${FINNHUB_KEY}`
   }
-  return `https://finnhub.io/api/v1${DEV_INFO_PATHS[kind]}?symbol=${symbol}&token=${FINNHUB_KEY}`
+  const extra = kind === 'metric' ? '&metric=all' : ''
+  return `https://finnhub.io/api/v1${DEV_INFO_PATHS[kind]}?symbol=${symbol}${extra}&token=${FINNHUB_KEY}`
 }
 
 async function fetchInfo(kind, ticker) {
@@ -210,6 +229,28 @@ export async function getLogo(ticker) {
   })()
   logoInflight.set(ticker, promise)
   return promise
+}
+
+/**
+ * Key statistics for the detail screen's Yahoo-style summary. Normalized from
+ * Finnhub's /stock/metric grab-bag; every field is null when the upstream
+ * doesn't report it (common for ETFs), and the whole result is null when
+ * nothing useful came back.
+ */
+export async function getKeyMetrics(ticker) {
+  const data = await fetchInfo('metric', ticker)
+  const m = data?.metric
+  if (!m) return null
+  const stats = {
+    high52: m['52WeekHigh'] ?? null,
+    low52: m['52WeekLow'] ?? null,
+    pe: m.peTTM ?? m.peBasicExclExtraTTM ?? null,
+    eps: m.epsTTM ?? m.epsBasicExclExtraItemsTTM ?? null,
+    divYield: m.dividendYieldIndicatedAnnual ?? null, // already a percent
+    beta: m.beta ?? null,
+    avgVolume10d: m['10DayAverageTradingVolume'] != null ? m['10DayAverageTradingVolume'] * 1e6 : null, // reported in millions of shares
+  }
+  return Object.values(stats).some((v) => v != null) ? stats : null
 }
 
 /** Latest analyst recommendation counts: { strongBuy, buy, hold, sell, strongSell, period } */

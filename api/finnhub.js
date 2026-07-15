@@ -10,6 +10,8 @@ const ALLOWED = {
   earnings: { path: '/stock/earnings', cache: 's-maxage=21600, stale-while-revalidate=86400' },
   // company-news gets its date window computed server-side (last 7 days)
   news: { path: '/company-news', cache: 's-maxage=1800, stale-while-revalidate=3600' },
+  // key statistics (P/E, EPS, 52-week range, beta…) for the detail screen
+  metric: { path: '/stock/metric', cache: 's-maxage=21600, stale-while-revalidate=86400' },
 }
 
 export default async function handler(req, res) {
@@ -27,6 +29,7 @@ export default async function handler(req, res) {
     const from = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10)
     extra = `&from=${from}&to=${to}`
   }
+  if (kind === 'metric') extra = '&metric=all'
 
   try {
     const upstream = await fetch(
