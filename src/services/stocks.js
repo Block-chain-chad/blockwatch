@@ -266,12 +266,12 @@ export async function getEarnings(ticker) {
   return rows.filter((r) => r.actual != null).slice(0, 4)
 }
 
-// Finnhub's feed aggregates many outlets (much of it syndicated via Yahoo).
-// Rank the recognizable wires first so the section leads with credible
-// bylines; unranked sources are filler, not excluded.
+// Primary headline source: Google News RSS, which indexes the major outlets
+// directly. STRICT whitelist — an unranked source doesn't appear at all
+// (Google's search results include endless SEO blogs). Rank orders the list.
 const NEWS_SOURCE_RANK = {
-  reuters: 3,
   bloomberg: 3,
+  reuters: 3,
   cnbc: 3,
   'the wall street journal': 3,
   'financial times': 3,
@@ -279,29 +279,80 @@ const NEWS_SOURCE_RANK = {
   barrons: 2,
   marketwatch: 2,
   'investor’s business daily': 2,
+  "investor's business daily": 2,
+  fortune: 2,
+  'yahoo finance': 1,
   forbes: 1,
   'business insider': 1,
-  benzinga: 1,
+  'the motley fool': 1,
+  'seeking alpha': 1,
   thestreet: 1,
+  benzinga: 1,
 }
 const newsRank = (source) => NEWS_SOURCE_RANK[(source || '').toLowerCase()] ?? 0
 
-/** Last week's headlines for the underlying: [{ id, headline, source, url, at }],
- *  credible wires first, deduped by headline. */
-export async function getCompanyNews(ticker) {
+function dedupeRankSlice(items) {
+  const seen = new Set()
+  const out = []
+  for (const i of [...items].sort((a, b) => newsRank(b.source) - newsRank(a.source) || b.at - a.at)) {
+    const key = i.headline.toLowerCase().trim()
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(i)
+  }
+  return out.slice(0, 5)
+}
+
+// 30-minute per-ticker cache: headlines don't move faster, and the section
+// re-fetches every time a detail screen opens.
+const newsCache = new Map()
+const NEWS_TTL = 30 * 60_000
+
+async function fetchGoogleNews(ticker) {
+  const url = IS_PROD
+    ? `${API_BASE}/api/news?symbol=${encodeURIComponent(ticker)}`
+    : `/gnews/rss/search?q=${encodeURIComponent(`"${ticker}" stock`)}&hl=en-US&gl=US&ceid=US:en`
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`news ${res.status}`)
+  const doc = new DOMParser().parseFromString(await res.text(), 'text/xml')
+  const items = [...doc.querySelectorAll('item')]
+    .map((el) => {
+      const source = el.querySelector('source')?.textContent?.trim() ?? ''
+      // Google appends " - Source" to titles; drop it, the source gets its own byline.
+      const rawTitle = el.querySelector('title')?.textContent ?? ''
+      const suffix = ` - ${source}`
+      const headline = rawTitle.toLowerCase().endsWith(suffix.toLowerCase())
+        ? rawTitle.slice(0, rawTitle.length - suffix.length).trim()
+        : rawTitle.trim()
+      const link = el.querySelector('link')?.textContent?.trim() ?? ''
+      return {
+        id: el.querySelector('guid')?.textContent || link,
+        headline,
+        source,
+        url: link,
+        at: Date.parse(el.querySelector('pubDate')?.textContent ?? '') || 0,
+      }
+    })
+    .filter(
+      (i) =>
+        i.url &&
+        newsRank(i.source) > 0 &&
+        // real sentences only — feeds occasionally leak template tokens
+        // like "META_TITLE_QUOTE" as titles
+        i.headline.includes(' ') &&
+        i.headline.length >= 15 &&
+        // match the section's promise: last week's headlines
+        i.at > Date.now() - 7 * 86_400_000
+    )
+  return dedupeRankSlice(items)
+}
+
+/** Finnhub aggregate feed — fallback when Google News is unreachable or thin. */
+async function getFinnhubNews(ticker) {
   const rows = await fetchInfo('news', ticker)
   if (!Array.isArray(rows)) return null
-  const seen = new Set()
   const items = rows
-    .filter((r) => {
-      if (!r.headline || !r.url) return false
-      const key = r.headline.toLowerCase().trim()
-      if (seen.has(key)) return false
-      seen.add(key)
-      return true
-    })
-    .sort((a, b) => newsRank(b.source) - newsRank(a.source) || (b.datetime || 0) - (a.datetime || 0))
-    .slice(0, 5)
+    .filter((r) => r.headline && r.url)
     .map((r) => ({
       id: r.id ?? r.url,
       headline: r.headline,
@@ -309,7 +360,27 @@ export async function getCompanyNews(ticker) {
       url: r.url,
       at: (r.datetime || 0) * 1000,
     }))
-  return items.length > 0 ? items : null
+  const ranked = dedupeRankSlice(items)
+  // Whitelist rejected everything (small caps often only get aggregator
+  // coverage) — better filler than an empty section.
+  return ranked.length > 0 ? ranked : items.slice(0, 5).length > 0 ? items.slice(0, 5) : null
+}
+
+/** Last week's headlines for the underlying: [{ id, headline, source, url, at }],
+ *  major outlets only when available, deduped, credible wires first. */
+export async function getCompanyNews(ticker) {
+  const hit = newsCache.get(ticker)
+  if (hit && Date.now() - hit.at < NEWS_TTL) return hit.data
+  let items = null
+  try {
+    const google = await fetchGoogleNews(ticker)
+    if (google.length >= 2) items = google
+  } catch {
+    // unofficial feed — fall through to Finnhub
+  }
+  if (!items) items = await getFinnhubNews(ticker)
+  newsCache.set(ticker, { at: Date.now(), data: items })
+  return items
 }
 
 export function loadStockCache() {

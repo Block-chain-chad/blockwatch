@@ -18,6 +18,13 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/yfin/, ''),
       },
+      // Dev-only relay for Google News RSS (headlines; no CORS upstream).
+      // Production uses /api/news instead.
+      '/gnews': {
+        target: 'https://news.google.com',
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/gnews/, ''),
+      },
     },
   },
 })
