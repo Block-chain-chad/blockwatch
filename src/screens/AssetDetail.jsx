@@ -85,6 +85,12 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
     ? assets.filter((a) => a.underlying === asset.underlying && a.id !== asset.id)
     : []
 
+  // Key statistics has a token group and a stock group; either can be absent
+  // (token-only products have no stock side, fresh assets may lack data).
+  const ts = asset.tokenStats
+  const hasTokenStats = ts != null && (ts.high24h != null || ts.ath != null || ts.supply != null)
+  const hasStockStats = asset.underlying && (asset.stockQuote || info.metrics)
+
   return (
     <div className="fixed inset-0 z-30 mx-auto max-w-md overflow-y-auto bg-zinc-950 pb-10">
       <header className="sticky top-0 z-10 flex items-center justify-between bg-zinc-950/90 px-2 py-3 backdrop-blur">
@@ -336,7 +342,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
         </div>
       )}
 
-      {asset.underlying && (asset.stockQuote || info.metrics) && (
+      {(hasTokenStats || hasStockStats) && (
         <div className="px-4 pt-6">
           <div className="rounded-2xl bg-zinc-900/60">
             <button
@@ -351,6 +357,38 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
             </button>
             {statsOpen && (
               <dl className="space-y-2.5 px-4 pb-4 text-sm">
+                {hasTokenStats && (
+                  <>
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-zinc-600">
+                      {asset.ticker} token
+                    </div>
+                    <StatRow
+                      label="24h range"
+                      value={
+                        ts.low24h != null && ts.high24h != null
+                          ? `${formatPrice(ts.low24h)} – ${formatPrice(ts.high24h)}`
+                          : null
+                      }
+                    />
+                    <StatRow
+                      label="All-time high"
+                      value={
+                        ts.ath != null
+                          ? `${formatPrice(ts.ath)}${ts.athChangePct != null ? ` (${ts.athChangePct.toFixed(1)}%)` : ''}`
+                          : null
+                      }
+                    />
+                    <StatRow
+                      label="Circulating supply"
+                      value={ts.supply != null ? `${compactNum(ts.supply)} tokens` : null}
+                    />
+                  </>
+                )}
+                {hasStockStats && (
+                  <div className={`text-[11px] font-semibold uppercase tracking-wide text-zinc-600 ${hasTokenStats ? 'pt-2' : ''}`}>
+                    {asset.underlying} stock
+                  </div>
+                )}
                 <StatRow
                   label="Previous close"
                   value={asset.stockQuote?.prevClose != null ? formatPrice(asset.stockQuote.prevClose) : null}
@@ -386,9 +424,11 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
                   label="Avg volume (10d)"
                   value={info.metrics?.avgVolume10d != null ? `${compactNum(info.metrics.avgVolume10d)} shares` : null}
                 />
-                <p className="pt-1 text-[11px] leading-relaxed text-zinc-600">
-                  Figures describe {asset.underlying}, the stock this token tracks.
-                </p>
+                {hasStockStats && (
+                  <p className="pt-1 text-[11px] leading-relaxed text-zinc-600">
+                    Stock figures describe {asset.underlying}, the share this token tracks.
+                  </p>
+                )}
               </dl>
             )}
           </div>

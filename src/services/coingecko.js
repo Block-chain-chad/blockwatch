@@ -68,6 +68,12 @@ async function fetchMarketsChunk(ids) {
       change24h: row.price_change_percentage_24h ?? null,
       marketCap: row.market_cap ?? null,
       volume24h: row.total_volume ?? null,
+      // Token-side key statistics (detail screen) — free riders on this call.
+      high24h: row.high_24h ?? null,
+      low24h: row.low_24h ?? null,
+      ath: row.ath ?? null,
+      athChangePct: row.ath_change_percentage ?? null,
+      supply: row.circulating_supply ?? null,
     }
   }
   return map
