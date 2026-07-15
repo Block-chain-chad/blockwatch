@@ -266,12 +266,41 @@ export async function getEarnings(ticker) {
   return rows.filter((r) => r.actual != null).slice(0, 4)
 }
 
-/** Last week's headlines for the underlying: [{ id, headline, source, url, at }] */
+// Finnhub's feed aggregates many outlets (much of it syndicated via Yahoo).
+// Rank the recognizable wires first so the section leads with credible
+// bylines; unranked sources are filler, not excluded.
+const NEWS_SOURCE_RANK = {
+  reuters: 3,
+  bloomberg: 3,
+  cnbc: 3,
+  'the wall street journal': 3,
+  'financial times': 3,
+  "barron's": 2,
+  barrons: 2,
+  marketwatch: 2,
+  'investor’s business daily': 2,
+  forbes: 1,
+  'business insider': 1,
+  benzinga: 1,
+  thestreet: 1,
+}
+const newsRank = (source) => NEWS_SOURCE_RANK[(source || '').toLowerCase()] ?? 0
+
+/** Last week's headlines for the underlying: [{ id, headline, source, url, at }],
+ *  credible wires first, deduped by headline. */
 export async function getCompanyNews(ticker) {
   const rows = await fetchInfo('news', ticker)
   if (!Array.isArray(rows)) return null
+  const seen = new Set()
   const items = rows
-    .filter((r) => r.headline && r.url)
+    .filter((r) => {
+      if (!r.headline || !r.url) return false
+      const key = r.headline.toLowerCase().trim()
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    .sort((a, b) => newsRank(b.source) - newsRank(a.source) || (b.datetime || 0) - (a.datetime || 0))
     .slice(0, 5)
     .map((r) => ({
       id: r.id ?? r.url,

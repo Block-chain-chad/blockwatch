@@ -32,6 +32,17 @@ function StatRow({ label, value }) {
   )
 }
 
+/* One row of the side-by-side comparison grid: label, stock cell, token cell. */
+function CompareRow({ label, stock, token }) {
+  return (
+    <>
+      <div className="text-zinc-500">{label}</div>
+      <div className="text-right text-[13px] leading-tight tabular-nums text-zinc-300">{stock ?? '—'}</div>
+      <div className="text-right text-[13px] leading-tight tabular-nums text-zinc-300">{token ?? '—'}</div>
+    </>
+  )
+}
+
 const compactNum = (n) =>
   Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(n)
 
@@ -90,6 +101,9 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
   const ts = asset.tokenStats
   const hasTokenStats = ts != null && (ts.high24h != null || ts.ath != null || ts.supply != null)
   const hasStockStats = asset.underlying && (asset.stockQuote || info.metrics)
+  // Both sides present → the shared figures render as a side-by-side grid
+  // (the app's whole thesis in table form); leftovers list underneath.
+  const bothSides = hasTokenStats && hasStockStats
 
   return (
     <div className="fixed inset-0 z-30 mx-auto max-w-md overflow-y-auto bg-zinc-950 pb-10">
@@ -356,80 +370,142 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
               />
             </button>
             {statsOpen && (
-              <dl className="space-y-2.5 px-4 pb-4 text-sm">
-                {hasTokenStats && (
-                  <>
-                    <div className="text-[11px] font-semibold uppercase tracking-wide text-zinc-600">
+              <div className="px-4 pb-4 text-sm">
+                {bothSides && (
+                  <div className="grid grid-cols-[1.1fr_1fr_1fr] items-center gap-x-3 gap-y-2.5 pb-1">
+                    <div />
+                    <div className="text-right text-[10px] font-semibold uppercase tracking-wide text-zinc-600">
+                      {asset.underlying} stock
+                    </div>
+                    <div className="text-right text-[10px] font-semibold uppercase tracking-wide text-zinc-600">
                       {asset.ticker} token
                     </div>
-                    <StatRow
-                      label="24h range"
-                      value={
-                        ts.low24h != null && ts.high24h != null
-                          ? `${formatPrice(ts.low24h)} – ${formatPrice(ts.high24h)}`
-                          : null
+                    <CompareRow
+                      label="Price"
+                      stock={asset.stockPrice != null ? formatPrice(asset.stockPrice) : null}
+                      token={asset.tokenPrice != null ? formatPrice(asset.tokenPrice) : null}
+                    />
+                    <CompareRow
+                      label="Range (1d)"
+                      stock={
+                        asset.stockQuote?.dayLow != null && asset.stockQuote?.dayHigh != null ? (
+                          <>
+                            {formatPrice(asset.stockQuote.dayLow)}
+                            <br />– {formatPrice(asset.stockQuote.dayHigh)}
+                          </>
+                        ) : null
+                      }
+                      token={
+                        ts.low24h != null && ts.high24h != null ? (
+                          <>
+                            {formatPrice(ts.low24h)}
+                            <br />– {formatPrice(ts.high24h)}
+                          </>
+                        ) : null
                       }
                     />
-                    <StatRow
-                      label="All-time high"
-                      value={
-                        ts.ath != null
-                          ? `${formatPrice(ts.ath)}${ts.athChangePct != null ? ` (${ts.athChangePct.toFixed(1)}%)` : ''}`
+                    <CompareRow
+                      label="Market cap"
+                      stock={
+                        info.profile?.marketCapitalization > 0
+                          ? formatCompact(info.profile.marketCapitalization * 1e6)
                           : null
                       }
+                      token={asset.marketCap != null ? formatCompact(asset.marketCap) : null}
                     />
-                    <StatRow
-                      label="Circulating supply"
-                      value={ts.supply != null ? `${compactNum(ts.supply)} tokens` : null}
+                    <CompareRow
+                      label="Volume"
+                      stock={
+                        info.metrics?.avgVolume10d != null
+                          ? `${compactNum(info.metrics.avgVolume10d)} sh`
+                          : null
+                      }
+                      token={asset.volume24h != null ? formatCompact(asset.volume24h) : null}
                     />
-                  </>
-                )}
-                {hasStockStats && (
-                  <div className={`text-[11px] font-semibold uppercase tracking-wide text-zinc-600 ${hasTokenStats ? 'pt-2' : ''}`}>
-                    {asset.underlying} stock
                   </div>
                 )}
-                <StatRow
-                  label="Previous close"
-                  value={asset.stockQuote?.prevClose != null ? formatPrice(asset.stockQuote.prevClose) : null}
-                />
-                <StatRow
-                  label="Open"
-                  value={asset.stockQuote?.open != null ? formatPrice(asset.stockQuote.open) : null}
-                />
-                <StatRow
-                  label="Day range"
-                  value={
-                    asset.stockQuote?.dayLow != null && asset.stockQuote?.dayHigh != null
-                      ? `${formatPrice(asset.stockQuote.dayLow)} – ${formatPrice(asset.stockQuote.dayHigh)}`
-                      : null
-                  }
-                />
-                <StatRow
-                  label="52-week range"
-                  value={
-                    info.metrics?.low52 != null && info.metrics?.high52 != null
-                      ? `${formatPrice(info.metrics.low52)} – ${formatPrice(info.metrics.high52)}`
-                      : null
-                  }
-                />
-                <StatRow label="P/E ratio (TTM)" value={info.metrics?.pe != null ? info.metrics.pe.toFixed(1) : null} />
-                <StatRow label="EPS (TTM)" value={info.metrics?.eps != null ? formatPrice(info.metrics.eps) : null} />
-                <StatRow
-                  label="Dividend yield"
-                  value={info.metrics?.divYield != null ? `${info.metrics.divYield.toFixed(2)}%` : null}
-                />
-                <StatRow label="Beta" value={info.metrics?.beta != null ? info.metrics.beta.toFixed(2) : null} />
-                <StatRow
-                  label="Avg volume (10d)"
-                  value={info.metrics?.avgVolume10d != null ? `${compactNum(info.metrics.avgVolume10d)} shares` : null}
-                />
-                {hasStockStats && (
-                  <p className="pt-1 text-[11px] leading-relaxed text-zinc-600">
-                    Stock figures describe {asset.underlying}, the share this token tracks.
-                  </p>
-                )}
-              </dl>
+
+                <dl className={`space-y-2.5 ${bothSides ? 'pt-2' : ''}`}>
+                  {hasTokenStats && (
+                    <>
+                      <div className="text-[11px] font-semibold uppercase tracking-wide text-zinc-600">
+                        {asset.ticker} token
+                      </div>
+                      {!bothSides && (
+                        <StatRow
+                          label="24h range"
+                          value={
+                            ts.low24h != null && ts.high24h != null
+                              ? `${formatPrice(ts.low24h)} – ${formatPrice(ts.high24h)}`
+                              : null
+                          }
+                        />
+                      )}
+                      <StatRow
+                        label="All-time high"
+                        value={
+                          ts.ath != null
+                            ? `${formatPrice(ts.ath)}${ts.athChangePct != null ? ` (${ts.athChangePct.toFixed(1)}%)` : ''}`
+                            : null
+                        }
+                      />
+                      <StatRow
+                        label="Circulating supply"
+                        value={ts.supply != null ? `${compactNum(ts.supply)} tokens` : null}
+                      />
+                    </>
+                  )}
+                  {hasStockStats && (
+                    <div className={`text-[11px] font-semibold uppercase tracking-wide text-zinc-600 ${hasTokenStats ? 'pt-2' : ''}`}>
+                      {asset.underlying} stock
+                    </div>
+                  )}
+                  <StatRow
+                    label="Previous close"
+                    value={asset.stockQuote?.prevClose != null ? formatPrice(asset.stockQuote.prevClose) : null}
+                  />
+                  <StatRow
+                    label="Open"
+                    value={asset.stockQuote?.open != null ? formatPrice(asset.stockQuote.open) : null}
+                  />
+                  {!bothSides && (
+                    <StatRow
+                      label="Day range"
+                      value={
+                        asset.stockQuote?.dayLow != null && asset.stockQuote?.dayHigh != null
+                          ? `${formatPrice(asset.stockQuote.dayLow)} – ${formatPrice(asset.stockQuote.dayHigh)}`
+                          : null
+                      }
+                    />
+                  )}
+                  <StatRow
+                    label="52-week range"
+                    value={
+                      info.metrics?.low52 != null && info.metrics?.high52 != null
+                        ? `${formatPrice(info.metrics.low52)} – ${formatPrice(info.metrics.high52)}`
+                        : null
+                    }
+                  />
+                  <StatRow label="P/E ratio (TTM)" value={info.metrics?.pe != null ? info.metrics.pe.toFixed(1) : null} />
+                  <StatRow label="EPS (TTM)" value={info.metrics?.eps != null ? formatPrice(info.metrics.eps) : null} />
+                  <StatRow
+                    label="Dividend yield"
+                    value={info.metrics?.divYield != null ? `${info.metrics.divYield.toFixed(2)}%` : null}
+                  />
+                  <StatRow label="Beta" value={info.metrics?.beta != null ? info.metrics.beta.toFixed(2) : null} />
+                  {!bothSides && (
+                    <StatRow
+                      label="Avg volume (10d)"
+                      value={info.metrics?.avgVolume10d != null ? `${compactNum(info.metrics.avgVolume10d)} shares` : null}
+                    />
+                  )}
+                  {hasStockStats && (
+                    <p className="pt-1 text-[11px] leading-relaxed text-zinc-600">
+                      Stock figures describe {asset.underlying}, the share this token tracks.
+                    </p>
+                  )}
+                </dl>
+              </div>
             )}
           </div>
         </div>
