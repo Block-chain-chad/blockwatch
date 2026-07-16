@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAsset, usePrices, useAssetSubscription } from '../state/PricesContext'
+import { recordView } from '../lib/recentViews'
 import { ASSETS } from '../data/universe'
 import { useFolders } from '../state/FoldersContext'
 import { useAlerts } from '../state/AlertsContext'
@@ -75,6 +76,11 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
     ? ASSETS.filter((a) => a.underlying === staticAsset.underlying).map((a) => a.id)
     : [assetId]
   useAssetSubscription(`detail:${assetId}`, subIds)
+
+  // Feed the search overlay's "Recently viewed" shelf.
+  useEffect(() => {
+    recordView(assetId)
+  }, [assetId])
 
   const { folders, watchlistIds, toggleWatchlist } = useFolders()
   const { rules } = useAlerts()

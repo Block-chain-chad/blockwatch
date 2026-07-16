@@ -51,7 +51,7 @@ export default function DualLineChart({
     return <div className="mx-1 h-[204px] animate-pulse rounded-2xl bg-zinc-900" />
   }
 
-  if (error || token.length < 2) {
+  if (error) {
     return (
       <div className="mx-1 flex h-[204px] flex-col items-center justify-center rounded-2xl bg-zinc-900/60 px-6 text-center">
         <p className="text-sm text-zinc-400">
@@ -63,6 +63,20 @@ export default function DualLineChart({
         >
           Try again
         </button>
+      </div>
+    )
+  }
+
+  // Fetch succeeded but there's nothing to draw: the token simply didn't
+  // trade enough in this window. Truth beats a fake error — and the range
+  // pills sit right below this box.
+  if (token.length < 2) {
+    return (
+      <div className="mx-1 flex h-[204px] flex-col items-center justify-center rounded-2xl bg-zinc-900/60 px-6 text-center">
+        <p className="text-sm text-zinc-400">
+          Not enough trading activity to chart this range — this token trades
+          thinly. Try a longer range below.
+        </p>
       </div>
     )
   }
