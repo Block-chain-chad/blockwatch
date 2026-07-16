@@ -94,10 +94,9 @@ export default function App() {
           {showSearch && (
             <SearchOverlay
               onClose={() => setShowSearch(false)}
-              onOpenAsset={(a) => {
-                setShowSearch(false)
-                setOpenAssetId(a.id)
-              }}
+              // Search stays mounted while the detail opens on top of it, so
+              // Back lands on the results the user was just looking at.
+              onOpenAsset={(a) => setOpenAssetId(a.id)}
             />
           )}
           {showProfile && (
