@@ -34,6 +34,24 @@ const welcomeHtml = (siteUrl, siteHost) => `
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method not allowed' })
 
+  // Cheap abuse gate: browsers always send an Origin header on POSTs, and it
+  // must be this deployment. Blocks naked curl-spam from burning the Resend
+  // quota. Not bulletproof (Origin is forgeable) — it raises the floor, the
+  // idempotent RPC and Resend's own limits do the rest.
+  // NOTE for the future native app: its origin (capacitor://localhost) will
+  // need adding here before the waitlist works in-app.
+  const origin = req.headers.origin ?? ''
+  const originHost = (() => {
+    try {
+      return new URL(origin).host
+    } catch {
+      return null
+    }
+  })()
+  if (!originHost || originHost !== req.headers.host) {
+    return res.status(403).json({ error: 'forbidden' })
+  }
+
   const email = String(req.body?.email ?? '').trim().toLowerCase()
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || email.length > 254) {
     return res.status(400).json({ error: 'invalid email' })
