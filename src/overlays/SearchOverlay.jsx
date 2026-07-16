@@ -5,7 +5,7 @@ import { useFolders } from '../state/FoldersContext'
 import { track } from '../services/analytics'
 import { fetchNewListings } from '../services/coingecko'
 import { ASSET_IDS } from '../data/universe'
-import { formatPrice } from '../lib/format'
+import { formatPrice, formatPct, changeColor } from '../lib/format'
 import { isThinlyTraded } from '../lib/prices'
 import { getRecentViews } from '../lib/recentViews'
 import { SearchIcon, PlusIcon, CheckCircleIcon, CloseIcon } from '../components/Icons'
@@ -48,7 +48,7 @@ function popularPick(assets, underlying) {
  * used by "Add assets" inside a folder.
  */
 
-function ResultRow({ asset, fallbackTicker, subtitle, pickerFolder, watchlistIds, toggle, onOpen }) {
+function ResultRow({ asset, fallbackTicker, subtitle, changePct, pickerFolder, watchlistIds, toggle, onOpen }) {
   const included = asset
     ? pickerFolder
       ? pickerFolder.assetIds.includes(asset.id)
@@ -69,8 +69,13 @@ function ResultRow({ asset, fallbackTicker, subtitle, pickerFolder, watchlistIds
         <div className="truncate text-xs text-zinc-500">{subtitle}</div>
       </div>
       {asset?.tokenPrice != null && (
-        <div className="shrink-0 text-right text-[13px] tabular-nums text-zinc-300">
-          {formatPrice(asset.tokenPrice)}
+        <div className="shrink-0 text-right">
+          <div className="text-[13px] tabular-nums text-zinc-300">{formatPrice(asset.tokenPrice)}</div>
+          {changePct != null && (
+            <div className={`text-[11px] tabular-nums ${changeColor(changePct)}`}>
+              {formatPct(changePct)}
+            </div>
+          )}
         </div>
       )}
     </>
@@ -144,6 +149,16 @@ export default function SearchOverlay({ onClose, onOpenAsset, pickerFolderId = n
         .map((id) => assets.find((a) => a.id === id))
         .filter(Boolean)
 
+  // Biggest liquid 24h movers — discovery for a 700-asset universe. Data only
+  // exists for polled assets (core by cap + subscribed), which is exactly the
+  // liquid slice worth surfacing anyway.
+  const movers = q
+    ? []
+    : assets
+        .filter((a) => a.dayChange != null && a.tokenPrice != null && !isThinlyTraded(a))
+        .sort((x, y) => Math.abs(y.dayChange) - Math.abs(x.dayChange))
+        .slice(0, 5)
+
   // Log settled searches (debounced). Misses are market intelligence — they
   // tell us what people want tokenized next.
   useEffect(() => {
@@ -216,6 +231,24 @@ export default function SearchOverlay({ onClose, onOpenAsset, pickerFolderId = n
                       key={a.id}
                       asset={a}
                       subtitle={`${a.name} — ${a.issuer}${a.chain ? `, ${a.chain}` : ''}`}
+                      {...rowProps}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+            {movers.length > 0 && (
+              <>
+                <h3 className="px-4 pb-2 pt-4 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  Top movers (24h)
+                </h3>
+                <div className="divide-y divide-zinc-900">
+                  {movers.map((a) => (
+                    <ResultRow
+                      key={a.id}
+                      asset={a}
+                      subtitle={`${a.name} — ${a.issuer}${a.chain ? `, ${a.chain}` : ''}`}
+                      changePct={a.dayChange}
                       {...rowProps}
                     />
                   ))}

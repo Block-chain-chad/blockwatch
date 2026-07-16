@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Header, { AvatarButton } from '../components/Header'
 import { usePrices, useAssetSubscription } from '../state/PricesContext'
 import { useFolders, useFolder } from '../state/FoldersContext'
+import { useSparklines } from '../hooks/useSparklines'
 import { folderDayChange } from '../lib/prices'
 import {
   FolderIcon,
@@ -139,6 +140,7 @@ export function FolderDetail({ folderId, onBack, onOpenProfile, onOpenAsset }) {
 
   // Member rows show premium pills — quotes only flow for subscribed assets.
   useAssetSubscription(`folder:${folderId}`, folder?.assetIds ?? [])
+  const sparks = useSparklines(folder?.assetIds ?? [])
 
   if (!folder) return null // deleted (and not undone) — App routes back to the list
 
@@ -187,7 +189,7 @@ export function FolderDetail({ folderId, onBack, onOpenProfile, onOpenAsset }) {
 
       <div className="mt-1 divide-y divide-zinc-900">
         {visible.map((a) => (
-          <AssetRow key={a.id} asset={a} onOpen={onOpenAsset} />
+          <AssetRow key={a.id} asset={a} onOpen={onOpenAsset} spark={sparks[a.id]} />
         ))}
       </div>
 

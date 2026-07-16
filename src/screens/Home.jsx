@@ -5,6 +5,7 @@ import OnboardingTip from '../components/OnboardingTip'
 import { MoonIcon } from '../components/Icons'
 import { usePrices, useAssetSubscription } from '../state/PricesContext'
 import { useFolders } from '../state/FoldersContext'
+import { useSparklines } from '../hooks/useSparklines'
 import { premiumPct, isThinlyTraded } from '../lib/prices'
 import {
   AssetRow,
@@ -60,6 +61,7 @@ export default function Home({ onOpenProfile, onOpenAsset, onOpenSearch }) {
   // Watchlist rows need stock quotes for their premium pills — quotes only
   // flow for subscribed assets.
   useAssetSubscription('home-watchlist', watchlistIds)
+  const sparks = useSparklines(watchlistIds)
 
   // Home is YOUR watchlist, not the whole universe — the directory lives
   // behind search. Metric cards reflect the watchlist too.
@@ -137,7 +139,7 @@ export default function Home({ onOpenProfile, onOpenAsset, onOpenSearch }) {
 
       <div className="mt-1 divide-y divide-zinc-900">
         {visible.map((a) => (
-          <AssetRow key={a.id} asset={a} onOpen={onOpenAsset} />
+          <AssetRow key={a.id} asset={a} onOpen={onOpenAsset} spark={sparks[a.id]} />
         ))}
       </div>
 

@@ -79,6 +79,38 @@ async function fetchMarketsChunk(ids) {
   return map
 }
 
+// --- 7-day sparklines (watchlist rows) ---------------------------------------
+// One extra /coins/markets call with sparkline=true, refreshed slowly (the
+// hook caches 30 min) — week-long lines don't move fast. Downsampled to ~40
+// points; a row's sparkline is 56px wide, hourly resolution is wasted there.
+
+function downsample(points, target = 40) {
+  if (!Array.isArray(points) || points.length <= target) return points ?? null
+  const step = (points.length - 1) / (target - 1)
+  return Array.from({ length: target }, (_, i) => points[Math.round(i * step)])
+}
+
+/** Fetch 7d sparkline arrays: { [id]: number[] }. Small id lists only. */
+export async function fetchSparklines(ids) {
+  const params = new URLSearchParams({
+    vs_currency: 'usd',
+    ids: ids.slice(0, 100).join(','),
+    sparkline: 'true',
+    per_page: String(Math.min(ids.length, 100)),
+  })
+  const headers = { accept: 'application/json' }
+  if (DEMO_KEY) headers['x-cg-demo-api-key'] = DEMO_KEY
+  const res = await fetch(`${API_BASE}/coins/markets?${params}`, { headers })
+  if (!res.ok) throw new Error(`CoinGecko sparkline ${res.status}`)
+  const rows = await res.json()
+  const map = {}
+  for (const row of rows) {
+    const points = downsample(row.sparkline_in_7d?.price)
+    if (points && points.length >= 2) map[row.id] = points
+  }
+  return map
+}
+
 // --- Price history (for the detail chart) ---------------------------------
 // Cached in memory for 5 minutes per (coin, range) so flipping ranges doesn't
 // burn rate limit.

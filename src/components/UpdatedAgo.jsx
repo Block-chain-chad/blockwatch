@@ -46,6 +46,9 @@ export default function UpdatedAgo({ className = '' }) {
       ? `Connection hiccup — showing prices from ${ago(Date.now() - lastFetchAt)}. Retrying…`
       : `Updated ${ago(Date.now() - lastFetchAt)}${closedNote} · tap to refresh`
 
+  // Breathing dot: green while the feed is fresh, gray when it isn't.
+  const live = status === 'live' && Date.now() - lastFetchAt < 90_000
+
   return (
     <button
       onClick={() => {
@@ -54,6 +57,12 @@ export default function UpdatedAgo({ className = '' }) {
       }}
       className={`block w-full text-xs text-zinc-600 transition-colors active:text-zinc-400 ${className}`}
     >
+      <span
+        aria-hidden="true"
+        className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle ${
+          live ? 'animate-pulse bg-gain' : 'bg-zinc-700'
+        }`}
+      />
       {label}
     </button>
   )
