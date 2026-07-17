@@ -8,25 +8,37 @@
 // in Resend for this). A missing RESEND_API_KEY degrades gracefully: joins
 // still work, welcomes just don't send.
 
-const welcomeHtml = (siteUrl, siteHost) => `
+const welcomeHtml = (siteUrl, siteHost, position) => `
 <div style="font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;color:#18181b">
-  <div style="font-size:15px;font-weight:700;letter-spacing:-0.2px;margin-bottom:24px">BlockWatch</div>
+  <div style="font-size:15px;font-weight:700;letter-spacing:-0.2px;margin-bottom:24px">
+    <span style="color:#0d9488">▲</span> BlockWatch
+  </div>
   <h1 style="font-size:22px;margin:0 0 12px">You're on the list ✓</h1>
+  ${
+    Number.isFinite(position) && position > 0
+      ? `<p style="font-size:15px;line-height:1.6;color:#52525b;margin:0 0 12px">
+    You're <strong style="color:#18181b">#${position}</strong> in line. Early
+    counts for something around here.
+  </p>`
+      : ''
+  }
   <p style="font-size:15px;line-height:1.6;color:#52525b;margin:0 0 12px">
     Trading on BlockWatch is coming. You'll get one email from us the moment it
-    opens — nothing else in between.
+    opens — nothing else in between, no newsletters, no noise.
   </p>
   <p style="font-size:15px;line-height:1.6;color:#52525b;margin:0 0 24px">
-    Meanwhile, the tracker is free: live tokenized stock prices, side by side
-    with the real thing.
+    Meanwhile, the tracker is free: 700+ tokenized stocks, live, side by side
+    with the real thing — premiums, gaps, and the market that trades while
+    Wall Street sleeps.
   </p>
   <a href="${siteUrl}"
      style="display:inline-block;background:#0d9488;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:12px 24px;border-radius:10px">
     Open BlockWatch
   </a>
   <p style="font-size:12px;line-height:1.6;color:#a1a1aa;margin:32px 0 0">
-    You're receiving this because this address joined the waitlist at
-    ${siteHost}. Wasn't you? Just ignore this email.
+    You're receiving this one-time email because this address joined the
+    waitlist at ${siteHost}. Wasn't you? Just ignore this — you won't hear
+    from us again.
   </p>
 </div>
 `
@@ -98,7 +110,7 @@ export default async function handler(req, res) {
           from: 'BlockWatch <contact@blockwatch.app>',
           to: [email],
           subject: "You're on the BlockWatch waitlist",
-          html: welcomeHtml(siteUrl, siteHost),
+          html: welcomeHtml(siteUrl, siteHost, Number(position)),
         }),
       })
       if (!sendRes.ok) {
