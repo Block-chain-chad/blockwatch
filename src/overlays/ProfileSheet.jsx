@@ -122,6 +122,11 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
             label="About BlockWatch"
             onClick={() => setAboutOpen(true)}
           />
+          <ListRow
+            icon={<LockIcon size={20} />}
+            label="Privacy"
+            onClick={() => window.open('/privacy.html', '_blank', 'noopener')}
+          />
           {user && (
             <ListRow
               icon={<LockIcon size={20} />}

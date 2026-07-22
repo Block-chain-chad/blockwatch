@@ -182,7 +182,10 @@ export function Disclaimer() {
   return (
     <p className="px-6 pb-4 pt-6 text-center text-[11px] leading-relaxed text-zinc-600">
       Prices are informational only and may be delayed. BlockWatch does not provide
-      investment advice. Token market data by CoinGecko.
+      investment advice. Token market data by CoinGecko.{' '}
+      <a href="/privacy.html" target="_blank" rel="noopener" className="underline decoration-zinc-700 underline-offset-2">
+        Privacy
+      </a>
     </p>
   )
 }

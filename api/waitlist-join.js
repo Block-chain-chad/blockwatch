@@ -114,7 +114,9 @@ export default async function handler(req, res) {
         }),
       })
       if (!sendRes.ok) {
-        console.error('welcome email rejected:', sendRes.status, await sendRes.text())
+        // Status only — Resend error bodies can echo the recipient address,
+        // and addresses don't belong in function logs.
+        console.error('welcome email rejected:', sendRes.status)
       }
     } catch (err) {
       // The join succeeded, that's what matters — but leave a trace in the
@@ -122,7 +124,8 @@ export default async function handler(req, res) {
       console.error('welcome email failed:', err)
     }
   } else {
-    console.warn('RESEND_API_KEY not set; welcome email skipped for', email)
+    // Deliberately not logging the address — emails stay out of Vercel logs.
+    console.warn('RESEND_API_KEY not set; welcome email skipped')
   }
 
   res.setHeader('Cache-Control', 'no-store')

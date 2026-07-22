@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — BlockWatch</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: #09090b; color: #d4d4d8;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.65; font-size: 15px;
+    }
+    main { max-width: 640px; margin: 0 auto; padding: 40px 20px 80px; }
+    .brand { font-weight: 700; font-size: 15px; letter-spacing: -0.2px; color: #f4f4f5; margin-bottom: 28px; }
+    .brand span { color: #2dd4bf; }
+    h1 { font-size: 26px; color: #f4f4f5; margin: 0 0 4px; letter-spacing: -0.3px; }
+    .date { color: #71717a; font-size: 13px; margin-bottom: 28px; }
+    h2 { font-size: 17px; color: #f4f4f5; margin: 36px 0 10px; }
+    p, li { color: #a1a1aa; }
+    strong { color: #d4d4d8; }
+    a { color: #2dd4bf; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .tldr {
+      background: #18181b; border: 1px solid #27272a; border-radius: 16px;
+      padding: 18px 20px; margin: 24px 0;
+    }
+    .tldr p { margin: 0 0 8px; color: #d4d4d8; font-weight: 600; }
+    .tldr ul { margin: 0; padding-left: 20px; }
+    ul { padding-left: 22px; }
+    li { margin-bottom: 6px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 12px 0; }
+    th, td { text-align: left; padding: 8px 10px 8px 0; vertical-align: top; border-bottom: 1px solid #27272a; }
+    th { color: #71717a; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+    td:first-child { color: #d4d4d8; white-space: nowrap; }
+    .back { display: inline-block; margin-top: 40px; }
+  </style>
+</head>
+<body>
+<main>
+  <div class="brand"><span>▲</span> BlockWatch</div>
+  <h1>Privacy Policy</h1>
+  <div class="date">Effective July 22, 2026 · applies to blockwatch.app and its beta deployments</div>
+
+  <div class="tldr">
+    <p>The short version</p>
+    <ul>
+      <li>No ads, no selling or renting your data, ever.</li>
+      <li>No cookies. No camera, microphone, location, or push-notification access — those are disabled at the platform level.</li>
+      <li>You can use the whole tracker without an account. Accounts are optional and exist only to sync your folders and alerts.</li>
+      <li>We collect your email only when you give it to us (waitlist, account, or feedback), and we email you only for the reason you gave it.</li>
+      <li>Usage analytics are tied to a random device ID, never to your name or email.</li>
+    </ul>
+  </div>
+
+  <h2>Who we are</h2>
+  <p>
+    BlockWatch is an independently built tracker for tokenized stocks. It shows public market
+    data; it does not hold funds, execute trades, or provide investment advice. For anything in
+    this policy, contact <a href="mailto:contact@blockwatch.app">contact@blockwatch.app</a>.
+  </p>
+
+  <h2>What we collect, and why</h2>
+  <ul>
+    <li><strong>Waitlist:</strong> your email address, stored with a signup position. Used to send
+      one welcome email when you join and one email when trading opens — nothing else. Our
+      systems are designed so the app itself can never read the waitlist back; only we can, in
+      our database dashboard.</li>
+    <li><strong>Account (optional):</strong> your email and a password (stored hashed by our
+      authentication provider, Supabase — we never see your password). If you sign in, your
+      watchlist, folder names, and price-alert settings sync to your account so they follow you
+      across devices. Without an account, all of that stays on your device only.</li>
+    <li><strong>Feedback:</strong> whatever you type in the feedback form, plus an optional reply
+      email. If you've joined the waitlist on this device, forms pre-fill that address for
+      convenience — you can clear it before sending, and nothing is submitted until you tap send.</li>
+    <li><strong>Usage analytics:</strong> we use PostHog (US-hosted) to count a few events — app
+      opens, waitlist joins (without the email), share-card taps, and searches, including the text
+      of what was searched, so we can learn which assets people want. Events carry a random
+      device ID stored on your device, never your name, email, or account. There is no
+      click-tracking script, no session recording, and no advertising identifier. Like any web
+      request, analytics requests expose your IP address to PostHog. One practical note: search is
+      for tickers and company names — anything you type there is logged, so don't type personal
+      information into it.</li>
+  </ul>
+
+  <h2>What stays on your device</h2>
+  <p>
+    The app keeps working data in your browser's local storage: price caches, your folders and
+    watchlist, alert rules and fired-alert history, display preferences, recently viewed assets,
+    your waitlist entry (including its email), and — when signed in — your session token.
+    None of it leaves your device except as described in this policy. Clearing the site's data in
+    your browser removes all of it.
+  </p>
+
+  <h2>Market data lookups</h2>
+  <p>
+    Showing you live prices means asking data providers for them, and those requests reveal
+    ordinary web-request information:
+  </p>
+  <ul>
+    <li><strong>CoinGecko</strong> (token prices): your browser calls CoinGecko directly, so
+      CoinGecko sees your IP address and the token ids being refreshed — a standard set common
+      to all users, plus the assets you watch, view, or set alerts on.</li>
+    <li><strong>Finnhub, Yahoo Finance, Google News</strong> (stock quotes, charts, headlines):
+      these requests go through our own servers, so those providers see our server's address,
+      not yours. Two exceptions: company logo images load directly from Finnhub's image host
+      (it sees your IP and which logos loaded), and tapping a headline follows a Google News
+      link (Google and the news outlet see that visit, as with any link on the web).</li>
+  </ul>
+
+  <h2>Services we rely on</h2>
+  <table>
+    <tr><th>Service</th><th>Role</th><th>What it handles</th></tr>
+    <tr><td>Vercel</td><td>Hosting</td><td>Serves the app; like any host, sees request logs (IPs, requested pages and symbols)</td></tr>
+    <tr><td>Supabase</td><td>Database &amp; accounts</td><td>Waitlist emails, feedback, account credentials, synced folders and alerts</td></tr>
+    <tr><td>Resend</td><td>Email delivery</td><td>Sends the waitlist welcome email to your address</td></tr>
+    <tr><td>PostHog</td><td>Analytics</td><td>Anonymous usage events with a random device ID (US-hosted)</td></tr>
+    <tr><td>CoinGecko / Finnhub / Yahoo / Google News</td><td>Market data</td><td>Prices, charts, company info, and headlines as described above</td></tr>
+  </table>
+  <p>
+    Each provider processes this data to run their service for us. We don't share your data with
+    anyone else, and we never sell it.
+  </p>
+
+  <h2>Cookies</h2>
+  <p>
+    BlockWatch sets no cookies — first-party or third-party. All persistence uses local storage
+    on your device. External images and links you tap (logos, news articles) are ordinary web
+    requests to other sites, which behave per those sites' own policies.
+  </p>
+
+  <h2>Emails we send</h2>
+  <p>
+    Only transactional ones: the waitlist welcome, sign-in links, account confirmation, and
+    password resets. No newsletters, no marketing. A note worth knowing: sign-in links are
+    literal keys to your account — anyone with access to your inbox could use one, so keep your
+    email account secure.
+  </p>
+
+  <h2>Retention and your choices</h2>
+  <ul>
+    <li>Waitlist, feedback, and account data are kept until you ask us to remove them.</li>
+    <li>To delete anything — your waitlist entry, feedback, or entire account — email
+      <a href="mailto:contact@blockwatch.app">contact@blockwatch.app</a> from the address in
+      question and we'll remove it.</li>
+    <li>Signing out removes your session from the device; clearing site data removes everything
+      stored locally.</li>
+  </ul>
+
+  <h2>Security</h2>
+  <p>
+    All traffic is encrypted in transit (HTTPS, enforced). API keys and the ability to read
+    stored emails live server-side only — they are never shipped to your browser. Database
+    access rules restrict account data to the signed-in owner.
+  </p>
+
+  <h2>Children</h2>
+  <p>BlockWatch is not directed at children under 13, and we don't knowingly collect their data.</p>
+
+  <h2>Not investment advice</h2>
+  <p>
+    Prices shown are informational and may be delayed or, for thinly traded tokens, unreliable —
+    the app flags those. Nothing in BlockWatch is investment advice.
+  </p>
+
+  <h2>Changes</h2>
+  <p>
+    If our practices change, this page and its date change with them. Meaningful changes will be
+    noted in the app.
+  </p>
+
+  <a class="back" href="/">← Back to BlockWatch</a>
+</main>
+</body>
+</html>
