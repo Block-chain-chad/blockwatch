@@ -71,9 +71,18 @@ export async function executeSwap({ quote, provider }) {
   return signature
 }
 
-/** Human display helpers for raw token amounts. */
+/**
+ * Scale a decimal amount to the mint's smallest units, as a string. BigInt
+ * math (not float) so large/high-decimal amounts can't lose integer
+ * precision above 2^53 and mis-size a transaction. Sub-unit fractional
+ * digits are truncated — you can't send a fraction of the smallest unit.
+ */
 export function toRaw(amount, decimals) {
-  return String(Math.round(Number(amount) * 10 ** decimals))
+  const s = String(amount).trim()
+  if (!/^\d*\.?\d*$/.test(s) || s === '' || s === '.') return '0'
+  const [intPart = '0', fracPart = ''] = s.split('.')
+  const frac = (fracPart + '0'.repeat(decimals)).slice(0, decimals)
+  return (BigInt(intPart || '0') * 10n ** BigInt(decimals) + BigInt(frac || '0')).toString()
 }
 
 export function fromRaw(raw, decimals) {
