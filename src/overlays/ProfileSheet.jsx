@@ -21,11 +21,13 @@ import {
 } from '../components/Icons'
 import { ListRow } from '../components/shared'
 import { useWallet, shortAddress } from '../state/WalletContext'
+import WalletSheet from './WalletSheet'
 
 export default function ProfileSheet({ onClose, onGoToTrade }) {
   const { entry } = useWaitlist()
   const { user, available, signOut } = useAuth()
   const wallet = useWallet()
+  const [walletOpen, setWalletOpen] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [signInOpen, setSignInOpen] = useState(false)
   const [appearanceOpen, setAppearanceOpen] = useState(false)
@@ -118,7 +120,7 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
               icon={<WalletIcon size={20} />}
               label="Wallet connected"
               value={shortAddress(wallet.publicKey)}
-              onClick={() => wallet.disconnect()}
+              onClick={() => setWalletOpen(true)}
             />
           ) : wallet.available ? (
             <ListRow
@@ -169,6 +171,7 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
       {appearanceOpen && <AppearanceSheet onClose={() => setAppearanceOpen(false)} />}
       {aboutOpen && <AboutSheet onClose={() => setAboutOpen(false)} />}
       {passwordOpen && <PasswordSheet onClose={() => setPasswordOpen(false)} />}
+      {walletOpen && <WalletSheet onClose={() => setWalletOpen(false)} />}
     </div>
   )
 }
