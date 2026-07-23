@@ -2,6 +2,8 @@
 // Tailwind v4 compiles colors to CSS variables, so the light theme is one
 // override block in index.css keyed off html.light — no per-component work.
 
+import { applyAccent } from './accent'
+
 const KEY = 'bw.theme.v1'
 export const THEME_OPTIONS = ['dark', 'light', 'system']
 
@@ -23,6 +25,9 @@ export function applyTheme(pref = getThemePref()) {
   document.documentElement.classList.toggle('light', light)
   const meta = document.querySelector('meta[name="theme-color"]')
   if (meta) meta.content = light ? '#ffffff' : '#09090b'
+  // Accent values are theme-dependent (light pairs are darker) and applied
+  // inline, so they must be re-stamped after every theme flip.
+  applyAccent()
 }
 
 export function setThemePref(pref) {

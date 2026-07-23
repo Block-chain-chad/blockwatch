@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { getThemePref, setThemePref } from '../lib/theme'
+import { ACCENTS, getAccentPref, setAccentPref } from '../lib/accent'
 import { CheckCircleIcon } from '../components/Icons'
 
 const OPTIONS = [
@@ -10,10 +11,16 @@ const OPTIONS = [
 
 export default function AppearanceSheet({ onClose }) {
   const [pref, setPref] = useState(getThemePref)
+  const [accent, setAccent] = useState(getAccentPref)
 
   function choose(id) {
     setPref(id)
     setThemePref(id) // applies instantly — the sheet stays open so you can compare
+  }
+
+  function chooseAccent(id) {
+    setAccent(id)
+    setAccentPref(id) // instant too — watch the buttons and pills recolor live
   }
 
   return (
@@ -38,6 +45,30 @@ export default function AppearanceSheet({ onClose }) {
               ) : (
                 <span className="h-[22px] w-[22px] rounded-full border border-zinc-700" />
               )}
+            </button>
+          ))}
+        </div>
+
+        <h3 className="px-5 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+          Accent color
+        </h3>
+        <div className="flex gap-5 px-5 pb-5 pt-2">
+          {ACCENTS.map((a) => (
+            <button
+              key={a.id}
+              onClick={() => chooseAccent(a.id)}
+              aria-label={`${a.label} accent`}
+              className="flex flex-col items-center gap-1.5"
+            >
+              <span
+                className={`h-9 w-9 rounded-full transition-transform ${
+                  accent === a.id ? 'scale-110 ring-2 ring-zinc-100 ring-offset-2 ring-offset-zinc-950' : ''
+                }`}
+                style={{ background: a.dark[0] }}
+              />
+              <span className={`text-[11px] ${accent === a.id ? 'text-zinc-200' : 'text-zinc-500'}`}>
+                {a.label}
+              </span>
             </button>
           ))}
         </div>
