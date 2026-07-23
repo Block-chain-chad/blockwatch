@@ -155,21 +155,24 @@ export function AlertsProvider({ children }) {
     syncTimerRef.current = setTimeout(() => pushRules(identity, storeRef.current.rules), SYNC_DEBOUNCE_MS)
   }, [store.rules, user])
 
-  // Evaluate every rule whenever prices refresh (or rules change).
+  // Evaluate every rule whenever prices refresh (or rules change). The pass
+  // collects DELTAS and the commit applies them against the LATEST store —
+  // a wholesale replace from this pass's snapshot would clobber a Supabase
+  // hydrate() or a user removeAlert() queued in the same flush (resurrecting
+  // deleted rules), a window the 2.5s fast layer widens ~24x.
   useEffect(() => {
     const s = storeRef.current
     const ruleIds = Object.keys(s.rules)
     if (ruleIds.length === 0) return
 
-    let changed = false
-    const rules = { ...s.rules }
-    const states = { ...s.states }
-    const events = [...s.events]
+    const newEvents = []
+    const stateDelta = {}
+    const firedPriceIds = []
 
     for (const assetId of ruleIds) {
       const asset = assets.find((a) => a.id === assetId)
       if (!asset) continue
-      const rule = rules[assetId]
+      const rule = s.rules[assetId]
 
       if (rule.drift) {
         const p = premiumPct(asset)
@@ -182,12 +185,13 @@ export function AlertsProvider({ children }) {
           //  - cooldown: at most one drift event per asset per 10 minutes
           const outside = Math.abs(p) >= rule.drift.threshold
           const backInside = Math.abs(p) < rule.drift.threshold * REARM_RATIO
-          const prev = states[assetId] ?? 'inside'
+          const prev = s.states[assetId] ?? 'inside'
+          let next = outside ? 'outside' : backInside ? 'inside' : prev
           if (outside && prev === 'inside') {
             const last = driftFiredRef.current[assetId] ?? 0
             if (Date.now() - last > DRIFT_COOLDOWN_MS) {
               driftFiredRef.current[assetId] = Date.now()
-              events.unshift({
+              newEvents.push({
                 id: `${assetId}-d-${Date.now()}`,
                 kind: 'alert',
                 type: 'drift',
@@ -198,14 +202,15 @@ export function AlertsProvider({ children }) {
                 threshold: rule.drift.threshold,
                 at: Date.now(),
               })
-              changed = true
+            } else {
+              // Cooldown suppressed the fire: HOLD 'inside' so this crossing
+              // re-attempts once the cooldown expires. Advancing to 'outside'
+              // here would consume a genuine excursion silently — dropped,
+              // not rate-limited.
+              next = prev
             }
           }
-          const next = outside ? 'outside' : backInside ? 'inside' : prev
-          if (next !== prev) {
-            states[assetId] = next
-            changed = true
-          }
+          if (next !== prev) stateDelta[assetId] = next
         }
       }
 
@@ -213,7 +218,7 @@ export function AlertsProvider({ children }) {
         const { target, direction } = rule.price
         const crossed = direction === 'above' ? asset.tokenPrice >= target : asset.tokenPrice <= target
         if (crossed) {
-          events.unshift({
+          newEvents.push({
             id: `${assetId}-p-${Date.now()}`,
             kind: 'alert',
             type: 'price',
@@ -224,24 +229,39 @@ export function AlertsProvider({ children }) {
             price: asset.tokenPrice,
             at: Date.now(),
           })
-          // one-shot: the rule removes itself
-          const next = { ...rule }
-          delete next.price
-          if (next.drift) rules[assetId] = next
-          else {
-            delete rules[assetId]
-            delete states[assetId]
-          }
-          changed = true
+          firedPriceIds.push(assetId)
         }
       }
     }
 
-    if (events.length > MAX_EVENTS) events.length = MAX_EVENTS
-    if (changed) setStore((prev) => ({ ...prev, rules, states, events }))
+    if (newEvents.length === 0 && Object.keys(stateDelta).length === 0 && firedPriceIds.length === 0)
+      return
+    setStore((prev) => {
+      const rules = { ...prev.rules }
+      const states = { ...prev.states, ...stateDelta }
+      for (const id of firedPriceIds) {
+        // one-shot: the rule removes itself (skip if a queued user action
+        // already removed it)
+        const r = rules[id]
+        if (!r?.price) continue
+        const next = { ...r }
+        delete next.price
+        if (next.drift) rules[id] = next
+        else {
+          delete rules[id]
+          delete states[id]
+        }
+      }
+      const events = [...newEvents, ...prev.events]
+      if (events.length > MAX_EVENTS) events.length = MAX_EVENTS
+      return { ...prev, rules, states, events }
+    })
   }, [assets, store.rules])
 
   function setDriftAlert(assetId, threshold) {
+    // Fresh rule, fresh cooldown — a re-created or re-thresholded alert must
+    // be able to fire immediately, not inherit the old rule's cooldown.
+    delete driftFiredRef.current[assetId]
     setStore((prev) => {
       const states = { ...prev.states }
       delete states[assetId] // reset to 'inside' so an already-drifted asset fires right away
@@ -258,6 +278,7 @@ export function AlertsProvider({ children }) {
   }
 
   function removeAlert(assetId, kind) {
+    if (kind === 'drift') delete driftFiredRef.current[assetId]
     setStore((prev) => {
       const rule = { ...prev.rules[assetId] }
       delete rule[kind]

@@ -252,23 +252,28 @@ export function PricesProvider({ children }) {
         }
         fastFedRef.current = { at: Date.now(), ids: covered }
 
-        const updates = {}
-        for (const { id, mint } of pairs) {
-          const px = live[mint]
-          if (px == null) continue
-          const row = pricesRef.current[id]
-          // Never fabricate a price-only row: a tokenPrice without volume/cap
-          // would flash a false "thin trading" tag until the poll fills it in.
-          if (row == null) continue
-          const prev = row.tokenPrice
-          // Ignore sub-display-precision moves (~0.005%): no visible digit
-          // changes, so an update would only burn renders and fake flashes.
-          if (prev != null && Math.abs(px - prev) / prev < 0.00005) continue
-          updates[id] = { ...row, tokenPrice: px }
-        }
-        if (Object.keys(updates).length === 0) return
+        // Merge INSIDE the updater, against s.prices — rows built from a
+        // pre-updater snapshot can clobber a CoinGecko batch landing in the
+        // same flush (stats reverting a full cycle). Only tokenPrice may
+        // differ from the base row.
         setTokenState((s) => {
-          const prices = { ...s.prices, ...updates }
+          let changed = false
+          const prices = { ...s.prices }
+          for (const { id, mint } of pairs) {
+            const px = live[mint]
+            if (px == null) continue
+            const row = s.prices[id]
+            // Never fabricate a price-only row: a tokenPrice without volume/cap
+            // would flash a false "thin trading" tag until the poll fills it in.
+            if (row == null) continue
+            const prev = row.tokenPrice
+            // Ignore sub-display-precision moves (~0.005%): no visible digit
+            // changes, so an update would only burn renders and fake flashes.
+            if (prev != null && Math.abs(px - prev) / prev < 0.00005) continue
+            prices[id] = { ...row, tokenPrice: px }
+            changed = true
+          }
+          if (!changed) return s // same reference → React skips the render
           pricesRef.current = prices
           return { ...s, prices }
         })
