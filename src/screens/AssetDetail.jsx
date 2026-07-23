@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAsset, usePrices, useAssetSubscription } from '../state/PricesContext'
+import { getTokenSpread } from '../services/jupiter'
 import { recordView } from '../lib/recentViews'
 import { ASSETS } from '../data/universe'
 import { useFolders } from '../state/FoldersContext'
@@ -83,6 +84,22 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
   // Feed the search overlay's "Recently viewed" shelf.
   useEffect(() => {
     recordView(assetId)
+  }, [assetId])
+
+  // Live buy/sell readout from the DEX — what a ~$200 trade would actually
+  // execute at in each direction. Solana-minted assets only.
+  const [spread, setSpread] = useState(null)
+  useEffect(() => {
+    setSpread(null)
+    const mint = ASSETS.find((a) => a.id === assetId)?.mint
+    if (!mint) return
+    let cancelled = false
+    getTokenSpread(mint).then((s) => {
+      if (!cancelled) setSpread(s)
+    })
+    return () => {
+      cancelled = true
+    }
   }, [assetId])
 
   const { folders, watchlistIds, toggleWatchlist } = useFolders()
@@ -204,6 +221,16 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
                 <span>NAV-based · no listed underlying</span>
               )}
             </div>
+            {spread && (
+              <div className="mt-1 text-xs tabular-nums text-zinc-500">
+                Buy <span className="text-zinc-300">{formatPrice(spread.ask)}</span> · Sell{' '}
+                <span className="text-zinc-300">{formatPrice(spread.bid)}</span>
+                <span className="text-zinc-600">
+                  {' '}
+                  · {spread.spreadPct.toFixed(1)}% spread on a ${spread.refUsd} trade
+                </span>
+              </div>
+            )}
           </div>
           <div className="text-right">
             <PremiumPill asset={asset} />
