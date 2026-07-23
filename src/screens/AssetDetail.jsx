@@ -227,12 +227,12 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
             {spread && (
               <div className="mt-2 space-y-0.5 text-xs tabular-nums">
                 <div>
-                  <span className="text-zinc-500">Buy </span>
-                  <span className="font-medium text-zinc-100">{formatPrice(spread.ask)}</span>
+                  <span className="text-zinc-500">Bid </span>
+                  <span className="font-medium text-zinc-100">{formatPrice(spread.bid)}</span>
                 </div>
                 <div>
-                  <span className="text-zinc-500">Sell </span>
-                  <span className="font-medium text-zinc-100">{formatPrice(spread.bid)}</span>
+                  <span className="text-zinc-500">Ask </span>
+                  <span className="font-medium text-zinc-100">{formatPrice(spread.ask)}</span>
                 </div>
                 <div className="text-[11px] text-zinc-600">
                   {spread.spreadPct.toFixed(1)}% spread
@@ -515,7 +515,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
                         value={ts.supply != null ? `${compactNum(ts.supply)} tokens` : null}
                       />
                       <StatRow
-                        label="Buy/sell spread"
+                        label="Bid/ask spread"
                         value={
                           spread ? `${spread.spreadPct.toFixed(1)}% (~$${spread.refUsd} trade)` : null
                         }
