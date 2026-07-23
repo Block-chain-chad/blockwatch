@@ -1,7 +1,42 @@
 import { useState } from 'react'
 import Header from '../components/Header'
 import { useWaitlist } from '../state/WaitlistContext'
-import { LockIcon, CheckCircleIcon } from '../components/Icons'
+import { track } from '../services/analytics'
+import { CheckCircleIcon, GlobeIcon, WalletIcon, BellIcon } from '../components/Icons'
+
+/*
+ * Rung one of the trading ladder: BlockWatch doesn't execute trades yet, but
+ * the market is open TODAY on external venues — so point honestly at them,
+ * and keep the waitlist as the promise of in-app trading to come.
+ */
+
+const VENUES = [
+  {
+    id: 'jupiter',
+    name: 'Jupiter',
+    href: 'https://jup.ag',
+    icon: WalletIcon,
+    blurb:
+      'On-chain, from your own wallet. Open any asset ending in “x” here and tap Trade on Jupiter — it lands on the exact pair.',
+    tag: 'Self-custody',
+  },
+  {
+    id: 'kraken',
+    name: 'Kraken',
+    href: 'https://www.kraken.com',
+    icon: GlobeIcon,
+    blurb: 'Exchange trading for xStocks with a Kraken account.',
+    tag: 'Not offered in the US',
+  },
+  {
+    id: 'bybit',
+    name: 'Bybit',
+    href: 'https://www.bybit.com',
+    icon: GlobeIcon,
+    blurb: 'Exchange trading for xStocks with a Bybit account.',
+    tag: 'Not offered in the US',
+  },
+]
 
 export default function Trade({ onOpenProfile }) {
   const { entry, join } = useWaitlist()
@@ -20,21 +55,49 @@ export default function Trade({ onOpenProfile }) {
     <div className="pb-24">
       <Header title="Trade" onOpenProfile={onOpenProfile} />
 
-      <div className="flex flex-col items-center px-6 pt-10 text-center">
-        <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-zinc-900 text-zinc-400">
-          <LockIcon size={28} />
-          <span className="absolute -right-2 -top-2 rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-zinc-950">
-            soon
-          </span>
+      <div className="px-4 pt-4">
+        <h2 className="text-xl font-semibold tracking-tight">The market is open</h2>
+        <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">
+          Tokenized stocks trade 24/7 on the venues below. In-app trading is
+          what we're building — until then, BlockWatch gets you to the right
+          place with the right numbers.
+        </p>
+
+        <div className="mt-4 space-y-2.5">
+          {VENUES.map((v) => (
+            <a
+              key={v.id}
+              href={v.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => track('trade_out', { venue: v.id })}
+              className="flex items-start gap-3 rounded-2xl bg-zinc-900 p-4 transition-colors active:bg-zinc-800"
+            >
+              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-800 text-accent">
+                <v.icon size={18} />
+              </span>
+              <span className="min-w-0">
+                <span className="flex items-center gap-2">
+                  <span className="text-[15px] font-semibold text-zinc-100">{v.name} ↗</span>
+                  <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-zinc-500">
+                    {v.tag}
+                  </span>
+                </span>
+                <span className="mt-0.5 block text-xs leading-relaxed text-zinc-500">{v.blurb}</span>
+              </span>
+            </a>
+          ))}
         </div>
 
-        <h2 className="mt-5 text-xl font-semibold tracking-tight">Trading is coming</h2>
-        <p className="mt-2 max-w-[260px] text-sm leading-relaxed text-zinc-400">
-          Buy and sell tokenized stocks right where you already track them.
+        <p className="mt-4 rounded-2xl bg-zinc-900/60 p-4 text-xs leading-relaxed text-zinc-500">
+          <span className="font-medium text-zinc-300">In the US?</span> Today's
+          venues exclude US customers — but regulated tokenized trading is
+          rolling out (the SEC approved Nasdaq's version in March 2026). Join
+          the waitlist and you'll get one email the moment you can trade here.
         </p>
 
         {entry ? (
-          <div className="mt-8 w-full max-w-xs rounded-2xl bg-zinc-900 p-5 text-left">
+          <div className="mt-4 rounded-2xl bg-zinc-900 p-5">
             <div className="flex items-center gap-2">
               <CheckCircleIcon size={22} className="text-accent" />
               <span className="text-lg font-semibold">You're on the list</span>
@@ -46,19 +109,23 @@ export default function Trade({ onOpenProfile }) {
             </p>
           </div>
         ) : (
-          <form onSubmit={submit} className="mt-8 w-full max-w-xs">
+          <form onSubmit={submit} className="mt-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-zinc-300">
+              <BellIcon size={16} className="text-accent" />
+              Be first in line for in-app trading
+            </div>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@email.com"
-              className="w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-600 outline-none ring-accent/60 focus:ring-2"
+              className="mt-3 w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-600 outline-none ring-accent/60 focus:ring-2"
             />
             <button
               type="submit"
               disabled={busy}
-              className="mt-3 w-full rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim disabled:opacity-60"
+              className="bw-glow mt-3 w-full rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim disabled:opacity-60"
             >
               {busy ? 'Joining…' : 'Join the waitlist'}
             </button>
@@ -67,6 +134,11 @@ export default function Trade({ onOpenProfile }) {
             </p>
           </form>
         )}
+
+        <p className="mt-6 text-center text-[11px] leading-relaxed text-zinc-600">
+          External venues are independent services with their own terms and
+          regional availability. BlockWatch routes, it never holds funds.
+        </p>
       </div>
     </div>
   )

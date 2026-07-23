@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAsset, usePrices, useAssetSubscription } from '../state/PricesContext'
 import { getTokenSpread } from '../services/jupiter'
+import { track } from '../services/analytics'
 import { recordView } from '../lib/recentViews'
 import { ASSETS } from '../data/universe'
 import { useFolders } from '../state/FoldersContext'
@@ -326,6 +327,26 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
           </button>
         )}
       </div>
+
+      {/* Rung one of the trading ladder: route out to where this token
+          actually trades today. Mint-exact link — lands on the right pair. */}
+      {asset.mint && (
+        <div className="px-4 pt-3">
+          <a
+            href={`https://jup.ag/swap/USDC-${asset.mint}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => track('trade_out', { ticker: asset.ticker, venue: 'jupiter' })}
+            className="bw-glow flex items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim"
+          >
+            Trade {asset.ticker} on Jupiter ↗
+          </a>
+          <p className="mt-1.5 text-center text-[11px] leading-relaxed text-zinc-600">
+            Opens Jupiter, an external venue — you swap from your own wallet.
+            Availability depends on your region. Not investment advice.
+          </p>
+        </div>
+      )}
 
       <div className="px-4 pt-6">
         <h3 className="text-sm font-semibold text-zinc-300">Trades on</h3>
