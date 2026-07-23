@@ -164,7 +164,7 @@ export default function ShareSheet({ asset, onClose }) {
         <div className="mt-4 flex gap-2">
           <button
             onClick={share}
-            className="flex-1 rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim"
+            className="bw-glow flex-1 rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim"
           >
             Share
           </button>
