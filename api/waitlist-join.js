@@ -50,8 +50,8 @@ export default async function handler(req, res) {
   // must be this deployment. Blocks naked curl-spam from burning the Resend
   // quota. Not bulletproof (Origin is forgeable) — it raises the floor, the
   // idempotent RPC and Resend's own limits do the rest.
-  // NOTE for the future native app: its origin (capacitor://localhost) will
-  // need adding here before the waitlist works in-app.
+  // The native app's WebView isn't served from Vercel, so its Origin is the
+  // Capacitor scheme (capacitor://localhost on iOS) rather than this host.
   const origin = req.headers.origin ?? ''
   const originHost = (() => {
     try {
@@ -60,7 +60,9 @@ export default async function handler(req, res) {
       return null
     }
   })()
-  if (!originHost || originHost !== req.headers.host) {
+  const sameOrigin = originHost && originHost === req.headers.host
+  const nativeApp = origin === 'capacitor://localhost'
+  if (!sameOrigin && !nativeApp) {
     return res.status(403).json({ error: 'forbidden' })
   }
 
