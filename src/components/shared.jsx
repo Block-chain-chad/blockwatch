@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { premiumPct, PARITY_BAND, isThinlyTraded } from '../lib/prices'
 import { SearchIcon, ChevronRight } from './Icons'
 import PriceText from './PriceText'
@@ -16,6 +17,11 @@ export function PremiumPill({ asset }) {
   const p = premiumPct(asset)
   const thin = isThinlyTraded(asset)
   const value = p ?? asset.dayChange
+  // Parity hysteresis: with 2.5s live ticks, a premium wobbling around the
+  // band edge would flip "1:1" <-> "+0.06%" every tick. Enter the colored
+  // state only clearly outside the band (1.2x), return to 1:1 only clearly
+  // inside (0.8x); hold the previous face in between.
+  const parityRef = useRef(null)
 
   if (value == null) {
     return (
@@ -23,7 +29,16 @@ export function PremiumPill({ asset }) {
     )
   }
 
-  if (p != null && Math.abs(p) < PARITY_BAND && !thin) {
+  let showParity = false
+  if (p != null && !thin) {
+    const abs = Math.abs(p)
+    if (abs < PARITY_BAND * 0.8) showParity = true
+    else if (abs >= PARITY_BAND * 1.2) showParity = false
+    else showParity = parityRef.current ?? abs < PARITY_BAND
+    parityRef.current = showParity
+  }
+
+  if (showParity) {
     return (
       <span className="inline-block rounded-full bg-zinc-800 px-2 py-0.5 text-xs font-medium tabular-nums text-zinc-400">
         1:1

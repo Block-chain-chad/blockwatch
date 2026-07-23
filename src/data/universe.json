@@ -16,8 +16,8 @@
   "underlying": "QQQ",
   "type": "etf",
   "issuer": "bStocks",
-  "vol": 42677184,
-  "cap": 1308524
+  "vol": 46928811,
+  "cap": 1316236
  },
  {
   "id": "spacex-bstocks-tokenized-stock",
@@ -26,8 +26,8 @@
   "underlying": null,
   "type": "stock",
   "issuer": "bStocks",
-  "vol": 27631905,
-  "cap": 88833255
+  "vol": 30653782,
+  "cap": 91755989
  },
  {
   "id": "sandisk-bstocks-tokenized-stock",
@@ -36,8 +36,8 @@
   "underlying": "SNDK",
   "type": "stock",
   "issuer": "bStocks",
-  "vol": 23992233,
-  "cap": 80303219
+  "vol": 23503771,
+  "cap": 81245576
  },
  {
   "id": "semicon-bull-3x-etf-bstocks-tokenized-stock",
@@ -46,8 +46,8 @@
   "underlying": "SOXL",
   "type": "etf",
   "issuer": "bStocks",
-  "vol": 17416794,
-  "cap": 21980975
+  "vol": 17363579,
+  "cap": 22953926
  },
  {
   "id": "roundhill-memory-etf-bstocks-tokenized-stock",
@@ -56,18 +56,8 @@
   "underlying": "DRAM",
   "type": "etf",
   "issuer": "bStocks",
-  "vol": 16499768,
-  "cap": 25532027
- },
- {
-  "id": "sk-hynix-bstocks-tokenized-stock",
-  "ticker": "SKHYb",
-  "name": "SK Hynix",
-  "underlying": "SKHY",
-  "type": "stock",
-  "issuer": "bStocks",
-  "vol": 15560973,
-  "cap": 15344109
+  "vol": 16617966,
+  "cap": 25726143
  },
  {
   "id": "nvidia-ondo-tokenized-stock",
@@ -76,8 +66,8 @@
   "underlying": "NVDA",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 14770665,
-  "cap": 41908100
+  "vol": 14694704,
+  "cap": 42274030
  },
  {
   "id": "micron-technology-bstock",
@@ -86,8 +76,8 @@
   "underlying": "MU",
   "type": "stock",
   "issuer": "bStocks",
-  "vol": 13808564,
-  "cap": 80910553
+  "vol": 13810725,
+  "cap": 81950285
  },
  {
   "id": "alphabet-xstock",
@@ -96,8 +86,9 @@
   "underlying": "GOOGL",
   "type": "stock",
   "issuer": "xStocks",
-  "vol": 11861350,
-  "cap": 25933034
+  "vol": 13195788,
+  "cap": 26227398,
+  "mint": "XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN"
  },
  {
   "id": "nvidia-robinhood-tokenized-stock",
@@ -106,8 +97,18 @@
   "underlying": null,
   "type": "stock",
   "issuer": "Other",
-  "vol": 11262490,
-  "cap": 3363356
+  "vol": 12249347,
+  "cap": 3434598
+ },
+ {
+  "id": "sk-hynix-bstocks-tokenized-stock",
+  "ticker": "SKHYb",
+  "name": "SK Hynix",
+  "underlying": "SKHY",
+  "type": "stock",
+  "issuer": "bStocks",
+  "vol": 11523570,
+  "cap": 15551612
  },
  {
   "id": "alphabet-bstocks-tokenized-stock",
@@ -116,18 +117,8 @@
   "underlying": "GOOGL",
   "type": "stock",
   "issuer": "bStocks",
-  "vol": 10946259,
-  "cap": 6142755
- },
- {
-  "id": "sk-hynix-backpack-securities",
-  "ticker": "SKHY",
-  "name": "SK Hynix",
-  "underlying": null,
-  "type": "stock",
-  "issuer": "Other",
-  "vol": 10795408,
-  "cap": 1761211
+  "vol": 11445596,
+  "cap": 6636677
  },
  {
   "id": "tesla-xstock",
@@ -136,8 +127,9 @@
   "underlying": "TSLA",
   "type": "stock",
   "issuer": "xStocks",
-  "vol": 8924861,
-  "cap": 55106588
+  "vol": 9147999,
+  "cap": 55669592,
+  "mint": "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB"
  },
  {
   "id": "circle-xstock",
@@ -146,8 +138,19 @@
   "underlying": "CRCL",
   "type": "stock",
   "issuer": "xStocks",
-  "vol": 7759406,
-  "cap": 48365469
+  "vol": 7759156,
+  "cap": 48867971,
+  "mint": "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1"
+ },
+ {
+  "id": "sk-hynix-backpack-securities",
+  "ticker": "SKHY",
+  "name": "SK Hynix",
+  "underlying": null,
+  "type": "stock",
+  "issuer": "Other",
+  "vol": 7677660,
+  "cap": 1771261
  },
  {
   "id": "circle-internet-group-bstock",
@@ -156,8 +159,8 @@
   "underlying": "CRCL",
   "type": "stock",
   "issuer": "bStocks",
-  "vol": 7127030,
-  "cap": 52854078
+  "vol": 7461376,
+  "cap": 53329323
  },
  {
   "id": "apple-xstock",
@@ -166,8 +169,9 @@
   "underlying": "AAPL",
   "type": "stock",
   "issuer": "xStocks",
-  "vol": 6952048,
-  "cap": 8670254
+  "vol": 6836165,
+  "cap": 8681826,
+  "mint": "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp"
  },
  {
   "id": "amazon-xstock",
@@ -176,8 +180,9 @@
   "underlying": "AMZN",
   "type": "stock",
   "issuer": "xStocks",
-  "vol": 6762123,
-  "cap": 6574687
+  "vol": 6806973,
+  "cap": 6618478,
+  "mint": "Xs3eBt7uRfJX8QUs4suhyU8p2M6DoUDrJyWBa8LLZsg"
  },
  {
   "id": "spy-bstocks-tokenized-stock",
@@ -186,8 +191,8 @@
   "underlying": "SPY",
   "type": "etf",
   "issuer": "bStocks",
-  "vol": 6381324,
-  "cap": 1241470
+  "vol": 6503279,
+  "cap": 1245045
  },
  {
   "id": "nebius-bstocks-tokenized-stock",
@@ -196,48 +201,8 @@
   "underlying": "NBIS",
   "type": "stock",
   "issuer": "bStocks",
-  "vol": 6151890,
-  "cap": 4100988
- },
- {
-  "id": "spacex-xstocks",
-  "ticker": "SPCXx",
-  "name": "SpaceX",
-  "underlying": null,
-  "type": "stock",
-  "issuer": "xStocks",
-  "vol": 5825756,
-  "cap": 27147880
- },
- {
-  "id": "nvidia-xstock",
-  "ticker": "NVDAx",
-  "name": "NVIDIA",
-  "underlying": "NVDA",
-  "type": "stock",
-  "issuer": "xStocks",
-  "vol": 5427455,
-  "cap": 36392121
- },
- {
-  "id": "cerebras-bstocks-tokenized-stock",
-  "ticker": "CBRSb",
-  "name": "Cerebras",
-  "underlying": "CBRS",
-  "type": "stock",
-  "issuer": "bStocks",
-  "vol": 5299831,
-  "cap": 906779
- },
- {
-  "id": "coinbase-xstock",
-  "ticker": "COINx",
-  "name": "Coinbase",
-  "underlying": "COIN",
-  "type": "stock",
-  "issuer": "xStocks",
-  "vol": 4718761,
-  "cap": 6870133
+  "vol": 6161475,
+  "cap": 4291687
  },
  {
   "id": "gamestop-robinhood-tokenized-stock",
@@ -246,8 +211,51 @@
   "underlying": null,
   "type": "stock",
   "issuer": "Other",
-  "vol": 4393801,
-  "cap": 339059
+  "vol": 6116879,
+  "cap": 490162
+ },
+ {
+  "id": "spacex-xstocks",
+  "ticker": "SPCXx",
+  "name": "SpaceX",
+  "underlying": null,
+  "type": "stock",
+  "issuer": "xStocks",
+  "vol": 6098849,
+  "cap": 27361046,
+  "mint": "Xs3oZwbHvqis4NYcf4YKWmEia2eC84wSiVrcYcTqpH8"
+ },
+ {
+  "id": "nvidia-xstock",
+  "ticker": "NVDAx",
+  "name": "NVIDIA",
+  "underlying": "NVDA",
+  "type": "stock",
+  "issuer": "xStocks",
+  "vol": 6022564,
+  "cap": 36704231,
+  "mint": "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh"
+ },
+ {
+  "id": "cerebras-bstocks-tokenized-stock",
+  "ticker": "CBRSb",
+  "name": "Cerebras",
+  "underlying": "CBRS",
+  "type": "stock",
+  "issuer": "bStocks",
+  "vol": 5276967,
+  "cap": 946271
+ },
+ {
+  "id": "coinbase-xstock",
+  "ticker": "COINx",
+  "name": "Coinbase",
+  "underlying": "COIN",
+  "type": "stock",
+  "issuer": "xStocks",
+  "vol": 4692779,
+  "cap": 6946751,
+  "mint": "Xs7ZdzSHLU9ftNJsii5fCeJhoRWSC32SQGzGQtePxNu"
  },
  {
   "id": "broadcom-bstocks-tokenized-stock",
@@ -256,18 +264,8 @@
   "underlying": "AVGO",
   "type": "stock",
   "issuer": "bStocks",
-  "vol": 4200761,
-  "cap": 891586
- },
- {
-  "id": "spacex-backpack-securities",
-  "ticker": "SPCX",
-  "name": "SpaceX",
-  "underlying": null,
-  "type": "stock",
-  "issuer": "Other",
-  "vol": 3923452,
-  "cap": 7016397
+  "vol": 4183996,
+  "cap": 896709
  },
  {
   "id": "tesla-bstocks-tokenized-stock",
@@ -276,48 +274,18 @@
   "underlying": "TSLA",
   "type": "stock",
   "issuer": "bStocks",
-  "vol": 3905470,
-  "cap": 4832171
+  "vol": 4055016,
+  "cap": 4978778
  },
  {
-  "id": "amd-ondo-tokenized-stock",
-  "ticker": "AMDon",
-  "name": "AMD",
-  "underlying": "AMD",
+  "id": "spacex-backpack-securities",
+  "ticker": "SPCX",
+  "name": "SpaceX",
+  "underlying": null,
   "type": "stock",
-  "issuer": "Ondo",
-  "vol": 3868165,
-  "cap": 10794981
- },
- {
-  "id": "corning-bstocks-tokenized-stock",
-  "ticker": "GLWb",
-  "name": "Corning",
-  "underlying": "GLW",
-  "type": "stock",
-  "issuer": "bStocks",
-  "vol": 3828351,
-  "cap": 0
- },
- {
-  "id": "micron-technology-ondo-tokenized-stock",
-  "ticker": "MUon",
-  "name": "Micron Technology",
-  "underlying": "MU",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 3735540,
-  "cap": 47753098
- },
- {
-  "id": "ibm-bstocks-tokenized-stock",
-  "ticker": "IBMb",
-  "name": "IBM",
-  "underlying": "IBM",
-  "type": "stock",
-  "issuer": "bStocks",
-  "vol": 3720806,
-  "cap": 0
+  "issuer": "Other",
+  "vol": 3848634,
+  "cap": 7112673
  },
  {
   "id": "alphabet-class-a-ondo-tokenized-stock",
@@ -326,8 +294,18 @@
   "underlying": "GOOGL",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 3716469,
-  "cap": 22363607
+  "vol": 3781231,
+  "cap": 22886423
+ },
+ {
+  "id": "corning-bstocks-tokenized-stock",
+  "ticker": "GLWb",
+  "name": "Corning",
+  "underlying": "GLW",
+  "type": "stock",
+  "issuer": "bStocks",
+  "vol": 3768779,
+  "cap": 0
  },
  {
   "id": "spacex-robinhood-tokenized-stock",
@@ -336,8 +314,38 @@
   "underlying": null,
   "type": "stock",
   "issuer": "Other",
-  "vol": 3661347,
-  "cap": 1575073
+  "vol": 3763189,
+  "cap": 1596856
+ },
+ {
+  "id": "micron-technology-ondo-tokenized-stock",
+  "ticker": "MUon",
+  "name": "Micron Technology",
+  "underlying": "MU",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 3759843,
+  "cap": 48158869
+ },
+ {
+  "id": "ibm-bstocks-tokenized-stock",
+  "ticker": "IBMb",
+  "name": "IBM",
+  "underlying": "IBM",
+  "type": "stock",
+  "issuer": "bStocks",
+  "vol": 3738921,
+  "cap": 0
+ },
+ {
+  "id": "amd-ondo-tokenized-stock",
+  "ticker": "AMDon",
+  "name": "AMD",
+  "underlying": "AMD",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 3681635,
+  "cap": 10953514
  },
  {
   "id": "qualcomm-bstocks-tokenized-stock",
@@ -346,18 +354,8 @@
   "underlying": "QCOM",
   "type": "stock",
   "issuer": "bStocks",
-  "vol": 3599837,
-  "cap": 1667717
- },
- {
-  "id": "sandisk-backpack-securities",
-  "ticker": "SNDK",
-  "name": "Sandisk",
-  "underlying": null,
-  "type": "stock",
-  "issuer": "Other",
-  "vol": 3525930,
-  "cap": 1463838
+  "vol": 3588166,
+  "cap": 1676111
  },
  {
   "id": "robinhood-xstock",
@@ -366,28 +364,9 @@
   "underlying": "HOOD",
   "type": "stock",
   "issuer": "xStocks",
-  "vol": 3338917,
-  "cap": 7810328
- },
- {
-  "id": "rocket-lab-bstocks-tokenized-stock",
-  "ticker": "RKLBb",
-  "name": "Rocket Lab",
-  "underlying": "RKLB",
-  "type": "stock",
-  "issuer": "bStocks",
-  "vol": 3151936,
-  "cap": 0
- },
- {
-  "id": "costco-ondo-tokenized-stock",
-  "ticker": "COSTon",
-  "name": "Costco",
-  "underlying": "COST",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 3107443,
-  "cap": 1176472
+  "vol": 3278788,
+  "cap": 7908279,
+  "mint": "XsvNBAYkrDRNhA7wPHQfX3ZUXZyZLdnCQDfHZ56bzpg"
  },
  {
   "id": "tesla-ondo-tokenized-stock",
@@ -396,8 +375,28 @@
   "underlying": "TSLA",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 3029365,
-  "cap": 14276118
+  "vol": 3201617,
+  "cap": 14467724
+ },
+ {
+  "id": "costco-ondo-tokenized-stock",
+  "ticker": "COSTon",
+  "name": "Costco",
+  "underlying": "COST",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 3156438,
+  "cap": 1177775
+ },
+ {
+  "id": "rocket-lab-bstocks-tokenized-stock",
+  "ticker": "RKLBb",
+  "name": "Rocket Lab",
+  "underlying": "RKLB",
+  "type": "stock",
+  "issuer": "bStocks",
+  "vol": 3138801,
+  "cap": 0
  },
  {
   "id": "arm-bstocks-tokenized-stock",
@@ -406,18 +405,8 @@
   "underlying": "ARM",
   "type": "stock",
   "issuer": "bStocks",
-  "vol": 2936767,
+  "vol": 2929119,
   "cap": 0
- },
- {
-  "id": "western-digital-bstocks-tokenized-stock",
-  "ticker": "WDCb",
-  "name": "Western Digital",
-  "underlying": "WDC",
-  "type": "stock",
-  "issuer": "bStocks",
-  "vol": 2721590,
-  "cap": 911161
  },
  {
   "id": "marvell-technology-bstocks-tokenized-stock",
@@ -426,38 +415,18 @@
   "underlying": "MRVL",
   "type": "stock",
   "issuer": "bStocks",
-  "vol": 2716383,
-  "cap": 4784596
+  "vol": 2782930,
+  "cap": 4872791
  },
  {
-  "id": "applied-optoelectronics-bstocks-tokenized-stock",
-  "ticker": "AAOIb",
-  "name": "Applied Optoelectronics",
-  "underlying": "AAOI",
+  "id": "western-digital-bstocks-tokenized-stock",
+  "ticker": "WDCb",
+  "name": "Western Digital",
+  "underlying": "WDC",
   "type": "stock",
   "issuer": "bStocks",
-  "vol": 2675662,
-  "cap": 1346199
- },
- {
-  "id": "ishares-silver-trust-ondo-tokenized-stock",
-  "ticker": "SLVon",
-  "name": "iShares Silver Trust",
-  "underlying": "SLV",
-  "type": "etf",
-  "issuer": "Ondo",
-  "vol": 2633539,
-  "cap": 24003776
- },
- {
-  "id": "sp500-xstock",
-  "ticker": "SPYx",
-  "name": "S&P 500 ETF",
-  "underlying": "SPY",
-  "type": "etf",
-  "issuer": "xStocks",
-  "vol": 2545070,
-  "cap": 45636935
+  "vol": 2750285,
+  "cap": 937489
  },
  {
   "id": "alphabet-class-a-robinhood-tokenized-stock",
@@ -466,8 +435,28 @@
   "underlying": null,
   "type": "stock",
   "issuer": "Other",
-  "vol": 2474748,
-  "cap": 932410
+  "vol": 2678021,
+  "cap": 960483
+ },
+ {
+  "id": "ishares-silver-trust-ondo-tokenized-stock",
+  "ticker": "SLVon",
+  "name": "iShares Silver Trust",
+  "underlying": "SLV",
+  "type": "etf",
+  "issuer": "Ondo",
+  "vol": 2656675,
+  "cap": 24089266
+ },
+ {
+  "id": "applied-optoelectronics-bstocks-tokenized-stock",
+  "ticker": "AAOIb",
+  "name": "Applied Optoelectronics",
+  "underlying": "AAOI",
+  "type": "stock",
+  "issuer": "bStocks",
+  "vol": 2594070,
+  "cap": 2630655
  },
  {
   "id": "nokia-bstocks-tokenized-stock",
@@ -476,8 +465,8 @@
   "underlying": "NOK",
   "type": "stock",
   "issuer": "bStocks",
-  "vol": 2318959,
-  "cap": 2262842
+  "vol": 2396683,
+  "cap": 2311948
  },
  {
   "id": "nvidia-bstocks",
@@ -486,8 +475,8 @@
   "underlying": "NVDA",
   "type": "stock",
   "issuer": "bStocks",
-  "vol": 2247733,
-  "cap": 8337391
+  "vol": 2312949,
+  "cap": 8414770
  },
  {
   "id": "lumentum-holdings-bstocks-tokenized-stock",
@@ -496,8 +485,8 @@
   "underlying": "LITE",
   "type": "stock",
   "issuer": "bStocks",
-  "vol": 2210684,
-  "cap": 983522
+  "vol": 2243020,
+  "cap": 996126
  },
  {
   "id": "microsoft-bstocks-tokenized-stock",
@@ -506,18 +495,29 @@
   "underlying": "MSFT",
   "type": "stock",
   "issuer": "bStocks",
-  "vol": 2181736,
-  "cap": 1210931
+  "vol": 2184968,
+  "cap": 1217589
  },
  {
-  "id": "broadcom-ondo-tokenized-stock",
-  "ticker": "AVGOon",
-  "name": "Broadcom",
-  "underlying": "AVGO",
+  "id": "chevron-ondo-tokenized-stock",
+  "ticker": "CVXon",
+  "name": "Chevron",
+  "underlying": "CVX",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 2118532,
-  "cap": 5870671
+  "vol": 2100551,
+  "cap": 2688875
+ },
+ {
+  "id": "sp500-xstock",
+  "ticker": "SPYx",
+  "name": "S&P 500 ETF",
+  "underlying": "SPY",
+  "type": "etf",
+  "issuer": "xStocks",
+  "vol": 2068839,
+  "cap": 45717355,
+  "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W"
  },
  {
   "id": "tsmc-bstocks-tokenized-stock",
@@ -526,7 +526,7 @@
   "underlying": "TSM",
   "type": "stock",
   "issuer": "bStocks",
-  "vol": 2045133,
+  "vol": 2048441,
   "cap": 0
  },
  {
@@ -536,18 +536,9 @@
   "underlying": "MSTR",
   "type": "stock",
   "issuer": "xStocks",
-  "vol": 1851883,
-  "cap": 42206344
- },
- {
-  "id": "spacex-ondo-tokenized-stock",
-  "ticker": "SPCXon",
-  "name": "SpaceX",
-  "underlying": null,
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 1809665,
-  "cap": 7864168
+  "vol": 1884515,
+  "cap": 42330496,
+  "mint": "XsP7xzNPvEHS1m6qfanPUGjNmdnmsLKEoNAnHjdxxyZ"
  },
  {
   "id": "circle-internet-group-ondo-tokenized-stock",
@@ -556,8 +547,8 @@
   "underlying": "CRCL",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 1769289,
-  "cap": 97532425
+  "vol": 1851270,
+  "cap": 98316221
  },
  {
   "id": "nebius-group-ondo-tokenized",
@@ -566,8 +557,8 @@
   "underlying": "NBIS",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 1761642,
-  "cap": 4749292
+  "vol": 1800589,
+  "cap": 4865770
  },
  {
   "id": "apple-robinhood-tokenized-stock",
@@ -576,18 +567,18 @@
   "underlying": null,
   "type": "stock",
   "issuer": "Other",
-  "vol": 1730384,
-  "cap": 1053309
+  "vol": 1785690,
+  "cap": 1016681
  },
  {
-  "id": "mcdonald-s-xstock",
-  "ticker": "MCDx",
-  "name": "McDonald's",
-  "underlying": "MCD",
+  "id": "spacex-ondo-tokenized-stock",
+  "ticker": "SPCXon",
+  "name": "SpaceX",
+  "underlying": null,
   "type": "stock",
-  "issuer": "xStocks",
-  "vol": 1720365,
-  "cap": 1062935
+  "issuer": "Ondo",
+  "vol": 1770944,
+  "cap": 7974166
  },
  {
   "id": "meta-xstock",
@@ -596,8 +587,30 @@
   "underlying": "META",
   "type": "stock",
   "issuer": "xStocks",
-  "vol": 1718137,
-  "cap": 5469420
+  "vol": 1768791,
+  "cap": 5478707,
+  "mint": "Xsa62P5mvPszXL1krVUnU5ar38bBSVcWAB6fmPCo5Zu"
+ },
+ {
+  "id": "sandisk-backpack-securities",
+  "ticker": "SNDK",
+  "name": "Sandisk",
+  "underlying": null,
+  "type": "stock",
+  "issuer": "Other",
+  "vol": 1743025,
+  "cap": 1505571
+ },
+ {
+  "id": "mcdonald-s-xstock",
+  "ticker": "MCDx",
+  "name": "McDonald's",
+  "underlying": "MCD",
+  "type": "stock",
+  "issuer": "xStocks",
+  "vol": 1718118,
+  "cap": 1063671,
+  "mint": "XsqE9cRRpzxcGKDXj1BJ7Xmg4GRhZoyY1KpmGSxAWT2"
  },
  {
   "id": "ondo-us-dollar-yield",
@@ -606,8 +619,8 @@
   "underlying": null,
   "type": "bond",
   "issuer": "Ondo",
-  "vol": 1617850,
-  "cap": 2152782182
+  "vol": 1633977,
+  "cap": 2150079090
  },
  {
   "id": "palantir-technologies-bstocks-tokenized-stock",
@@ -616,18 +629,8 @@
   "underlying": "PLTR",
   "type": "stock",
   "issuer": "bStocks",
-  "vol": 1542093,
-  "cap": 1083574
- },
- {
-  "id": "shopify-ondo-tokenized-stock",
-  "ticker": "SHOPon",
-  "name": "Shopify",
-  "underlying": "SHOP",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 1504697,
-  "cap": 655844
+  "vol": 1549417,
+  "cap": 1090820
  },
  {
   "id": "micron-technology-robinhood-tokenized-stock",
@@ -636,18 +639,28 @@
   "underlying": null,
   "type": "stock",
   "issuer": "Other",
-  "vol": 1454252,
-  "cap": 721408
+  "vol": 1527187,
+  "cap": 715014
  },
  {
-  "id": "coinbase-ondo-tokenized-stock",
-  "ticker": "COINon",
-  "name": "Coinbase",
-  "underlying": "COIN",
+  "id": "broadcom-ondo-tokenized-stock",
+  "ticker": "AVGOon",
+  "name": "Broadcom",
+  "underlying": "AVGO",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 1452599,
-  "cap": 35552257
+  "vol": 1521062,
+  "cap": 5902778
+ },
+ {
+  "id": "shopify-ondo-tokenized-stock",
+  "ticker": "SHOPon",
+  "name": "Shopify",
+  "underlying": "SHOP",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 1519468,
+  "cap": 636237
  },
  {
   "id": "tesla-robinhood-tokenized-stock",
@@ -656,18 +669,18 @@
   "underlying": null,
   "type": "stock",
   "issuer": "Other",
-  "vol": 1429268,
-  "cap": 1394176
+  "vol": 1462928,
+  "cap": 1425144
  },
  {
-  "id": "invesco-qqq-etf-ondo-tokenized-etf",
-  "ticker": "QQQon",
-  "name": "Invesco QQQ ETF",
-  "underlying": "QQQ",
-  "type": "etf",
+  "id": "coinbase-ondo-tokenized-stock",
+  "ticker": "COINon",
+  "name": "Coinbase",
+  "underlying": "COIN",
+  "type": "stock",
   "issuer": "Ondo",
-  "vol": 1352505,
-  "cap": 34038152
+  "vol": 1428100,
+  "cap": 35688690
  },
  {
   "id": "nasdaq-xstock",
@@ -676,8 +689,19 @@
   "underlying": "QQQ",
   "type": "etf",
   "issuer": "xStocks",
-  "vol": 1346304,
-  "cap": 33110326
+  "vol": 1400512,
+  "cap": 33256874,
+  "mint": "Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ"
+ },
+ {
+  "id": "invesco-qqq-etf-ondo-tokenized-etf",
+  "ticker": "QQQon",
+  "name": "Invesco QQQ ETF",
+  "underlying": "QQQ",
+  "type": "etf",
+  "issuer": "Ondo",
+  "vol": 1382666,
+  "cap": 34217913
  },
  {
   "id": "sandisk-ondo-tokenized",
@@ -686,8 +710,8 @@
   "underlying": "SNDK",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 1335736,
-  "cap": 7460672
+  "vol": 1314087,
+  "cap": 7494016
  },
  {
   "id": "netflix-ondo-tokenized-stock",
@@ -696,28 +720,8 @@
   "underlying": "NFLX",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 1273872,
-  "cap": 833727
- },
- {
-  "id": "chevron-ondo-tokenized-stock",
-  "ticker": "CVXon",
-  "name": "Chevron",
-  "underlying": "CVX",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 1221752,
-  "cap": 2686420
- },
- {
-  "id": "taiwan-semiconductor-manufacturing-ondo-tokenized-stock",
-  "ticker": "TSMon",
-  "name": "Taiwan Semiconductor Manufacturing",
-  "underlying": "TSM",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 1176670,
-  "cap": 7338346
+  "vol": 1274741,
+  "cap": 832640
  },
  {
   "id": "iren-ondo-tokenized-stock",
@@ -726,18 +730,8 @@
   "underlying": "IREN",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 1176046,
-  "cap": 1616474
- },
- {
-  "id": "microstrategy-ondo-tokenized-stock",
-  "ticker": "MSTRon",
-  "name": "MicroStrategy",
-  "underlying": "MSTR",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 1147219,
-  "cap": 19342621
+  "vol": 1186272,
+  "cap": 1612689
  },
  {
   "id": "coinbase-robinhood-tokenized-stock",
@@ -746,8 +740,18 @@
   "underlying": null,
   "type": "stock",
   "issuer": "Other",
-  "vol": 1145501,
-  "cap": 569545
+  "vol": 1160541,
+  "cap": 569101
+ },
+ {
+  "id": "taiwan-semiconductor-manufacturing-ondo-tokenized-stock",
+  "ticker": "TSMon",
+  "name": "Taiwan Semiconductor Manufacturing",
+  "underlying": "TSM",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 1156631,
+  "cap": 7348577
  },
  {
   "id": "exxon-mobil-ondo-tokenized-stocks",
@@ -756,8 +760,18 @@
   "underlying": "XOM",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 1131655,
-  "cap": 251135
+  "vol": 1138624,
+  "cap": 252758
+ },
+ {
+  "id": "microstrategy-ondo-tokenized-stock",
+  "ticker": "MSTRon",
+  "name": "MicroStrategy",
+  "underlying": "MSTR",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 1128069,
+  "cap": 19460675
  },
  {
   "id": "mara-holdings-ondo-tokenized-stock",
@@ -766,8 +780,8 @@
   "underlying": "MARA",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 1119842,
-  "cap": 267397
+  "vol": 1116202,
+  "cap": 268023
  },
  {
   "id": "spdr-gold-shares-ondo-tokenized",
@@ -776,8 +790,8 @@
   "underlying": "GLD",
   "type": "etf",
   "issuer": "Ondo",
-  "vol": 1113820,
-  "cap": 751899
+  "vol": 1108124,
+  "cap": 751770
  },
  {
   "id": "coca-cola-ondo-tokenized-stock",
@@ -786,58 +800,8 @@
   "underlying": "KO",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 1090839,
-  "cap": 3786432
- },
- {
-  "id": "marvell-technology-ondo-tokenized-stock",
-  "ticker": "MRVLon",
-  "name": "Marvell Technology",
-  "underlying": "MRVL",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 1060750,
-  "cap": 17937597
- },
- {
-  "id": "ibm-ondo-tokenized-stock",
-  "ticker": "IBMon",
-  "name": "IBM",
-  "underlying": "IBM",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 1060381,
-  "cap": 2865262
- },
- {
-  "id": "vertiv-ondo-tokenized",
-  "ticker": "VRTon",
-  "name": "Vertiv",
-  "underlying": "VRT",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 1050917,
-  "cap": 1246886
- },
- {
-  "id": "robinhood-markets-ondo-tokenized-stock",
-  "ticker": "HOODon",
-  "name": "Robinhood Markets",
-  "underlying": "HOOD",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 1041161,
-  "cap": 4356377
- },
- {
-  "id": "apple-ondo-tokenized-stock",
-  "ticker": "AAPLon",
-  "name": "Apple",
-  "underlying": "AAPL",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 1033834,
-  "cap": 8726521
+  "vol": 1087787,
+  "cap": 3780311
  },
  {
   "id": "asml-holding-nv-ondo-tokenized-stock",
@@ -846,8 +810,48 @@
   "underlying": "ASML",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 1024258,
-  "cap": 3997628
+  "vol": 1076700,
+  "cap": 3998495
+ },
+ {
+  "id": "ibm-ondo-tokenized-stock",
+  "ticker": "IBMon",
+  "name": "IBM",
+  "underlying": "IBM",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 1076231,
+  "cap": 2883576
+ },
+ {
+  "id": "vertiv-ondo-tokenized",
+  "ticker": "VRTon",
+  "name": "Vertiv",
+  "underlying": "VRT",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 1059986,
+  "cap": 1251103
+ },
+ {
+  "id": "marvell-technology-ondo-tokenized-stock",
+  "ticker": "MRVLon",
+  "name": "Marvell Technology",
+  "underlying": "MRVL",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 1058286,
+  "cap": 18296312
+ },
+ {
+  "id": "robinhood-markets-ondo-tokenized-stock",
+  "ticker": "HOODon",
+  "name": "Robinhood Markets",
+  "underlying": "HOOD",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 1049770,
+  "cap": 4401141
  },
  {
   "id": "eli-lilly-ondo-tokenized-stock",
@@ -856,18 +860,8 @@
   "underlying": "LLY",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 1018647,
-  "cap": 5071242
- },
- {
-  "id": "proshares-ultrapro-qqq-ondo-tokenized",
-  "ticker": "TQQQon",
-  "name": "ProShares UltraPro QQQ",
-  "underlying": "TQQQ",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 995382,
-  "cap": 5882218
+  "vol": 1022124,
+  "cap": 5075804
  },
  {
   "id": "palantir-technologies-ondo-tokenized-stock",
@@ -876,28 +870,8 @@
   "underlying": "PLTR",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 984413,
-  "cap": 2539864
- },
- {
-  "id": "microsoft-ondo-tokenized-stock",
-  "ticker": "MSFTon",
-  "name": "Microsoft",
-  "underlying": "MSFT",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 962981,
-  "cap": 10618659
- },
- {
-  "id": "amazon-ondo-tokenized-stock",
-  "ticker": "AMZNon",
-  "name": "Amazon",
-  "underlying": "AMZN",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 943635,
-  "cap": 10452800
+  "vol": 1013200,
+  "cap": 2551703
  },
  {
   "id": "alibaba-ondo-tokenized-stock",
@@ -906,18 +880,38 @@
   "underlying": "BABA",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 912163,
-  "cap": 3115872
+  "vol": 967123,
+  "cap": 3118904
  },
  {
-  "id": "coinbase-bstocks-tokenized-stock",
-  "ticker": "COINb",
-  "name": "Coinbase",
-  "underlying": "COIN",
+  "id": "microsoft-ondo-tokenized-stock",
+  "ticker": "MSFTon",
+  "name": "Microsoft",
+  "underlying": "MSFT",
   "type": "stock",
-  "issuer": "bStocks",
-  "vol": 897625,
-  "cap": 1883362
+  "issuer": "Ondo",
+  "vol": 959594,
+  "cap": 10735364
+ },
+ {
+  "id": "amazon-ondo-tokenized-stock",
+  "ticker": "AMZNon",
+  "name": "Amazon",
+  "underlying": "AMZN",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 957372,
+  "cap": 10509737
+ },
+ {
+  "id": "proshares-ultrapro-qqq-ondo-tokenized",
+  "ticker": "TQQQon",
+  "name": "ProShares UltraPro QQQ",
+  "underlying": "TQQQ",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 938107,
+  "cap": 5920410
  },
  {
   "id": "ishares-0-3-month-treasury-bond-etf-ondo-tokenized-etf",
@@ -926,28 +920,28 @@
   "underlying": "SGOV",
   "type": "etf",
   "issuer": "Ondo",
-  "vol": 893148,
-  "cap": 7086811
+  "vol": 896985,
+  "cap": 7082769
  },
  {
-  "id": "ishares-20-year-treasury-bond-etf-ondo-tokenized-etf",
-  "ticker": "TLTon",
-  "name": "iShares 20+ Year Treasury Bond ETF",
-  "underlying": "TLT",
-  "type": "etf",
+  "id": "apple-ondo-tokenized-stock",
+  "ticker": "AAPLon",
+  "name": "Apple",
+  "underlying": "AAPL",
+  "type": "stock",
   "issuer": "Ondo",
-  "vol": 873699,
-  "cap": 19465087
+  "vol": 896802,
+  "cap": 8735778
  },
  {
-  "id": "ishares-core-msci-eafe-etf-ondo-tokenized-etf",
-  "ticker": "IEFAon",
-  "name": "iShares Core MSCI EAFE ETF",
-  "underlying": "IEFA",
-  "type": "etf",
-  "issuer": "Ondo",
-  "vol": 831660,
-  "cap": 16739718
+  "id": "coinbase-bstocks-tokenized-stock",
+  "ticker": "COINb",
+  "name": "Coinbase",
+  "underlying": "COIN",
+  "type": "stock",
+  "issuer": "bStocks",
+  "vol": 892161,
+  "cap": 1892472
  },
  {
   "id": "microsoft-robinhood-tokenized-stock",
@@ -956,128 +950,18 @@
   "underlying": null,
   "type": "stock",
   "issuer": "Other",
-  "vol": 826243,
-  "cap": 707471
+  "vol": 872628,
+  "cap": 719724
  },
  {
-  "id": "lockheed-ondo-tokenized-stock",
-  "ticker": "LMTon",
-  "name": "Lockheed",
-  "underlying": "LMT",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 825695,
-  "cap": 3871153
- },
- {
-  "id": "mastercard-ondo-tokenized-stock",
-  "ticker": "MAon",
-  "name": "Mastercard",
-  "underlying": "MA",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 817806,
-  "cap": 1208773
- },
- {
-  "id": "ondas-holdings-ondo-tokenized",
-  "ticker": "ONDSon",
-  "name": "Ondas Holdings",
-  "underlying": "ONDS",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 785111,
-  "cap": 371368
- },
- {
-  "id": "spdr-s-p-500-etf-ondo-tokenized-etf",
-  "ticker": "SPYon",
-  "name": "SPDR S&P 500 ETF",
-  "underlying": "SPY",
+  "id": "ishares-20-year-treasury-bond-etf-ondo-tokenized-etf",
+  "ticker": "TLTon",
+  "name": "iShares 20+ Year Treasury Bond ETF",
+  "underlying": "TLT",
   "type": "etf",
   "issuer": "Ondo",
-  "vol": 773784,
-  "cap": 41599303
- },
- {
-  "id": "hims-hers-health-ondo-tokenized-stock",
-  "ticker": "HIMSon",
-  "name": "Hims & Hers Health",
-  "underlying": "HIMS",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 771938,
-  "cap": 31981121
- },
- {
-  "id": "ishares-core-msci-emerging-markets-etf-ondo-tokenized-etf",
-  "ticker": "IEMGon",
-  "name": "iShares Core MSCI Emerging Markets ETF",
-  "underlying": "IEMG",
-  "type": "etf",
-  "issuer": "Ondo",
-  "vol": 760477,
-  "cap": 9690466
- },
- {
-  "id": "coherent-ondo-tokenized",
-  "ticker": "COHRon",
-  "name": "Coherent",
-  "underlying": "COHR",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 757551,
-  "cap": 1348739
- },
- {
-  "id": "uber-ondo-tokenized-stock",
-  "ticker": "UBERon",
-  "name": "Uber",
-  "underlying": "UBER",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 756592,
-  "cap": 792719
- },
- {
-  "id": "coreweave-ondo-tokenized",
-  "ticker": "CRWVon",
-  "name": "CoreWeave",
-  "underlying": "CRWV",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 746323,
-  "cap": 1300685
- },
- {
-  "id": "d-wave-quantum-ondo-tokenized-stock",
-  "ticker": "QBTSon",
-  "name": "D-Wave Quantum",
-  "underlying": "QBTS",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 741973,
-  "cap": 649315
- },
- {
-  "id": "bilibili-ondo-tokenized-stocks",
-  "ticker": "BILIon",
-  "name": "Bilibili",
-  "underlying": "BILI",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 741453,
-  "cap": 149170
- },
- {
-  "id": "sk-hynix-ondo-tokenized",
-  "ticker": "SKHYon",
-  "name": "SK Hynix",
-  "underlying": "SKHY",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 741344,
-  "cap": 1236133
+  "vol": 860940,
+  "cap": 19485231
  },
  {
   "id": "meta-platforms-ondo-tokenized-stock",
@@ -1086,8 +970,138 @@
   "underlying": "META",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 735865,
-  "cap": 8697602
+  "vol": 847351,
+  "cap": 8733315
+ },
+ {
+  "id": "ishares-core-msci-eafe-etf-ondo-tokenized-etf",
+  "ticker": "IEFAon",
+  "name": "iShares Core MSCI EAFE ETF",
+  "underlying": "IEFA",
+  "type": "etf",
+  "issuer": "Ondo",
+  "vol": 823333,
+  "cap": 16788307
+ },
+ {
+  "id": "lockheed-ondo-tokenized-stock",
+  "ticker": "LMTon",
+  "name": "Lockheed",
+  "underlying": "LMT",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 803605,
+  "cap": 3873614
+ },
+ {
+  "id": "mastercard-ondo-tokenized-stock",
+  "ticker": "MAon",
+  "name": "Mastercard",
+  "underlying": "MA",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 799749,
+  "cap": 1205028
+ },
+ {
+  "id": "ondas-holdings-ondo-tokenized",
+  "ticker": "ONDSon",
+  "name": "Ondas Holdings",
+  "underlying": "ONDS",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 792179,
+  "cap": 374936
+ },
+ {
+  "id": "hims-hers-health-ondo-tokenized-stock",
+  "ticker": "HIMSon",
+  "name": "Hims & Hers Health",
+  "underlying": "HIMS",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 786708,
+  "cap": 32168771
+ },
+ {
+  "id": "sk-hynix-ondo-tokenized",
+  "ticker": "SKHYon",
+  "name": "SK Hynix",
+  "underlying": "SKHY",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 765881,
+  "cap": 1249836
+ },
+ {
+  "id": "coherent-ondo-tokenized",
+  "ticker": "COHRon",
+  "name": "Coherent",
+  "underlying": "COHR",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 762464,
+  "cap": 1352272
+ },
+ {
+  "id": "ishares-core-msci-emerging-markets-etf-ondo-tokenized-etf",
+  "ticker": "IEMGon",
+  "name": "iShares Core MSCI Emerging Markets ETF",
+  "underlying": "IEMG",
+  "type": "etf",
+  "issuer": "Ondo",
+  "vol": 761697,
+  "cap": 9834700
+ },
+ {
+  "id": "spdr-s-p-500-etf-ondo-tokenized-etf",
+  "ticker": "SPYon",
+  "name": "SPDR S&P 500 ETF",
+  "underlying": "SPY",
+  "type": "etf",
+  "issuer": "Ondo",
+  "vol": 749613,
+  "cap": 41727126
+ },
+ {
+  "id": "coreweave-ondo-tokenized",
+  "ticker": "CRWVon",
+  "name": "CoreWeave",
+  "underlying": "CRWV",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 748425,
+  "cap": 1306887
+ },
+ {
+  "id": "bilibili-ondo-tokenized-stocks",
+  "ticker": "BILIon",
+  "name": "Bilibili",
+  "underlying": "BILI",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 745582,
+  "cap": 151408
+ },
+ {
+  "id": "uber-ondo-tokenized-stock",
+  "ticker": "UBERon",
+  "name": "Uber",
+  "underlying": "UBER",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 742190,
+  "cap": 794748
+ },
+ {
+  "id": "d-wave-quantum-ondo-tokenized-stock",
+  "ticker": "QBTSon",
+  "name": "D-Wave Quantum",
+  "underlying": "QBTS",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 740476,
+  "cap": 647395
  },
  {
   "id": "baidu-ondo-tokenized-stock",
@@ -1096,28 +1110,8 @@
   "underlying": "BIDU",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 729323,
-  "cap": 1276585
- },
- {
-  "id": "mp-materials-ondo-tokenized",
-  "ticker": "MPon",
-  "name": "MP Materials",
-  "underlying": "MP",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 713446,
-  "cap": 340853
- },
- {
-  "id": "proshares-short-qqq-ondo-tokenized",
-  "ticker": "PSQon",
-  "name": "ProShares Short QQQ",
-  "underlying": "PSQ",
-  "type": "etf",
-  "issuer": "Ondo",
-  "vol": 711041,
-  "cap": 19637
+  "vol": 733521,
+  "cap": 1278674
  },
  {
   "id": "adobe-ondo-tokenized-stock",
@@ -1126,8 +1120,18 @@
   "underlying": "ADBE",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 703911,
-  "cap": 836255
+  "vol": 716194,
+  "cap": 836228
+ },
+ {
+  "id": "proshares-short-qqq-ondo-tokenized",
+  "ticker": "PSQon",
+  "name": "ProShares Short QQQ",
+  "underlying": "PSQ",
+  "type": "etf",
+  "issuer": "Ondo",
+  "vol": 712264,
+  "cap": 19649
  },
  {
   "id": "robostrategy-backpack-securities",
@@ -1136,28 +1140,8 @@
   "underlying": null,
   "type": "stock",
   "issuer": "Other",
-  "vol": 693130,
-  "cap": 1599508
- },
- {
-  "id": "pfizer-ondo-tokenized-stock",
-  "ticker": "PFEon",
-  "name": "Pfizer",
-  "underlying": "PFE",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 685632,
-  "cap": 3116244
- },
- {
-  "id": "constellation-energy-ondo-tokenized-stock",
-  "ticker": "CEGon",
-  "name": "Constellation Energy",
-  "underlying": "CEG",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 682613,
-  "cap": 553228
+  "vol": 708864,
+  "cap": 1613246
  },
  {
   "id": "intel-robinhood-tokenized-stock",
@@ -1166,108 +1150,28 @@
   "underlying": null,
   "type": "stock",
   "issuer": "Other",
-  "vol": 677286,
-  "cap": 457079
+  "vol": 706507,
+  "cap": 456613
  },
  {
-  "id": "super-micro-computer-ondo-tokenized-stock",
-  "ticker": "SMCIon",
-  "name": "Super Micro Computer",
-  "underlying": "SMCI",
+  "id": "pfizer-ondo-tokenized-stock",
+  "ticker": "PFEon",
+  "name": "Pfizer",
+  "underlying": "PFE",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 653760,
-  "cap": 1615297
+  "vol": 705822,
+  "cap": 3115477
  },
  {
-  "id": "crowdstrike-ondo-tokenized-stocks",
-  "ticker": "CRWDon",
-  "name": "CrowdStrike",
-  "underlying": "CRWD",
+  "id": "mp-materials-ondo-tokenized",
+  "ticker": "MPon",
+  "name": "MP Materials",
+  "underlying": "MP",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 638968,
-  "cap": 28546
- },
- {
-  "id": "spotify-ondo-tokenized-stock",
-  "ticker": "SPOTon",
-  "name": "Spotify",
-  "underlying": "SPOT",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 638910,
-  "cap": 533066
- },
- {
-  "id": "intel-ondo-tokenized-stock",
-  "ticker": "INTCon",
-  "name": "Intel",
-  "underlying": "INTC",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 636296,
-  "cap": 16699261
- },
- {
-  "id": "ishares-core-s-p-total-us-stock-market-etf-ondo-tokenized-etf",
-  "ticker": "ITOTon",
-  "name": "iShares Core S&P Total US Stock Market ETF",
-  "underlying": "ITOT",
-  "type": "etf",
-  "issuer": "Ondo",
-  "vol": 619900,
-  "cap": 12344660
- },
- {
-  "id": "intel-backpack-securities",
-  "ticker": "INTC",
-  "name": "Intel",
-  "underlying": null,
-  "type": "stock",
-  "issuer": "Other",
-  "vol": 613610,
-  "cap": 649773
- },
- {
-  "id": "jpmorgan-chase-ondo-tokenized-stock",
-  "ticker": "JPMon",
-  "name": "JPMorgan Chase",
-  "underlying": "JPM",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 609173,
-  "cap": 2858973
- },
- {
-  "id": "moderna-ondo-tokenized",
-  "ticker": "MRNAon",
-  "name": "Moderna",
-  "underlying": "MRNA",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 589269,
-  "cap": 59815
- },
- {
-  "id": "united-states-oil-fund-ondo-tokenized",
-  "ticker": "USOon",
-  "name": "United States Oil Fund",
-  "underlying": "USO",
-  "type": "etf",
-  "issuer": "Ondo",
-  "vol": 587899,
-  "cap": 2952667
- },
- {
-  "id": "bitmine-immersion-technologies-ondo-tokenized-stocks",
-  "ticker": "BMNRon",
-  "name": "BitMine Immersion Technologies",
-  "underlying": "BMNR",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 585703,
-  "cap": 4944508
+  "vol": 703061,
+  "cap": 341726
  },
  {
   "id": "accenture-ondo-tokenized-stock",
@@ -1276,8 +1180,58 @@
   "underlying": "ACN",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 577119,
-  "cap": 847513
+  "vol": 695591,
+  "cap": 847451
+ },
+ {
+  "id": "constellation-energy-ondo-tokenized-stock",
+  "ticker": "CEGon",
+  "name": "Constellation Energy",
+  "underlying": "CEG",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 678002,
+  "cap": 552188
+ },
+ {
+  "id": "super-micro-computer-ondo-tokenized-stock",
+  "ticker": "SMCIon",
+  "name": "Super Micro Computer",
+  "underlying": "SMCI",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 655982,
+  "cap": 1621688
+ },
+ {
+  "id": "spotify-ondo-tokenized-stock",
+  "ticker": "SPOTon",
+  "name": "Spotify",
+  "underlying": "SPOT",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 648188,
+  "cap": 540823
+ },
+ {
+  "id": "crowdstrike-ondo-tokenized-stocks",
+  "ticker": "CRWDon",
+  "name": "CrowdStrike",
+  "underlying": "CRWD",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 641829,
+  "cap": 28601
+ },
+ {
+  "id": "ishares-core-s-p-total-us-stock-market-etf-ondo-tokenized-etf",
+  "ticker": "ITOTon",
+  "name": "iShares Core S&P Total US Stock Market ETF",
+  "underlying": "ITOT",
+  "type": "etf",
+  "issuer": "Ondo",
+  "vol": 612847,
+  "cap": 12348152
  },
  {
   "id": "unitedhealth-ondo-tokenized-stock",
@@ -1286,108 +1240,68 @@
   "underlying": "UNH",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 548410,
-  "cap": 1464440
+  "vol": 610981,
+  "cap": 1468994
  },
  {
-  "id": "oracle-ondo-tokenized-stock",
-  "ticker": "ORCLon",
-  "name": "Oracle",
-  "underlying": "ORCL",
+  "id": "intel-ondo-tokenized-stock",
+  "ticker": "INTCon",
+  "name": "Intel",
+  "underlying": "INTC",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 542112,
-  "cap": 5246194
+  "vol": 606320,
+  "cap": 17011047
  },
  {
-  "id": "pdd-holdings-ondo-tokenized",
-  "ticker": "PDDon",
-  "name": "PDD Holdings",
-  "underlying": "PDD",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 524200,
-  "cap": 13108048
- },
- {
-  "id": "lam-research-ondo-tokenized",
-  "ticker": "LRCXon",
-  "name": "Lam Research",
-  "underlying": "LRCX",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 506364,
-  "cap": 277652
- },
- {
-  "id": "global-x-copper-miners-etf-ondo-tokenized-etf",
-  "ticker": "COPXon",
-  "name": "Global X Copper Miners ETF",
-  "underlying": "COPX",
+  "id": "united-states-oil-fund-ondo-tokenized",
+  "ticker": "USOon",
+  "name": "United States Oil Fund",
+  "underlying": "USO",
   "type": "etf",
   "issuer": "Ondo",
-  "vol": 483773,
-  "cap": 1687335
+  "vol": 603936,
+  "cap": 2964024
  },
  {
-  "id": "oklo-ondo-tokenized",
-  "ticker": "OKLOon",
-  "name": "Oklo",
-  "underlying": "OKLO",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 468349,
-  "cap": 581199
- },
- {
-  "id": "ishares-tips-bond-etf-ondo-tokenized-etf",
-  "ticker": "TIPon",
-  "name": "iShares TIPS Bond ETF",
-  "underlying": "TIP",
-  "type": "etf",
-  "issuer": "Ondo",
-  "vol": 447832,
-  "cap": 11220513
- },
- {
-  "id": "qualcomm-ondo-tokenized-stock",
-  "ticker": "QCOMon",
-  "name": "Qualcomm",
-  "underlying": "QCOM",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 446744,
-  "cap": 3952810
- },
- {
-  "id": "walmart-ondo-tokenized-stock",
-  "ticker": "WMTon",
-  "name": "Walmart",
-  "underlying": "WMT",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 444329,
-  "cap": 2206731
- },
- {
-  "id": "roundhill-memory-etf-backpack-securities",
-  "ticker": "DRAM",
-  "name": "Roundhill Memory ETF",
+  "id": "intel-backpack-securities",
+  "ticker": "INTC",
+  "name": "Intel",
   "underlying": null,
-  "type": "etf",
+  "type": "stock",
   "issuer": "Other",
-  "vol": 439406,
-  "cap": 1187606
+  "vol": 595442,
+  "cap": 663976
  },
  {
-  "id": "applied-materials-ondo-tokenized-stocks",
-  "ticker": "AMATon",
-  "name": "Applied Materials",
-  "underlying": "AMAT",
+  "id": "jpmorgan-chase-ondo-tokenized-stock",
+  "ticker": "JPMon",
+  "name": "JPMorgan Chase",
+  "underlying": "JPM",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 430818,
-  "cap": 619634
+  "vol": 593473,
+  "cap": 2861745
+ },
+ {
+  "id": "moderna-ondo-tokenized",
+  "ticker": "MRNAon",
+  "name": "Moderna",
+  "underlying": "MRNA",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 589999,
+  "cap": 59701
+ },
+ {
+  "id": "bitmine-immersion-technologies-ondo-tokenized-stocks",
+  "ticker": "BMNRon",
+  "name": "BitMine Immersion Technologies",
+  "underlying": "BMNR",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 586346,
+  "cap": 4938345
  },
  {
   "id": "ishares-gold-trust-ondo-tokenized-stock",
@@ -1396,8 +1310,98 @@
   "underlying": "IAU",
   "type": "etf",
   "issuer": "Ondo",
-  "vol": 422661,
-  "cap": 12102320
+  "vol": 585672,
+  "cap": 12228715
+ },
+ {
+  "id": "oracle-ondo-tokenized-stock",
+  "ticker": "ORCLon",
+  "name": "Oracle",
+  "underlying": "ORCL",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 550040,
+  "cap": 5291246
+ },
+ {
+  "id": "pdd-holdings-ondo-tokenized",
+  "ticker": "PDDon",
+  "name": "PDD Holdings",
+  "underlying": "PDD",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 532600,
+  "cap": 13383766
+ },
+ {
+  "id": "lam-research-ondo-tokenized",
+  "ticker": "LRCXon",
+  "name": "Lam Research",
+  "underlying": "LRCX",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 508130,
+  "cap": 260430
+ },
+ {
+  "id": "global-x-copper-miners-etf-ondo-tokenized-etf",
+  "ticker": "COPXon",
+  "name": "Global X Copper Miners ETF",
+  "underlying": "COPX",
+  "type": "etf",
+  "issuer": "Ondo",
+  "vol": 486000,
+  "cap": 1684342
+ },
+ {
+  "id": "ishares-tips-bond-etf-ondo-tokenized-etf",
+  "ticker": "TIPon",
+  "name": "iShares TIPS Bond ETF",
+  "underlying": "TIP",
+  "type": "etf",
+  "issuer": "Ondo",
+  "vol": 457002,
+  "cap": 11270752
+ },
+ {
+  "id": "roundhill-memory-etf-backpack-securities",
+  "ticker": "DRAM",
+  "name": "Roundhill Memory ETF",
+  "underlying": null,
+  "type": "etf",
+  "issuer": "Other",
+  "vol": 455338,
+  "cap": 1198687
+ },
+ {
+  "id": "oklo-ondo-tokenized",
+  "ticker": "OKLOon",
+  "name": "Oklo",
+  "underlying": "OKLO",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 446480,
+  "cap": 581505
+ },
+ {
+  "id": "walmart-ondo-tokenized-stock",
+  "ticker": "WMTon",
+  "name": "Walmart",
+  "underlying": "WMT",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 445210,
+  "cap": 2198535
+ },
+ {
+  "id": "qualcomm-ondo-tokenized-stock",
+  "ticker": "QCOMon",
+  "name": "Qualcomm",
+  "underlying": "QCOM",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 429948,
+  "cap": 3885599
  },
  {
   "id": "arm-holdings-plc-ondo-tokenized-stock",
@@ -1406,28 +1410,18 @@
   "underlying": "ARM",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 418558,
-  "cap": 5337903
+  "vol": 424398,
+  "cap": 5370829
  },
  {
-  "id": "ishares-core-s-p-500-etf-ondo-tokenized-etf",
-  "ticker": "IVVon",
-  "name": "iShares Core S&P 500 ETF",
-  "underlying": "IVV",
-  "type": "etf",
-  "issuer": "Ondo",
-  "vol": 413270,
-  "cap": 67594299
- },
- {
-  "id": "petrobras-ondo-tokenized-stock",
-  "ticker": "PBRon",
-  "name": "Petrobras",
-  "underlying": "PBR",
+  "id": "applied-materials-ondo-tokenized-stocks",
+  "ticker": "AMATon",
+  "name": "Applied Materials",
+  "underlying": "AMAT",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 412271,
-  "cap": 2255510
+  "vol": 421804,
+  "cap": 619444
  },
  {
   "id": "snowflake-ondo-tokenized-stock",
@@ -1436,138 +1430,8 @@
   "underlying": "SNOW",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 410304,
-  "cap": 1523142
- },
- {
-  "id": "arista-networks-ondo-tokenized-stocks",
-  "ticker": "ANETon",
-  "name": "Arista Networks",
-  "underlying": "ANET",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 407392,
-  "cap": 261616
- },
- {
-  "id": "conocophillips-ondo-tokenized-stocks",
-  "ticker": "COPon",
-  "name": "ConocoPhillips",
-  "underlying": "COP",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 403807,
-  "cap": 31786
- },
- {
-  "id": "ishares-msci-eafe-etf-ondo-tokenized-etf",
-  "ticker": "EFAon",
-  "name": "iShares MSCI EAFE ETF",
-  "underlying": "EFA",
-  "type": "etf",
-  "issuer": "Ondo",
-  "vol": 403059,
-  "cap": 11057687
- },
- {
-  "id": "occidental-petroleum-ondo-tokenized",
-  "ticker": "OXYon",
-  "name": "Occidental Petroleum",
-  "underlying": "OXY",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 399499,
-  "cap": 758337
- },
- {
-  "id": "visa-ondo-tokenized-stock",
-  "ticker": "Von",
-  "name": "Visa",
-  "underlying": "V",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 397476,
-  "cap": 1916090
- },
- {
-  "id": "abrdn-physical-palladium-shares-etf-ondo-tokenized-stocks",
-  "ticker": "PALLon",
-  "name": "abrdn Physical Palladium Shares ETF",
-  "underlying": "PALL",
-  "type": "etf",
-  "issuer": "Ondo",
-  "vol": 396942,
-  "cap": 172358
- },
- {
-  "id": "boeing-ondo-tokenized-stock",
-  "ticker": "BAon",
-  "name": "Boeing",
-  "underlying": "BA",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 394478,
-  "cap": 1269892
- },
- {
-  "id": "salesforce-ondo-tokenized-stock",
-  "ticker": "CRMon",
-  "name": "Salesforce",
-  "underlying": "CRM",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 394450,
-  "cap": 968910
- },
- {
-  "id": "rivian-automotive-ondo-tokenized",
-  "ticker": "RIVNon",
-  "name": "Rivian Automotive",
-  "underlying": "RIVN",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 394125,
-  "cap": 58127
- },
- {
-  "id": "ishares-msci-emerging-markets-etf-ondo-tokenized-etf",
-  "ticker": "EEMon",
-  "name": "iShares MSCI Emerging Markets ETF",
-  "underlying": "EEM",
-  "type": "etf",
-  "issuer": "Ondo",
-  "vol": 393254,
-  "cap": 7357567
- },
- {
-  "id": "roundhill-memory-etf-ondo-tokenized",
-  "ticker": "DRAMon",
-  "name": "Roundhill Memory ETF",
-  "underlying": "DRAM",
-  "type": "etf",
-  "issuer": "Ondo",
-  "vol": 391184,
-  "cap": 3674564
- },
- {
-  "id": "novo-nordisk-ondo-tokenized-stock",
-  "ticker": "NVOon",
-  "name": "Novo Nordisk",
-  "underlying": "NVO",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 390329,
-  "cap": 2433609
- },
- {
-  "id": "gamestop-ondo-tokenized-stock",
-  "ticker": "GMEon",
-  "name": "GameStop",
-  "underlying": "GME",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 383347,
-  "cap": 392740
+  "vol": 418055,
+  "cap": 1519454
  },
  {
   "id": "palantir-technologies-robinhood-tokenized-stock",
@@ -1576,18 +1440,158 @@
   "underlying": null,
   "type": "stock",
   "issuer": "Other",
-  "vol": 360241,
-  "cap": 478837
+  "vol": 414315,
+  "cap": 482717
  },
  {
-  "id": "cisco-systems-ondo-tokenized-stock",
-  "ticker": "CSCOon",
-  "name": "Cisco Systems",
-  "underlying": "CSCO",
+  "id": "ishares-core-s-p-500-etf-ondo-tokenized-etf",
+  "ticker": "IVVon",
+  "name": "iShares Core S&P 500 ETF",
+  "underlying": "IVV",
+  "type": "etf",
+  "issuer": "Ondo",
+  "vol": 413716,
+  "cap": 67624561
+ },
+ {
+  "id": "petrobras-ondo-tokenized-stock",
+  "ticker": "PBRon",
+  "name": "Petrobras",
+  "underlying": "PBR",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 330881,
-  "cap": 2866446
+  "vol": 409180,
+  "cap": 2236574
+ },
+ {
+  "id": "roundhill-memory-etf-ondo-tokenized",
+  "ticker": "DRAMon",
+  "name": "Roundhill Memory ETF",
+  "underlying": "DRAM",
+  "type": "etf",
+  "issuer": "Ondo",
+  "vol": 408849,
+  "cap": 3690352
+ },
+ {
+  "id": "conocophillips-ondo-tokenized-stocks",
+  "ticker": "COPon",
+  "name": "ConocoPhillips",
+  "underlying": "COP",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 408468,
+  "cap": 31841
+ },
+ {
+  "id": "visa-ondo-tokenized-stock",
+  "ticker": "Von",
+  "name": "Visa",
+  "underlying": "V",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 401117,
+  "cap": 1918950
+ },
+ {
+  "id": "rivian-automotive-ondo-tokenized",
+  "ticker": "RIVNon",
+  "name": "Rivian Automotive",
+  "underlying": "RIVN",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 401045,
+  "cap": 58097
+ },
+ {
+  "id": "ishares-msci-eafe-etf-ondo-tokenized-etf",
+  "ticker": "EFAon",
+  "name": "iShares MSCI EAFE ETF",
+  "underlying": "EFA",
+  "type": "etf",
+  "issuer": "Ondo",
+  "vol": 400314,
+  "cap": 11025332
+ },
+ {
+  "id": "arista-networks-ondo-tokenized-stocks",
+  "ticker": "ANETon",
+  "name": "Arista Networks",
+  "underlying": "ANET",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 399893,
+  "cap": 261068
+ },
+ {
+  "id": "abrdn-physical-palladium-shares-etf-ondo-tokenized-stocks",
+  "ticker": "PALLon",
+  "name": "abrdn Physical Palladium Shares ETF",
+  "underlying": "PALL",
+  "type": "etf",
+  "issuer": "Ondo",
+  "vol": 399717,
+  "cap": 173005
+ },
+ {
+  "id": "occidental-petroleum-ondo-tokenized",
+  "ticker": "OXYon",
+  "name": "Occidental Petroleum",
+  "underlying": "OXY",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 399118,
+  "cap": 758959
+ },
+ {
+  "id": "salesforce-ondo-tokenized-stock",
+  "ticker": "CRMon",
+  "name": "Salesforce",
+  "underlying": "CRM",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 395374,
+  "cap": 968467
+ },
+ {
+  "id": "novo-nordisk-ondo-tokenized-stock",
+  "ticker": "NVOon",
+  "name": "Novo Nordisk",
+  "underlying": "NVO",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 394021,
+  "cap": 2440035
+ },
+ {
+  "id": "ishares-msci-emerging-markets-etf-ondo-tokenized-etf",
+  "ticker": "EEMon",
+  "name": "iShares MSCI Emerging Markets ETF",
+  "underlying": "EEM",
+  "type": "etf",
+  "issuer": "Ondo",
+  "vol": 393247,
+  "cap": 7341998
+ },
+ {
+  "id": "gamestop-ondo-tokenized-stock",
+  "ticker": "GMEon",
+  "name": "GameStop",
+  "underlying": "GME",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 388317,
+  "cap": 392259
+ },
+ {
+  "id": "boeing-ondo-tokenized-stock",
+  "ticker": "BAon",
+  "name": "Boeing",
+  "underlying": "BA",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 387021,
+  "cap": 1272484
  },
  {
   "id": "direxion-daily-semi-bull-3x-etf-ondo-tokenized",
@@ -1596,18 +1600,8 @@
   "underlying": "SOXL",
   "type": "etf",
   "issuer": "Ondo",
-  "vol": 324348,
-  "cap": 968033
- },
- {
-  "id": "sandisk-corporation-robinhood-tokenized-stock",
-  "ticker": "SNDK",
-  "name": "Sandisk Corporation",
-  "underlying": null,
-  "type": "stock",
-  "issuer": "Other",
-  "vol": 321335,
-  "cap": 870355
+  "vol": 336443,
+  "cap": 994418
  },
  {
   "id": "amazon-robinhood-tokenized-stock",
@@ -1616,8 +1610,18 @@
   "underlying": null,
   "type": "stock",
   "issuer": "Other",
-  "vol": 313522,
-  "cap": 892112
+  "vol": 328446,
+  "cap": 930534
+ },
+ {
+  "id": "sandisk-corporation-robinhood-tokenized-stock",
+  "ticker": "SNDK",
+  "name": "Sandisk Corporation",
+  "underlying": null,
+  "type": "stock",
+  "issuer": "Other",
+  "vol": 326932,
+  "cap": 892919
  },
  {
   "id": "amd-robinhood-tokenized-stock",
@@ -1626,8 +1630,8 @@
   "underlying": null,
   "type": "stock",
   "issuer": "Other",
-  "vol": 306993,
-  "cap": 960532
+  "vol": 320691,
+  "cap": 961646
  },
  {
   "id": "mcdonald-s-ondo-tokenized-stock",
@@ -1636,8 +1640,8 @@
   "underlying": "MCD",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 294340,
-  "cap": 2463254
+  "vol": 288960,
+  "cap": 2459338
  },
  {
   "id": "direxion-daily-semi-bear-3x-etf-ondo-tokenized",
@@ -1646,8 +1650,8 @@
   "underlying": "SOXS",
   "type": "etf",
   "issuer": "Ondo",
-  "vol": 284492,
-  "cap": 73457
+  "vol": 284631,
+  "cap": 70024
  },
  {
   "id": "atnt-ondo-tokenized-stock",
@@ -1656,18 +1660,8 @@
   "underlying": "T",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 278847,
-  "cap": 15201
- },
- {
-  "id": "rocket-lab-ondo-tokenized",
-  "ticker": "RKLBon",
-  "name": "Rocket Lab",
-  "underlying": "RKLB",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 257489,
-  "cap": 1226738
+  "vol": 279220,
+  "cap": 15212
  },
  {
   "id": "meta-platforms-robinhood-tokenized-stock",
@@ -1676,38 +1670,38 @@
   "underlying": null,
   "type": "stock",
   "issuer": "Other",
-  "vol": 255920,
-  "cap": 573134
+  "vol": 270586,
+  "cap": 579252
  },
  {
-  "id": "starbucks-ondo-tokenized-stock",
-  "ticker": "SBUXon",
-  "name": "Starbucks",
-  "underlying": "SBUX",
+  "id": "cisco-systems-ondo-tokenized-stock",
+  "ticker": "CSCOon",
+  "name": "Cisco Systems",
+  "underlying": "CSCO",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 230536,
-  "cap": 2072361
+  "vol": 269315,
+  "cap": 2865988
  },
  {
-  "id": "corning-ondo-tokenized",
-  "ticker": "GLWon",
-  "name": "Corning",
-  "underlying": "GLW",
+  "id": "rocket-lab-ondo-tokenized",
+  "ticker": "RKLBon",
+  "name": "Rocket Lab",
+  "underlying": "RKLB",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 225465,
-  "cap": 744925
+  "vol": 248320,
+  "cap": 1245158
  },
  {
-  "id": "procter-gamble-ondo-tokenized-stock",
-  "ticker": "PGon",
-  "name": "Procter & Gamble",
-  "underlying": "PG",
+  "id": "costco-robinhood-tokenized-stock",
+  "ticker": "COST",
+  "name": "Costco",
+  "underlying": null,
   "type": "stock",
-  "issuer": "Ondo",
-  "vol": 221135,
-  "cap": 2751102
+  "issuer": "Other",
+  "vol": 238403,
+  "cap": 21227
  },
  {
   "id": "pepsico-ondo-tokenized-stock",
@@ -1716,8 +1710,28 @@
   "underlying": "PEP",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 220594,
-  "cap": 2171207
+  "vol": 233328,
+  "cap": 2166269
+ },
+ {
+  "id": "corning-ondo-tokenized",
+  "ticker": "GLWon",
+  "name": "Corning",
+  "underlying": "GLW",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 227078,
+  "cap": 813331
+ },
+ {
+  "id": "starbucks-ondo-tokenized-stock",
+  "ticker": "SBUXon",
+  "name": "Starbucks",
+  "underlying": "SBUX",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 221958,
+  "cap": 2077082
  },
  {
   "id": "abbott-ondo-tokenized-stock",
@@ -1726,8 +1740,8 @@
   "underlying": "ABT",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 218915,
-  "cap": 1384618
+  "vol": 214141,
+  "cap": 1380592
  },
  {
   "id": "spdr-s-p-500-etf-trust-robinhood-tokenized-stock",
@@ -1736,8 +1750,18 @@
   "underlying": null,
   "type": "etf",
   "issuer": "Other",
-  "vol": 200954,
-  "cap": 701641
+  "vol": 206961,
+  "cap": 735832
+ },
+ {
+  "id": "procter-gamble-ondo-tokenized-stock",
+  "ticker": "PGon",
+  "name": "Procter & Gamble",
+  "underlying": "PG",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 202232,
+  "cap": 2740810
  },
  {
   "id": "amd-xstock",
@@ -1746,8 +1770,9 @@
   "underlying": "AMD",
   "type": "stock",
   "issuer": "xStocks",
-  "vol": 185715,
-  "cap": 2881383
+  "vol": 188024,
+  "cap": 2911200,
+  "mint": "XsXcJ6GZ9kVnjqGsjBnktRcuwMBmvKWh8S93RefZ1rF"
  },
  {
   "id": "nokia-ondo-tokenized",
@@ -1756,8 +1781,8 @@
   "underlying": "NOK",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 178229,
-  "cap": 935339
+  "vol": 183493,
+  "cap": 954583
  },
  {
   "id": "rigetti-computing-ondo-tokenized",
@@ -1766,8 +1791,8 @@
   "underlying": "RGTI",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 174617,
-  "cap": 135296
+  "vol": 176717,
+  "cap": 136703
  },
  {
   "id": "intel-xstock",
@@ -1776,18 +1801,9 @@
   "underlying": "INTC",
   "type": "stock",
   "issuer": "xStocks",
-  "vol": 169259,
-  "cap": 5168306
- },
- {
-  "id": "sofi-technologies-ondo-tokenized-stock",
-  "ticker": "SOFIon",
-  "name": "SoFi Technologies",
-  "underlying": "SOFI",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 162392,
-  "cap": 12881068
+  "vol": 167634,
+  "cap": 5213490,
+  "mint": "XshPgPdXFRWB8tP1j82rebb2Q9rPgGX37RuqzohmArM"
  },
  {
   "id": "gold-xstock",
@@ -1796,28 +1812,19 @@
   "underlying": "GLD",
   "type": "etf",
   "issuer": "xStocks",
-  "vol": 158147,
-  "cap": 8635991
+  "vol": 157586,
+  "cap": 8628887,
+  "mint": "Xsv9hRk1z5ystj9MhnA7Lq4vjSsLwzL2nxrwmwtD3re"
  },
  {
-  "id": "ishares-core-us-aggregate-bond-etf-ondo-tokenized-etf",
-  "ticker": "AGGon",
-  "name": "iShares Core US Aggregate Bond ETF",
-  "underlying": "AGG",
-  "type": "etf",
+  "id": "sofi-technologies-ondo-tokenized-stock",
+  "ticker": "SOFIon",
+  "name": "SoFi Technologies",
+  "underlying": "SOFI",
+  "type": "stock",
   "issuer": "Ondo",
-  "vol": 154415,
-  "cap": 14280635
- },
- {
-  "id": "ishares-msci-south-korea-etf-ondo-tokenized",
-  "ticker": "EWYon",
-  "name": "iShares MSCI South Korea ETF",
-  "underlying": "EWY",
-  "type": "etf",
-  "issuer": "Ondo",
-  "vol": 152595,
-  "cap": 1055575
+  "vol": 157527,
+  "cap": 12823792
  },
  {
   "id": "strategy-pp-variable-xstock",
@@ -1826,8 +1833,19 @@
   "underlying": "STRC",
   "type": "stock",
   "issuer": "xStocks",
-  "vol": 151610,
-  "cap": 139277831
+  "vol": 154054,
+  "cap": 139089236,
+  "mint": "Xs78JED6PFZxWc2wCEPspZW9kL3Se5J7L5TChKgsidH"
+ },
+ {
+  "id": "ishares-core-us-aggregate-bond-etf-ondo-tokenized-etf",
+  "ticker": "AGGon",
+  "name": "iShares Core US Aggregate Bond ETF",
+  "underlying": "AGG",
+  "type": "etf",
+  "issuer": "Ondo",
+  "vol": 153181,
+  "cap": 14280183
  },
  {
   "id": "carvana-ondo-tokenized-stocks",
@@ -1836,8 +1854,8 @@
   "underlying": "CVNA",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 136454,
-  "cap": 2193
+  "vol": 138298,
+  "cap": 2197
  },
  {
   "id": "lumentum-holdings-ondo-tokenized",
@@ -1846,28 +1864,8 @@
   "underlying": "LITE",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 132234,
-  "cap": 859240
- },
- {
-  "id": "robinhood-bstocks-tokenized-stock",
-  "ticker": "HOODb",
-  "name": "Robinhood",
-  "underlying": "HOOD",
-  "type": "stock",
-  "issuer": "bStocks",
-  "vol": 127919,
-  "cap": 785982
- },
- {
-  "id": "sandisk-corporation-xstock",
-  "ticker": "SNDKx",
-  "name": "Sandisk Corporation",
-  "underlying": "SNDK",
-  "type": "stock",
-  "issuer": "xStocks",
-  "vol": 121397,
-  "cap": 5434818
+  "vol": 132968,
+  "cap": 869047
  },
  {
   "id": "sharplink-gaming-inc-ondo-tokenized-stock",
@@ -1876,68 +1874,29 @@
   "underlying": "SBET",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 116411,
-  "cap": 428998
+  "vol": 124008,
+  "cap": 437822
  },
  {
-  "id": "soundhound-ai-ondo-tokenized",
-  "ticker": "SOUNon",
-  "name": "SoundHound AI",
-  "underlying": "SOUN",
+  "id": "sandisk-corporation-xstock",
+  "ticker": "SNDKx",
+  "name": "Sandisk Corporation",
+  "underlying": "SNDK",
   "type": "stock",
-  "issuer": "Ondo",
-  "vol": 107099,
-  "cap": 12317
+  "issuer": "xStocks",
+  "vol": 119012,
+  "cap": 5439815,
+  "mint": "Xswbpc8UqU6e1j9QZEWCjBMjyvz4twqD7PCy6j2e7jj"
  },
  {
-  "id": "linde-plc-ondo-tokenized-stock",
-  "ticker": "LINon",
-  "name": "Linde plc",
-  "underlying": "LIN",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 103513,
-  "cap": 1663154
- },
- {
-  "id": "abrdn-physical-platinum-shares-etf-ondo-tokenized",
-  "ticker": "PPLTon",
-  "name": "abrdn Physical Platinum Shares ETF",
-  "underlying": "PPLT",
+  "id": "ishares-msci-south-korea-etf-ondo-tokenized",
+  "ticker": "EWYon",
+  "name": "iShares MSCI South Korea ETF",
+  "underlying": "EWY",
   "type": "etf",
   "issuer": "Ondo",
-  "vol": 103437,
-  "cap": 4065
- },
- {
-  "id": "kla-ondo-tokenized",
-  "ticker": "KLACon",
-  "name": "KLA",
-  "underlying": "KLAC",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 97347,
-  "cap": 91192
- },
- {
-  "id": "meta-platforms-bstocks-tokenized-stock",
-  "ticker": "METAb",
-  "name": "Meta Platforms",
-  "underlying": "META",
-  "type": "stock",
-  "issuer": "bStocks",
-  "vol": 96363,
-  "cap": 966476
- },
- {
-  "id": "ionq-ondo-tokenized",
-  "ticker": "IONQon",
-  "name": "IonQ",
-  "underlying": "IONQ",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 94789,
-  "cap": 283861
+  "vol": 118892,
+  "cap": 1066439
  },
  {
   "id": "usa-rare-earth-robinhood-tokenized-stock",
@@ -1946,8 +1905,78 @@
   "underlying": null,
   "type": "stock",
   "issuer": "Other",
-  "vol": 89389,
-  "cap": 427494
+  "vol": 108029,
+  "cap": 438892
+ },
+ {
+  "id": "soundhound-ai-ondo-tokenized",
+  "ticker": "SOUNon",
+  "name": "SoundHound AI",
+  "underlying": "SOUN",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 107577,
+  "cap": 12355
+ },
+ {
+  "id": "abrdn-physical-platinum-shares-etf-ondo-tokenized",
+  "ticker": "PPLTon",
+  "name": "abrdn Physical Platinum Shares ETF",
+  "underlying": "PPLT",
+  "type": "etf",
+  "issuer": "Ondo",
+  "vol": 103443,
+  "cap": 4054
+ },
+ {
+  "id": "linde-plc-ondo-tokenized-stock",
+  "ticker": "LINon",
+  "name": "Linde plc",
+  "underlying": "LIN",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 102038,
+  "cap": 1674069
+ },
+ {
+  "id": "kla-ondo-tokenized",
+  "ticker": "KLACon",
+  "name": "KLA",
+  "underlying": "KLAC",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 97336,
+  "cap": 91564
+ },
+ {
+  "id": "robinhood-bstocks-tokenized-stock",
+  "ticker": "HOODb",
+  "name": "Robinhood",
+  "underlying": "HOOD",
+  "type": "stock",
+  "issuer": "bStocks",
+  "vol": 95517,
+  "cap": 796813
+ },
+ {
+  "id": "meta-platforms-bstocks-tokenized-stock",
+  "ticker": "METAb",
+  "name": "Meta Platforms",
+  "underlying": "META",
+  "type": "stock",
+  "issuer": "bStocks",
+  "vol": 93939,
+  "cap": 970224
+ },
+ {
+  "id": "ionq-ondo-tokenized",
+  "ticker": "IONQon",
+  "name": "IonQ",
+  "underlying": "IONQ",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 93405,
+  "cap": 288137
  },
  {
   "id": "reddit-ondo-tokenized-stock",
@@ -1956,8 +1985,8 @@
   "underlying": "RDDT",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 86505,
-  "cap": 1043248
+  "vol": 85811,
+  "cap": 1045138
  },
  {
   "id": "ciena-ondo-tokenized",
@@ -1966,8 +1995,8 @@
   "underlying": "CIEN",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 81483,
-  "cap": 171268
+  "vol": 81549,
+  "cap": 173471
  },
  {
   "id": "broadcom-xstock",
@@ -1976,38 +2005,9 @@
   "underlying": "AVGO",
   "type": "stock",
   "issuer": "xStocks",
-  "vol": 80816,
-  "cap": 1879792
- },
- {
-  "id": "western-digital-ondo-tokenized",
-  "ticker": "WDCon",
-  "name": "Western Digital",
-  "underlying": "WDC",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 79515,
-  "cap": 538247
- },
- {
-  "id": "applied-optoelectronics-ondo-tokenized",
-  "ticker": "AAOIon",
-  "name": "Applied Optoelectronics",
-  "underlying": "AAOI",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 78283,
-  "cap": 593496
- },
- {
-  "id": "accenture-xstock",
-  "ticker": "ACNx",
-  "name": "Accenture",
-  "underlying": "ACN",
-  "type": "stock",
-  "issuer": "xStocks",
-  "vol": 77125,
-  "cap": 224382
+  "vol": 80295,
+  "cap": 1885370,
+  "mint": "XsgSaSvNSqLTtFuyWPBhK9196Xb9Bbdyjj4fH3cPJGo"
  },
  {
   "id": "cerebras-systems-ondo-tokenized",
@@ -2016,8 +2016,29 @@
   "underlying": "CBRS",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 76602,
-  "cap": 69260
+  "vol": 79574,
+  "cap": 69604
+ },
+ {
+  "id": "accenture-xstock",
+  "ticker": "ACNx",
+  "name": "Accenture",
+  "underlying": "ACN",
+  "type": "stock",
+  "issuer": "xStocks",
+  "vol": 79476,
+  "cap": 224380,
+  "mint": "Xs5UJzmCRQ8DWZjskExdSQDnbE6iLkRu2jjrRAB1JSU"
+ },
+ {
+  "id": "western-digital-ondo-tokenized",
+  "ticker": "WDCon",
+  "name": "Western Digital",
+  "underlying": "WDC",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 77771,
+  "cap": 545826
  },
  {
   "id": "vistra-ondo-tokenized",
@@ -2026,28 +2047,8 @@
   "underlying": "VST",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 75054,
-  "cap": 190675
- },
- {
-  "id": "ge-vernova-ondo-tokenized",
-  "ticker": "GEVon",
-  "name": "GE Vernova",
-  "underlying": "GEV",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 74766,
-  "cap": 393706
- },
- {
-  "id": "celestica-ondo-tokenized",
-  "ticker": "CLSon",
-  "name": "Celestica",
-  "underlying": "CLS",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 73911,
-  "cap": 17595
+  "vol": 75318,
+  "cap": 190909
  },
  {
   "id": "sk-hynix-xstock",
@@ -2056,68 +2057,29 @@
   "underlying": "SKHY",
   "type": "stock",
   "issuer": "xStocks",
-  "vol": 72652,
-  "cap": 3236613
+  "vol": 75037,
+  "cap": 3267934,
+  "mint": "XsnhgGRQwhExfS2bmWzR6EYddKGPRGDEjeJsatkmKqU"
  },
  {
-  "id": "symbotic-ondo-tokenized",
-  "ticker": "SYMon",
-  "name": "Symbotic",
-  "underlying": "SYM",
+  "id": "celestica-ondo-tokenized",
+  "ticker": "CLSon",
+  "name": "Celestica",
+  "underlying": "CLS",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 70985,
-  "cap": 234720
+  "vol": 74818,
+  "cap": 17615
  },
  {
-  "id": "ast-spacemobile-ondo-tokenized",
-  "ticker": "ASTSon",
-  "name": "AST SpaceMobile",
-  "underlying": "ASTS",
+  "id": "ge-vernova-ondo-tokenized",
+  "ticker": "GEVon",
+  "name": "GE Vernova",
+  "underlying": "GEV",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 70525,
-  "cap": 3245139
- },
- {
-  "id": "core-scientific-ondo-tokenized",
-  "ticker": "CORZon",
-  "name": "Core Scientific",
-  "underlying": "CORZ",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 69231,
-  "cap": 57360
- },
- {
-  "id": "seagate-ondo-tokenized",
-  "ticker": "STXon",
-  "name": "Seagate",
-  "underlying": "STX",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 69192,
-  "cap": 183791
- },
- {
-  "id": "bloom-energy-ondo-tokenized",
-  "ticker": "BEon",
-  "name": "Bloom Energy",
-  "underlying": "BE",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 69124,
-  "cap": 463933
- },
- {
-  "id": "amphenol-ondo-tokenized",
-  "ticker": "APHon",
-  "name": "Amphenol",
-  "underlying": "APH",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 67040,
-  "cap": 8545
+  "vol": 74062,
+  "cap": 394580
  },
  {
   "id": "figma-ord-shs-ondo-tokenized-stock",
@@ -2126,58 +2088,78 @@
   "underlying": "FIG",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 66918,
-  "cap": 581158
+  "vol": 71790,
+  "cap": 577699
  },
  {
-  "id": "texas-instruments-ondo-tokenized",
-  "ticker": "TXNon",
-  "name": "Texas Instruments",
-  "underlying": "TXN",
+  "id": "symbotic-ondo-tokenized",
+  "ticker": "SYMon",
+  "name": "Symbotic",
+  "underlying": "SYM",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 66697,
-  "cap": 757615
+  "vol": 71268,
+  "cap": 237019
  },
  {
-  "id": "riot-platforms-ondo-tokenized-stock",
-  "ticker": "RIOTon",
-  "name": "Riot Platforms",
-  "underlying": "RIOT",
+  "id": "applied-optoelectronics-ondo-tokenized",
+  "ticker": "AAOIon",
+  "name": "Applied Optoelectronics",
+  "underlying": "AAOI",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 66585,
-  "cap": 517827
+  "vol": 70540,
+  "cap": 591178
  },
  {
-  "id": "futu-holdings-ondo-tokenized-stock",
-  "ticker": "FUTUon",
-  "name": "Futu Holdings",
-  "underlying": "FUTU",
+  "id": "core-scientific-ondo-tokenized",
+  "ticker": "CORZon",
+  "name": "Core Scientific",
+  "underlying": "CORZ",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 66177,
-  "cap": 970902
+  "vol": 70416,
+  "cap": 58790
  },
  {
-  "id": "verizon-ondo-tokenized",
-  "ticker": "VZon",
-  "name": "Verizon",
-  "underlying": "VZ",
+  "id": "bloom-energy-ondo-tokenized",
+  "ticker": "BEon",
+  "name": "Bloom Energy",
+  "underlying": "BE",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 65656,
-  "cap": 17704
+  "vol": 69126,
+  "cap": 474194
  },
  {
-  "id": "eaton-ondo-tokenized",
-  "ticker": "ETNon",
-  "name": "Eaton",
-  "underlying": "ETN",
+  "id": "seagate-ondo-tokenized",
+  "ticker": "STXon",
+  "name": "Seagate",
+  "underlying": "STX",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 65395,
-  "cap": 801442
+  "vol": 69078,
+  "cap": 185491
+ },
+ {
+  "id": "ast-spacemobile-ondo-tokenized",
+  "ticker": "ASTSon",
+  "name": "AST SpaceMobile",
+  "underlying": "ASTS",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 69008,
+  "cap": 3276861
+ },
+ {
+  "id": "amphenol-ondo-tokenized",
+  "ticker": "APHon",
+  "name": "Amphenol",
+  "underlying": "APH",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 67545,
+  "cap": 8635
  },
  {
   "id": "credo-technology-group-holding-ondo-tokenized",
@@ -2186,78 +2168,48 @@
   "underlying": "CRDO",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 65291,
-  "cap": 238034
+  "vol": 66656,
+  "cap": 237990
  },
  {
-  "id": "fabrinet-ondo-tokenized",
-  "ticker": "FNon",
-  "name": "Fabrinet",
-  "underlying": "FN",
+  "id": "futu-holdings-ondo-tokenized-stock",
+  "ticker": "FUTUon",
+  "name": "Futu Holdings",
+  "underlying": "FUTU",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 64721,
-  "cap": 58405
+  "vol": 66525,
+  "cap": 974427
  },
  {
-  "id": "quanta-services-ondo-tokenized",
-  "ticker": "PWRon",
-  "name": "Quanta Services",
-  "underlying": "PWR",
+  "id": "riot-platforms-ondo-tokenized-stock",
+  "ticker": "RIOTon",
+  "name": "Riot Platforms",
+  "underlying": "RIOT",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 64081,
-  "cap": 125360
+  "vol": 66455,
+  "cap": 521979
  },
  {
-  "id": "dell-technologies-ondo-tokenized",
-  "ticker": "DELLon",
-  "name": "Dell Technologies",
-  "underlying": "DELL",
+  "id": "verizon-ondo-tokenized",
+  "ticker": "VZon",
+  "name": "Verizon",
+  "underlying": "VZ",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 63947,
-  "cap": 58184
+  "vol": 65784,
+  "cap": 17633
  },
  {
-  "id": "intuitive-surgical-ondo-tokenized-stock",
-  "ticker": "ISRGon",
-  "name": "Intuitive Surgical",
-  "underlying": "ISRG",
+  "id": "texas-instruments-ondo-tokenized",
+  "ticker": "TXNon",
+  "name": "Texas Instruments",
+  "underlying": "TXN",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 63824,
-  "cap": 245528
- },
- {
-  "id": "keel-infrastructure-ondo-tokenized",
-  "ticker": "KEELon",
-  "name": "Keel Infrastructure",
-  "underlying": "KEEL",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 63752,
-  "cap": 5411
- },
- {
-  "id": "fgrs-figure-tokenized-stock",
-  "ticker": "FGRS",
-  "name": "FGRS",
-  "underlying": null,
-  "type": "stock",
-  "issuer": "Other",
-  "vol": 63353,
-  "cap": 218711011
- },
- {
-  "id": "strategy-stretch-preferred-ondo-tokenized",
-  "ticker": "STRCon",
-  "name": "Strategy Stretch Preferred",
-  "underlying": "STRC",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 63312,
-  "cap": 12086354
+  "vol": 65367,
+  "cap": 753944
  },
  {
   "id": "redwire-ondo-tokenized",
@@ -2266,8 +2218,8 @@
   "underlying": "RDW",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 63191,
-  "cap": 443059
+  "vol": 64437,
+  "cap": 439941
  },
  {
   "id": "american-airlines-group-ondo-tokenized-stocks",
@@ -2276,128 +2228,68 @@
   "underlying": "AAL",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 61880,
-  "cap": 7993
+  "vol": 64407,
+  "cap": 8063
  },
  {
-  "id": "archer-aviation-ondo-tokenized-stocks",
-  "ticker": "ACHRon",
-  "name": "Archer Aviation",
-  "underlying": "ACHR",
+  "id": "dell-technologies-ondo-tokenized",
+  "ticker": "DELLon",
+  "name": "Dell Technologies",
+  "underlying": "DELL",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 61788,
-  "cap": 32830
+  "vol": 63826,
+  "cap": 58056
  },
  {
-  "id": "intuitive-machines-ondo-tokenized",
-  "ticker": "LUNRon",
-  "name": "Intuitive Machines",
-  "underlying": "LUNR",
+  "id": "keel-infrastructure-ondo-tokenized",
+  "ticker": "KEELon",
+  "name": "Keel Infrastructure",
+  "underlying": "KEEL",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 61751,
-  "cap": 127645
+  "vol": 63765,
+  "cap": 5702
  },
  {
-  "id": "planet-labs-ondo-tokenized",
-  "ticker": "PLon",
-  "name": "Planet Labs",
-  "underlying": "PL",
+  "id": "quanta-services-ondo-tokenized",
+  "ticker": "PWRon",
+  "name": "Quanta Services",
+  "underlying": "PWR",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 61130,
-  "cap": 3688
+  "vol": 63734,
+  "cap": 125104
  },
  {
-  "id": "bigbear-ai-holdings-ondo-tokenized-stocks",
-  "ticker": "BBAIon",
-  "name": "BigBear.ai Holdings",
-  "underlying": "BBAI",
+  "id": "fgrs-figure-tokenized-stock",
+  "ticker": "FGRS",
+  "name": "FGRS",
+  "underlying": null,
+  "type": "stock",
+  "issuer": "Other",
+  "vol": 63359,
+  "cap": 210137976
+ },
+ {
+  "id": "intuitive-surgical-ondo-tokenized-stock",
+  "ticker": "ISRGon",
+  "name": "Intuitive Surgical",
+  "underlying": "ISRG",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 61081,
-  "cap": 22306
+  "vol": 63214,
+  "cap": 247502
  },
  {
-  "id": "southern-copper-ondo-tokenized",
-  "ticker": "SCCOon",
-  "name": "Southern Copper",
-  "underlying": "SCCO",
+  "id": "eaton-ondo-tokenized",
+  "ticker": "ETNon",
+  "name": "Eaton",
+  "underlying": "ETN",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 60455,
-  "cap": 16221
- },
- {
-  "id": "fuelcell-energy-ondo-tokenized",
-  "ticker": "FCELon",
-  "name": "FuelCell Energy",
-  "underlying": "FCEL",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 60262,
-  "cap": 68684
- },
- {
-  "id": "astera-labs-ondo-tokenized",
-  "ticker": "ALABon",
-  "name": "Astera Labs",
-  "underlying": "ALAB",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 60209,
-  "cap": 67672
- },
- {
-  "id": "servicenow-ondo-tokenized-stock",
-  "ticker": "NOWon",
-  "name": "ServiceNow",
-  "underlying": "NOW",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 60173,
-  "cap": 1447779
- },
- {
-  "id": "equinix-ondo-tokenized-stock",
-  "ticker": "EQIXon",
-  "name": "Equinix",
-  "underlying": "EQIX",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 59573,
-  "cap": 1673747
- },
- {
-  "id": "global-x-uranium-etf-ondo-tokenized",
-  "ticker": "URAon",
-  "name": "Global X Uranium ETF",
-  "underlying": "URA",
-  "type": "etf",
-  "issuer": "Ondo",
-  "vol": 59404,
-  "cap": 444199
- },
- {
-  "id": "palo-alto-networks-ondo-tokenized-stock",
-  "ticker": "PANWon",
-  "name": "Palo Alto Networks",
-  "underlying": "PANW",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 59391,
-  "cap": 2359606
- },
- {
-  "id": "innodata-ondo-tokenized",
-  "ticker": "INODon",
-  "name": "Innodata",
-  "underlying": "INOD",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 59317,
-  "cap": 900
+  "vol": 62671,
+  "cap": 800943
  },
  {
   "id": "stmicroelectronics-ondo-tokenized",
@@ -2406,8 +2298,18 @@
   "underlying": "STM",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 59246,
-  "cap": 243237
+  "vol": 62478,
+  "cap": 248624
+ },
+ {
+  "id": "enphase-energy-ondo-tokenized",
+  "ticker": "ENPHon",
+  "name": "Enphase Energy",
+  "underlying": "ENPH",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 61890,
+  "cap": 410941
  },
  {
   "id": "union-pacific-corporation-ondo-tokenized",
@@ -2416,48 +2318,98 @@
   "underlying": "UNP",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 59077,
-  "cap": 31139
+  "vol": 61691,
+  "cap": 31402
  },
  {
-  "id": "abbvie-ondo-tokenized-stock",
-  "ticker": "ABBVon",
-  "name": "AbbVie",
-  "underlying": "ABBV",
+  "id": "planet-labs-ondo-tokenized",
+  "ticker": "PLon",
+  "name": "Planet Labs",
+  "underlying": "PL",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 58980,
-  "cap": 29861
+  "vol": 61444,
+  "cap": 3686
  },
  {
-  "id": "waste-management-ondo-tokenized",
-  "ticker": "WMon",
-  "name": "Waste Management",
-  "underlying": "WM",
+  "id": "intuitive-machines-ondo-tokenized",
+  "ticker": "LUNRon",
+  "name": "Intuitive Machines",
+  "underlying": "LUNR",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 58914,
-  "cap": 27894
+  "vol": 61217,
+  "cap": 128549
  },
  {
-  "id": "newmont-ondo-tokenized",
-  "ticker": "NEMon",
-  "name": "Newmont",
-  "underlying": "NEM",
+  "id": "fuelcell-energy-ondo-tokenized",
+  "ticker": "FCELon",
+  "name": "FuelCell Energy",
+  "underlying": "FCEL",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 58664,
-  "cap": 12654
+  "vol": 61183,
+  "cap": 68807
  },
  {
-  "id": "microsoft-xstock",
-  "ticker": "MSFTx",
-  "name": "Microsoft",
-  "underlying": "MSFT",
+  "id": "fabrinet-ondo-tokenized",
+  "ticker": "FNon",
+  "name": "Fabrinet",
+  "underlying": "FN",
   "type": "stock",
-  "issuer": "xStocks",
-  "vol": 58621,
-  "cap": 6099927
+  "issuer": "Ondo",
+  "vol": 61052,
+  "cap": 58390
+ },
+ {
+  "id": "astera-labs-ondo-tokenized",
+  "ticker": "ALABon",
+  "name": "Astera Labs",
+  "underlying": "ALAB",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 60800,
+  "cap": 67833
+ },
+ {
+  "id": "archer-aviation-ondo-tokenized-stocks",
+  "ticker": "ACHRon",
+  "name": "Archer Aviation",
+  "underlying": "ACHR",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 60791,
+  "cap": 33014
+ },
+ {
+  "id": "bigbear-ai-holdings-ondo-tokenized-stocks",
+  "ticker": "BBAIon",
+  "name": "BigBear.ai Holdings",
+  "underlying": "BBAI",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 60488,
+  "cap": 22344
+ },
+ {
+  "id": "servicenow-ondo-tokenized-stock",
+  "ticker": "NOWon",
+  "name": "ServiceNow",
+  "underlying": "NOW",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 60334,
+  "cap": 1449774
+ },
+ {
+  "id": "southern-copper-ondo-tokenized",
+  "ticker": "SCCOon",
+  "name": "Southern Copper",
+  "underlying": "SCCO",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 59845,
+  "cap": 16137
  },
  {
   "id": "blackrock-inc-ondo-tokenized-stock",
@@ -2466,18 +2418,149 @@
   "underlying": "BLK",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 58498,
-  "cap": 1819669
+  "vol": 59675,
+  "cap": 1839841
  },
  {
-  "id": "paypal-ondo-tokenized-stock",
-  "ticker": "PYPLon",
-  "name": "PayPal",
-  "underlying": "PYPL",
+  "id": "global-x-uranium-etf-ondo-tokenized",
+  "ticker": "URAon",
+  "name": "Global X Uranium ETF",
+  "underlying": "URA",
+  "type": "etf",
+  "issuer": "Ondo",
+  "vol": 59566,
+  "cap": 443447
+ },
+ {
+  "id": "equinix-ondo-tokenized-stock",
+  "ticker": "EQIXon",
+  "name": "Equinix",
+  "underlying": "EQIX",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 58416,
-  "cap": 1186311
+  "vol": 59531,
+  "cap": 1666279
+ },
+ {
+  "id": "waste-management-ondo-tokenized",
+  "ticker": "WMon",
+  "name": "Waste Management",
+  "underlying": "WM",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 59207,
+  "cap": 27992
+ },
+ {
+  "id": "innodata-ondo-tokenized",
+  "ticker": "INODon",
+  "name": "Innodata",
+  "underlying": "INOD",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 59108,
+  "cap": 891
+ },
+ {
+  "id": "newmont-ondo-tokenized",
+  "ticker": "NEMon",
+  "name": "Newmont",
+  "underlying": "NEM",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 59073,
+  "cap": 12724
+ },
+ {
+  "id": "palo-alto-networks-ondo-tokenized-stock",
+  "ticker": "PANWon",
+  "name": "Palo Alto Networks",
+  "underlying": "PANW",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 59054,
+  "cap": 2351949
+ },
+ {
+  "id": "strategy-stretch-preferred-ondo-tokenized",
+  "ticker": "STRCon",
+  "name": "Strategy Stretch Preferred",
+  "underlying": "STRC",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 58909,
+  "cap": 12118329
+ },
+ {
+  "id": "caterpillar-ondo-tokenized-stock",
+  "ticker": "CATon",
+  "name": "Caterpillar",
+  "underlying": "CAT",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 58697,
+  "cap": 50096
+ },
+ {
+  "id": "netflix-robinhood-tokenized-stock",
+  "ticker": "NFLX",
+  "name": "Netflix",
+  "underlying": null,
+  "type": "stock",
+  "issuer": "Other",
+  "vol": 58682,
+  "cap": 48091
+ },
+ {
+  "id": "microsoft-xstock",
+  "ticker": "MSFTx",
+  "name": "Microsoft",
+  "underlying": "MSFT",
+  "type": "stock",
+  "issuer": "xStocks",
+  "vol": 58656,
+  "cap": 6043268,
+  "mint": "XspzcW1PRtgf6Wj92HCiZdjzKCyFekVD8P5Ueh3dRMX"
+ },
+ {
+  "id": "merck-ondo-tokenized",
+  "ticker": "MRKon",
+  "name": "Merck",
+  "underlying": "MRK",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 58648,
+  "cap": 14092
+ },
+ {
+  "id": "ishares-msci-india-etf-ondo-tokenized",
+  "ticker": "INDAon",
+  "name": "iShares MSCI India ETF",
+  "underlying": "INDA",
+  "type": "etf",
+  "issuer": "Ondo",
+  "vol": 58581,
+  "cap": 24469
+ },
+ {
+  "id": "amgen-ondo-tokenized-stocks",
+  "ticker": "AMGNon",
+  "name": "Amgen",
+  "underlying": "AMGN",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 58477,
+  "cap": 3332
+ },
+ {
+  "id": "s-p-global-ondo-tokenized-stock",
+  "ticker": "SPGIon",
+  "name": "S&P Global",
+  "underlying": "SPGI",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 58452,
+  "cap": 939020
  },
  {
   "id": "ultra-clean-holdings-ondo-tokenized",
@@ -2490,104 +2573,14 @@
   "cap": 186
  },
  {
-  "id": "ishares-russell-2000-value-etf-ondo-tokenized-etf",
-  "ticker": "IWNon",
-  "name": "iShares Russell 2000 Value ETF",
-  "underlying": "IWN",
-  "type": "etf",
-  "issuer": "Ondo",
-  "vol": 58132,
-  "cap": 5532454
- },
- {
-  "id": "netflix-robinhood-tokenized-stock",
-  "ticker": "NFLX",
-  "name": "Netflix",
-  "underlying": null,
-  "type": "stock",
-  "issuer": "Other",
-  "vol": 58105,
-  "cap": 48144
- },
- {
-  "id": "amgen-ondo-tokenized-stocks",
-  "ticker": "AMGNon",
-  "name": "Amgen",
-  "underlying": "AMGN",
+  "id": "paypal-ondo-tokenized-stock",
+  "ticker": "PYPLon",
+  "name": "PayPal",
+  "underlying": "PYPL",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 58096,
-  "cap": 3338
- },
- {
-  "id": "caterpillar-ondo-tokenized-stock",
-  "ticker": "CATon",
-  "name": "Caterpillar",
-  "underlying": "CAT",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 57702,
-  "cap": 50097
- },
- {
-  "id": "disney-ondo-tokenized-stock",
-  "ticker": "DISon",
-  "name": "Disney",
-  "underlying": "DIS",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 57675,
-  "cap": 848665
- },
- {
-  "id": "albemarle-ondo-tokenized",
-  "ticker": "ALBon",
-  "name": "Albemarle",
-  "underlying": "ALB",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 57647,
-  "cap": 1956
- },
- {
-  "id": "ishares-msci-india-etf-ondo-tokenized",
-  "ticker": "INDAon",
-  "name": "iShares MSCI India ETF",
-  "underlying": "INDA",
-  "type": "etf",
-  "issuer": "Ondo",
-  "vol": 57574,
-  "cap": 24372
- },
- {
-  "id": "united-microelectronics-ondo-tokenized",
-  "ticker": "UMCon",
-  "name": "United Microelectronics",
-  "underlying": "UMC",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 57553,
-  "cap": 4302
- },
- {
-  "id": "keysight-technologies-ondo-tokenized",
-  "ticker": "KEYSon",
-  "name": "Keysight Technologies",
-  "underlying": "KEYS",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 57482,
-  "cap": 836
- },
- {
-  "id": "airbnb-ondo-tokenized-stock",
-  "ticker": "ABNBon",
-  "name": "Airbnb",
-  "underlying": "ABNB",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 57354,
-  "cap": 1267285
+  "vol": 57930,
+  "cap": 1193307
  },
  {
   "id": "trane-technologies-ondo-tokenized",
@@ -2596,68 +2589,8 @@
   "underlying": "TT",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 57192,
+  "vol": 57893,
   "cap": 556
- },
- {
-  "id": "plug-power-ondo-tokenized",
-  "ticker": "PLUGon",
-  "name": "Plug Power",
-  "underlying": "PLUG",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 56989,
-  "cap": 22801
- },
- {
-  "id": "bank-of-america-ondo-tokenized-stocks",
-  "ticker": "BACon",
-  "name": "Bank of America",
-  "underlying": "BAC",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 56983,
-  "cap": 10463
- },
- {
-  "id": "s-p-global-ondo-tokenized-stock",
-  "ticker": "SPGIon",
-  "name": "S&P Global",
-  "underlying": "SPGI",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 56975,
-  "cap": 927080
- },
- {
-  "id": "cameco-ondo-tokenized",
-  "ticker": "CCJon",
-  "name": "Cameco",
-  "underlying": "CCJ",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 56975,
-  "cap": 24079
- },
- {
-  "id": "freeport-mcmoran-ondo-tokenized",
-  "ticker": "FCXon",
-  "name": "Freeport-McMoRan",
-  "underlying": "FCX",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 56913,
-  "cap": 34962
- },
- {
-  "id": "merck-ondo-tokenized",
-  "ticker": "MRKon",
-  "name": "Merck",
-  "underlying": "MRK",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 56894,
-  "cap": 14216
  },
  {
   "id": "regeneron-pharmaceuticals-ondo-tokenized",
@@ -2666,8 +2599,58 @@
   "underlying": "REGN",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 56762,
-  "cap": 2525
+  "vol": 57883,
+  "cap": 2522
+ },
+ {
+  "id": "ishares-russell-2000-value-etf-ondo-tokenized-etf",
+  "ticker": "IWNon",
+  "name": "iShares Russell 2000 Value ETF",
+  "underlying": "IWN",
+  "type": "etf",
+  "issuer": "Ondo",
+  "vol": 57671,
+  "cap": 5554213
+ },
+ {
+  "id": "united-microelectronics-ondo-tokenized",
+  "ticker": "UMCon",
+  "name": "United Microelectronics",
+  "underlying": "UMC",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 57507,
+  "cap": 4294
+ },
+ {
+  "id": "abbvie-ondo-tokenized-stock",
+  "ticker": "ABBVon",
+  "name": "AbbVie",
+  "underlying": "ABBV",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 57472,
+  "cap": 30057
+ },
+ {
+  "id": "albemarle-ondo-tokenized",
+  "ticker": "ALBon",
+  "name": "Albemarle",
+  "underlying": "ALB",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 57421,
+  "cap": 1955
+ },
+ {
+  "id": "bank-of-america-ondo-tokenized-stocks",
+  "ticker": "BACon",
+  "name": "Bank of America",
+  "underlying": "BAC",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 57397,
+  "cap": 10493
  },
  {
   "id": "ishares-russell-1000-growth-etf-ondo-tokenized-etf",
@@ -2676,28 +2659,28 @@
   "underlying": "IWF",
   "type": "etf",
   "issuer": "Ondo",
-  "vol": 56743,
-  "cap": 9218813
+  "vol": 57386,
+  "cap": 9215965
  },
  {
-  "id": "ishares-core-s-p-midcap-etf-ondo-tokenized-etf",
-  "ticker": "IJHon",
-  "name": "iShares Core S&P MidCap ETF",
-  "underlying": "IJH",
-  "type": "etf",
-  "issuer": "Ondo",
-  "vol": 56624,
-  "cap": 3093273
- },
- {
-  "id": "enphase-energy-ondo-tokenized",
-  "ticker": "ENPHon",
-  "name": "Enphase Energy",
-  "underlying": "ENPH",
+  "id": "plug-power-ondo-tokenized",
+  "ticker": "PLUGon",
+  "name": "Plug Power",
+  "underlying": "PLUG",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 56595,
-  "cap": 416720
+  "vol": 57379,
+  "cap": 22912
+ },
+ {
+  "id": "disney-ondo-tokenized-stock",
+  "ticker": "DISon",
+  "name": "Disney",
+  "underlying": "DIS",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 57332,
+  "cap": 853560
  },
  {
   "id": "general-electric-ondo-tokenized-stock",
@@ -2706,8 +2689,18 @@
   "underlying": "GE",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 56538,
-  "cap": 1606450
+  "vol": 56952,
+  "cap": 1607214
+ },
+ {
+  "id": "ishares-core-s-p-midcap-etf-ondo-tokenized-etf",
+  "ticker": "IJHon",
+  "name": "iShares Core S&P MidCap ETF",
+  "underlying": "IJH",
+  "type": "etf",
+  "issuer": "Ondo",
+  "vol": 56887,
+  "cap": 3096007
  },
  {
   "id": "ishares-semiconductor-etf-ondo-tokenized",
@@ -2716,38 +2709,28 @@
   "underlying": "SOXX",
   "type": "etf",
   "issuer": "Ondo",
-  "vol": 56515,
-  "cap": 1410089
+  "vol": 56852,
+  "cap": 1408086
  },
  {
-  "id": "northrop-grumman-ondo-tokenized",
-  "ticker": "NOCon",
-  "name": "Northrop Grumman",
-  "underlying": "NOC",
+  "id": "freeport-mcmoran-ondo-tokenized",
+  "ticker": "FCXon",
+  "name": "Freeport-McMoRan",
+  "underlying": "FCX",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 56500,
-  "cap": 25058
+  "vol": 56847,
+  "cap": 35158
  },
  {
-  "id": "goldman-sachs-ondo-tokenized-stock",
-  "ticker": "GSon",
-  "name": "Goldman Sachs",
-  "underlying": "GS",
+  "id": "cameco-ondo-tokenized",
+  "ticker": "CCJon",
+  "name": "Cameco",
+  "underlying": "CCJ",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 56491,
-  "cap": 1355846
- },
- {
-  "id": "jd-com-ondo-tokenized-stock",
-  "ticker": "JDon",
-  "name": "JD.com",
-  "underlying": "JD",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 56468,
-  "cap": 1182453
+  "vol": 56800,
+  "cap": 24165
  },
  {
   "id": "halliburton-ondo-tokenized",
@@ -2756,18 +2739,8 @@
   "underlying": "HAL",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 56276,
-  "cap": 2269
- },
- {
-  "id": "rambus-ondo-tokenized",
-  "ticker": "RMBSon",
-  "name": "Rambus",
-  "underlying": "RMBS",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 56067,
-  "cap": 3560
+  "vol": 56794,
+  "cap": 2260
  },
  {
   "id": "amkor-technology-ondo-tokenized",
@@ -2776,68 +2749,18 @@
   "underlying": "AMKR",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 55977,
-  "cap": 208708
+  "vol": 56678,
+  "cap": 206897
  },
  {
-  "id": "chipotle-ondo-tokenized-stock",
-  "ticker": "CMGon",
-  "name": "Chipotle",
-  "underlying": "CMG",
+  "id": "airbnb-ondo-tokenized-stock",
+  "ticker": "ABNBon",
+  "name": "Airbnb",
+  "underlying": "ABNB",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 55892,
-  "cap": 990821
- },
- {
-  "id": "rtx-ondo-tokenized",
-  "ticker": "RTXon",
-  "name": "RTX",
-  "underlying": "RTX",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 55802,
-  "cap": 60723
- },
- {
-  "id": "ttm-technologies-ondo-tokenized",
-  "ticker": "TTMIon",
-  "name": "TTM Technologies",
-  "underlying": "TTMI",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 55783,
-  "cap": 1200
- },
- {
-  "id": "analog-devices-ondo-tokenized-stocks",
-  "ticker": "ADIon",
-  "name": "Analog Devices",
-  "underlying": "ADI",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 55736,
-  "cap": 4395
- },
- {
-  "id": "thermo-fisher-scientific-ondo-tokenized-stock",
-  "ticker": "TMOon",
-  "name": "Thermo Fisher Scientific",
-  "underlying": "TMO",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 55707,
-  "cap": 21296
- },
- {
-  "id": "wisdomtree-floating-rate-treasury-fund-ondo-tokenized",
-  "ticker": "USFRon",
-  "name": "WisdomTree Floating Rate Treasury Fund",
-  "underlying": "USFR",
-  "type": "bond",
-  "issuer": "Ondo",
-  "vol": 55658,
-  "cap": 7405
+  "vol": 56528,
+  "cap": 1259663
  },
  {
   "id": "vertex-pharmaceuticals-ondo-tokenized",
@@ -2846,68 +2769,48 @@
   "underlying": "VRTX",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 55550,
-  "cap": 1105
+  "vol": 56408,
+  "cap": 1106
  },
  {
-  "id": "abbott-xstock",
-  "ticker": "ABTx",
-  "name": "Abbott",
-  "underlying": "ABT",
-  "type": "stock",
-  "issuer": "xStocks",
-  "vol": 55525,
-  "cap": 264761
- },
- {
-  "id": "capital-one-ondo-tokenized-stock",
-  "ticker": "COFon",
-  "name": "Capital One",
-  "underlying": "COF",
+  "id": "goldman-sachs-ondo-tokenized-stock",
+  "ticker": "GSon",
+  "name": "Goldman Sachs",
+  "underlying": "GS",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 55460,
-  "cap": 4310
+  "vol": 56398,
+  "cap": 1354760
  },
  {
-  "id": "nike-ondo-tokenized-stock",
-  "ticker": "NKEon",
-  "name": "Nike",
-  "underlying": "NKE",
+  "id": "keysight-technologies-ondo-tokenized",
+  "ticker": "KEYSon",
+  "name": "Keysight Technologies",
+  "underlying": "KEYS",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 55457,
-  "cap": 1237931
+  "vol": 56345,
+  "cap": 836
  },
  {
-  "id": "t-mobile-us-ondo-tokenized-stock",
-  "ticker": "TMUSon",
-  "name": "T-Mobile US",
-  "underlying": "TMUS",
+  "id": "analog-devices-ondo-tokenized-stocks",
+  "ticker": "ADIon",
+  "name": "Analog Devices",
+  "underlying": "ADI",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 55429,
-  "cap": 2642
+  "vol": 56339,
+  "cap": 4397
  },
  {
-  "id": "johnson-johnson-ondo-tokenized-stock",
-  "ticker": "JNJon",
-  "name": "Johnson & Johnson",
-  "underlying": "JNJ",
+  "id": "northrop-grumman-ondo-tokenized",
+  "ticker": "NOCon",
+  "name": "Northrop Grumman",
+  "underlying": "NOC",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 55273,
-  "cap": 10632
- },
- {
-  "id": "intuit-ondo-tokenized-stock",
-  "ticker": "INTUon",
-  "name": "Intuit",
-  "underlying": "INTU",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 55191,
-  "cap": 668426
+  "vol": 56295,
+  "cap": 25073
  },
  {
   "id": "franklin-us-large-cap-multifactor-index-etf-ondo-tokenized",
@@ -2916,48 +2819,28 @@
   "underlying": "FLQL",
   "type": "etf",
   "issuer": "Ondo",
-  "vol": 55155,
-  "cap": 1020480
+  "vol": 56150,
+  "cap": 1017737
  },
  {
-  "id": "american-express-ondo-tokenized-stock",
-  "ticker": "AXPon",
-  "name": "American Express",
-  "underlying": "AXP",
+  "id": "jd-com-ondo-tokenized-stock",
+  "ticker": "JDon",
+  "name": "JD.com",
+  "underlying": "JD",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 54992,
-  "cap": 961869
+  "vol": 56117,
+  "cap": 1183984
  },
  {
-  "id": "mercadolibre-ondo-tokenized-stock",
-  "ticker": "MELIon",
-  "name": "MercadoLibre",
-  "underlying": "MELI",
+  "id": "rtx-ondo-tokenized",
+  "ticker": "RTXon",
+  "name": "RTX",
+  "underlying": "RTX",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 54837,
-  "cap": 735590
- },
- {
-  "id": "coupang-ondo-tokenized-stocks",
-  "ticker": "CPNGon",
-  "name": "Coupang",
-  "underlying": "CPNG",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 54832,
-  "cap": 8081
- },
- {
-  "id": "wells-fargo-ondo-tokenized-stock",
-  "ticker": "WFCon",
-  "name": "Wells Fargo",
-  "underlying": "WFC",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 54787,
-  "cap": 1338543
+  "vol": 55892,
+  "cap": 60387
  },
  {
   "id": "ishares-russell-2000-etf-ondo-tokenized-etf",
@@ -2966,8 +2849,149 @@
   "underlying": "IWM",
   "type": "etf",
   "issuer": "Ondo",
-  "vol": 54715,
-  "cap": 3442008
+  "vol": 55874,
+  "cap": 3426563
+ },
+ {
+  "id": "rambus-ondo-tokenized",
+  "ticker": "RMBSon",
+  "name": "Rambus",
+  "underlying": "RMBS",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 55846,
+  "cap": 3482
+ },
+ {
+  "id": "intuit-ondo-tokenized-stock",
+  "ticker": "INTUon",
+  "name": "Intuit",
+  "underlying": "INTU",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 55698,
+  "cap": 669665
+ },
+ {
+  "id": "wisdomtree-floating-rate-treasury-fund-ondo-tokenized",
+  "ticker": "USFRon",
+  "name": "WisdomTree Floating Rate Treasury Fund",
+  "underlying": "USFR",
+  "type": "bond",
+  "issuer": "Ondo",
+  "vol": 55633,
+  "cap": 7388
+ },
+ {
+  "id": "american-express-ondo-tokenized-stock",
+  "ticker": "AXPon",
+  "name": "American Express",
+  "underlying": "AXP",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 55572,
+  "cap": 964793
+ },
+ {
+  "id": "chipotle-ondo-tokenized-stock",
+  "ticker": "CMGon",
+  "name": "Chipotle",
+  "underlying": "CMG",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 55478,
+  "cap": 998183
+ },
+ {
+  "id": "nike-ondo-tokenized-stock",
+  "ticker": "NKEon",
+  "name": "Nike",
+  "underlying": "NKE",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 55357,
+  "cap": 1239428
+ },
+ {
+  "id": "abbott-xstock",
+  "ticker": "ABTx",
+  "name": "Abbott",
+  "underlying": "ABT",
+  "type": "stock",
+  "issuer": "xStocks",
+  "vol": 55280,
+  "cap": 265926,
+  "mint": "XsHtf5RpxsQ7jeJ9ivNewouZKJHbPxhPoEy6yYvULr7"
+ },
+ {
+  "id": "mercadolibre-ondo-tokenized-stock",
+  "ticker": "MELIon",
+  "name": "MercadoLibre",
+  "underlying": "MELI",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 55242,
+  "cap": 736073
+ },
+ {
+  "id": "ttm-technologies-ondo-tokenized",
+  "ticker": "TTMIon",
+  "name": "TTM Technologies",
+  "underlying": "TTMI",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 55184,
+  "cap": 1191
+ },
+ {
+  "id": "capital-one-ondo-tokenized-stock",
+  "ticker": "COFon",
+  "name": "Capital One",
+  "underlying": "COF",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 55084,
+  "cap": 4310
+ },
+ {
+  "id": "coupang-ondo-tokenized-stocks",
+  "ticker": "CPNGon",
+  "name": "Coupang",
+  "underlying": "CPNG",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 55058,
+  "cap": 8057
+ },
+ {
+  "id": "thermo-fisher-scientific-ondo-tokenized-stock",
+  "ticker": "TMOon",
+  "name": "Thermo Fisher Scientific",
+  "underlying": "TMO",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 54957,
+  "cap": 21301
+ },
+ {
+  "id": "t-mobile-us-ondo-tokenized-stock",
+  "ticker": "TMUSon",
+  "name": "T-Mobile US",
+  "underlying": "TMUS",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 54933,
+  "cap": 2667
+ },
+ {
+  "id": "wells-fargo-ondo-tokenized-stock",
+  "ticker": "WFCon",
+  "name": "Wells Fargo",
+  "underlying": "WFC",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 54701,
+  "cap": 1340474
  },
  {
   "id": "ishares-msci-japan-etf-ondo-tokenized",
@@ -2976,8 +3000,18 @@
   "underlying": "EWJ",
   "type": "etf",
   "issuer": "Ondo",
-  "vol": 54491,
-  "cap": 16142
+  "vol": 54573,
+  "cap": 16174
+ },
+ {
+  "id": "johnson-johnson-ondo-tokenized-stock",
+  "ticker": "JNJon",
+  "name": "Johnson & Johnson",
+  "underlying": "JNJ",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 54519,
+  "cap": 10678
  },
  {
   "id": "us-natural-gas-fund-ondo-tokenized",
@@ -2986,18 +3020,8 @@
   "underlying": "UNG",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 54096,
-  "cap": 188818
- },
- {
-  "id": "cisco-xstock",
-  "ticker": "CSCOx",
-  "name": "Cisco",
-  "underlying": "CSCO",
-  "type": "stock",
-  "issuer": "xStocks",
-  "vol": 52770,
-  "cap": 274273
+  "vol": 53926,
+  "cap": 189029
  },
  {
   "id": "ishares-us-aerospace-and-defense-etf-ondo-tokenized",
@@ -3006,8 +3030,19 @@
   "underlying": "ITA",
   "type": "etf",
   "issuer": "Ondo",
-  "vol": 52342,
-  "cap": 13312
+  "vol": 53017,
+  "cap": 13409
+ },
+ {
+  "id": "cisco-xstock",
+  "ticker": "CSCOx",
+  "name": "Cisco",
+  "underlying": "CSCO",
+  "type": "stock",
+  "issuer": "xStocks",
+  "vol": 52053,
+  "cap": 273888,
+  "mint": "Xsr3pdLQyXvDJBFgpR5nexCEZwXvigb8wbPYp4YoNFf"
  },
  {
   "id": "fluence-energy-ondo-tokenized",
@@ -3016,8 +3051,8 @@
   "underlying": "FLNC",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 48339,
-  "cap": 50990
+  "vol": 49618,
+  "cap": 52329
  },
  {
   "id": "pepsico-xstock",
@@ -3026,28 +3061,9 @@
   "underlying": "PEP",
   "type": "stock",
   "issuer": "xStocks",
-  "vol": 47786,
-  "cap": 253018
- },
- {
-  "id": "unitedhealth-xstock",
-  "ticker": "UNHx",
-  "name": "UnitedHealth",
-  "underlying": "UNH",
-  "type": "stock",
-  "issuer": "xStocks",
-  "vol": 44878,
-  "cap": 433886
- },
- {
-  "id": "eli-lilly-xstock",
-  "ticker": "LLYx",
-  "name": "Eli Lilly",
-  "underlying": "LLY",
-  "type": "stock",
-  "issuer": "xStocks",
-  "vol": 43572,
-  "cap": 834760
+  "vol": 47978,
+  "cap": 253318,
+  "mint": "Xsv99frTRUeornyvCfvhnDesQDWuvns1M852Pez91vF"
  },
  {
   "id": "marvell-xstock",
@@ -3056,18 +3072,31 @@
   "underlying": "MRVL",
   "type": "stock",
   "issuer": "xStocks",
-  "vol": 42667,
-  "cap": 5094909
+  "vol": 44751,
+  "cap": 5198794,
+  "mint": "XsuxRGDzbLjnJ72v74b7p9VY6N66uYgTCyfwwRjVCJA"
  },
  {
-  "id": "comcast-xstock",
-  "ticker": "CMCSAx",
-  "name": "Comcast",
-  "underlying": "CMCSA",
+  "id": "unitedhealth-xstock",
+  "ticker": "UNHx",
+  "name": "UnitedHealth",
+  "underlying": "UNH",
   "type": "stock",
   "issuer": "xStocks",
-  "vol": 41959,
-  "cap": 208448
+  "vol": 43889,
+  "cap": 433983,
+  "mint": "XszvaiXGPwvk2nwb3o9C1CX4K6zH8sez11E6uyup6fe"
+ },
+ {
+  "id": "eli-lilly-xstock",
+  "ticker": "LLYx",
+  "name": "Eli Lilly",
+  "underlying": "LLY",
+  "type": "stock",
+  "issuer": "xStocks",
+  "vol": 43703,
+  "cap": 835294,
+  "mint": "Xsnuv4omNoHozR6EEW5mXkw8Nrny5rB3jVfLqi6gKMH"
  },
  {
   "id": "mks-inc-ondo-tokenized",
@@ -3076,8 +3105,19 @@
   "underlying": "MKSI",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 41858,
-  "cap": 29456
+  "vol": 41849,
+  "cap": 29460
+ },
+ {
+  "id": "comcast-xstock",
+  "ticker": "CMCSAx",
+  "name": "Comcast",
+  "underlying": "CMCSA",
+  "type": "stock",
+  "issuer": "xStocks",
+  "vol": 41149,
+  "cap": 208931,
+  "mint": "XsvKCaNsxg2GN8jjUmq71qukMJr7Q1c5R2Mk9P8kcS8"
  },
  {
   "id": "ishares-silver-trust-robinhood-tokenized-stock",
@@ -3086,8 +3126,8 @@
   "underlying": null,
   "type": "etf",
   "issuer": "Other",
-  "vol": 37367,
-  "cap": 435115
+  "vol": 37132,
+  "cap": 433845
  },
  {
   "id": "procter-gamble-xstock",
@@ -3096,8 +3136,9 @@
   "underlying": "PG",
   "type": "stock",
   "issuer": "xStocks",
-  "vol": 35930,
-  "cap": 444879
+  "vol": 32908,
+  "cap": 444351,
+  "mint": "XsYdjDjNUygZ7yGKfQaB6TxLh2gC6RRjzLtLAGJrhzV"
  },
  {
   "id": "honeywell-xstock",
@@ -3106,8 +3147,9 @@
   "underlying": "HON",
   "type": "stock",
   "issuer": "xStocks",
-  "vol": 33176,
-  "cap": 192917
+  "vol": 32905,
+  "cap": 193236,
+  "mint": "XsRbLZthfABAPAfumWNEJhPyiKDW6TvDVeAeW7oKqA2"
  },
  {
   "id": "vanguard-xstock",
@@ -3116,8 +3158,9 @@
   "underlying": "VTI",
   "type": "etf",
   "issuer": "xStocks",
-  "vol": 31281,
-  "cap": 1467406
+  "vol": 30525,
+  "cap": 1466822,
+  "mint": "XsssYEQjzxBCFgvYFFNuhJFBeHNdLWYeUSP8F45cDr9"
  },
  {
   "id": "abbvie-xstock",
@@ -3126,8 +3169,9 @@
   "underlying": "ABBV",
   "type": "stock",
   "issuer": "xStocks",
-  "vol": 29628,
-  "cap": 261133
+  "vol": 29716,
+  "cap": 261361,
+  "mint": "XswbinNKyPmzTa5CskMbCPvMW6G5CMnZXZEeQSSQoie"
  },
  {
   "id": "coca-cola-xstock",
@@ -3136,8 +3180,9 @@
   "underlying": "KO",
   "type": "stock",
   "issuer": "xStocks",
-  "vol": 28841,
-  "cap": 536244
+  "vol": 29176,
+  "cap": 536916,
+  "mint": "XsaBXg8dU5cPM6ehmVctMkVqoiRG2ZjMo1cyBJ3AykQ"
  },
  {
   "id": "te-connectivity-ondo-tokenized",
@@ -3146,28 +3191,8 @@
   "underlying": "TEL",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 27682,
+  "vol": 27681,
   "cap": 27918
- },
- {
-  "id": "home-depot-xstock",
-  "ticker": "HDx",
-  "name": "Home Depot",
-  "underlying": "HD",
-  "type": "stock",
-  "issuer": "xStocks",
-  "vol": 26840,
-  "cap": 63357
- },
- {
-  "id": "danaher-xstock",
-  "ticker": "DHRx",
-  "name": "Danaher",
-  "underlying": "DHR",
-  "type": "stock",
-  "issuer": "xStocks",
-  "vol": 26233,
-  "cap": 226130
  },
  {
   "id": "proshares-ultrapro-short-qqq-ondo-tokenized",
@@ -3176,8 +3201,30 @@
   "underlying": "SQQQ",
   "type": "etf",
   "issuer": "Ondo",
-  "vol": 25128,
-  "cap": 907401
+  "vol": 26299,
+  "cap": 900508
+ },
+ {
+  "id": "danaher-xstock",
+  "ticker": "DHRx",
+  "name": "Danaher",
+  "underlying": "DHR",
+  "type": "stock",
+  "issuer": "xStocks",
+  "vol": 25931,
+  "cap": 225906,
+  "mint": "Xseo8tgCZfkHxWS9xbFYeKFyMSbWEvZGFV1Gh53GtCV"
+ },
+ {
+  "id": "home-depot-xstock",
+  "ticker": "HDx",
+  "name": "Home Depot",
+  "underlying": "HD",
+  "type": "stock",
+  "issuer": "xStocks",
+  "vol": 25207,
+  "cap": 63422,
+  "mint": "XszjVtyhowGjSC5odCqBpW1CtXXwXjYokymrk7fGKD3"
  },
  {
   "id": "mastercard-xstock",
@@ -3186,18 +3233,9 @@
   "underlying": "MA",
   "type": "stock",
   "issuer": "xStocks",
-  "vol": 24509,
-  "cap": 198670
- },
- {
-  "id": "wrapped-alphabet-xstock",
-  "ticker": "WGOOGLx",
-  "name": "Wrapped Alphabet",
-  "underlying": null,
-  "type": "stock",
-  "issuer": "xStocks",
-  "vol": 23752,
-  "cap": 0
+  "vol": 23751,
+  "cap": 198791,
+  "mint": "XsApJFV9MAktqnAc6jqzsHVujxkGm9xcSUffaBoYLKC"
  },
  {
   "id": "hut-8-ondo-tokenized",
@@ -3206,57 +3244,17 @@
   "underlying": "HUT",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 19834,
-  "cap": 92971
+  "vol": 19886,
+  "cap": 93217
  },
  {
-  "id": "oracle-xstock",
-  "ticker": "ORCLx",
-  "name": "Oracle",
-  "underlying": "ORCL",
-  "type": "stock",
-  "issuer": "xStocks",
-  "vol": 16739,
-  "cap": 1822771
- },
- {
-  "id": "cipher-mining-ondo-tokenized-stock",
-  "ticker": "CIFRon",
-  "name": "Cipher Mining",
-  "underlying": "CIFR",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 15832,
-  "cap": 80748
- },
- {
-  "id": "ast-spacemobile-xstock",
-  "ticker": "ASTSx",
-  "name": "AST SpaceMobile",
-  "underlying": "ASTS",
-  "type": "stock",
-  "issuer": "xStocks",
-  "vol": 15717,
-  "cap": 0
- },
- {
-  "id": "wrapped-tesla-xstock",
-  "ticker": "WTSLAx",
-  "name": "Wrapped Tesla",
+  "id": "wrapped-alphabet-xstock",
+  "ticker": "WGOOGLx",
+  "name": "Wrapped Alphabet",
   "underlying": null,
   "type": "stock",
   "issuer": "xStocks",
-  "vol": 15055,
-  "cap": 0
- },
- {
-  "id": "wrapped-nvidia-xstock",
-  "ticker": "WNVDAx",
-  "name": "Wrapped NVIDIA",
-  "underlying": null,
-  "type": "stock",
-  "issuer": "xStocks",
-  "vol": 14870,
+  "vol": 18194,
   "cap": 0
  },
  {
@@ -3266,8 +3264,50 @@
   "underlying": "PLTR",
   "type": "stock",
   "issuer": "xStocks",
-  "vol": 14765,
-  "cap": 1826399
+  "vol": 17711,
+  "cap": 1828392,
+  "mint": "XsoBhf2ufR8fTyNSjqfU71DYGaE6Z3SUGAidpzriAA4"
+ },
+ {
+  "id": "oracle-robinhood-tokenized-stock",
+  "ticker": "ORCL",
+  "name": "Oracle",
+  "underlying": null,
+  "type": "stock",
+  "issuer": "Other",
+  "vol": 15973,
+  "cap": 462729
+ },
+ {
+  "id": "cipher-mining-ondo-tokenized-stock",
+  "ticker": "CIFRon",
+  "name": "Cipher Mining",
+  "underlying": "CIFR",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 15832,
+  "cap": 80745
+ },
+ {
+  "id": "ast-spacemobile-xstock",
+  "ticker": "ASTSx",
+  "name": "AST SpaceMobile",
+  "underlying": "ASTS",
+  "type": "stock",
+  "issuer": "xStocks",
+  "vol": 15717,
+  "cap": 0,
+  "mint": "XsR4LAtaBgTKTRUhiijY1ba13nx4bepeEcag2Pr4dZ1"
+ },
+ {
+  "id": "wrapped-nvidia-xstock",
+  "ticker": "WNVDAx",
+  "name": "Wrapped NVIDIA",
+  "underlying": null,
+  "type": "stock",
+  "issuer": "xStocks",
+  "vol": 14836,
+  "cap": 0
  },
  {
   "id": "applied-digital-ondo-tokenized",
@@ -3276,8 +3316,8 @@
   "underlying": "APLD",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 14022,
-  "cap": 115401
+  "vol": 13960,
+  "cap": 116741
  },
  {
   "id": "tqqq-xstock",
@@ -3287,7 +3327,8 @@
   "type": "etf",
   "issuer": "xStocks",
   "vol": 13726,
-  "cap": 2726375
+  "cap": 2726375,
+  "mint": "XsjQP3iMAaQ3kQScQKthQpx9ALRbjKAjQtHg6TFomoc"
  },
  {
   "id": "terawulf-ondo-tokenized",
@@ -3297,7 +3338,17 @@
   "type": "stock",
   "issuer": "Ondo",
   "vol": 13501,
-  "cap": 284063
+  "cap": 284054
+ },
+ {
+  "id": "wrapped-tesla-xstock",
+  "ticker": "WTSLAx",
+  "name": "Wrapped Tesla",
+  "underlying": null,
+  "type": "stock",
+  "issuer": "xStocks",
+  "vol": 12948,
+  "cap": 0
  },
  {
   "id": "dfdv-xstock",
@@ -3306,8 +3357,19 @@
   "underlying": "DFDV",
   "type": "stock",
   "issuer": "xStocks",
-  "vol": 12389,
-  "cap": 535028
+  "vol": 12222,
+  "cap": 529402,
+  "mint": "Xs2yquAgsHByNzx68WJC55WHjHBvG9JsMB7CWjTLyPy"
+ },
+ {
+  "id": "bitgo-holdings-ondo-tokenized-stock",
+  "ticker": "BTGOon",
+  "name": "BitGo Holdings",
+  "underlying": "BTGO",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 12043,
+  "cap": 388467
  },
  {
   "id": "backed-ib01-treasury-bond-0-1yr",
@@ -3320,14 +3382,25 @@
   "cap": 18857358
  },
  {
+  "id": "micron-technology-xstock",
+  "ticker": "MUx",
+  "name": "Micron Technology",
+  "underlying": "MU",
+  "type": "stock",
+  "issuer": "xStocks",
+  "vol": 10967,
+  "cap": 0,
+  "mint": "XsQLZycSZ7QnBBdBXQaTbQdiUcbRqjNJgyBGAMzhHav"
+ },
+ {
   "id": "tower-semiconductor-ondo-tokenized",
   "ticker": "TSEMon",
   "name": "Tower Semiconductor",
   "underlying": "TSEM",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 10294,
-  "cap": 87382
+  "vol": 10306,
+  "cap": 88587
  },
  {
   "id": "huntington-ingalls-industries-ondo-tokenized",
@@ -3340,44 +3413,25 @@
   "cap": 25981
  },
  {
-  "id": "oracle-robinhood-tokenized-stock",
-  "ticker": "ORCL",
-  "name": "Oracle",
-  "underlying": null,
-  "type": "stock",
-  "issuer": "Other",
-  "vol": 10178,
-  "cap": 445727
- },
- {
-  "id": "micron-technology-xstock",
-  "ticker": "MUx",
-  "name": "Micron Technology",
-  "underlying": "MU",
-  "type": "stock",
-  "issuer": "xStocks",
-  "vol": 9865,
-  "cap": 0
- },
- {
-  "id": "bitgo-holdings-ondo-tokenized-stock",
-  "ticker": "BTGOon",
-  "name": "BitGo Holdings",
-  "underlying": "BTGO",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 9558,
-  "cap": 389057
- },
- {
   "id": "tsmc-xstock",
   "ticker": "TSMx",
   "name": "TSMC",
   "underlying": "TSM",
   "type": "stock",
   "issuer": "xStocks",
-  "vol": 9276,
-  "cap": 1765574
+  "vol": 9217,
+  "cap": 1768095,
+  "mint": "XsafvsGtzFqqHgTnA3aPC83EAMkacU5mcGtcSayhpVV"
+ },
+ {
+  "id": "wolfspeed-ondo-tokenized",
+  "ticker": "WOLFon",
+  "name": "Wolfspeed",
+  "underlying": "WOLF",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 9211,
+  "cap": 3575050
  },
  {
   "id": "macom-technology-solutions-holdings-ondo-tokenized",
@@ -3386,8 +3440,8 @@
   "underlying": "MTSI",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 7827,
-  "cap": 64813
+  "vol": 7870,
+  "cap": 65981
  },
  {
   "id": "bending-spoons-xstock",
@@ -3396,8 +3450,9 @@
   "underlying": "BSP",
   "type": "stock",
   "issuer": "xStocks",
-  "vol": 7211,
-  "cap": 69369712
+  "vol": 7101,
+  "cap": 69369712,
+  "mint": "XsYMHtwJcWon5GkPHzdDbCCztKtKzEurJnbydxgjsqS"
  },
  {
   "id": "asml-xstock",
@@ -3407,7 +3462,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 5182,
-  "cap": 424367
+  "cap": 424367,
+  "mint": "XshuHQ6o6SVpUNawvnnTMxsZ4tacZsNgVCLorv7TkFq"
  },
  {
   "id": "lightpath-technologies-ondo-tokenized",
@@ -3430,26 +3486,6 @@
   "cap": 18368
  },
  {
-  "id": "wolfspeed-ondo-tokenized",
-  "ticker": "WOLFon",
-  "name": "Wolfspeed",
-  "underlying": "WOLF",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 5035,
-  "cap": 3481871
- },
- {
-  "id": "wrapped-apple-xstock",
-  "ticker": "WAAPLx",
-  "name": "Wrapped Apple",
-  "underlying": null,
-  "type": "stock",
-  "issuer": "xStocks",
-  "vol": 4796,
-  "cap": 0
- },
- {
   "id": "penguin-solutions-ondo-tokenized",
   "ticker": "PENGon",
   "name": "Penguin Solutions",
@@ -3466,18 +3502,8 @@
   "underlying": null,
   "type": "stock",
   "issuer": "Other",
-  "vol": 4009,
-  "cap": 2181
- },
- {
-  "id": "coinbase-global-inc-st0x",
-  "ticker": "WTCOIN",
-  "name": "Coinbase Global Inc ST0x",
-  "underlying": null,
-  "type": "stock",
-  "issuer": "Other",
-  "vol": 3812,
-  "cap": 29018
+  "vol": 4013,
+  "cap": 2198
  },
  {
   "id": "exxon-mobil-xstock",
@@ -3487,7 +3513,28 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 3754,
-  "cap": 886082
+  "cap": 886100,
+  "mint": "XsaHND8sHyfMfsWPj6kSdd5VwvCayZvjYgKmmcNL5qh"
+ },
+ {
+  "id": "coinbase-global-inc-st0x",
+  "ticker": "WTCOIN",
+  "name": "Coinbase Global Inc ST0x",
+  "underlying": null,
+  "type": "stock",
+  "issuer": "Other",
+  "vol": 3724,
+  "cap": 29126
+ },
+ {
+  "id": "wrapped-apple-xstock",
+  "ticker": "WAAPLx",
+  "name": "Wrapped Apple",
+  "underlying": null,
+  "type": "stock",
+  "issuer": "xStocks",
+  "vol": 3552,
+  "cap": 0
  },
  {
   "id": "chevron-xstock",
@@ -3496,8 +3543,9 @@
   "underlying": "CVX",
   "type": "stock",
   "issuer": "xStocks",
-  "vol": 3298,
-  "cap": 1137685
+  "vol": 3320,
+  "cap": 1138032,
+  "mint": "XsNNMt7WTNA2sV3jrb1NNfNgapxRF5i4i6GcnTRRHts"
  },
  {
   "id": "bullish-ondo-tokenized-stocks",
@@ -3510,6 +3558,17 @@
   "cap": 21535
  },
  {
+  "id": "netflix-xstock",
+  "ticker": "NFLXx",
+  "name": "Netflix",
+  "underlying": "NFLX",
+  "type": "stock",
+  "issuer": "xStocks",
+  "vol": 3247,
+  "cap": 1180719,
+  "mint": "XsEH7wWfJJu2ZT3UCFeVfALnVA6CP5ur7Ee11KmzVpL"
+ },
+ {
   "id": "amc-entertainment-ondo-tokenized-stocks",
   "ticker": "AMCon",
   "name": "AMC Entertainment",
@@ -3517,27 +3576,7 @@
   "type": "stock",
   "issuer": "Ondo",
   "vol": 3235,
-  "cap": 265248
- },
- {
-  "id": "netflix-xstock",
-  "ticker": "NFLXx",
-  "name": "Netflix",
-  "underlying": "NFLX",
-  "type": "stock",
-  "issuer": "xStocks",
-  "vol": 3051,
-  "cap": 1177656
- },
- {
-  "id": "international-business-machines-xstock",
-  "ticker": "IBMx",
-  "name": "International Business Machines",
-  "underlying": "IBM",
-  "type": "stock",
-  "issuer": "xStocks",
-  "vol": 2920,
-  "cap": 829525
+  "cap": 265250
  },
  {
   "id": "hyperliquid-strategies-ondo-tokenized",
@@ -3556,8 +3595,8 @@
   "underlying": null,
   "type": "stock",
   "issuer": "Other",
-  "vol": 2667,
-  "cap": 2820
+  "vol": 2672,
+  "cap": 2824
  },
  {
   "id": "global-x-copper-miners-xstock",
@@ -3567,17 +3606,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 2544,
-  "cap": 348069
- },
- {
-  "id": "axt-ondo-tokenized",
-  "ticker": "AXTIon",
-  "name": "AXT",
-  "underlying": "AXTI",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 2414,
-  "cap": 245015
+  "cap": 348069,
+  "mint": "XsybfiKkD4UmjkAGT2uR8X2sq9AWFtvGJM2KTffoALZ"
  },
  {
   "id": "ton-xstock",
@@ -3587,7 +3617,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 2413,
-  "cap": 595812
+  "cap": 595812,
+  "mint": "XscE4GUcsYhcyZu5ATiGUMmhxYa1D5fwbpJw4K6K4dp"
  },
  {
   "id": "cleanspark-xstock",
@@ -3597,7 +3628,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 2020,
-  "cap": 136766
+  "cap": 136766,
+  "mint": "Xsn3H7ACEpSF2ULxeiD6kW4jRZXpurh8ZPttyfoS56W"
  },
  {
   "id": "pinterest-ondo-tokenized",
@@ -3610,14 +3642,25 @@
   "cap": 15075
  },
  {
+  "id": "oracle-xstock",
+  "ticker": "ORCLx",
+  "name": "Oracle",
+  "underlying": "ORCL",
+  "type": "stock",
+  "issuer": "xStocks",
+  "vol": 1934,
+  "cap": 1818010,
+  "mint": "XsjFwUPiLofddX5cWFHW35GCbXcSu1BCUGfxoQAQjeL"
+ },
+ {
   "id": "charles-schwab-ondo-tokenized-stocks",
   "ticker": "SCHWon",
   "name": "Charles Schwab",
   "underlying": "SCHW",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 1933,
-  "cap": 4043
+  "vol": 1918,
+  "cap": 4011
  },
  {
   "id": "berkshire-hathaway-xstock",
@@ -3627,7 +3670,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 1839,
-  "cap": 1480453
+  "cap": 1480502,
+  "mint": "Xs6B6zawENwAbWVi7w92rjazLuAr5Az59qgWKcNb45x"
  },
  {
   "id": "rockwell-automation-ondo-tokenized",
@@ -3637,7 +3681,7 @@
   "type": "stock",
   "issuer": "Ondo",
   "vol": 1775,
-  "cap": 212172
+  "cap": 212173
  },
  {
   "id": "global-x-defense-tech-etf-ondo-tokenized",
@@ -3646,8 +3690,18 @@
   "underlying": "SHLD",
   "type": "etf",
   "issuer": "Ondo",
-  "vol": 1768,
-  "cap": 2650
+  "vol": 1771,
+  "cap": 2654
+ },
+ {
+  "id": "axt-ondo-tokenized",
+  "ticker": "AXTIon",
+  "name": "AXT",
+  "underlying": "AXTI",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 1726,
+  "cap": 251120
  },
  {
   "id": "aktionariat-switzerlend-ag-shares",
@@ -3660,6 +3714,16 @@
   "cap": 2287648
  },
  {
+  "id": "global-x-nasdaq-100-covered-call-etf-ondo-tokenized",
+  "ticker": "QYLDon",
+  "name": "Global X NASDAQ 100 Covered Call ETF",
+  "underlying": "QYLD",
+  "type": "etf",
+  "issuer": "Ondo",
+  "vol": 1663,
+  "cap": 4365
+ },
+ {
   "id": "on-semiconductor-ondo-tokenized",
   "ticker": "ONon",
   "name": "ON Semiconductor",
@@ -3667,7 +3731,7 @@
   "type": "stock",
   "issuer": "Ondo",
   "vol": 1494,
-  "cap": 51621
+  "cap": 51619
  },
  {
   "id": "lattice-semiconductor-ondo-tokenized",
@@ -3677,7 +3741,7 @@
   "type": "stock",
   "issuer": "Ondo",
   "vol": 1435,
-  "cap": 170917
+  "cap": 170918
  },
  {
   "id": "invesco-qqq-robinhood-tokenized-stock",
@@ -3686,8 +3750,8 @@
   "underlying": null,
   "type": "etf",
   "issuer": "Other",
-  "vol": 1426,
-  "cap": 520227
+  "vol": 1422,
+  "cap": 523410
  },
  {
   "id": "vishay-precision-group-ondo-tokenized",
@@ -3710,14 +3774,14 @@
   "cap": 1388
  },
  {
-  "id": "global-x-nasdaq-100-covered-call-etf-ondo-tokenized",
-  "ticker": "QYLDon",
-  "name": "Global X NASDAQ 100 Covered Call ETF",
-  "underlying": "QYLD",
-  "type": "etf",
+  "id": "doordash-ondo-tokenized-stock",
+  "ticker": "DASHon",
+  "name": "DoorDash",
+  "underlying": "DASH",
+  "type": "stock",
   "issuer": "Ondo",
-  "vol": 1211,
-  "cap": 4350
+  "vol": 1196,
+  "cap": 844961
  },
  {
   "id": "grab-holdings-ondo-tokenized-stock",
@@ -3736,8 +3800,8 @@
   "underlying": null,
   "type": "stock",
   "issuer": "Other",
-  "vol": 1105,
-  "cap": 1544
+  "vol": 1106,
+  "cap": 1545
  },
  {
   "id": "ishares-us-equity-factor-rotation-active-etf-ondo-tokenized",
@@ -3756,8 +3820,8 @@
   "underlying": "KWEB",
   "type": "etf",
   "issuer": "Ondo",
-  "vol": 1027,
-  "cap": 35128
+  "vol": 1034,
+  "cap": 35375
  },
  {
   "id": "ishares-s-p-small-cap-600-value-etf-ondo-tokenized",
@@ -3786,8 +3850,18 @@
   "underlying": "LI",
   "type": "stock",
   "issuer": "Ondo",
+  "vol": 1007,
+  "cap": 137828
+ },
+ {
+  "id": "aurora-innovation-ondo-tokenized",
+  "ticker": "AURon",
+  "name": "Aurora Innovation",
+  "underlying": "AUR",
+  "type": "stock",
+  "issuer": "Ondo",
   "vol": 1003,
-  "cap": 137308
+  "cap": 118406
  },
  {
   "id": "roblox-xstock",
@@ -3797,27 +3871,18 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 999,
-  "cap": 134959
+  "cap": 136499,
+  "mint": "Xss5RAku5EH6UViFdvW7ss9xQjwQLsrs2opPMhb3k43"
  },
  {
-  "id": "aurora-innovation-ondo-tokenized",
-  "ticker": "AURon",
-  "name": "Aurora Innovation",
-  "underlying": "AUR",
+  "id": "applovin-ondo-tokenized-stock",
+  "ticker": "APPon",
+  "name": "AppLovin",
+  "underlying": "APP",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 999,
-  "cap": 118195
- },
- {
-  "id": "abrdn-physical-platinum-shares-xstock",
-  "ticker": "PPLTx",
-  "name": "abrdn Physical Platinum Shares",
-  "underlying": "PPLT",
-  "type": "stock",
-  "issuer": "xStocks",
-  "vol": 996,
-  "cap": 176821
+  "vol": 988,
+  "cap": 474988
  },
  {
   "id": "entegris-ondo-tokenized",
@@ -3830,14 +3895,14 @@
   "cap": 221349
  },
  {
-  "id": "applovin-ondo-tokenized-stock",
-  "ticker": "APPon",
-  "name": "AppLovin",
-  "underlying": "APP",
+  "id": "hubbell-ondo-tokenized",
+  "ticker": "HUBBon",
+  "name": "Hubbell",
+  "underlying": "HUBB",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 984,
-  "cap": 473346
+  "vol": 945,
+  "cap": 29885
  },
  {
   "id": "crowdstrike-xstock",
@@ -3847,7 +3912,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 927,
-  "cap": 535074
+  "cap": 535074,
+  "mint": "Xs7xXqkcK7K8urEqGg52SECi79dRp2cEKKuYjUePYDw"
  },
  {
   "id": "ishares-expanded-tech-software-etf-ondo-tokenized",
@@ -3860,14 +3926,15 @@
   "cap": 573
  },
  {
-  "id": "hubbell-ondo-tokenized",
-  "ticker": "HUBBon",
-  "name": "Hubbell",
-  "underlying": "HUBB",
+  "id": "abrdn-physical-platinum-shares-xstock",
+  "ticker": "PPLTx",
+  "name": "abrdn Physical Platinum Shares",
+  "underlying": "PPLT",
   "type": "stock",
-  "issuer": "Ondo",
-  "vol": 915,
-  "cap": 28918
+  "issuer": "xStocks",
+  "vol": 916,
+  "cap": 178724,
+  "mint": "Xst6eFD4YT6sz9RLMysN9SyvaZWtraSdVJQGu5ZkAme"
  },
  {
   "id": "nvent-electric-ondo-tokenized",
@@ -3876,18 +3943,8 @@
   "underlying": "NVT",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 904,
-  "cap": 29290
- },
- {
-  "id": "pfizer-xstock",
-  "ticker": "PFEx",
-  "name": "Pfizer",
-  "underlying": "PFE",
-  "type": "stock",
-  "issuer": "xStocks",
-  "vol": 898,
-  "cap": 314413
+  "vol": 914,
+  "cap": 29586
  },
  {
   "id": "tbll-xstock",
@@ -3897,7 +3954,19 @@
   "type": "etf",
   "issuer": "xStocks",
   "vol": 840,
-  "cap": 1850042
+  "cap": 1850042,
+  "mint": "XsqBC5tcVQLYt8wqGCHRnAUUecbRYXoJCReD6w7QEKp"
+ },
+ {
+  "id": "pfizer-xstock",
+  "ticker": "PFEx",
+  "name": "Pfizer",
+  "underlying": "PFE",
+  "type": "stock",
+  "issuer": "xStocks",
+  "vol": 813,
+  "cap": 314413,
+  "mint": "XsAtbqkAP1HJxy7hFDeq7ok6yM43DQ9mQ1Rh861X8rw"
  },
  {
   "id": "taiwan-semiconductor-manufacturing-robinhood-tokenized-stock",
@@ -3906,8 +3975,8 @@
   "underlying": null,
   "type": "stock",
   "issuer": "Other",
-  "vol": 716,
-  "cap": 138362
+  "vol": 713,
+  "cap": 138369
  },
  {
   "id": "nio-ondo-tokenized",
@@ -3916,8 +3985,8 @@
   "underlying": "NIO",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 689,
-  "cap": 201408
+  "vol": 688,
+  "cap": 201348
  },
  {
   "id": "netease-ondo-tokenized",
@@ -3936,8 +4005,8 @@
   "underlying": "GLXY",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 659,
-  "cap": 332770
+  "vol": 662,
+  "cap": 334367
  },
  {
   "id": "nlight-ondo-tokenized",
@@ -3946,8 +4015,8 @@
   "underlying": "LASR",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 631,
-  "cap": 1065
+  "vol": 647,
+  "cap": 1093
  },
  {
   "id": "talen-energy-ondo-tokenized-stock",
@@ -3957,17 +4026,17 @@
   "type": "stock",
   "issuer": "Ondo",
   "vol": 629,
-  "cap": 25870
+  "cap": 25869
  },
  {
-  "id": "doordash-ondo-tokenized-stock",
-  "ticker": "DASHon",
-  "name": "DoorDash",
-  "underlying": "DASH",
+  "id": "redwire-robinhood-tokenized-stock",
+  "ticker": "RDW",
+  "name": "Redwire",
+  "underlying": null,
   "type": "stock",
-  "issuer": "Ondo",
-  "vol": 612,
-  "cap": 841759
+  "issuer": "Other",
+  "vol": 611,
+  "cap": 9881
  },
  {
   "id": "trip-com-group-ondo-tokenized-stock",
@@ -3976,8 +4045,8 @@
   "underlying": "TCOM",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 605,
-  "cap": 154992
+  "vol": 603,
+  "cap": 154508
  },
  {
   "id": "backed-ibta-treasury-bond-1-3yr",
@@ -4007,7 +4076,17 @@
   "type": "stock",
   "issuer": "Ondo",
   "vol": 564,
-  "cap": 69372
+  "cap": 69373
+ },
+ {
+  "id": "microstrategy-incorporated-st0x",
+  "ticker": "WTMSTR",
+  "name": "MicroStrategy Incorporated ST0x",
+  "underlying": null,
+  "type": "stock",
+  "issuer": "Other",
+  "vol": 564,
+  "cap": 18833
  },
  {
   "id": "fidelity-solana-fund-ondo-tokenized",
@@ -4020,14 +4099,14 @@
   "cap": 3372
  },
  {
-  "id": "microstrategy-incorporated-st0x",
-  "ticker": "WTMSTR",
-  "name": "MicroStrategy Incorporated ST0x",
-  "underlying": null,
+  "id": "us-brent-oil-fund-ondo-tokenized",
+  "ticker": "BNOon",
+  "name": "US Brent Oil Fund",
+  "underlying": "BNO",
   "type": "stock",
-  "issuer": "Other",
-  "vol": 558,
-  "cap": 18835
+  "issuer": "Ondo",
+  "vol": 543,
+  "cap": 10988
  },
  {
   "id": "ishares-euro-high-yield-corporate-bond-usd-hedged-etf-ondo-tokenized",
@@ -4040,14 +4119,15 @@
   "cap": 698
  },
  {
-  "id": "us-brent-oil-fund-ondo-tokenized",
-  "ticker": "BNOon",
-  "name": "US Brent Oil Fund",
-  "underlying": "BNO",
+  "id": "international-business-machines-xstock",
+  "ticker": "IBMx",
+  "name": "International Business Machines",
+  "underlying": "IBM",
   "type": "stock",
-  "issuer": "Ondo",
-  "vol": 488,
-  "cap": 10888
+  "issuer": "xStocks",
+  "vol": 504,
+  "cap": 829525,
+  "mint": "XspwhyYPdWVM8XBHZnpS9hgyag9MKjLRyE3tVfmCbSr"
  },
  {
   "id": "amber-xstock",
@@ -4057,7 +4137,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 486,
-  "cap": 293969
+  "cap": 293969,
+  "mint": "XsaQTCgebC2KPbf27KUhdv5JFvHhQ4GDAPURwrEhAzb"
  },
  {
   "id": "bitmine-xstock",
@@ -4067,7 +4148,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 475,
-  "cap": 1052174
+  "cap": 1052174,
+  "mint": "XsrBCwaH8c46xiqXBChzobgufRKxQxAWUWbndgBNzFn"
  },
  {
   "id": "snap-ondo-tokenized",
@@ -4080,14 +4162,14 @@
   "cap": 9735
  },
  {
-  "id": "redwire-robinhood-tokenized-stock",
-  "ticker": "RDW",
-  "name": "Redwire",
+  "id": "spacex-st0x-tokenized-stock",
+  "ticker": "WTSPCX",
+  "name": "SpaceX",
   "underlying": null,
   "type": "stock",
   "issuer": "Other",
   "vol": 419,
-  "cap": 9682
+  "cap": 4798
  },
  {
   "id": "jpmorgan-chase-xstock",
@@ -4097,7 +4179,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 417,
-  "cap": 360287
+  "cap": 360287,
+  "mint": "XsMAqkcKsUewDrzVkait4e5u4y8REgtyS7jWgCpLV2C"
  },
  {
   "id": "vaneck-oil-services-etf-ondo-tokenized",
@@ -4110,16 +4193,6 @@
   "cap": 1178
  },
  {
-  "id": "spacex-st0x-tokenized-stock",
-  "ticker": "WTSPCX",
-  "name": "SpaceX",
-  "underlying": null,
-  "type": "stock",
-  "issuer": "Other",
-  "vol": 375,
-  "cap": 4812
- },
- {
   "id": "vicor-ondo-tokenized",
   "ticker": "VICRon",
   "name": "Vicor",
@@ -4127,7 +4200,7 @@
   "type": "stock",
   "issuer": "Ondo",
   "vol": 366,
-  "cap": 12769
+  "cap": 12759
  },
  {
   "id": "vanguard-energy-etf-ondo-tokenized",
@@ -4136,8 +4209,8 @@
   "underlying": "VDE",
   "type": "etf",
   "issuer": "Ondo",
-  "vol": 348,
-  "cap": 5917
+  "vol": 346,
+  "cap": 6231
  },
  {
   "id": "powell-industries-ondo-tokenized",
@@ -4146,8 +4219,8 @@
   "underlying": "POWL",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 323,
-  "cap": 10267
+  "vol": 325,
+  "cap": 10332
  },
  {
   "id": "novo-nordisk-xstock",
@@ -4157,17 +4230,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 314,
-  "cap": 596344
- },
- {
-  "id": "lightwave-logic-ondo-tokenized",
-  "ticker": "LWLGon",
-  "name": "Lightwave Logic",
-  "underlying": "LWLG",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 304,
-  "cap": 1042
+  "cap": 596344,
+  "mint": "XsfAzPzYrYjd4Dpa9BU3cusBsvWfVB9gBcyGC87S57n"
  },
  {
   "id": "ast-spacemobile-robinhood-tokenized-stock",
@@ -4177,7 +4241,7 @@
   "type": "stock",
   "issuer": "Other",
   "vol": 304,
-  "cap": 9119
+  "cap": 9120
  },
  {
   "id": "thermo-fisher-xstock",
@@ -4187,7 +4251,18 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 303,
-  "cap": 261333
+  "cap": 261333,
+  "mint": "Xs8drBWy3Sd5QY3aifG9kt9KFs2K3PGZmx7jWrsrk57"
+ },
+ {
+  "id": "lightwave-logic-ondo-tokenized",
+  "ticker": "LWLGon",
+  "name": "Lightwave Logic",
+  "underlying": "LWLG",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 302,
+  "cap": 1049
  },
  {
   "id": "backed-tesla",
@@ -4217,7 +4292,7 @@
   "type": "etf",
   "issuer": "Ondo",
   "vol": 298,
-  "cap": 484948
+  "cap": 484932
  },
  {
   "id": "pimco-0-5-year-high-yield-corporate-bond-index-etf-ondo-tokenized",
@@ -4236,8 +4311,18 @@
   "underlying": "OUST",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 278,
-  "cap": 95790
+  "vol": 277,
+  "cap": 95314
+ },
+ {
+  "id": "state-street-spdr-portfolio-s-p-500-etf-st0x",
+  "ticker": "WTSPYM",
+  "name": "State Street SPDR Portfolio S&P 500 ETF ST0x",
+  "underlying": null,
+  "type": "etf",
+  "issuer": "Other",
+  "vol": 262,
+  "cap": 30111
  },
  {
   "id": "asml-holding-nv-robinhood-tokenized-stock",
@@ -4246,7 +4331,7 @@
   "underlying": null,
   "type": "stock",
   "issuer": "Other",
-  "vol": 255,
+  "vol": 257,
   "cap": 1071
  },
  {
@@ -4257,7 +4342,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 241,
-  "cap": 255698
+  "cap": 255698,
+  "mint": "XsnQnU7AdbRZYe2akqqpibDdXjkieGFfSkbkjX1Sd1X"
  },
  {
   "id": "aktionariat-wemakeit-ag-tokenized-shares",
@@ -4297,7 +4383,7 @@
   "type": "stock",
   "issuer": "Other",
   "vol": 222,
-  "cap": 814114
+  "cap": 813175
  },
  {
   "id": "franklin-income-equity-focus-etf-ondo-tokenized",
@@ -4327,7 +4413,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 218,
-  "cap": 0
+  "cap": 0,
+  "mint": "XsDZMGEU8zadWFCkTtPBoPWYcUX3JHVmghnwf2Mve2q"
  },
  {
   "id": "energy-select-sector-spdr-fund-xstock",
@@ -4337,17 +4424,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 215,
-  "cap": 323246
- },
- {
-  "id": "state-street-spdr-portfolio-s-p-500-etf-st0x",
-  "ticker": "WTSPYM",
-  "name": "State Street SPDR Portfolio S&P 500 ETF ST0x",
-  "underlying": null,
-  "type": "etf",
-  "issuer": "Other",
-  "vol": 204,
-  "cap": 30137
+  "cap": 323246,
+  "mint": "Xs54CrhmpVp6uxZXwgSTegrRH2kShh88XFPzgf4BExu"
  },
  {
   "id": "vanguard-value-etf-ondo-tokenized",
@@ -4367,7 +4445,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 201,
-  "cap": 0
+  "cap": 0,
+  "mint": "XsEoih2x6nZuUjFwzGoba6MFmtzCkzW2c4YAm6baQbq"
  },
  {
   "id": "tower-semiconductor-robinhood-tokenized-stock",
@@ -4397,7 +4476,7 @@
   "type": "stock",
   "issuer": "Ondo",
   "vol": 196,
-  "cap": 23026
+  "cap": 23126
  },
  {
   "id": "penguin-solutions-robinhood-tokenized-stock",
@@ -4417,7 +4496,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 191,
-  "cap": 251394
+  "cap": 251394,
+  "mint": "Xsba6tUnSjDae2VcopDB6FGGDaxRrewFCDa5hKn5vT3"
  },
  {
   "id": "grindr-ondo-tokenized-stock",
@@ -4440,6 +4520,16 @@
   "cap": 7479
  },
  {
+  "id": "dell-robinhood-tokenized-stock",
+  "ticker": "DELL",
+  "name": "Dell",
+  "underlying": null,
+  "type": "stock",
+  "issuer": "Other",
+  "vol": 184,
+  "cap": 21539
+ },
+ {
   "id": "himax-technologies-ondo-tokenized",
   "ticker": "HIMXon",
   "name": "Himax Technologies",
@@ -4457,7 +4547,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 180,
-  "cap": 265379
+  "cap": 265379,
+  "mint": "XsSr8anD1hkvNMu8XQiVcmiaTP7XGvYu7Q58LdmtE8Z"
  },
  {
   "id": "ichor-holdings-ondo-tokenized",
@@ -4487,7 +4578,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 168,
-  "cap": 240742
+  "cap": 240742,
+  "mint": "XsczbcQ3zfcgAEt9qHQES8pxKAVG5rujPSHQEXi4kaN"
  },
  {
   "id": "vinfast-auto-ondo-tokenized",
@@ -4500,16 +4592,6 @@
   "cap": 9925
  },
  {
-  "id": "ishares-china-large-cap-etf-ondo-tokenized",
-  "ticker": "FXIon",
-  "name": "iShares China Large-Cap ETF",
-  "underlying": "FXI",
-  "type": "etf",
-  "issuer": "Ondo",
-  "vol": 160,
-  "cap": 45922
- },
- {
   "id": "visa-xstock",
   "ticker": "Vx",
   "name": "Visa",
@@ -4517,7 +4599,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 150,
-  "cap": 485349
+  "cap": 485359,
+  "mint": "XsqgsbXwWogGJsNcVZ3TyVouy2MbTkfCFhCGGGcQZ2p"
  },
  {
   "id": "global-x-space-tech-etf-ondo-tokenized",
@@ -4537,7 +4620,7 @@
   "type": "etf",
   "issuer": "Other",
   "vol": 150,
-  "cap": 1965
+  "cap": 1966
  },
  {
   "id": "onto-innovation-ondo-tokenized",
@@ -4557,7 +4640,17 @@
   "type": "stock",
   "issuer": "Ondo",
   "vol": 143,
-  "cap": 6379
+  "cap": 6378
+ },
+ {
+  "id": "ishares-china-large-cap-etf-ondo-tokenized",
+  "ticker": "FXIon",
+  "name": "iShares China Large-Cap ETF",
+  "underlying": "FXI",
+  "type": "etf",
+  "issuer": "Ondo",
+  "vol": 132,
+  "cap": 46006
  },
  {
   "id": "ishares-msci-chile-etf-ondo-tokenized",
@@ -4587,7 +4680,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 121,
-  "cap": 0
+  "cap": 0,
+  "mint": "XsZUSqxAXKJkEimvD4CoVvEb4WUC92TFgj5zRtBxFeL"
  },
  {
   "id": "applied-digital-robinhood-tokenized-stock",
@@ -4597,7 +4691,7 @@
   "type": "stock",
   "issuer": "Other",
   "vol": 117,
-  "cap": 1548
+  "cap": 1549
  },
  {
   "id": "figure-technology-solutions-ondo-tokenized-stock",
@@ -4607,17 +4701,7 @@
   "type": "stock",
   "issuer": "Ondo",
   "vol": 113,
-  "cap": 89356
- },
- {
-  "id": "first-majestic-silver-ondo-tokenized",
-  "ticker": "AGon",
-  "name": "First Majestic Silver",
-  "underlying": "AG",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 106,
-  "cap": 433
+  "cap": 89353
  },
  {
   "id": "oscar-health-ondo-tokenized",
@@ -4647,7 +4731,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 100,
-  "cap": 130537
+  "cap": 130537,
+  "mint": "Xs8S5L4HkJpeBWF1J4oyUX6rVwGHmG7GZ7PiChPt7nY"
  },
  {
   "id": "invesco-phlx-semiconductor-etf-ondo-tokenized",
@@ -4668,6 +4753,16 @@
   "issuer": "Ondo",
   "vol": 99,
   "cap": 3379
+ },
+ {
+  "id": "first-majestic-silver-ondo-tokenized",
+  "ticker": "AGon",
+  "name": "First Majestic Silver",
+  "underlying": "AG",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 99,
+  "cap": 429
  },
  {
   "id": "ishares-international-country-rotation-active-etf-ondo-tokenized",
@@ -4717,7 +4812,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 92,
-  "cap": 250563
+  "cap": 250563,
+  "mint": "XsPdAVBi8Zc1xvv53k4JcMrQaEDTgkGqKYeh7AYgPHV"
  },
  {
   "id": "xanadu-quantum-robinhood-tokenized-stock",
@@ -4757,7 +4853,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 79,
-  "cap": 292441
+  "cap": 292441,
+  "mint": "XswsQk4duEQmCbGzfqUUWYmi7pV7xpJ9eEmLHXCaEQP"
  },
  {
   "id": "bitgo-xstock",
@@ -4767,17 +4864,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 79,
-  "cap": 139527
- },
- {
-  "id": "costco-robinhood-tokenized-stock",
-  "ticker": "COST",
-  "name": "Costco",
-  "underlying": null,
-  "type": "stock",
-  "issuer": "Other",
-  "vol": 76,
-  "cap": 1360
+  "cap": 139527,
+  "mint": "XsvHMmbDcd14DHHW16PkxPGW7ks77ehxUv1E9Zmxgj4"
  },
  {
   "id": "citigroup-ondo-tokenized-stock",
@@ -4786,8 +4874,8 @@
   "underlying": "C",
   "type": "stock",
   "issuer": "Ondo",
-  "vol": 75,
-  "cap": 2090
+  "vol": 76,
+  "cap": 2023
  },
  {
   "id": "ishares-3-7-year-treasury-bond-etf-ondo-tokenized",
@@ -4817,7 +4905,7 @@
   "type": "stock",
   "issuer": "Ondo",
   "vol": 71,
-  "cap": 11030
+  "cap": 11023
  },
  {
   "id": "kraq-xstock",
@@ -4827,7 +4915,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 70,
-  "cap": 653281
+  "cap": 653281,
+  "mint": "XsAiRejKuvLAdq9KtedrMSrabz7SWdzKoVK6Qgac1Ki"
  },
  {
   "id": "gamestop-xstock",
@@ -4837,17 +4926,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 69,
-  "cap": 644815
- },
- {
-  "id": "ishares-bitcoin-trust-ondo-tokenized",
-  "ticker": "IBITon",
-  "name": "iShares Bitcoin Trust",
-  "underlying": "IBIT",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 68,
-  "cap": 43143235
+  "cap": 644815,
+  "mint": "Xsf9mBktVB9BSU5kf4nHxPq5hCBJ2j2ui3ecFGxPRGc"
  },
  {
   "id": "kanzhun-ondo-tokenized-stock",
@@ -4857,7 +4937,17 @@
   "type": "stock",
   "issuer": "Ondo",
   "vol": 66,
-  "cap": 7241
+  "cap": 7240
+ },
+ {
+  "id": "ishares-bitcoin-trust-ondo-tokenized",
+  "ticker": "IBITon",
+  "name": "iShares Bitcoin Trust",
+  "underlying": "IBIT",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 65,
+  "cap": 43211258
  },
  {
   "id": "schwab-international-equity-xstock",
@@ -4867,7 +4957,8 @@
   "type": "etf",
   "issuer": "xStocks",
   "vol": 64,
-  "cap": 174844
+  "cap": 174844,
+  "mint": "XsWAnFM77x6YvpdaZoos79R12o4Yj4r7EVkaTWddzhU"
  },
  {
   "id": "navitas-semiconductor-ondo-tokenized",
@@ -4897,7 +4988,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 56,
-  "cap": 118417
+  "cap": 118417,
+  "mint": "XsBGEXxbBcuu8Nrokj14G8v4ezT3JYWWLneTzXK8t6Z"
  },
  {
   "id": "vanguard-total-stock-market-etf-ondo-tokenized",
@@ -4906,8 +4998,8 @@
   "underlying": "VTI",
   "type": "etf",
   "issuer": "Ondo",
-  "vol": 55,
-  "cap": 320760
+  "vol": 56,
+  "cap": 321698
  },
  {
   "id": "ishares-flexible-income-active-etf-ondo-tokenized-etf",
@@ -4916,8 +5008,8 @@
   "underlying": "BINC",
   "type": "etf",
   "issuer": "Ondo",
-  "vol": 53,
-  "cap": 31894
+  "vol": 54,
+  "cap": 31929
  },
  {
   "id": "janus-henderson-aaa-clo-etf-ondo-tokenized-etf",
@@ -4967,7 +5059,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 50,
-  "cap": 0
+  "cap": 0,
+  "mint": "XsMJtFbb8BwzQtck3oRXyAfs7SAPRuTXnSEDNd7BAVz"
  },
  {
   "id": "robostrategy-ondo-tokenized",
@@ -5070,6 +5163,16 @@
   "cap": 162
  },
  {
+  "id": "marvell-technology-robinhood-tokenized-stock",
+  "ticker": "MRVL",
+  "name": "Marvell Technology",
+  "underlying": null,
+  "type": "stock",
+  "issuer": "Other",
+  "vol": 48,
+  "cap": 2272
+ },
+ {
   "id": "solaredge-technologies-ondo-tokenized",
   "ticker": "SEDGon",
   "name": "SolarEdge Technologies",
@@ -5080,16 +5183,6 @@
   "cap": 3738
  },
  {
-  "id": "marvell-technology-robinhood-tokenized-stock",
-  "ticker": "MRVL",
-  "name": "Marvell Technology",
-  "underlying": null,
-  "type": "stock",
-  "issuer": "Other",
-  "vol": 47,
-  "cap": 2277
- },
- {
   "id": "nuscale-power-ondo-tokenized",
   "ticker": "SMRon",
   "name": "NuScale Power",
@@ -5097,7 +5190,7 @@
   "type": "stock",
   "issuer": "Ondo",
   "vol": 46,
-  "cap": 37199
+  "cap": 37170
  },
  {
   "id": "lowe-s-ondo-tokenized",
@@ -5147,17 +5240,18 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 43,
-  "cap": 192436
+  "cap": 192436,
+  "mint": "XsguBZPkM9BDmxspmWe29EmrYZBv21ENcC27Pqh7grB"
  },
  {
-  "id": "strategy-inc-robinhood-tokenized-stock",
-  "ticker": "MSTR",
-  "name": "Strategy Inc.",
+  "id": "applied-materials-robinhood-tokenized-stock",
+  "ticker": "AMAT",
+  "name": "Applied Materials",
   "underlying": null,
   "type": "stock",
   "issuer": "Other",
-  "vol": 42,
-  "cap": 1426
+  "vol": 41,
+  "cap": 6337
  },
  {
   "id": "ceva-ondo-tokenized",
@@ -5237,7 +5331,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 31,
-  "cap": 328880
+  "cap": 328880,
+  "mint": "XsGVi5eo1Dh2zUpic4qACcjuWGjNv8GCt3dm5XcX6Dn"
  },
  {
   "id": "toyota-ondo-tokenized-stock",
@@ -5247,7 +5342,7 @@
   "type": "stock",
   "issuer": "Ondo",
   "vol": 31,
-  "cap": 1888212
+  "cap": 1889950
  },
  {
   "id": "extreme-networks-ondo-tokenized",
@@ -5260,6 +5355,27 @@
   "cap": 644
  },
  {
+  "id": "strategy-inc-robinhood-tokenized-stock",
+  "ticker": "MSTR",
+  "name": "Strategy Inc.",
+  "underlying": null,
+  "type": "stock",
+  "issuer": "Other",
+  "vol": 31,
+  "cap": 1426
+ },
+ {
+  "id": "goldman-sachs-xstock",
+  "ticker": "GSx",
+  "name": "Goldman Sachs",
+  "underlying": "GS",
+  "type": "stock",
+  "issuer": "xStocks",
+  "vol": 30,
+  "cap": 331007,
+  "mint": "XsgaUyp4jd1fNBCxgtTKkW64xnnhQcvgaxzsbAq5ZD1"
+ },
+ {
   "id": "global-x-robotics-artificial-intelligence-etf-ondo-tokenized",
   "ticker": "BOTZon",
   "name": "Global X Robotics & Artificial Intelligence ETF",
@@ -5267,7 +5383,7 @@
   "type": "etf",
   "issuer": "Ondo",
   "vol": 30,
-  "cap": 26645
+  "cap": 26892
  },
  {
   "id": "methode-electronics-ondo-tokenized",
@@ -5300,16 +5416,6 @@
   "cap": 3570
  },
  {
-  "id": "goldman-sachs-xstock",
-  "ticker": "GSx",
-  "name": "Goldman Sachs",
-  "underlying": "GS",
-  "type": "stock",
-  "issuer": "xStocks",
-  "vol": 29,
-  "cap": 331810
- },
- {
   "id": "arteris-ondo-tokenized",
   "ticker": "AIPon",
   "name": "Arteris",
@@ -5330,16 +5436,6 @@
   "cap": 289
  },
  {
-  "id": "maxlinear-ondo-tokenized",
-  "ticker": "MXLon",
-  "name": "MaxLinear",
-  "underlying": "MXL",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 28,
-  "cap": 225
- },
- {
   "id": "sprott-nickel-miners-etf-ondo-tokenized",
   "ticker": "NIKLon",
   "name": "Sprott Nickel Miners ETF",
@@ -5347,7 +5443,7 @@
   "type": "etf",
   "issuer": "Ondo",
   "vol": 27,
-  "cap": 34285
+  "cap": 34284
  },
  {
   "id": "exodus-movement-ondo-tokenized",
@@ -5377,7 +5473,7 @@
   "type": "stock",
   "issuer": "Ondo",
   "vol": 25,
-  "cap": 19085
+  "cap": 19084
  },
  {
   "id": "defiance-quantum-etf-ondo-tokenized",
@@ -5397,7 +5493,7 @@
   "type": "stock",
   "issuer": "Ondo",
   "vol": 25,
-  "cap": 360
+  "cap": 363
  },
  {
   "id": "arqit-quantum-ondo-tokenized",
@@ -5420,16 +5516,6 @@
   "cap": 177
  },
  {
-  "id": "dell-robinhood-tokenized-stock",
-  "ticker": "DELL",
-  "name": "Dell",
-  "underlying": null,
-  "type": "stock",
-  "issuer": "Other",
-  "vol": 23,
-  "cap": 2701
- },
- {
   "id": "fundrise-innovation-fund-llc-xstock",
   "ticker": "VCXx",
   "name": "Fundrise Innovation Fund, LLC",
@@ -5437,7 +5523,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 22,
-  "cap": 127166
+  "cap": 127166,
+  "mint": "Xs7UsqobM3EJgMeHwdAbmDBCZH1G5WTCjatpeYcCr8x"
  },
  {
   "id": "quantum-computing-ondo-tokenized",
@@ -5447,7 +5534,7 @@
   "type": "stock",
   "issuer": "Ondo",
   "vol": 21,
-  "cap": 77692
+  "cap": 77918
  },
  {
   "id": "hive-digital-technologies-ondo-tokenized",
@@ -5467,7 +5554,8 @@
   "type": "etf",
   "issuer": "xStocks",
   "vol": 20,
-  "cap": 238643
+  "cap": 238643,
+  "mint": "XsFnZawJdLdXfBSEt5Vw29K5vdBiHotdPLjUPafpfHs"
  },
  {
   "id": "hut-8-xstock",
@@ -5477,7 +5565,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 20,
-  "cap": 0
+  "cap": 0,
+  "mint": "XsG5QyZTQnVSpsXRpD92K5ZGoxXjsmfTyx7fW7r18DV"
  },
  {
   "id": "home-depot-ondo-tokenized-stock",
@@ -5517,7 +5606,7 @@
   "type": "stock",
   "issuer": "Ondo",
   "vol": 20,
-  "cap": 13937
+  "cap": 13953
  },
  {
   "id": "opendoor-technologies-ondo-tokenized",
@@ -5547,7 +5636,7 @@
   "type": "stock",
   "issuer": "Ondo",
   "vol": 20,
-  "cap": 537
+  "cap": 534
  },
  {
   "id": "general-dynamics-ondo-tokenized",
@@ -5617,7 +5706,7 @@
   "type": "stock",
   "issuer": "Other",
   "vol": 19,
-  "cap": 2069
+  "cap": 2070
  },
  {
   "id": "open-xstock",
@@ -5627,7 +5716,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 18,
-  "cap": 130522
+  "cap": 130522,
+  "mint": "XsGtpmjhmC8kyjVSWL4VicGu36ceq9u55PTgF8bhGv6"
  },
  {
   "id": "abrdn-physical-palladium-shares-xstock",
@@ -5637,7 +5727,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 18,
-  "cap": 113234
+  "cap": 113234,
+  "mint": "XsTTtPA5V19YwHKDv4xeVXNM6kdsQNJvg3MyWkRUckt"
  },
  {
   "id": "sap-ondo-tokenized",
@@ -5677,7 +5768,7 @@
   "type": "stock",
   "issuer": "Other",
   "vol": 17,
-  "cap": 23345
+  "cap": 23349
  },
  {
   "id": "southern-ondo-tokenized-stock",
@@ -5697,17 +5788,7 @@
   "type": "stock",
   "issuer": "Ondo",
   "vol": 16,
-  "cap": 11125
- },
- {
-  "id": "medtronic-xstock",
-  "ticker": "MDTx",
-  "name": "Medtronic",
-  "underlying": "MDT",
-  "type": "stock",
-  "issuer": "xStocks",
-  "vol": 15,
-  "cap": 206172
+  "cap": 11137
  },
  {
   "id": "global-x-silver-miners-etf-ondo-tokenized",
@@ -5727,7 +5808,7 @@
   "type": "stock",
   "issuer": "Other",
   "vol": 15,
-  "cap": 27354
+  "cap": 27358
  },
  {
   "id": "digi-power-x-ondo-tokenized",
@@ -5738,6 +5819,37 @@
   "issuer": "Ondo",
   "vol": 14,
   "cap": 349
+ },
+ {
+  "id": "maxlinear-ondo-tokenized",
+  "ticker": "MXLon",
+  "name": "MaxLinear",
+  "underlying": "MXL",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 14,
+  "cap": 231
+ },
+ {
+  "id": "roblox-robinhood-tokenized-stock",
+  "ticker": "RBLX",
+  "name": "Roblox",
+  "underlying": null,
+  "type": "stock",
+  "issuer": "Other",
+  "vol": 14,
+  "cap": 814
+ },
+ {
+  "id": "medtronic-xstock",
+  "ticker": "MDTx",
+  "name": "Medtronic",
+  "underlying": "MDT",
+  "type": "stock",
+  "issuer": "xStocks",
+  "vol": 13,
+  "cap": 166352,
+  "mint": "XsDgw22qRLTv5Uwuzn6T63cW69exG41T6gwQhEK22u2"
  },
  {
   "id": "nextera-energy-ondo-tokenized",
@@ -5767,17 +5879,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 12,
-  "cap": 196673
- },
- {
-  "id": "tsakos-energy-navigation-ondo-tokenized",
-  "ticker": "TENon",
-  "name": "Tsakos Energy Navigation",
-  "underlying": "TEN",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 12,
-  "cap": 200
+  "cap": 196673,
+  "mint": "Xs151QeqTCiuKtinzfRATnUESM2xTU6V9Wy8Vy538ci"
  },
  {
   "id": "bitdeer-technologies-ondo-tokenized",
@@ -5790,6 +5893,16 @@
   "cap": 122
  },
  {
+  "id": "ups-robinhood-tokenized-stock",
+  "ticker": "UPS",
+  "name": "UPS",
+  "underlying": null,
+  "type": "stock",
+  "issuer": "Other",
+  "vol": 12,
+  "cap": 528
+ },
+ {
   "id": "palo-alto-networks-xstock",
   "ticker": "PANWx",
   "name": "Palo Alto Networks",
@@ -5797,7 +5910,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 11,
-  "cap": 0
+  "cap": 0,
+  "mint": "XsQ6NfzzLH8nspjrB9X8R2K64Zz7Tnxqu12juDiMPMW"
  },
  {
   "id": "nano-nuclear-energy-ondo-tokenized",
@@ -5828,16 +5942,6 @@
   "issuer": "Ondo",
   "vol": 11,
   "cap": 162
- },
- {
-  "id": "roblox-robinhood-tokenized-stock",
-  "ticker": "RBLX",
-  "name": "Roblox",
-  "underlying": null,
-  "type": "stock",
-  "issuer": "Other",
-  "vol": 11,
-  "cap": 797
  },
  {
   "id": "global-x-artificial-intelligence-technology-etf-ondo-tokenized",
@@ -5898,6 +6002,16 @@
   "issuer": "Ondo",
   "vol": 10,
   "cap": 327
+ },
+ {
+  "id": "united-states-antimony-ondo-tokenized",
+  "ticker": "UAMYon",
+  "name": "United States Antimony",
+  "underlying": "UAMY",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 10,
+  "cap": 260
  },
  {
   "id": "primoris-services-ondo-tokenized",
@@ -5980,6 +6094,16 @@
   "cap": 126
  },
  {
+  "id": "fundrise-innovation-fund-ondo-tokenized",
+  "ticker": "VCXon",
+  "name": "Fundrise Innovation Fund",
+  "underlying": "VCX",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 10,
+  "cap": 111
+ },
+ {
   "id": "forgent-power-solutions-ondo-tokenized",
   "ticker": "FPSon",
   "name": "Forgent Power Solutions",
@@ -6000,14 +6124,14 @@
   "cap": 579
  },
  {
-  "id": "ups-robinhood-tokenized-stock",
-  "ticker": "UPS",
-  "name": "UPS",
-  "underlying": null,
+  "id": "aehr-test-systems-ondo-tokenized",
+  "ticker": "AEHRon",
+  "name": "Aehr Test Systems",
+  "underlying": "AEHR",
   "type": "stock",
-  "issuer": "Other",
-  "vol": 10,
-  "cap": 528
+  "issuer": "Ondo",
+  "vol": 9,
+  "cap": 61720
  },
  {
   "id": "vanguard-total-world-xstock",
@@ -6017,17 +6141,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 8,
-  "cap": 1956642
- },
- {
-  "id": "aehr-test-systems-ondo-tokenized",
-  "ticker": "AEHRon",
-  "name": "Aehr Test Systems",
-  "underlying": "AEHR",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 8,
-  "cap": 59957
+  "cap": 1956642,
+  "mint": "XsEdDDTcVGJU6nvdRdVnj53eKTrsCkvtrVfXGmUK68V"
  },
  {
   "id": "abrdn-physical-precious-metals-basket-shares-etf-ondo-tokenized",
@@ -6048,6 +6163,16 @@
   "issuer": "Ondo",
   "vol": 8,
   "cap": 799
+ },
+ {
+  "id": "tsakos-energy-navigation-ondo-tokenized",
+  "ticker": "TENon",
+  "name": "Tsakos Energy Navigation",
+  "underlying": "TEN",
+  "type": "stock",
+  "issuer": "Ondo",
+  "vol": 7,
+  "cap": 200
  },
  {
   "id": "global-x-lithium-battery-tech-etf-ondo-tokenized",
@@ -6097,7 +6222,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 5,
-  "cap": 135670
+  "cap": 135670,
+  "mint": "Xssu2cDLdZXZYrq17frTVrb3meumRCAzEf7pXyxoWVN"
  },
  {
   "id": "galaxy-digital-xstock",
@@ -6107,7 +6233,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 5,
-  "cap": 0
+  "cap": 0,
+  "mint": "Xs3c2aZenyRQwXjki5MDxJEJ2km27ef2rWQMFWx7QKJ"
  },
  {
   "id": "virgin-galactic-xstock",
@@ -6117,7 +6244,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 5,
-  "cap": 0
+  "cap": 0,
+  "mint": "Xsgrm4D6VBTfDx5bs7GNdjtmWDgZ8V79r3YpsYwf5py"
  },
  {
   "id": "franklin-responsibly-sourced-gold-etf-ondo-tokenized",
@@ -6157,7 +6285,7 @@
   "type": "etf",
   "issuer": "Ondo",
   "vol": 5,
-  "cap": 15654
+  "cap": 15629
  },
  {
   "id": "strive-preferred-ondo-tokenized",
@@ -6167,7 +6295,7 @@
   "type": "stock",
   "issuer": "Ondo",
   "vol": 5,
-  "cap": 11569
+  "cap": 11552
  },
  {
   "id": "harmonic-ondo-tokenized",
@@ -6188,16 +6316,6 @@
   "issuer": "Ondo",
   "vol": 5,
   "cap": 327
- },
- {
-  "id": "united-states-antimony-ondo-tokenized",
-  "ticker": "UAMYon",
-  "name": "United States Antimony",
-  "underlying": "UAMY",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 5,
-  "cap": 264
  },
  {
   "id": "enbridge-ondo-tokenized",
@@ -6270,16 +6388,6 @@
   "cap": 134
  },
  {
-  "id": "fundrise-innovation-fund-ondo-tokenized",
-  "ticker": "VCXon",
-  "name": "Fundrise Innovation Fund",
-  "underlying": "VCX",
-  "type": "stock",
-  "issuer": "Ondo",
-  "vol": 5,
-  "cap": 115
- },
- {
   "id": "global-x-msci-argentina-etf-ondo-tokenized",
   "ticker": "ARGTon",
   "name": "Global X MSCI Argentina ETF",
@@ -6307,7 +6415,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 3,
-  "cap": 54177
+  "cap": 54177,
+  "mint": "XsAsZLF4MmsvS1sDxRMrUz7REjHfwbC9UAMXSRBqgEB"
  },
  {
   "id": "ishares-msci-brazil-etf-ondo-tokenized",
@@ -6337,7 +6446,7 @@
   "type": "stock",
   "issuer": "Ondo",
   "vol": 3,
-  "cap": 340
+  "cap": 341
  },
  {
   "id": "leonardo-drs-ondo-tokenized",
@@ -6380,6 +6489,16 @@
   "cap": 142
  },
  {
+  "id": "qualcomm-robinhood-tokenized-stock",
+  "ticker": "QCOM",
+  "name": "Qualcomm",
+  "underlying": null,
+  "type": "stock",
+  "issuer": "Other",
+  "vol": 3,
+  "cap": 14677
+ },
+ {
   "id": "russell-2000-xstock",
   "ticker": "IWMx",
   "name": "Russell 2000",
@@ -6387,7 +6506,8 @@
   "type": "etf",
   "issuer": "xStocks",
   "vol": 2,
-  "cap": 177991
+  "cap": 177991,
+  "mint": "XsbELVbLGBkn7xfMfyYuUipKGt1iRUc2B7pYRvFTFu3"
  },
  {
   "id": "apollo-global-management-ondo-tokenized-stock",
@@ -6397,7 +6517,7 @@
   "type": "stock",
   "issuer": "Ondo",
   "vol": 2,
-  "cap": 749481
+  "cap": 738698
  },
  {
   "id": "jabil-ondo-tokenized",
@@ -6460,16 +6580,6 @@
   "cap": 158
  },
  {
-  "id": "applied-materials-robinhood-tokenized-stock",
-  "ticker": "AMAT",
-  "name": "Applied Materials",
-  "underlying": null,
-  "type": "stock",
-  "issuer": "Other",
-  "vol": 2,
-  "cap": 6210
- },
- {
   "id": "cleanspark-robinhood-tokenized-stock",
   "ticker": "CLSK",
   "name": "CleanSpark",
@@ -6477,7 +6587,7 @@
   "type": "stock",
   "issuer": "Other",
   "vol": 2,
-  "cap": 1606
+  "cap": 1627
  },
  {
   "id": "echostar-robinhood-tokenized-stock",
@@ -6497,7 +6607,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 1,
-  "cap": 181293
+  "cap": 181293,
+  "mint": "Xs3ZFkPYT2BN7qBMqf1j1bfTeTm1rFzEFSsQ1z3wAKU"
  },
  {
   "id": "global-x-us-infrastructure-development-etf-ondo-tokenized",
@@ -6527,7 +6638,8 @@
   "type": "stock",
   "issuer": "xStocks",
   "vol": 0,
-  "cap": 262549
+  "cap": 262549,
+  "mint": "Xs31mE5EiqjSHEaiX9QDKCN6NvSGCqpJ6f1FNq2wri5"
  },
  {
   "id": "vaneck-agribusiness-etf-xstock",
@@ -6537,7 +6649,8 @@
   "type": "etf",
   "issuer": "xStocks",
   "vol": 0,
-  "cap": 220326
+  "cap": 220326,
+  "mint": "Xs72K1Ta1D5ccNy3RzSyQWGgZywWvphX78pL8WBk1Bo"
  },
  {
   "id": "securitize-corp",
@@ -6598,16 +6711,6 @@
   "issuer": "Other",
   "vol": 0,
   "cap": 59568
- },
- {
-  "id": "qualcomm-robinhood-tokenized-stock",
-  "ticker": "QCOM",
-  "name": "Qualcomm",
-  "underlying": null,
-  "type": "stock",
-  "issuer": "Other",
-  "vol": 0,
-  "cap": 14384
  },
  {
   "id": "cerebras-systems-robinhood-tokenized-stock",
@@ -7080,9 +7183,9 @@
   "cap": 583
  },
  {
-  "id": "backed-erna-bond",
-  "ticker": "BERNA",
-  "name": "Backed ERNA $ Bond",
+  "id": "dinari-spy-dshares",
+  "ticker": "SPY.D",
+  "name": "Dinari SPY",
   "underlying": null,
   "type": "etf",
   "issuer": "Other",
@@ -7090,9 +7193,9 @@
   "cap": 0
  },
  {
-  "id": "dinari-spy-dshares",
-  "ticker": "SPY.D",
-  "name": "Dinari SPY",
+  "id": "backed-erna-bond",
+  "ticker": "BERNA",
+  "name": "Backed ERNA $ Bond",
   "underlying": null,
   "type": "etf",
   "issuer": "Other",

@@ -7,6 +7,10 @@ import { premiumPct } from '../lib/prices'
 const STORAGE_KEY = 'bw.alerts.v1'
 const MAX_EVENTS = 50
 const SYNC_DEBOUNCE_MS = 800
+// Anti-spam for drift alerts under fast (2.5s) evaluation: re-arm only when
+// the gap falls clearly back inside the band, and rate-limit repeat fires.
+const REARM_RATIO = 0.8
+const DRIFT_COOLDOWN_MS = 10 * 60_000
 
 // A rule can hold two independent alert types per asset:
 //   drift: { threshold }         — |premium| crosses ±threshold%; re-arms when
@@ -91,6 +95,9 @@ export function AlertsProvider({ children }) {
   const storeRef = useRef(store)
   const hydratedForRef = useRef(null)
   const syncTimerRef = useRef(null)
+  // assetId -> last drift-fire timestamp (session-scoped; spam is a
+  // within-session phenomenon, so this doesn't need persisting)
+  const driftFiredRef = useRef({})
 
   useEffect(() => {
     storeRef.current = store
@@ -167,23 +174,34 @@ export function AlertsProvider({ children }) {
       if (rule.drift) {
         const p = premiumPct(asset)
         if (p != null) {
+          // With the fast layer, evaluation runs ~every 2.5s — a premium
+          // hovering exactly at the threshold would flip inside/outside each
+          // tick and flood the feed. Two guards:
+          //  - hysteresis: re-arm only once the gap falls clearly back inside
+          //    (80% of threshold), so hover can't oscillate the state machine
+          //  - cooldown: at most one drift event per asset per 10 minutes
           const outside = Math.abs(p) >= rule.drift.threshold
+          const backInside = Math.abs(p) < rule.drift.threshold * REARM_RATIO
           const prev = states[assetId] ?? 'inside'
           if (outside && prev === 'inside') {
-            events.unshift({
-              id: `${assetId}-d-${Date.now()}`,
-              kind: 'alert',
-              type: 'drift',
-              assetId,
-              ticker: asset.ticker,
-              underlying: asset.underlying,
-              premium: p,
-              threshold: rule.drift.threshold,
-              at: Date.now(),
-            })
-            changed = true
+            const last = driftFiredRef.current[assetId] ?? 0
+            if (Date.now() - last > DRIFT_COOLDOWN_MS) {
+              driftFiredRef.current[assetId] = Date.now()
+              events.unshift({
+                id: `${assetId}-d-${Date.now()}`,
+                kind: 'alert',
+                type: 'drift',
+                assetId,
+                ticker: asset.ticker,
+                underlying: asset.underlying,
+                premium: p,
+                threshold: rule.drift.threshold,
+                at: Date.now(),
+              })
+              changed = true
+            }
           }
-          const next = outside ? 'outside' : 'inside'
+          const next = outside ? 'outside' : backInside ? 'inside' : prev
           if (next !== prev) {
             states[assetId] = next
             changed = true

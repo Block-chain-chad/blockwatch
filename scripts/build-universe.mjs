@@ -24,6 +24,7 @@ import path from 'node:path'
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const CACHE_PATH = path.join(ROOT, 'scripts', '.ticker-cache.json')
+const MINT_CACHE_PATH = path.join(ROOT, 'scripts', '.mint-cache.json')
 const OUT_PATH = path.join(ROOT, 'src', 'data', 'universe.json')
 const REPORT_PATH = path.join(ROOT, 'scripts', 'universe-report.txt')
 const CACHE_TTL = 30 * 24 * 60 * 60_000
@@ -248,6 +249,41 @@ for (const ticker of toValidate) {
   await sleep(FINNHUB_DELAY_MS)
 }
 
+// Solana mint addresses for xStocks — the fast-price feed (Jupiter) addresses
+// tokens by mint. One /coins/{id} call per uncached asset; mints never change,
+// so the cache is permanent.
+let mintCache = {}
+if (existsSync(MINT_CACHE_PATH)) {
+  try {
+    mintCache = JSON.parse(readFileSync(MINT_CACHE_PATH, 'utf8'))
+  } catch {
+    mintCache = {}
+  }
+}
+const needMints = priced.filter((c) => c._issuer === 'xStocks' && !(c.id in mintCache))
+// Slower pacing than the census calls: this loop can run 100+ requests
+// back-to-back on a cold cache, and sustained keyless CoinGecko traffic gets
+// throttled well below the bursty ceiling. ~9/min keeps cold runs clean.
+const MINT_DELAY_MS = 6_500
+if (needMints.length > 0) {
+  console.log(`Fetching Solana mints for ${needMints.length} xStocks (cache covers the rest)...`)
+  let done = 0
+  for (const coin of needMints) {
+    try {
+      const detail = await fetchJson(
+        `${CG_BASE}/coins/${encodeURIComponent(coin.id)}?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false`
+      )
+      mintCache[coin.id] = detail.platforms?.solana ?? null
+    } catch (err) {
+      console.log(`  ${coin.id}: mint lookup failed (${err.message}) — retried next run`)
+    }
+    done++
+    if (done % 20 === 0) console.log(`  ...${done}/${needMints.length}`)
+    writeFileSync(MINT_CACHE_PATH, JSON.stringify(mintCache, null, 1))
+    await sleep(MINT_DELAY_MS)
+  }
+}
+
 // Assemble final records.
 const assets = priced
   .map((coin) => {
@@ -268,6 +304,7 @@ const assets = priced
       issuer: coin._issuer ?? 'Other',
       vol: Math.round(coin.total_volume ?? 0),
       cap: Math.round(coin.market_cap ?? 0),
+      ...(mintCache[coin.id] ? { mint: mintCache[coin.id] } : {}),
     }
   })
   .sort((a, b) => b.vol - a.vol)

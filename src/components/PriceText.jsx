@@ -13,7 +13,14 @@ export default function PriceText({ value, className = '', skeletonWidth = 'w-14
   useEffect(() => {
     const before = prev.current
     prev.current = value
-    if (before != null && value != null && value !== before) {
+    // Flash only when the RENDERED text changes — sub-cent moves that don't
+    // alter a displayed digit must not blink green/red at the user.
+    if (
+      before != null &&
+      value != null &&
+      value !== before &&
+      formatPrice(value) !== formatPrice(before)
+    ) {
       setFlash(value > before ? 'up' : 'down')
       const t = setTimeout(() => setFlash(null), 900)
       return () => clearTimeout(t)
