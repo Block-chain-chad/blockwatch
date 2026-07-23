@@ -7,7 +7,7 @@
 import raw from './universe.json'
 
 const ISSUER_META = {
-  xStocks: { chain: 'Solana', venues: ['Kraken', 'Bybit', 'Jupiter'] },
+  xStocks: { chain: 'Solana', venues: ['Kraken', 'Bybit', 'Gate.io', 'KuCoin', 'Jupiter'] },
   Ondo: { chain: 'Ethereum', venues: ['Ondo Global Markets'] },
 }
 

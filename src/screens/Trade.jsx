@@ -36,6 +36,22 @@ const VENUES = [
     blurb: 'Exchange trading for xStocks with a Bybit account.',
     tag: 'Not offered in the US',
   },
+  {
+    id: 'gate',
+    name: 'Gate.io',
+    href: 'https://www.gate.io',
+    icon: GlobeIcon,
+    blurb: 'Exchange trading for xStocks with a Gate account.',
+    tag: 'Not offered in the US',
+  },
+  {
+    id: 'kucoin',
+    name: 'KuCoin',
+    href: 'https://www.kucoin.com',
+    icon: GlobeIcon,
+    blurb: 'Exchange trading for xStocks with a KuCoin account.',
+    tag: 'Not offered in the US',
+  },
 ]
 
 export default function Trade({ onOpenProfile }) {
