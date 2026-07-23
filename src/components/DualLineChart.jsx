@@ -41,6 +41,7 @@ export default function DualLineChart({
   loading,
   error,
   onRetry,
+  onScrub,
   showToken = true,
   showStock = true,
 }) {
@@ -104,6 +105,17 @@ export default function DualLineChart({
     return t0 + frac * (t1 - t0)
   }
 
+  // Robinhood-style: the scrub also drives the parent's headline price.
+  // Emitted from the pointer path (not an effect) so hook order stays clean
+  // above the early returns.
+  function updateScrub(t) {
+    setScrubT(t)
+    if (!onScrub) return
+    if (t == null) return onScrub(null)
+    const st = token.length > 0 ? nearest(token, t) : null
+    onScrub(st ? { price: st.v, t: st.t } : null)
+  }
+
   const scrubToken = scrubT != null && tokenVisible ? nearest(token, scrubT) : null
   const scrubStock = scrubT != null && stockVisible ? nearest(stock, scrubT) : null
   const scrubGap = scrubT != null && premium.length > 0 ? nearest(premium, scrubT) : null
@@ -152,11 +164,11 @@ export default function DualLineChart({
         className="w-full cursor-crosshair"
         style={{ touchAction: 'none' }}
         aria-label="Stock vs. token price chart"
-        onPointerDown={(e) => setScrubT(timeFromPointer(e.clientX))}
-        onPointerMove={(e) => setScrubT(timeFromPointer(e.clientX))}
-        onPointerUp={() => setScrubT(null)}
-        onPointerLeave={() => setScrubT(null)}
-        onPointerCancel={() => setScrubT(null)}
+        onPointerDown={(e) => updateScrub(timeFromPointer(e.clientX))}
+        onPointerMove={(e) => updateScrub(timeFromPointer(e.clientX))}
+        onPointerUp={() => updateScrub(null)}
+        onPointerLeave={() => updateScrub(null)}
+        onPointerCancel={() => updateScrub(null)}
       >
         {[0.25, 0.5, 0.75].map((f) => (
           <line

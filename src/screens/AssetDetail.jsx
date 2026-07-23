@@ -49,6 +49,9 @@ const compactNum = (n) =>
 
 export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
   const [range, setRange] = useState('1D')
+  // Scrubbing the chart drives the headline price (Robinhood-style); null =
+  // live. Cleared on range switch and on pointer release (chart emits null).
+  const [scrub, setScrub] = useState(null)
   const [statsOpen, setStatsOpen] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [foldersOpen, setFoldersOpen] = useState(false)
@@ -157,18 +160,32 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
         <div className="mt-3 flex items-end justify-between">
           <div>
             <div className="text-3xl font-semibold">
-              <PriceText value={asset.tokenPrice} skeletonWidth="w-28" />
+              {scrub ? (
+                <span className="tabular-nums">{formatPrice(scrub.price)}</span>
+              ) : (
+                <PriceText value={asset.tokenPrice} skeletonWidth="w-28" />
+              )}
             </div>
             {(() => {
-              // Robinhood-style range summary: how it's moved over the selected zoom.
+              // Robinhood-style range summary: how it's moved over the selected
+              // zoom — or, while scrubbing, from the period start to the finger.
               if (chart.token.length < 2) return null
               const first = chart.token[0].v
-              const last = chart.token[chart.token.length - 1].v
-              const pct = ((last - first) / first) * 100
+              const ref = scrub?.price ?? chart.token[chart.token.length - 1].v
+              const pct = ((ref - first) / first) * 100
+              const intraday = range === '1D' || range === '1W'
+              const suffix = scrub
+                ? new Date(Math.round(scrub.t / 300_000) * 300_000).toLocaleString(
+                    'en-US',
+                    intraday
+                      ? { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }
+                      : { month: 'short', day: 'numeric', year: 'numeric' }
+                  )
+                : RANGE_WORDS[range]
               return (
                 <div className={`mt-1 text-sm font-medium tabular-nums ${changeColor(pct)}`}>
-                  {last >= first ? '▲' : '▼'} {formatPrice(Math.abs(last - first))} ({formatPct(pct)}){' '}
-                  <span className="font-normal text-zinc-500">{RANGE_WORDS[range]}</span>
+                  {ref >= first ? '▲' : '▼'} {formatPrice(Math.abs(ref - first))} ({formatPct(pct)}){' '}
+                  <span className="font-normal text-zinc-500">{suffix}</span>
                 </div>
               )
             })()}
@@ -213,6 +230,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
           loading={chart.loading}
           error={chart.error}
           onRetry={() => setChartRetry((n) => n + 1)}
+          onScrub={setScrub}
           showToken={visibleLines.token}
           showStock={visibleLines.stock}
         />
@@ -245,7 +263,10 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
         {RANGES.map((r) => (
           <button
             key={r}
-            onClick={() => setRange(r)}
+            onClick={() => {
+              setScrub(null) // a new zoom invalidates the old finger position
+              setRange(r)
+            }}
             className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
               range === r ? 'bg-accent text-zinc-950' : 'text-zinc-500 active:bg-zinc-900'
             }`}
