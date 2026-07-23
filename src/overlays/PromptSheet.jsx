@@ -14,10 +14,10 @@ export default function PromptSheet({ title, placeholder, initial = '', submitLa
 
   return (
     <div className="fixed inset-0 z-[55] mx-auto flex max-w-md items-end">
-      <button aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/60" />
+      <button aria-label="Close" onClick={onClose} className="absolute inset-0 overlay-in bg-black/60" />
       <form
         onSubmit={submit}
-        className="relative w-full rounded-t-3xl bg-zinc-950 p-4 pb-[max(env(safe-area-inset-bottom),16px)] ring-1 ring-zinc-800/70"
+        className="relative sheet-in w-full rounded-t-3xl bg-zinc-950 p-4 pb-[max(env(safe-area-inset-bottom),16px)] ring-1 ring-zinc-800/70"
       >
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-zinc-800" />
         <h2 className="px-1 text-base font-semibold">{title}</h2>

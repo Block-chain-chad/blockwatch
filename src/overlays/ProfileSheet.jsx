@@ -35,9 +35,9 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
       <button
         aria-label="Close profile"
         onClick={onClose}
-        className="absolute inset-0 bg-black/60"
+        className="absolute inset-0 overlay-in bg-black/60"
       />
-      <div className="relative w-full rounded-t-3xl bg-zinc-950 pb-[max(env(safe-area-inset-bottom),16px)] ring-1 ring-zinc-800/70">
+      <div className="relative sheet-in w-full rounded-t-3xl bg-zinc-950 pb-[max(env(safe-area-inset-bottom),16px)] ring-1 ring-zinc-800/70">
         <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-zinc-800" />
 
         <div className="flex items-center justify-between px-4 pt-4">

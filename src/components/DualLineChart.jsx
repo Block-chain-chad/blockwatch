@@ -178,9 +178,11 @@ export default function DualLineChart({
         </text>
         {stockVisible && (
           <path
+            key={`s-${stock.length}-${stock[0]?.t ?? 0}`}
             d={linePath(stock, x, y)}
+            pathLength="1"
             fill="none"
-            className="stroke-zinc-500"
+            className="chart-draw stroke-zinc-500"
             strokeWidth="1.8"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -188,9 +190,11 @@ export default function DualLineChart({
         )}
         {tokenVisible && (
           <path
+            key={`t-${token.length}-${token[0]?.t ?? 0}`}
             d={linePath(token, x, y)}
+            pathLength="1"
             fill="none"
-            className="stroke-accent"
+            className="chart-draw stroke-accent"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"

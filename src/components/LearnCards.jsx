@@ -44,8 +44,8 @@ const LESSONS = [
 function LearnSheet({ lesson, onClose }) {
   return (
     <div className="fixed inset-0 z-[55] mx-auto flex max-w-md items-end">
-      <button aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/60" />
-      <div className="relative w-full rounded-t-3xl bg-zinc-950 p-5 pb-[max(env(safe-area-inset-bottom),20px)] ring-1 ring-zinc-800/70">
+      <button aria-label="Close" onClick={onClose} className="absolute inset-0 overlay-in bg-black/60" />
+      <div className="relative sheet-in w-full rounded-t-3xl bg-zinc-950 p-5 pb-[max(env(safe-area-inset-bottom),20px)] ring-1 ring-zinc-800/70">
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-zinc-800" />
         <h2 className="text-base font-semibold">{lesson.title}</h2>
         <div className="mt-3 max-h-[50vh] space-y-3 overflow-y-auto">

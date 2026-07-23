@@ -114,7 +114,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
   // z sits ABOVE the search overlay (40): opening an asset from search keeps
   // search mounted underneath, so Back returns to the typed query.
   return (
-    <div className="fixed inset-0 z-[45] mx-auto max-w-md overflow-y-auto bg-zinc-950 pb-10">
+    <div className="screen-in fixed inset-0 z-[45] mx-auto max-w-md overflow-y-auto bg-zinc-950 pb-10">
       <header className="sticky top-0 z-10 flex items-center justify-between bg-zinc-950/90 px-2 py-3 backdrop-blur">
         <button
           onClick={onBack}

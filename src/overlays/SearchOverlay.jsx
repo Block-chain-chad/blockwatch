@@ -178,7 +178,7 @@ export default function SearchOverlay({ onClose, onOpenAsset, pickerFolderId = n
   const rowProps = { pickerFolder, watchlistIds, toggle, onOpen: onOpenAsset }
 
   return (
-    <div className="fixed inset-0 z-40 mx-auto flex max-w-md flex-col bg-zinc-950">
+    <div className="overlay-in fixed inset-0 z-40 mx-auto flex max-w-md flex-col bg-zinc-950">
       {pickerFolder && (
         <div className="px-4 pt-4 text-sm font-medium text-zinc-400">
           Add to <span className="text-zinc-100">{pickerFolder.name}</span>

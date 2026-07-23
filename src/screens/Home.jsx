@@ -39,7 +39,7 @@ function OvernightStrip({ onOpenAsset }) {
       onClick={() => onOpenAsset(top.asset)}
       className="mx-4 mt-4 flex w-[calc(100%-32px)] items-center gap-3 rounded-2xl bg-zinc-900 px-4 py-3 text-left transition-colors active:bg-zinc-800"
     >
-      <MoonIcon size={16} className="shrink-0 text-zinc-500" />
+      <MoonIcon size={16} className="moon-breathe shrink-0 text-zinc-500" />
       <span className="min-w-0 flex-1 text-xs leading-snug text-zinc-400">
         Overnight session — tokens trade while the market sleeps. Biggest drift right now:
       </span>
@@ -101,7 +101,10 @@ export default function Home({ onOpenProfile, onOpenAsset, onOpenSearch }) {
         {totalCap > 0 ? (
           <>
             <div className="mt-0.5 text-4xl font-semibold tabular-nums tracking-tight">
-              {formatCompact(totalCap)}
+              {/* keyed: re-runs the settle animation whenever the figure changes */}
+              <span key={formatCompact(totalCap)} className="price-tick">
+                {formatCompact(totalCap)}
+              </span>
             </div>
             {marketChange != null && (
               <div className={`mt-1 text-sm font-medium tabular-nums ${changeColor(marketChange)}`}>

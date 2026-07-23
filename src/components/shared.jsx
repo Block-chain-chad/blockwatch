@@ -79,6 +79,8 @@ export function Sparkline({ points, width = 56, height = 14 }) {
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden="true" className="inline-block">
       <path
         d={d}
+        pathLength="1"
+        className="spark-draw"
         fill="none"
         stroke={up ? 'var(--color-gain)' : 'var(--color-loss)'}
         strokeWidth="1.5"
