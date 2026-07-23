@@ -221,19 +221,24 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
                 <span>NAV-based · no listed underlying</span>
               )}
             </div>
-            {spread && (
-              <div className="mt-1 text-xs tabular-nums text-zinc-500">
-                Buy <span className="text-zinc-300">{formatPrice(spread.ask)}</span> · Sell{' '}
-                <span className="text-zinc-300">{formatPrice(spread.bid)}</span>
-                <span className="text-zinc-600">
-                  {' '}
-                  · {spread.spreadPct.toFixed(1)}% spread on a ${spread.refUsd} trade
-                </span>
-              </div>
-            )}
           </div>
           <div className="text-right">
             <PremiumPill asset={asset} />
+            {spread && (
+              <div className="mt-2 space-y-0.5 text-xs tabular-nums">
+                <div>
+                  <span className="text-zinc-500">Buy </span>
+                  <span className="font-medium text-zinc-100">{formatPrice(spread.ask)}</span>
+                </div>
+                <div>
+                  <span className="text-zinc-500">Sell </span>
+                  <span className="font-medium text-zinc-100">{formatPrice(spread.bid)}</span>
+                </div>
+                <div className="text-[11px] text-zinc-600">
+                  {spread.spreadPct.toFixed(1)}% spread
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -508,6 +513,12 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
                       <StatRow
                         label="Circulating supply"
                         value={ts.supply != null ? `${compactNum(ts.supply)} tokens` : null}
+                      />
+                      <StatRow
+                        label="Buy/sell spread"
+                        value={
+                          spread ? `${spread.spreadPct.toFixed(1)}% (~$${spread.refUsd} trade)` : null
+                        }
                       />
                     </>
                   )}
