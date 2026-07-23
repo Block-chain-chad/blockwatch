@@ -4,6 +4,7 @@ import AccessGate from './components/AccessGate'
 import { AuthProvider, useAuth } from './state/AuthContext'
 import PasswordSheet from './overlays/PasswordSheet'
 import { PricesProvider } from './state/PricesContext'
+import { WalletProvider } from './state/WalletContext'
 import { FoldersProvider } from './state/FoldersContext'
 import { WaitlistProvider } from './state/WaitlistContext'
 import { AlertsProvider } from './state/AlertsContext'
@@ -75,6 +76,7 @@ export default function App() {
     <AccessGate>
     <AuthProvider>
     <PricesProvider>
+      <WalletProvider>
       <AlertsProvider>
       <FoldersProvider>
       <WaitlistProvider>
@@ -114,6 +116,7 @@ export default function App() {
       </WaitlistProvider>
       </FoldersProvider>
       </AlertsProvider>
+      </WalletProvider>
     </PricesProvider>
     </AuthProvider>
     </AccessGate>

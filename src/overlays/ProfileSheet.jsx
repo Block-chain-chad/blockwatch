@@ -20,10 +20,12 @@ import {
   PersonIcon,
 } from '../components/Icons'
 import { ListRow } from '../components/shared'
+import { useWallet, shortAddress } from '../state/WalletContext'
 
 export default function ProfileSheet({ onClose, onGoToTrade }) {
   const { entry } = useWaitlist()
   const { user, available, signOut } = useAuth()
+  const wallet = useWallet()
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [signInOpen, setSignInOpen] = useState(false)
   const [appearanceOpen, setAppearanceOpen] = useState(false)
@@ -111,7 +113,27 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
             value={themeLabel}
             onClick={() => setAppearanceOpen(true)}
           />
-          <ListRow icon={<WalletIcon size={20} />} label="Connect wallet" value="Coming soon" muted />
+          {wallet.publicKey ? (
+            <ListRow
+              icon={<WalletIcon size={20} />}
+              label="Wallet connected"
+              value={shortAddress(wallet.publicKey)}
+              onClick={() => wallet.disconnect()}
+            />
+          ) : wallet.available ? (
+            <ListRow
+              icon={<WalletIcon size={20} />}
+              label={wallet.connecting ? 'Connecting…' : 'Connect wallet'}
+              onClick={() => wallet.connect()}
+            />
+          ) : (
+            <ListRow
+              icon={<WalletIcon size={20} />}
+              label="Get a wallet"
+              value="Phantom"
+              onClick={() => window.open('https://phantom.com/download', '_blank', 'noopener')}
+            />
+          )}
           <ListRow
             icon={<HelpIcon size={20} />}
             label="Help & feedback"
