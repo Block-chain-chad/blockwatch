@@ -7,6 +7,8 @@ import { ASSETS } from '../data/universe'
 import { useFolders } from '../state/FoldersContext'
 import { useAlerts } from '../state/AlertsContext'
 import AddToFolderSheet from '../overlays/AddToFolderSheet'
+import SwapSheet from '../overlays/SwapSheet'
+import { useWallet } from '../state/WalletContext'
 import SetAlertSheet from '../overlays/SetAlertSheet'
 import ShareSheet from '../overlays/ShareSheet'
 import DualLineChart from '../components/DualLineChart'
@@ -59,6 +61,8 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
   const [foldersOpen, setFoldersOpen] = useState(false)
   const [alertOpen, setAlertOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
+  const [swapOpen, setSwapOpen] = useState(false)
+  const wallet = useWallet()
   const [chartRetry, setChartRetry] = useState(0)
   const [visibleLines, setVisibleLines] = useState({ token: true, stock: true })
 
@@ -328,22 +332,32 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
         )}
       </div>
 
-      {/* Rung one of the trading ladder: route out to where this token
-          actually trades today. Mint-exact link — lands on the right pair. */}
+      {/* The trading ladder in one block: wallet connected → in-app swap
+          (rung two); otherwise route out to Jupiter (rung one). */}
       {asset.mint && (
         <div className="px-4 pt-3">
-          <a
-            href={`https://jup.ag/swap/USDC-${asset.mint}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => track('trade_out', { ticker: asset.ticker, venue: 'jupiter' })}
-            className="bw-glow flex items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim"
-          >
-            Trade {asset.ticker} on Jupiter ↗
-          </a>
+          {wallet.publicKey ? (
+            <button
+              onClick={() => setSwapOpen(true)}
+              className="bw-glow flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim"
+            >
+              Swap {asset.ticker}
+            </button>
+          ) : (
+            <a
+              href={`https://jup.ag/swap/USDC-${asset.mint}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => track('trade_out', { ticker: asset.ticker, venue: 'jupiter' })}
+              className="bw-glow flex items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim"
+            >
+              Trade {asset.ticker} on Jupiter ↗
+            </a>
+          )}
           <p className="mt-1.5 text-center text-[11px] leading-relaxed text-zinc-600">
-            Opens Jupiter, an external venue — you swap from your own wallet.
-            Availability depends on your region. Not investment advice.
+            {wallet.publicKey
+              ? 'Swaps run from your own wallet — BlockWatch never holds funds.'
+              : 'Opens Jupiter, an external venue — you swap from your own wallet. Availability depends on your region. Not investment advice.'}
           </p>
         </div>
       )}
@@ -754,6 +768,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
       {foldersOpen && <AddToFolderSheet asset={asset} onClose={() => setFoldersOpen(false)} />}
       {alertOpen && <SetAlertSheet asset={asset} onClose={() => setAlertOpen(false)} />}
       {shareOpen && <ShareSheet asset={asset} onClose={() => setShareOpen(false)} />}
+      {swapOpen && <SwapSheet asset={asset} onClose={() => setSwapOpen(false)} />}
     </div>
   )
 }

@@ -76,7 +76,7 @@ export function WalletProvider({ children }) {
 
   return (
     <WalletContext.Provider
-      value={{ available: !!provider, publicKey, connecting, connect, disconnect }}
+      value={{ available: !!provider, provider, publicKey, connecting, connect, disconnect }}
     >
       {children}
     </WalletContext.Provider>
