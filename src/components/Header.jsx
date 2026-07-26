@@ -16,10 +16,12 @@ export function AvatarButton({ onClick, className = '' }) {
   )
 }
 
-/* Screen header: title on the left, profile avatar top-right (every tab). */
+/* Screen header: title on the left, profile avatar top-right (every tab).
+   Top padding clears the notch / Dynamic Island on native. env() resolves to
+   0px in a normal browser, so max(…) keeps the web's original pt-5. */
 export default function Header({ title, brand = false, onOpenProfile }) {
   return (
-    <header className="flex items-center justify-between px-4 pb-3 pt-5">
+    <header className="flex items-center justify-between px-4 pb-3 pt-[max(env(safe-area-inset-top),1.25rem)]">
       {brand ? (
         <div className="flex items-center gap-2">
           <svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true">

@@ -145,13 +145,13 @@ export default function Trade({ onOpenProfile }) {
             >
               {busy ? 'Joining…' : 'Join the waitlist'}
             </button>
-            <p className="mt-3 text-[11px] text-zinc-600">
+            <p className="mt-3 text-[11px] text-zinc-400">
               No spam — one email when trading goes live.
             </p>
           </form>
         )}
 
-        <p className="mt-6 text-center text-[11px] leading-relaxed text-zinc-600">
+        <p className="mt-6 text-center text-[11px] leading-relaxed text-zinc-400">
           External venues are independent services with their own terms and
           regional availability. BlockWatch routes, it never holds funds.
         </p>

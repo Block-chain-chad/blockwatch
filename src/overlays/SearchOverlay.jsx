@@ -206,7 +206,7 @@ export default function SearchOverlay({ onClose, onOpenAsset, pickerFolderId = n
               type="button"
               aria-label="Clear search"
               onClick={() => setQuery('')}
-              className="shrink-0 text-zinc-500 active:text-zinc-300"
+              className="-mr-2 flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center text-zinc-500 active:text-zinc-300"
             >
               <CloseIcon size={16} />
             </button>

@@ -9,8 +9,6 @@
 const KEY = import.meta.env.VITE_POSTHOG_KEY
 const HOST = import.meta.env.VITE_POSTHOG_HOST || 'https://us.i.posthog.com'
 
-export const analyticsConfigured = Boolean(KEY)
-
 // Anonymous per-device id (no accounts in MVP) — this is what makes
 // "daily return visits" measurable.
 function deviceId() {

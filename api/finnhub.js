@@ -2,6 +2,12 @@
 // Keeps the API key server-side (env FINNHUB_API_KEY, no VITE_ prefix — never
 // bundled into the client). Only allowlisted read-only endpoints pass through,
 // and responses are CDN-cached so many visitors share one upstream call.
+//
+// CORS: the native app calls this from capacitor://localhost, so allowed
+// origins are echoed back (see api/_cors.js). Same-origin web calls are
+// unaffected.
+
+import { applyCors, handlePreflight, setCacheControl } from './_cors.js'
 
 const ALLOWED = {
   quote: { path: '/quote', cache: 's-maxage=55, stale-while-revalidate=300' },
@@ -15,6 +21,9 @@ const ALLOWED = {
 }
 
 export default async function handler(req, res) {
+  if (handlePreflight(req, res)) return
+  const originScoped = applyCors(req, res)
+
   const { kind, symbol } = req.query
   const spec = ALLOWED[kind]
   const key = process.env.FINNHUB_API_KEY
@@ -37,7 +46,7 @@ export default async function handler(req, res) {
     )
     if (!upstream.ok) return res.status(upstream.status).json({ error: 'upstream error' })
     const data = await upstream.json()
-    res.setHeader('Cache-Control', spec.cache)
+    setCacheControl(res, spec.cache, originScoped)
     return res.status(200).json(data)
   } catch {
     return res.status(502).json({ error: 'upstream unreachable' })

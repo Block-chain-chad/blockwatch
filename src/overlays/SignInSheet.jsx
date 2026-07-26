@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../state/AuthContext'
 import { useWaitlist } from '../state/WaitlistContext'
+import { isNativeApp } from '../lib/platform'
 
 const MIN_PASSWORD = 8
 
@@ -8,6 +9,13 @@ const MIN_PASSWORD = 8
  * Sign in / create account with email + password (the familiar path), with a
  * one-time email link as the passwordless fallback. Forgot-password sends a
  * recovery link; opening it prompts for a new password (see PasswordSheet).
+ *
+ * NATIVE: password only. An emailed link opens in Safari, not in the app —
+ * there is no deep-link handler — so the session would start in the browser
+ * and the app would never see it. The magic-link option is therefore hidden
+ * on native; password sign-in works identically everywhere. Forgot-password
+ * stays (finishing it in Safari is fine, you come back and sign in), but the
+ * copy says so instead of implying you'll land back here signed in.
  */
 export default function SignInSheet({ onClose }) {
   const { signIn, signInPassword, signUpPassword, resetPassword } = useAuth()
@@ -20,6 +28,9 @@ export default function SignInSheet({ onClose }) {
 
   const emailOk = /\S+@\S+\.\S+/.test(email)
   const passwordOk = password.length >= MIN_PASSWORD
+  // Evaluated once per render; false in every browser, so the web UI is
+  // byte-identical to what it was.
+  const native = isNativeApp()
 
   async function submit(e) {
     e.preventDefault()
@@ -43,7 +54,9 @@ export default function SignInSheet({ onClose }) {
         } else {
           setNote({
             kind: 'sent',
-            text: `Almost there — we emailed ${email.trim()}. Click the link inside to confirm your account and you'll be signed in.`,
+            text: native
+              ? `Almost there — we emailed ${email.trim()}. The link opens in your browser and confirms your account; then come back here and sign in with your password.`
+              : `Almost there — we emailed ${email.trim()}. Click the link inside to confirm your account and you'll be signed in.`,
           })
         }
       }
@@ -70,7 +83,12 @@ export default function SignInSheet({ onClose }) {
     setNote(null)
     try {
       await resetPassword(email)
-      setNote({ kind: 'sent', text: `Reset link sent to ${email.trim()} — open it and you'll be asked to set a new password.` })
+      setNote({
+        kind: 'sent',
+        text: native
+          ? `Reset link sent to ${email.trim()}. It opens in your browser — set your new password there, then come back here and sign in with it.`
+          : `Reset link sent to ${email.trim()} — open it and you'll be asked to set a new password.`,
+      })
     } catch {
       setNote({ kind: 'error', text: "Couldn't send the reset email — wait a minute and try again." })
     }
@@ -168,9 +186,13 @@ export default function SignInSheet({ onClose }) {
           ) : (
             <span />
           )}
-          <button onClick={magicLink} className="text-zinc-400 transition-colors active:text-zinc-200">
-            Email me a sign-in link instead
-          </button>
+          {/* Hidden on native: the emailed link opens in Safari, so tapping
+              this would send someone to a browser session the app can't see. */}
+          {!native && (
+            <button onClick={magicLink} className="text-zinc-400 transition-colors active:text-zinc-200">
+              Email me a sign-in link instead
+            </button>
+          )}
         </div>
       </div>
     </div>

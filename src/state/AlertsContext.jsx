@@ -153,7 +153,10 @@ export function AlertsProvider({ children }) {
     if (!identity || hydratedForRef.current !== identity) return
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current)
     syncTimerRef.current = setTimeout(() => pushRules(identity, storeRef.current.rules), SYNC_DEBOUNCE_MS)
-  }, [store.rules, user])
+    // The body reads nothing off `user` but its id, and Supabase hands back a
+    // new user object on every hourly token refresh — depending on the object
+    // re-fired a full rules upsert each time. Matches FoldersContext.
+  }, [store.rules, user?.id])
 
   // Evaluate every rule whenever prices refresh (or rules change). The pass
   // collects DELTAS and the commit applies them against the LATEST store —
@@ -237,18 +240,23 @@ export function AlertsProvider({ children }) {
     if (newEvents.length === 0 && Object.keys(stateDelta).length === 0 && firedPriceIds.length === 0)
       return
     setStore((prev) => {
-      const rules = { ...prev.rules }
-      const states = { ...prev.states, ...stateDelta }
+      // Clone lazily. Handing back the SAME rules/states objects when nothing
+      // in them changed keeps the downstream persistence + Supabase-sync
+      // effects (which key off store.rules) from firing on every price tick.
+      let rules = prev.rules
+      let states = Object.keys(stateDelta).length > 0 ? { ...prev.states, ...stateDelta } : prev.states
       for (const id of firedPriceIds) {
         // one-shot: the rule removes itself (skip if a queued user action
         // already removed it)
         const r = rules[id]
         if (!r?.price) continue
+        if (rules === prev.rules) rules = { ...prev.rules }
         const next = { ...r }
         delete next.price
         if (next.drift) rules[id] = next
         else {
           delete rules[id]
+          if (states === prev.states) states = { ...prev.states }
           delete states[id]
         }
       }

@@ -63,10 +63,14 @@ export function PricesProvider({ children }) {
   const subsRef = useRef(new Map())
   const topUpTimerRef = useRef(null)
   const topUpRef = useRef(null)
-  // Assets the fast layer is actively feeding (and when it last answered).
-  // The minute poll must NOT overwrite their tokenPrice: CoinGecko lags the
-  // DEX by minutes, so doing so would snap live prices backwards every cycle.
-  const fastFedRef = useRef({ at: 0, ids: new Set() })
+  // Assets the fast layer is actively feeding: id -> ms timestamp of the last
+  // Jupiter response that actually carried a price for that id. The minute
+  // poll must NOT overwrite a live tokenPrice (CoinGecko lags the DEX by
+  // minutes, so it would snap prices backwards every cycle) — but the shield
+  // is PER ID and expires on its own. A token whose Jupiter route dies stops
+  // being shielded ~15s later and takes the CoinGecko price again, instead of
+  // freezing at its last DEX print forever.
+  const fastFedRef = useRef(new Map())
   // Fast-layer discipline: one request in flight at a time, responses applied
   // in order only, a cool-off after failures, and a cross-tab leader lock so
   // N open tabs don't multiply 24 req/min against Jupiter's per-IP budget.
@@ -128,11 +132,15 @@ export function PricesProvider({ children }) {
         // keeps showing the last good numbers for everything else.
         // Fast-fed assets keep their live DEX tokenPrice (fresher than this
         // batch) while still taking the batch's 24h change / cap / volume.
-        const fastFresh = Date.now() - fastFedRef.current.at < FAST_POLL_MS * 6
+        const now = Date.now()
         const prices = { ...s.prices }
         for (const [id, row] of Object.entries(data)) {
+          // Per-id freshness: only ids Jupiter answered for within the window
+          // keep their live price. Same ~15s semantics as before, just no
+          // longer shared across every id the fast layer ever touched.
+          const seenAt = fastFedRef.current.get(id)
           const livePrice =
-            fastFresh && fastFedRef.current.ids.has(id) ? s.prices[id]?.tokenPrice : null
+            seenAt != null && now - seenAt < FAST_POLL_MS * 6 ? s.prices[id]?.tokenPrice : null
           prices[id] = livePrice != null ? { ...row, tokenPrice: livePrice } : row
         }
         pricesRef.current = prices
@@ -243,14 +251,19 @@ export function PricesProvider({ children }) {
       try {
         const live = await fetchFastPrices(pairs.map((p) => p.mint))
         if (cancelled || seq !== fastSeqRef.current) return // stale response
-        // Record coverage — "Jupiter answered for these ids just now" is what
-        // shields them from the slow poll. Union with prior coverage so one
-        // thin response can't drop the shield mid-window for an asset.
-        const covered = new Set(pairs.filter((p) => live[p.mint] != null).map((p) => p.id))
-        if (Date.now() - fastFedRef.current.at < FAST_POLL_MS * 6) {
-          for (const id of fastFedRef.current.ids) covered.add(id)
+        // Record coverage — "Jupiter answered for THIS id just now" is what
+        // shields it from the slow poll. Ids missing from this response keep
+        // their old timestamp (one thin response can't drop a shield
+        // mid-window) and simply age out of the window on their own.
+        const now = Date.now()
+        for (const { id, mint } of pairs) {
+          if (live[mint] != null) fastFedRef.current.set(id, now)
         }
-        fastFedRef.current = { at: Date.now(), ids: covered }
+        // Opportunistic prune so a long session can't grow the map without
+        // bound as the user browses hundreds of assets.
+        for (const [id, at] of fastFedRef.current) {
+          if (now - at >= FAST_POLL_MS * 6) fastFedRef.current.delete(id)
+        }
 
         // Merge INSIDE the updater, against s.prices — rows built from a
         // pre-updater snapshot can clobber a CoinGecko batch landing in the

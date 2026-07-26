@@ -4,6 +4,7 @@ import { SearchIcon, ChevronRight } from './Icons'
 import PriceText from './PriceText'
 import AssetLogo from './AssetLogo'
 import { formatPrice, formatPct, changeColor } from '../lib/format'
+import { WEB_BASE } from '../services/apiBase'
 
 export { formatPrice, formatPct, changeColor }
 
@@ -197,10 +198,15 @@ export function ListRow({ icon, label, value, onClick, muted }) {
 
 export function Disclaimer() {
   return (
-    <p className="px-6 pb-4 pt-6 text-center text-[11px] leading-relaxed text-zinc-600">
+    <p className="px-6 pb-4 pt-6 text-center text-[11px] leading-relaxed text-zinc-400">
       Prices are informational only and may be delayed. BlockWatch does not provide
       investment advice. Token market data by CoinGecko.{' '}
-      <a href="/privacy.html" target="_blank" rel="noopener" className="underline decoration-zinc-700 underline-offset-2">
+      <a
+        href={`${WEB_BASE}/privacy.html`}
+        target="_blank"
+        rel="noopener"
+        className="underline decoration-zinc-700 underline-offset-2"
+      >
         Privacy
       </a>
     </p>

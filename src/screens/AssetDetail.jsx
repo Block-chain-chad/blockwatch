@@ -140,7 +140,10 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
   // search mounted underneath, so Back returns to the typed query.
   return (
     <div className="bw-aurora screen-in fixed inset-0 z-[45] mx-auto max-w-md overflow-y-auto bg-zinc-950 pb-10">
-      <header className="sticky top-0 z-10 flex items-center justify-between bg-zinc-950/90 px-2 py-3 backdrop-blur">
+      {/* Top padding travels with the sticky bar, so the notch / Dynamic
+          Island never overlaps Back/Star/Share. env() is 0px on the web, so
+          max(…) reproduces the previous py-3 exactly there. */}
+      <header className="sticky top-0 z-10 flex items-center justify-between bg-zinc-950/90 px-2 pb-3 pt-[max(env(safe-area-inset-top),0.75rem)] backdrop-blur">
         <button
           onClick={onBack}
           className="flex items-center gap-0.5 py-1 pl-1 pr-3 text-accent transition-opacity active:opacity-60"
@@ -152,7 +155,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
           <button
             onClick={() => toggleWatchlist(asset.id)}
             aria-label={inWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
-            className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors active:bg-zinc-800 ${
+            className={`flex h-11 w-11 items-center justify-center rounded-full transition-colors active:bg-zinc-800 ${
               inWatchlist ? 'text-accent' : 'text-zinc-300'
             }`}
           >
@@ -161,7 +164,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
           <button
             onClick={() => setShareOpen(true)}
             aria-label="Share"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-zinc-300 transition-colors active:bg-zinc-800"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-zinc-300 transition-colors active:bg-zinc-800"
           >
             <ShareIcon size={19} />
           </button>
@@ -354,7 +357,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
               Trade {asset.ticker} on Jupiter ↗
             </a>
           )}
-          <p className="mt-1.5 text-center text-[11px] leading-relaxed text-zinc-600">
+          <p className="mt-1.5 text-center text-[11px] leading-relaxed text-zinc-400">
             {wallet.publicKey
               ? 'Swaps run from your own wallet — BlockWatch never holds funds.'
               : 'Opens Jupiter, an external venue — you swap from your own wallet. Availability depends on your region. Not investment advice.'}

@@ -18,7 +18,12 @@ export default function News({ onOpenProfile, onOpenAsset }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const items = [...events, ...newsFeed].sort((a, b) => b.at - a.at)
+  // The mock feed invents headlines and credits them to real outlets
+  // (Bloomberg, Reuters, CoinDesk…). That's fine as dev scaffolding, but it
+  // must never ship: in production this list is real alert events only.
+  // The DEV branch is a compile-time constant, so Rollup drops the mock
+  // import from the production bundle entirely.
+  const items = [...events, ...(import.meta.env.DEV ? newsFeed : [])].sort((a, b) => b.at - a.at)
   const noRulesYet = Object.keys(rules).length === 0 && events.length === 0
 
   return (
@@ -38,6 +43,9 @@ export default function News({ onOpenProfile, onOpenAsset }) {
           <p className="mt-1 text-xs leading-relaxed text-zinc-500">
             Open any asset and tap “Set alert” to get pinged when its token drifts from the
             stock price.
+          </p>
+          <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+            Headlines are coming. For now, this is where your alerts land.
           </p>
         </div>
       )}

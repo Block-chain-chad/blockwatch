@@ -11,7 +11,9 @@
 // Returned shape per ticker: { price, prevClose, asOf } — asOf is ms epoch of
 // the quote (when markets are closed this is the last close).
 
-import { API_BASE } from './apiBase'
+// API_CACHE_SUFFIX is '' on web (URLs unchanged) and '&c=app' on native, which
+// puts native requests in their own edge-cache lane — see apiBase.js.
+import { API_BASE, API_CACHE_SUFFIX } from './apiBase'
 
 const FINNHUB_KEY = import.meta.env.VITE_FINNHUB_API_KEY
 // In production every stock call goes through our own /api serverless proxy
@@ -59,7 +61,9 @@ async function fetchYahooDev(ticker) {
 }
 
 async function fetchApiQuote(ticker) {
-  const res = await fetch(`${API_BASE}/api/finnhub?kind=quote&symbol=${encodeURIComponent(ticker)}`)
+  const res = await fetch(
+    `${API_BASE}/api/finnhub?kind=quote&symbol=${encodeURIComponent(ticker)}${API_CACHE_SUFFIX}`
+  )
   if (!res.ok) throw new Error(`quote ${res.status}`)
   const q = await res.json()
   const price = q.c || q.pc
@@ -75,12 +79,6 @@ async function fetchApiQuote(ticker) {
 }
 
 const fetchQuote = IS_PROD ? fetchApiQuote : FINNHUB_KEY ? fetchFinnhub : fetchYahooDev
-export const STOCK_PROVIDER = IS_PROD ? 'edge-proxy' : FINNHUB_KEY ? 'finnhub' : 'yahoo-dev'
-
-/** Fetch one ticker. */
-export function getStockPrice(ticker) {
-  return fetchQuote(ticker)
-}
 
 /**
  * Fetch many tickers with limited concurrency. Individual failures are
@@ -118,7 +116,7 @@ export async function getStockHistory(ticker, cfg) {
 
   const symbol = ticker.replace('.', '-')
   const url = IS_PROD
-    ? `${API_BASE}/api/history?symbol=${encodeURIComponent(symbol)}&interval=${cfg.interval}&range=${cfg.yrange}`
+    ? `${API_BASE}/api/history?symbol=${encodeURIComponent(symbol)}&interval=${cfg.interval}&range=${cfg.yrange}${API_CACHE_SUFFIX}`
     : `/yfin/v8/finance/chart/${symbol}?interval=${cfg.interval}&range=${cfg.yrange}`
   const res = await fetch(url)
   if (!res.ok) throw new Error(`Yahoo history ${res.status}`)
@@ -164,7 +162,7 @@ function devInfoUrl(kind, symbol) {
 async function fetchInfo(kind, ticker) {
   const symbol = encodeURIComponent(ticker)
   const url = IS_PROD
-    ? `${API_BASE}/api/finnhub?kind=${kind}&symbol=${symbol}`
+    ? `${API_BASE}/api/finnhub?kind=${kind}&symbol=${symbol}${API_CACHE_SUFFIX}`
     : FINNHUB_KEY
       ? devInfoUrl(kind, symbol)
       : null
@@ -310,7 +308,7 @@ const NEWS_TTL = 30 * 60_000
 
 async function fetchGoogleNews(ticker) {
   const url = IS_PROD
-    ? `${API_BASE}/api/news?symbol=${encodeURIComponent(ticker)}`
+    ? `${API_BASE}/api/news?symbol=${encodeURIComponent(ticker)}${API_CACHE_SUFFIX}`
     : `/gnews/rss/search?q=${encodeURIComponent(`"${ticker}" stock`)}&hl=en-US&gl=US&ceid=US:en`
   const res = await fetch(url)
   if (!res.ok) throw new Error(`news ${res.status}`)

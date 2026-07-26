@@ -127,7 +127,10 @@ export function FoldersProvider({ children }) {
       if (syncTimerRef.current) clearTimeout(syncTimerRef.current)
       syncTimerRef.current = setTimeout(() => pushToServer(identity, foldersRef.current), SYNC_DEBOUNCE_MS)
     }
-  }, [folders, user])
+    // Depend on the user's ID, not the user object: Supabase hands back a new
+    // user object on every hourly token refresh, which would re-run this and
+    // push every folder to the server again for no reason.
+  }, [folders, user?.id])
 
   // Hydrate on sign-in/out.
   useEffect(() => {

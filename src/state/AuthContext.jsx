@@ -3,6 +3,17 @@ import { supabase, pendingRecovery } from '../services/supabase'
 
 const AuthContext = createContext({ session: null, ready: true, available: false })
 
+// Where emailed auth links (magic link, signup confirmation, password reset)
+// must land. On the website that's this origin. In the native app the WebView
+// origin is capacitor://localhost — a URL Mail.app cannot open — so native
+// builds set VITE_API_BASE (see .env.ios) and the link points at the real site.
+// Web builds leave VITE_API_BASE unset, so behavior there is unchanged.
+//
+// NOTE (dashboard step, cannot be fixed in code): this URL must also be set as
+// Supabase's Site URL and listed under Auth → URL Configuration → Redirect
+// URLs, or the emailed link bounces.
+const AUTH_REDIRECT = import.meta.env.VITE_API_BASE || window.location.origin
+
 /**
  * Optional accounts. Password sign-in is the primary path (familiar), with
  * email magic links kept as the passwordless fallback — clicking any emailed
@@ -36,7 +47,7 @@ export function AuthProvider({ children }) {
     if (!supabase) throw new Error('auth not configured')
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim().toLowerCase(),
-      options: { emailRedirectTo: window.location.origin },
+      options: { emailRedirectTo: AUTH_REDIRECT },
     })
     if (error) throw error
   }
@@ -61,7 +72,7 @@ export function AuthProvider({ children }) {
     const { data, error } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
-      options: { emailRedirectTo: window.location.origin },
+      options: { emailRedirectTo: AUTH_REDIRECT },
     })
     if (error) throw error
     if (data.session) return 'signed-in'
@@ -73,7 +84,7 @@ export function AuthProvider({ children }) {
   async function resetPassword(email) {
     if (!supabase) throw new Error('auth not configured')
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-      redirectTo: window.location.origin,
+      redirectTo: AUTH_REDIRECT,
     })
     if (error) throw error
   }

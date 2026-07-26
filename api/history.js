@@ -1,11 +1,20 @@
 // Vercel serverless function: stock price history proxy (Yahoo chart endpoint —
 // no key required upstream, but the browser can't call it directly due to CORS).
 // Production replacement for the dev-only Vite /yfin proxy.
+//
+// CORS: the native app calls this from capacitor://localhost, so allowed
+// origins are echoed back (see api/_cors.js). Same-origin web calls are
+// unaffected.
+
+import { applyCors, handlePreflight, setCacheControl } from './_cors.js'
 
 const INTERVALS = new Set(['5m', '30m', '1d'])
 const RANGES = new Set(['1d', '5d', '1mo', '3mo', '1y'])
 
 export default async function handler(req, res) {
+  if (handlePreflight(req, res)) return
+  const originScoped = applyCors(req, res)
+
   const { symbol, interval, range } = req.query
   if (!symbol || !/^[A-Z0-9.\-]{1,10}$/i.test(symbol) || !INTERVALS.has(interval) || !RANGES.has(range)) {
     return res.status(400).json({ error: 'bad request' })
@@ -18,7 +27,7 @@ export default async function handler(req, res) {
     )
     if (!upstream.ok) return res.status(upstream.status).json({ error: 'upstream error' })
     const data = await upstream.json()
-    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600')
+    setCacheControl(res, 's-maxage=300, stale-while-revalidate=600', originScoped)
     return res.status(200).json(data)
   } catch {
     return res.status(502).json({ error: 'upstream unreachable' })

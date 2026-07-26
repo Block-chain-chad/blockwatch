@@ -20,6 +20,7 @@ import {
   PersonIcon,
 } from '../components/Icons'
 import { ListRow } from '../components/shared'
+import { WEB_BASE } from '../services/apiBase'
 import { useWallet, shortAddress } from '../state/WalletContext'
 import WalletSheet from './WalletSheet'
 
@@ -149,7 +150,7 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
           <ListRow
             icon={<LockIcon size={20} />}
             label="Privacy"
-            onClick={() => window.open('/privacy.html', '_blank', 'noopener')}
+            onClick={() => window.open(`${WEB_BASE}/privacy.html`, '_blank', 'noopener')}
           />
           {user && (
             <ListRow

@@ -38,5 +38,9 @@ export async function joinWaitlist(email) {
     body: JSON.stringify({ p_email: email }),
   })
   if (!res.ok) throw new Error(`waitlist ${res.status}`)
-  return res.json()
+  // Two shapes: the original RPC returns a bare integer, and
+  // supabase/waitlist-newflag.sql upgrades it to { position, is_new }.
+  // Callers only ever want the number.
+  const payload = await res.json()
+  return payload !== null && typeof payload === 'object' ? Number(payload.position) : payload
 }
