@@ -19,29 +19,58 @@ export default function DailyDigest({ onOpenAsset }) {
   const { assets } = usePrices()
   const liquid = assets.filter((a) => !isThinlyTraded(a))
 
-  // Two different plausible ranges. A premium of 20% is extraordinary but can
-  // be real on a genuinely dislocated token; a 20% DAILY move on a tokenized
-  // S&P product cannot be, and DSPY printed exactly that once WMKT was gated
-  // out. Day moves get the tighter bound — 12% still admits a real earnings
-  // gap on a single name while rejecting the obviously broken prints.
-  // (The rigorous version cross-checks against the underlying's own move; that
-  // needs a stock quote for every candidate, which the registry doesn't fetch.)
   const withPremium = liquid
     .map((a) => ({ asset: a, p: premiumPct(a) }))
     .filter((x) => isPlausiblePct(x.p, 20))
-  const movers = liquid.filter((a) => isPlausiblePct(a.dayChange, 12))
   const traded = liquid.filter((a) => a.volume24h != null)
-  if (withPremium.length === 0 || movers.length === 0) return null
+  if (withPremium.length === 0) return null
 
   const priciest = withPremium.reduce((m, x) => (x.p > m.p ? x : m))
   const cheapest = withPremium.reduce((m, x) => (x.p < m.p ? x : m))
-  const mover = movers.reduce((m, a) => (Math.abs(a.dayChange) > Math.abs(m.dayChange) ? a : m))
+
+  /*
+   * "Biggest 24h move" is gone, and not because of a bad number.
+   *
+   * It measured the TOKEN's own 24h change, which on a lightly traded wrapper
+   * is mostly its own noise rather than anything that happened to the company
+   * — so it kept promoting junk one asset class down as each magnitude bound
+   * was tightened (WMKT at −50.50%, DSPY at −20.80%, SK Hynix at exactly
+   * −12.00%). Capping the magnitude only moves where the junk comes from.
+   *
+   * It was also the one row that had nothing to do with the gap. This replaces
+   * it with a figure that is about the gap, that this app is uniquely able to
+   * compute, and that cannot be noise: how far apart two issuers of the SAME
+   * company are priced right now. Identical exposure, different wrapper — if
+   * they disagree, one of them is mispriced by definition.
+   */
+  const byUnderlying = new Map()
+  for (const x of withPremium) {
+    if (!x.asset.underlying) continue
+    const arr = byUnderlying.get(x.asset.underlying) ?? []
+    arr.push(x)
+    byUnderlying.set(x.asset.underlying, arr)
+  }
+  let spread = null
+  for (const members of byUnderlying.values()) {
+    if (members.length < 2) continue
+    const hi = members.reduce((m, x) => (x.p > m.p ? x : m))
+    const lo = members.reduce((m, x) => (x.p < m.p ? x : m))
+    const bp = Math.round((hi.p - lo.p) * 100)
+    if (!spread || bp > spread.bp) spread = { bp, hi, lo }
+  }
 
   const rows = [
     { label: 'Priciest vs stock', asset: priciest.asset, value: formatPct(priciest.p), cls: changeColor(priciest.p) },
     { label: 'Cheapest vs stock', asset: cheapest.asset, value: formatPct(cheapest.p), cls: changeColor(cheapest.p) },
-    { label: 'Biggest 24h move', asset: mover, value: formatPct(mover.dayChange), cls: changeColor(mover.dayChange) },
   ]
+  if (spread) {
+    rows.push({
+      label: 'Widest issuer gap',
+      asset: spread.lo.asset,
+      value: `${spread.bp}bp`,
+      cls: 'text-zinc-300',
+    })
+  }
   if (traded.length > 0) {
     const vol = traded.reduce((m, a) => (a.volume24h > m.volume24h ? a : m))
     rows.push({ label: 'Most traded', asset: vol, value: formatCompact(vol.volume24h), cls: 'text-zinc-300' })

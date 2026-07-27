@@ -56,15 +56,13 @@ export function FoldersList({ onOpenProfile, onOpenFolder }) {
                 <div className="mt-1.5 flex items-center gap-2">
                   {members.length > 0 ? (
                     <>
-                      <span className="flex -space-x-1.5">
+                      {/* Laid out, not stacked. Overlapping 18px marks by 6px
+                          left about half of each one visible, which turned a
+                          recognisable row of logos into a smudge — the exact
+                          opposite of why they are here. */}
+                      <span className="flex gap-1">
                         {members.slice(0, 5).map((a) => (
-                          <span
-                            key={a.id}
-                            className="rounded-full ring-2"
-                            style={{ '--tw-ring-color': 'var(--color-zinc-950)' }}
-                          >
-                            <AssetLogo asset={a} size={18} />
-                          </span>
+                          <AssetLogo key={a.id} asset={a} size={20} />
                         ))}
                       </span>
                       <span className="t-caption text-zinc-500">

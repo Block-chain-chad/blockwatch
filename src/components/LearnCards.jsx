@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ChevronRight } from './Icons'
 
 // Plain-language explainers for an audience with zero crypto knowledge —
 // the one concept-per-card, tap-to-read pattern (no slideshow, no quiz).
@@ -69,22 +70,28 @@ function LearnSheet({ lesson, onClose }) {
 export default function LearnCards() {
   const [open, setOpen] = useState(null)
   return (
-    <div className="pb-2 pt-1">
-      <h3 className="px-4 pb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+    // A list, not a horizontal card rail. Four short titles in a scroller meant
+    // the fourth was always cut off and the third read as "Why weeke…", and it
+    // was the only sideways-scrolling thing left in the app. A list shows all
+    // four, needs no affordance, and matches every other section here.
+    <div className="pt-6">
+      <h3
+        className="t-micro border-b px-4 pb-1.5 text-zinc-500"
+        style={{ borderColor: 'var(--border-subtle)' }}
+      >
         Learn the basics
       </h3>
-      <div className="flex gap-2 overflow-x-auto px-4 [scrollbar-width:none]">
-        {LESSONS.map((l) => (
-          <button
-            key={l.id}
-            onClick={() => setOpen(l)}
-            className="w-[140px] shrink-0 rounded-2xl bg-zinc-900 p-3 text-left transition-colors active:bg-zinc-800"
-          >
-            <div className="text-[13px] font-medium leading-snug">{l.title}</div>
-            <div className="mt-1.5 text-[11px] text-accent">Read</div>
-          </button>
-        ))}
-      </div>
+      {LESSONS.map((l) => (
+        <button
+          key={l.id}
+          onClick={() => setOpen(l)}
+          className="hover-row flex w-full items-center justify-between border-b px-4 py-2.5 text-left transition-colors active:bg-zinc-900"
+          style={{ borderColor: 'var(--border-subtle)' }}
+        >
+          <span className="t-label text-zinc-300">{l.title}</span>
+          <ChevronRight size={16} className="shrink-0 text-zinc-600" />
+        </button>
+      ))}
       {open && <LearnSheet lesson={open} onClose={() => setOpen(null)} />}
     </div>
   )
