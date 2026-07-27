@@ -3,7 +3,7 @@ import { useAlerts } from '../state/AlertsContext'
 
 const TABS = [
   { id: 'home', label: 'Home', Icon: HomeIcon },
-  { id: 'screener', label: 'Screener', Icon: TrendIcon },
+  { id: 'screener', label: 'Gaps', Icon: TrendIcon },
   { id: 'folders', label: 'Folders', Icon: FolderIcon },
   { id: 'news', label: 'News', Icon: NewsIcon },
   { id: 'trade', label: 'Trade', Icon: TradeIcon, soon: true },

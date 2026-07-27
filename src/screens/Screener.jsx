@@ -98,7 +98,7 @@ export default function Screener({ onOpenProfile, onOpenAsset }) {
 
   return (
     <div className="pb-24">
-      <Header title="Screener" onOpenProfile={onOpenProfile} />
+      <Header title="Gaps" onOpenProfile={onOpenProfile} />
 
       <div className="flex gap-2 overflow-x-auto px-4 pt-1 [scrollbar-width:none]">
         {SORTS.map((s) => (
