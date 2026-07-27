@@ -2,6 +2,7 @@ import { usePrices } from '../state/PricesContext'
 import { premiumPct, isThinlyTraded } from '../lib/prices'
 import { formatPct, formatCompact, changeColor, isPlausiblePct } from '../lib/format'
 import { ChevronRight } from './Icons'
+import AssetLogo from './AssetLogo'
 
 /*
  * "Today in tokenized stocks" — the market's daily extremes, computed from
@@ -46,25 +47,34 @@ export default function DailyDigest({ onOpenAsset }) {
     rows.push({ label: 'Most traded', asset: vol, value: formatCompact(vol.volume24h), cls: 'text-zinc-300' })
   }
 
+  // The digest is the lead content of this screen, so it reads as a section of
+  // the page rather than a card floating on it — same hairline-and-header
+  // treatment as every other list in the app. The logo makes each row
+  // recognisable at a glance, which a bare ticker does not.
   return (
-    <div className="mx-4 mb-2 mt-1 rounded-2xl bg-zinc-900 pb-1 pt-3">
-      <h3 className="px-4 text-sm font-semibold">Today in tokenized stocks</h3>
-      <div className="mt-1">
+    <>
+      <h3
+        className="t-micro border-b px-4 pb-1.5 pt-1 text-zinc-500"
+        style={{ borderColor: 'var(--border-subtle)' }}
+      >
+        Today in tokenized stocks
+      </h3>
+      <div>
         {rows.map((r) => (
           <button
             key={r.label}
             onClick={() => onOpenAsset(r.asset)}
-            className="flex w-full items-center gap-2 px-4 py-2 text-left transition-colors active:bg-zinc-800/60"
+            className="hover-row flex w-full items-center gap-3 border-b px-4 py-2.5 text-left transition-colors active:bg-zinc-900"
+            style={{ borderColor: 'var(--border-subtle)' }}
           >
-            <span className="flex-1 text-xs text-zinc-500">{r.label}</span>
-            <span className="text-[13px] font-semibold">{r.asset.ticker}</span>
-            <span className={`w-16 text-right text-[13px] font-medium tabular-nums ${r.cls}`}>
-              {r.value}
-            </span>
-            <ChevronRight size={14} className="text-zinc-600" />
+            <span className="t-caption flex-1 text-zinc-500">{r.label}</span>
+            <AssetLogo asset={r.asset} size={18} />
+            <span className="t-label w-20 text-zinc-100">{r.asset.ticker}</span>
+            <span className={`num t-label w-20 text-right ${r.cls}`}>{r.value}</span>
+            <ChevronRight size={14} className="shrink-0 text-zinc-600" />
           </button>
         ))}
       </div>
-    </div>
+    </>
   )
 }

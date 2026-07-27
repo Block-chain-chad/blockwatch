@@ -30,27 +30,27 @@ export default function News({ onOpenProfile, onOpenAsset }) {
     <div className="pb-24">
       <Header title="News" onOpenProfile={onOpenProfile} />
 
+      {/* The digest leads. In production there are no headlines — the mock
+          feed is DEV-only — so this screen is really today's market extremes
+          plus your alerts, and it should be ordered that way rather than
+          opening with an apology for the thing that isn't here. */}
       <DailyDigest onOpenAsset={onOpenAsset} />
 
-      <LearnCards />
+      <h3
+        className="t-micro mt-6 border-b px-4 pb-1.5 text-zinc-500"
+        style={{ borderColor: 'var(--border-subtle)' }}
+      >
+        {items.length > 0 ? 'Your alerts' : 'Alerts'}
+      </h3>
 
       {noRulesYet && (
-        <div className="mx-4 mb-2 mt-1 rounded-2xl bg-zinc-900 p-4">
-          <div className="flex items-center gap-2 text-sm font-medium text-zinc-200">
-            <BellIcon size={17} className="text-accent" />
-            Your price alerts land here
-          </div>
-          <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-            Open any asset and tap “Set alert” to get pinged when its token drifts from the
-            stock price.
-          </p>
-          <p className="mt-2 text-xs leading-relaxed text-zinc-500">
-            Headlines are coming. For now, this is where your alerts land.
-          </p>
-        </div>
+        <p className="t-caption px-4 pt-3 text-zinc-500">
+          Open any asset and tap “Set alert” to get pinged when its token drifts from the
+          share price. Alerts land here.
+        </p>
       )}
 
-      <div className="mt-1 divide-y divide-zinc-900">
+      <div>
         {items.map((item) =>
           item.kind === 'alert' ? (
             <button
@@ -59,10 +59,11 @@ export default function News({ onOpenProfile, onOpenAsset }) {
                 const asset = byId[item.assetId]
                 if (asset) onOpenAsset(asset)
               }}
-              className="flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors active:bg-zinc-900"
+              className="hover-row flex w-full items-start gap-3 border-b px-4 py-3 text-left transition-colors active:bg-zinc-900"
+              style={{ borderColor: 'var(--border-subtle)' }}
             >
               <span
-                className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
                   (item.type === 'price' ? item.direction === 'above' : item.premium > 0)
                     ? 'bg-gain/10 text-gain'
                     : 'bg-loss/10 text-loss'
@@ -73,37 +74,37 @@ export default function News({ onOpenProfile, onOpenAsset }) {
               <div className="min-w-0 flex-1">
                 {item.type === 'price' ? (
                   <>
-                    <div className="text-[14px] font-medium leading-snug">
+                    <div className="t-label text-zinc-100">
                       {item.ticker} crossed{' '}
-                      <span className="tabular-nums">{formatPrice(item.target)}</span>
+                      <span className="num">{formatPrice(item.target)}</span>
                     </div>
-                    <div className="mt-0.5 text-xs text-zinc-500">
+                    <div className="t-caption mt-0.5 text-zinc-500">
                       Your price target hit — trading at {formatPrice(item.price)}.
                     </div>
                   </>
                 ) : (
                   <>
-                    <div className="text-[14px] font-medium leading-snug">
+                    <div className="t-label text-zinc-100">
                       {item.ticker} drifted{' '}
-                      <span className="tabular-nums">{formatPct(item.premium)}</span> from{' '}
+                      <span className="num">{formatPct(item.premium)}</span> from{' '}
                       {item.underlying}
                     </div>
-                    <div className="mt-0.5 text-xs text-zinc-500">
+                    <div className="t-caption mt-0.5 text-zinc-500">
                       Crossed your ±{item.threshold}% drift alert.
                     </div>
                   </>
                 )}
-                <div className="mt-1 text-[11px] text-zinc-600">Price alert · {timeAgo(item.at)}</div>
+                <div className="t-caption mt-1 text-zinc-600">Price alert · {timeAgo(item.at)}</div>
               </div>
             </button>
           ) : (
-            <div key={item.id} className="flex w-full items-start gap-3 px-4 py-3.5 text-left">
-              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-zinc-400">
+            <div key={item.id} className="flex w-full items-start gap-3 border-b px-4 py-3 text-left" style={{ borderColor: 'var(--border-subtle)' }}>
+              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-zinc-500">
                 <GlobeIcon size={18} />
               </span>
               <div className="min-w-0 flex-1">
-                <div className="text-[14px] font-medium leading-snug">{item.title}</div>
-                <div className="mt-1 text-[11px] text-zinc-600">
+                <div className="t-label text-zinc-100">{item.title}</div>
+                <div className="t-caption mt-1 text-zinc-600">
                   {item.source} · {timeAgo(item.at)}
                 </div>
               </div>
@@ -111,6 +112,8 @@ export default function News({ onOpenProfile, onOpenAsset }) {
           )
         )}
       </div>
+
+      <LearnCards />
     </div>
   )
 }

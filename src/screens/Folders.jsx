@@ -3,9 +3,8 @@ import Header, { AvatarButton } from '../components/Header'
 import { usePrices, useAssetSubscription } from '../state/PricesContext'
 import { useFolders, useFolder } from '../state/FoldersContext'
 import { useSparklines } from '../hooks/useSparklines'
-import { folderDayChange } from '../lib/prices'
+import { premiumPct, isThinlyTraded } from '../lib/prices'
 import {
-  FolderIcon,
   ChevronRight,
   ChevronLeft,
   PlusIcon,
@@ -20,6 +19,7 @@ import {
   formatPct,
   changeColor,
 } from '../components/shared'
+import AssetLogo from '../components/AssetLogo'
 import PromptSheet from '../overlays/PromptSheet'
 import SearchOverlay from '../overlays/SearchOverlay'
 
@@ -32,34 +32,57 @@ export function FoldersList({ onOpenProfile, onOpenFolder }) {
     <div className="pb-24">
       <Header title="Folders" onOpenProfile={onOpenProfile} />
 
-      <div className="mt-1 divide-y divide-zinc-900">
+      {/* A folder row carries its contents now: who is inside, and the average
+          gap across them. It used to show a day change, which is the metric
+          every other tracker leads with — the gap is the one this app owns, so
+          folders are measured in it too. The logo stack means a row is
+          recognisable without opening it, which matters on a screen that was
+          otherwise two rows and 570px of nothing. */}
+      <div>
         {folders.map((f) => {
-          const change = folderDayChange(f, assets)
+          const members = f.assetIds.map((id) => assets.find((a) => a.id === id)).filter(Boolean)
+          const liquid = members.filter((a) => !isThinlyTraded(a))
+          const gaps = liquid.map(premiumPct).filter((p) => p != null)
+          const avgGap = gaps.length ? gaps.reduce((s, p) => s + p, 0) / gaps.length : null
           return (
             <button
               key={f.id}
               onClick={() => onOpenFolder(f.id)}
-              className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors active:bg-zinc-900"
+              className="hover-row flex w-full items-center gap-3 border-b px-4 py-3 text-left transition-colors active:bg-zinc-900"
+              style={{ borderColor: 'var(--border-subtle)' }}
             >
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-900 text-zinc-400">
-                <FolderIcon size={20} />
-              </span>
               <div className="min-w-0 flex-1">
-                <div className="truncate text-[15px] font-semibold">{f.name}</div>
-                <div className="text-xs text-zinc-500">
-                  {f.assetIds.length} asset{f.assetIds.length === 1 ? '' : 's'}
+                <div className="t-label truncate text-zinc-100">{f.name}</div>
+                <div className="mt-1.5 flex items-center gap-2">
+                  {members.length > 0 ? (
+                    <>
+                      <span className="flex -space-x-1.5">
+                        {members.slice(0, 5).map((a) => (
+                          <span
+                            key={a.id}
+                            className="rounded-full ring-2"
+                            style={{ '--tw-ring-color': 'var(--color-zinc-950)' }}
+                          >
+                            <AssetLogo asset={a} size={18} />
+                          </span>
+                        ))}
+                      </span>
+                      <span className="t-caption text-zinc-500">
+                        {members.length > 5 ? `+${members.length - 5} more` : `${members.length} assets`}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="t-caption text-zinc-600">Empty — add assets from search</span>
+                  )}
                 </div>
               </div>
-              {f.assetIds.length === 0 ? (
-                <span className="text-xs text-zinc-600">empty</span>
-              ) : change == null ? (
-                <span className="h-3.5 w-12 animate-pulse rounded bg-zinc-800" />
-              ) : (
-                <div className={`text-sm font-medium tabular-nums ${changeColor(change)}`}>
-                  {formatPct(change)}
+              {avgGap != null && (
+                <div className="shrink-0 text-right">
+                  <div className={`num t-label ${changeColor(avgGap)}`}>{formatPct(avgGap)}</div>
+                  <div className="t-caption mt-0.5 text-zinc-600">avg gap</div>
                 </div>
               )}
-              <ChevronRight size={18} className="text-zinc-600" />
+              <ChevronRight size={18} className="shrink-0 text-zinc-600" />
             </button>
           )
         })}
@@ -76,7 +99,8 @@ export function FoldersList({ onOpenProfile, onOpenFolder }) {
       <div className="px-4 pt-4">
         <button
           onClick={() => setCreating(true)}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-zinc-800 py-3.5 text-sm font-medium text-zinc-400 transition-colors active:bg-zinc-900"
+          className="t-label flex w-full items-center justify-center gap-2 rounded-lg border border-dashed py-3 text-zinc-400 transition-colors active:bg-zinc-900"
+          style={{ borderColor: 'var(--border-default)' }}
         >
           <PlusIcon size={18} />
           New folder
@@ -134,7 +158,7 @@ export function FolderDetail({ folderId, onBack, onOpenProfile, onOpenAsset }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [renaming, setRenaming] = useState(false)
   const [picking, setPicking] = useState(false)
-  const { assets } = usePrices()
+  const { assets, marketOpen } = usePrices()
   const { renameFolder, deleteFolder } = useFolders()
   const folder = useFolder(folderId)
 
@@ -146,7 +170,9 @@ export function FolderDetail({ folderId, onBack, onOpenProfile, onOpenAsset }) {
 
   const members = assets.filter((a) => folder.assetIds.includes(a.id))
   const visible = filterAssets(members, filter)
-  const change = folderDayChange(folder, assets)
+  // Same measure as the folder list: the average gap across liquid members.
+  const gaps = members.filter((a) => !isThinlyTraded(a)).map(premiumPct).filter((p) => p != null)
+  const avgGap = gaps.length ? gaps.reduce((s, p) => s + p, 0) / gaps.length : null
 
   return (
     <div className="pb-24">
@@ -171,15 +197,13 @@ export function FolderDetail({ folderId, onBack, onOpenProfile, onOpenAsset }) {
       </header>
 
       <div className="px-4 pb-4">
-        <h1 className="text-xl font-semibold tracking-tight">{folder.name}</h1>
-        <div className="mt-0.5 text-sm text-zinc-500">
+        <h1 className="t-title">{folder.name}</h1>
+        <div className="t-caption mt-0.5 text-zinc-500">
           {members.length} asset{members.length === 1 ? '' : 's'}
-          {change != null && (
+          {avgGap != null && (
             <>
-              {' · '}
-              <span className={`tabular-nums ${changeColor(change)}`}>
-                {formatPct(change)} today
-              </span>
+              {' · avg gap '}
+              <span className={`num ${changeColor(avgGap)}`}>{formatPct(avgGap)}</span>
             </>
           )}
         </div>
@@ -187,9 +211,25 @@ export function FolderDetail({ folderId, onBack, onOpenProfile, onOpenAsset }) {
 
       {members.length > 0 && <FilterChips value={filter} onChange={setFilter} />}
 
-      <div className="mt-1 divide-y divide-zinc-900">
+      {visible.length > 0 && (
+        <div
+          className="mt-2 flex items-baseline justify-between border-b px-4 pb-1.5"
+          style={{ borderColor: 'var(--border-subtle)' }}
+        >
+          <span className="t-micro text-zinc-500">Asset</span>
+          <span className="t-micro text-zinc-500">Gap · token / stock</span>
+        </div>
+      )}
+
+      <div>
         {visible.map((a) => (
-          <AssetRow key={a.id} asset={a} onOpen={onOpenAsset} spark={sparks[a.id]} />
+          <AssetRow
+            key={a.id}
+            asset={a}
+            onOpen={onOpenAsset}
+            spark={sparks[a.id]}
+            marketOpen={marketOpen}
+          />
         ))}
       </div>
 

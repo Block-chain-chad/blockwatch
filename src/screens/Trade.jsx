@@ -2,7 +2,7 @@ import { useState } from 'react'
 import Header from '../components/Header'
 import { useWaitlist } from '../state/WaitlistContext'
 import { track } from '../services/analytics'
-import { CheckCircleIcon, GlobeIcon, WalletIcon, BellIcon } from '../components/Icons'
+import { CheckCircleIcon, WalletIcon, BellIcon } from '../components/Icons'
 
 /*
  * Rung one of the trading ladder: BlockWatch doesn't execute trades yet, but
@@ -10,48 +10,30 @@ import { CheckCircleIcon, GlobeIcon, WalletIcon, BellIcon } from '../components/
  * and keep the waitlist as the promise of in-app trading to come.
  */
 
-const VENUES = [
-  {
-    id: 'jupiter',
-    name: 'Jupiter',
-    href: 'https://jup.ag',
-    icon: WalletIcon,
-    blurb:
-      'On-chain, from your own wallet. Open any asset ending in “x” here and tap Trade on Jupiter — it lands on the exact pair.',
-    tag: 'Self-custody',
-  },
-  {
-    id: 'kraken',
-    name: 'Kraken',
-    href: 'https://www.kraken.com',
-    icon: GlobeIcon,
-    blurb: 'Exchange trading for xStocks with a Kraken account.',
-    tag: 'Not offered in the US',
-  },
-  {
-    id: 'bybit',
-    name: 'Bybit',
-    href: 'https://www.bybit.com',
-    icon: GlobeIcon,
-    blurb: 'Exchange trading for xStocks with a Bybit account.',
-    tag: 'Not offered in the US',
-  },
-  {
-    id: 'gate',
-    name: 'Gate.io',
-    href: 'https://www.gate.io',
-    icon: GlobeIcon,
-    blurb: 'Exchange trading for xStocks with a Gate account.',
-    tag: 'Not offered in the US',
-  },
-  {
-    id: 'kucoin',
-    name: 'KuCoin',
-    href: 'https://www.kucoin.com',
-    icon: GlobeIcon,
-    blurb: 'Exchange trading for xStocks with a KuCoin account.',
-    tag: 'Not offered in the US',
-  },
+/*
+ * Two tiers, because they are not equivalent options.
+ *
+ * Five venues used to render as five identical cards, four of them saying
+ * "Not offered in the US" — so a screen whose whole job is routing someone
+ * somewhere they can actually trade gave equal visual weight to four places
+ * they cannot. The one that works now leads; the rest are a compact list with
+ * their restriction stated once as a heading instead of repeated four times.
+ */
+const PRIMARY = {
+  id: 'jupiter',
+  name: 'Jupiter',
+  href: 'https://jup.ag',
+  icon: WalletIcon,
+  blurb:
+    'On-chain, from your own wallet. Open any asset ending in “x” and tap Trade on Jupiter — it lands on the exact pair.',
+  tag: 'Self-custody',
+}
+
+const RESTRICTED = [
+  { id: 'kraken', name: 'Kraken', href: 'https://www.kraken.com' },
+  { id: 'bybit', name: 'Bybit', href: 'https://www.bybit.com' },
+  { id: 'gate', name: 'Gate.io', href: 'https://www.gate.io' },
+  { id: 'kucoin', name: 'KuCoin', href: 'https://www.kucoin.com' },
 ]
 
 export default function Trade({ onOpenProfile }) {
@@ -72,44 +54,61 @@ export default function Trade({ onOpenProfile }) {
       <Header title="Trade" onOpenProfile={onOpenProfile} />
 
       <div className="px-4 pt-4">
-        <h2 className="text-xl font-semibold tracking-tight">The market is open</h2>
-        <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">
+        <h2 className="t-title">The market is open</h2>
+        <p className="t-body mt-1.5 text-zinc-400">
           Tokenized stocks trade 24/7 on the venues below. In-app trading is
           what we're building — until then, BlockWatch gets you to the right
           place with the right numbers.
         </p>
 
-        <div className="mt-4 space-y-2.5">
-          {VENUES.map((v) => (
+        {/* The one you can actually use. */}
+        <a
+          href={PRIMARY.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => track('trade_out', { venue: PRIMARY.id })}
+          className="mt-4 flex items-start gap-3 rounded-lg border p-4 transition-colors active:bg-zinc-900"
+          style={{ borderColor: 'var(--border-default)' }}
+        >
+          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-800 text-accent">
+            <PRIMARY.icon size={18} />
+          </span>
+          <span className="min-w-0">
+            <span className="flex items-center gap-2">
+              <span className="t-label text-zinc-100">{PRIMARY.name} ↗</span>
+              <span className="t-micro rounded-full bg-gain/10 px-2 py-0.5 text-gain">
+                Open to you
+              </span>
+            </span>
+            <span className="t-caption mt-1 block text-zinc-500">{PRIMARY.blurb}</span>
+          </span>
+        </a>
+
+        {/* The four you cannot — stated once, listed compactly, still reachable
+            for anyone outside the US. */}
+        <h3 className="t-micro mt-6 text-zinc-500">Not offered in the US</h3>
+        <div className="mt-1.5 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+          {RESTRICTED.map((v) => (
             <a
               key={v.id}
               href={v.href}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => track('trade_out', { venue: v.id })}
-              className="flex items-start gap-3 rounded-2xl bg-zinc-900 p-4 transition-colors active:bg-zinc-800"
+              className="hover-row flex items-center justify-between border-b py-2.5 transition-colors active:bg-zinc-900"
+              style={{ borderColor: 'var(--border-subtle)' }}
             >
-              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-800 text-accent">
-                <v.icon size={18} />
-              </span>
-              <span className="min-w-0">
-                <span className="flex items-center gap-2">
-                  <span className="text-[15px] font-semibold text-zinc-100">{v.name} ↗</span>
-                  <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-zinc-500">
-                    {v.tag}
-                  </span>
-                </span>
-                <span className="mt-0.5 block text-xs leading-relaxed text-zinc-500">{v.blurb}</span>
-              </span>
+              <span className="t-label text-zinc-400">{v.name}</span>
+              <span className="t-caption text-zinc-600">Exchange · xStocks ↗</span>
             </a>
           ))}
         </div>
 
-        <p className="mt-4 rounded-2xl bg-zinc-900/60 p-4 text-xs leading-relaxed text-zinc-500">
-          <span className="font-medium text-zinc-300">In the US?</span> Today's
-          venues exclude US customers — but regulated tokenized trading is
-          rolling out (the SEC approved Nasdaq's version in March 2026). Join
-          the waitlist and you'll get one email the moment you can trade here.
+        <p className="t-caption mt-5 text-zinc-500">
+          <span className="font-medium text-zinc-300">In the US?</span> Those four
+          exclude US customers — but regulated tokenized trading is rolling out
+          (the SEC approved Nasdaq's version in March 2026). Join the waitlist and
+          you'll get one email the moment you can trade here.
         </p>
 
         {entry ? (
