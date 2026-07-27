@@ -1,32 +1,173 @@
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------------
+   Design tokens. See docs/design-system.md for the reasoning and sources.
+
+   The short version, from tearing down rwa.xyz, DefiLlama and TradingView:
+
+   - Separation is BORDER-led, not background-led. DefiLlama's four surfaces
+     span only ~12 points of lightness, but their hairlines resolve ~7 points
+     above whatever they sit on — the border does most of the perceptual work.
+     Borders are white at low alpha so ONE token composites correctly on every
+     surface. This is why we need neither shadows nor nested cards.
+   - No surface is neutral grey. rwa.xyz holds a single hue (~260) with chroma
+     never below .04 across eight steps; pure grey reads as dead on a large
+     dark field. We hold hue 250 at very low chroma — cool, not tinted.
+   - Directional colors are deliberately off full chroma. TradingView ships
+     #26a69a / #ef5350 (Material 400-level) because saturated green/red
+     vibrates on dark over long sessions. rwa.xyz uses near-full chroma and is
+     the harshest of the three.
+   - Session state and price direction are ORTHOGONAL axes. TradingView proves
+     the model: four session colors declared entirely separately from
+     positive/negative. Never let them share a scale.
+--------------------------------------------------------------------------- */
+
 @theme {
-  /* Single brand accent — actions, active states, highlights ONLY */
+  /* -- Surfaces (dark is the default) ------------------------------------ */
+  /* Mapped onto the zinc scale so existing components inherit the system.
+     zinc-950 is the page; each step up is a surface above it. */
+  --color-zinc-950: oklch(0.145 0.008 250); /* surface-0  page            */
+  --color-zinc-900: oklch(0.175 0.009 250); /* surface-1  rows, panels    */
+  --color-zinc-800: oklch(0.205 0.01 250); /* surface-2  sheets, popovers */
+  --color-zinc-700: oklch(0.235 0.011 250); /* surface-3  hover, pressed  */
+
+  /* -- Text ramp --------------------------------------------------------- */
+  /* Four tiers, widely spaced. DefiLlama's is 18:1 / 10.7:1 / 5.1:1 — the
+     large text contrast is what buys the low surface contrast: type carries
+     the hierarchy, so the boxes are free to be nearly identical. */
+  --color-zinc-100: oklch(0.97 0.003 250); /* primary    */
+  --color-zinc-200: oklch(0.92 0.004 250);
+  --color-zinc-300: oklch(0.86 0.005 250);
+  --color-zinc-400: oklch(0.76 0.007 250); /* secondary  */
+  --color-zinc-500: oklch(0.62 0.009 250); /* tertiary   */
+  --color-zinc-600: oklch(0.5 0.01 250); /* quaternary */
+
+  /* -- Brand ------------------------------------------------------------- */
+  /* Actions and active states ONLY. Never decoration, never a surface. */
   --color-accent: #2dd4bf;
   --color-accent-dim: #14b8a6;
 
-  /* Green/red reserved exclusively for price movement, calm shades */
-  --color-gain: #34d399;
-  --color-loss: #f87171;
+  /* -- Direction --------------------------------------------------------- */
+  /* Price movement AND premium/discount. Nothing else. */
+  --color-gain: #3fb950;
+  --color-loss: #f85149;
+
+  /* Colorblind-safe alternates. DefiLlama ships these as first-class tokens
+     (--text-data-up-alt / --down-alt) so the swap is a token change, not a
+     rewrite. Theirs is blue/violet; ours is blue/amber — no purple. */
+  --color-gain-alt: #58a6ff;
+  --color-loss-alt: #d29922;
+
+  /* -- Session state (orthogonal to direction) --------------------------- */
+  --color-session-open: #3fb950; /* stock market open              */
+  --color-session-overnight: #d29922; /* stock closed, token still live */
+  --color-session-closed: oklch(0.62 0.009 250);
 }
 
-/* Light theme: remap the gray scale + calm the reserved colors for white
-   backgrounds. Everything referencing zinc/accent/gain/loss flips with it. */
+/* Borders live outside @theme: they are alpha values, not palette entries.
+   One token, correct on every surface. */
+:root {
+  --border-subtle: rgb(255 255 255 / 0.06); /* row dividers        */
+  --border-default: rgb(255 255 255 / 0.1); /* panel edges, inputs */
+  --border-strong: rgb(255 255 255 / 0.16); /* focus, active       */
+
+  /* Hover as a background-IMAGE layer, not a background-color. DefiLlama's
+     trick: a sticky cell carries an inline background it can't lose, so a
+     color would be overwritten — an image composites on top of it. */
+  --hover-row: rgb(255 255 255 / 0.04);
+
+  /* Spacing rhythm: 4px base. */
+  --row-h: 56px; /* touch   */
+  --row-h-pointer: 44px; /* pointer */
+  --content-max: 1200px;
+}
+
+/* Light theme. The zinc scale inverts; borders flip to black alpha; the
+   directional colors darken so they stay legible on white. rwa.xyz's light
+   greens fail AA at 3.9:1 — ours are checked against white, not derived. */
 html.light {
-  --color-zinc-950: #ffffff;
-  --color-zinc-900: #f4f4f5;
-  --color-zinc-800: #e4e4e7;
-  --color-zinc-700: #d4d4d8;
-  --color-zinc-600: #94949e;
-  --color-zinc-500: #6d6d78;
-  --color-zinc-400: #55555e;
-  --color-zinc-300: #3d3d44;
-  --color-zinc-200: #29292e;
-  --color-zinc-100: #161619;
+  --color-zinc-950: oklch(1 0 0);
+  --color-zinc-900: oklch(0.985 0.002 250);
+  --color-zinc-800: oklch(0.96 0.003 250);
+  --color-zinc-700: oklch(0.93 0.004 250);
+  --color-zinc-600: oklch(0.62 0.01 250);
+  --color-zinc-500: oklch(0.52 0.011 250);
+  --color-zinc-400: oklch(0.42 0.012 250);
+  --color-zinc-300: oklch(0.32 0.01 250);
+  --color-zinc-200: oklch(0.24 0.008 250);
+  --color-zinc-100: oklch(0.16 0.006 250);
+
   --color-accent: #0d9488;
   --color-accent-dim: #0f766e;
-  --color-gain: #059669;
-  --color-loss: #dc2626;
+  --color-gain: #197f36;
+  --color-loss: #c0322b;
+  --color-gain-alt: #0b5fbe;
+  --color-loss-alt: #8a5a00;
+  --color-session-open: #197f36;
+  --color-session-overnight: #8a5a00;
+  --color-session-closed: oklch(0.52 0.011 250);
+
+  --border-subtle: rgb(0 0 0 / 0.07);
+  --border-default: rgb(0 0 0 / 0.12);
+  --border-strong: rgb(0 0 0 / 0.22);
+  --hover-row: rgb(0 0 0 / 0.035);
+}
+
+/* ---------------------------------------------------------------------------
+   Type scale — six steps, weight locked to role.
+
+   The Home screen previously used TEN distinct sizes (8/10/11/12/13/14/15/18/
+   24/36px): ten independent decisions, not a scale. DefiLlama's answer is
+   semantic ramps that bind size + weight + line-height together, so weight is
+   a function of role and there is no knob to fiddle with.
+--------------------------------------------------------------------------- */
+.t-display {
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+.t-title {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+.t-body {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.t-label {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+.t-caption {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.35;
+}
+.t-micro {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Every figure in the app. System UI faces (SF, Segoe) support tnum, which is
+   why no webfont is needed — a licensed face would be an addition, and the
+   brief is to remove. */
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Currency symbol in its own span so decimal points align down a column —
+   lifted from rwa.xyz, whose grid cells render `$` with margin-right:1px. */
+.cur {
+  margin-right: 1px;
 }
 
 html,
@@ -59,51 +200,41 @@ textarea {
   -webkit-user-select: text;
 }
 
-/* Price tick: subtle settle-in when a value changes (paired with color flash). */
+/* Row hover, only where a pointer exists. DefiLlama gates every hover rule
+   behind this — mandatory for a mobile-first app or phones get stuck states. */
+@media (hover: hover) {
+  .hover-row:hover {
+    background-image: linear-gradient(var(--hover-row), var(--hover-row));
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Motion. Exists to explain a state change; nothing animates to be pleasant.
+
+   Removed this pass: the aurora glow layers, hero glow, CTA glow and the
+   breathing moon. All decorative, all on the banned list. On the Folders
+   screen the aurora was the main visual event on an otherwise empty page.
+--------------------------------------------------------------------------- */
+
+/* A changed price settles into place — the one number animation worth having,
+   because it tells you WHICH value just moved. */
 @keyframes bw-tick {
   from {
-    transform: translateY(-3px);
-    opacity: 0.35;
+    transform: translateY(-2px);
+    opacity: 0.4;
   }
   to {
-    transform: translateY(0);
+    transform: none;
     opacity: 1;
   }
 }
 
 .price-tick {
   display: inline-block;
-  animation: bw-tick 0.35s ease-out;
+  animation: bw-tick 0.4s ease-out;
 }
 
-/* Vibe layer: ambient accent-tinted atmosphere. The aura is two soft radial
-   glows anchored to the top of the screen, mixed from the CURRENT accent via
-   color-mix — pick violet in Appearance and the whole room turns violet.
-   Light mode gets fainter mixes so it reads pastel, not smudged. */
-.bw-aurora {
-  background-image:
-    radial-gradient(560px 420px at 18% -6%, color-mix(in oklab, var(--color-accent) 16%, transparent), transparent 70%),
-    radial-gradient(520px 420px at 105% 8%, color-mix(in oklab, var(--color-accent) 9%, transparent), transparent 70%);
-}
-
-html.light .bw-aurora {
-  background-image:
-    radial-gradient(560px 420px at 18% -6%, color-mix(in oklab, var(--color-accent) 9%, transparent), transparent 70%),
-    radial-gradient(520px 420px at 105% 8%, color-mix(in oklab, var(--color-accent) 5%, transparent), transparent 70%);
-}
-
-.bw-hero-glow {
-  text-shadow: 0 0 32px color-mix(in oklab, var(--color-accent) 45%, transparent);
-}
-
-.bw-glow {
-  box-shadow: 0 0 26px -8px color-mix(in oklab, var(--color-accent) 60%, transparent);
-}
-
-/* Motion pass: one shared language — things draw in, rise, and breathe.
-   Charts and sparklines use pathLength="1" so a single dash animation fits
-   every path; sheets rise 14px with a gentle decelerate; the overnight moon
-   breathes. All of it disabled under prefers-reduced-motion. */
+/* Charts draw in on FIRST MOUNT ONLY, never on update. */
 @keyframes bw-draw {
   from {
     stroke-dashoffset: 1;
@@ -115,17 +246,17 @@ html.light .bw-aurora {
 
 .chart-draw {
   stroke-dasharray: 1;
-  animation: bw-draw 0.7s ease-out both;
+  animation: bw-draw 0.3s ease-out both;
 }
 
 .spark-draw {
   stroke-dasharray: 1;
-  animation: bw-draw 0.6s ease-out both;
+  animation: bw-draw 0.3s ease-out both;
 }
 
 @keyframes bw-rise {
   from {
-    transform: translateY(14px);
+    transform: translateY(12px);
     opacity: 0;
   }
   to {
@@ -135,11 +266,11 @@ html.light .bw-aurora {
 }
 
 .sheet-in {
-  animation: bw-rise 0.24s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: bw-rise 0.2s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 
 .screen-in {
-  animation: bw-rise 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: bw-rise 0.2s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 
 @keyframes bw-fade {
@@ -155,27 +286,13 @@ html.light .bw-aurora {
   animation: bw-fade 0.15s ease-out both;
 }
 
-@keyframes bw-breathe {
-  from {
-    opacity: 0.45;
-  }
-  to {
-    opacity: 0.9;
-  }
-}
-
-.moon-breathe {
-  animation: bw-breathe 2.4s ease-in-out infinite alternate;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .price-tick,
   .chart-draw,
   .spark-draw,
   .sheet-in,
   .screen-in,
-  .overlay-in,
-  .moon-breathe {
+  .overlay-in {
     animation: none;
   }
 }

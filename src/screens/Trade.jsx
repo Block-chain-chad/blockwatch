@@ -141,7 +141,7 @@ export default function Trade({ onOpenProfile }) {
             <button
               type="submit"
               disabled={busy}
-              className="bw-glow mt-3 w-full rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim disabled:opacity-60"
+              className="mt-3 w-full rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim disabled:opacity-60"
             >
               {busy ? 'Joining…' : 'Join the waitlist'}
             </button>

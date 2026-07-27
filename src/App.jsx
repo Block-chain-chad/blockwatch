@@ -12,6 +12,7 @@ import UndoToast from './components/UndoToast'
 import TabBar from './components/TabBar'
 import Home from './screens/Home'
 import { FoldersList, FolderDetail } from './screens/Folders'
+import Screener from './screens/Screener'
 import News from './screens/News'
 import Trade from './screens/Trade'
 import AssetDetail from './screens/AssetDetail'
@@ -55,6 +56,8 @@ export default function App() {
         onOpenSearch={() => setShowSearch(true)}
       />
     )
+  } else if (tab === 'screener') {
+    screen = <Screener onOpenProfile={openProfile} onOpenAsset={openAsset} />
   } else if (tab === 'folders') {
     screen = openFolderId ? (
       <FolderDetail
@@ -80,8 +83,15 @@ export default function App() {
       <AlertsProvider>
       <FoldersProvider>
       <WaitlistProvider>
-        {/* dvh, not vh: mobile URL bars collapse and 100vh layouts jump */}
-        <div className="bw-aurora mx-auto min-h-dvh max-w-md bg-zinc-950 md:border-x md:border-zinc-900">
+        {/* dvh, not vh: mobile URL bars collapse and 100vh layouts jump.
+            The shell stays phone-width up to lg because the native iOS build
+            renders inside it; from lg it opens out to the content max so the
+            desktop table has somewhere to live. Previously this was max-w-md
+            at every width, so a 1440px window was ~80% empty. */}
+        <div
+          className="mx-auto min-h-dvh max-w-md bg-zinc-950 md:border-x lg:max-w-[var(--content-max)]"
+          style={{ borderColor: 'var(--border-subtle)' }}
+        >
           {screen}
           <TabBar tab={tab} onChange={switchTab} />
 

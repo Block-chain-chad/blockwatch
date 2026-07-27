@@ -1,8 +1,9 @@
-import { HomeIcon, FolderIcon, NewsIcon, TradeIcon } from './Icons'
+import { HomeIcon, FolderIcon, NewsIcon, TradeIcon, TrendIcon } from './Icons'
 import { useAlerts } from '../state/AlertsContext'
 
 const TABS = [
   { id: 'home', label: 'Home', Icon: HomeIcon },
+  { id: 'screener', label: 'Screener', Icon: TrendIcon },
   { id: 'folders', label: 'Folders', Icon: FolderIcon },
   { id: 'news', label: 'News', Icon: NewsIcon },
   { id: 'trade', label: 'Trade', Icon: TradeIcon, soon: true },
@@ -11,15 +12,21 @@ const TABS = [
 export default function TabBar({ tab, onChange }) {
   const { unread } = useAlerts()
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-zinc-800/70 bg-zinc-950/90 pb-[env(safe-area-inset-bottom)] backdrop-blur">
-      <div className="mx-auto flex max-w-md">
+    <nav
+      className="fixed inset-x-0 bottom-0 z-20 border-t bg-zinc-950 pb-[env(safe-area-inset-bottom)]"
+      style={{ borderColor: 'var(--border-default)' }}
+    >
+      {/* Items track the shell, so on desktop they sit under the table's own
+          left edge instead of clustering in a phone-width block mid-window.
+          Backdrop blur removed with the rest of the glass. */}
+      <div className="mx-auto flex max-w-md lg:max-w-[var(--content-max)] lg:justify-start lg:gap-2 lg:px-2">
         {TABS.map(({ id, label, Icon, soon }) => {
           const active = tab === id
           return (
             <button
               key={id}
               onClick={() => onChange(id)}
-              className={`relative flex flex-1 flex-col items-center gap-0.5 py-2.5 transition-colors ${
+              className={`relative flex flex-1 flex-col items-center gap-0.5 py-2.5 transition-colors lg:max-w-28 lg:flex-row lg:justify-center lg:gap-2 lg:py-2 ${
                 active ? 'text-accent' : 'text-zinc-500 active:text-zinc-300'
               }`}
             >
@@ -29,9 +36,9 @@ export default function TabBar({ tab, onChange }) {
                   <span className="absolute -right-1 -top-0.5 h-2 w-2 rounded-full bg-accent" />
                 )}
               </span>
-              <span className="text-[10px] font-medium">{label}</span>
+              <span className="text-[10px] font-medium lg:text-[13px]">{label}</span>
               {soon && (
-                <span className="absolute right-1/2 top-1 translate-x-[26px] rounded-full bg-zinc-800 px-1.5 py-px text-[8px] font-semibold uppercase tracking-wide text-zinc-400">
+                <span className="t-micro absolute right-1/2 top-1 translate-x-[26px] rounded-full bg-zinc-800 px-1.5 py-px text-[8px] text-zinc-400 lg:static lg:translate-x-0">
                   soon
                 </span>
               )}

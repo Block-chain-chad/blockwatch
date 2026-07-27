@@ -3,66 +3,144 @@ import { premiumPct, PARITY_BAND, isThinlyTraded } from '../lib/prices'
 import { SearchIcon, ChevronRight } from './Icons'
 import PriceText from './PriceText'
 import AssetLogo from './AssetLogo'
-import { formatPrice, formatPct, changeColor } from '../lib/format'
+import { formatPrice, formatPct, changeColor, EM_DASH } from '../lib/format'
 import { WEB_BASE } from '../services/apiBase'
 
 export { formatPrice, formatPct, changeColor }
 
 /*
- * Premium/discount pill: green premium, red discount, gray "1:1" parity.
- * NAV-based assets (no premium possible) fall back to the token's live 24h
- * change. Thinly traded assets render muted — their gap is noise, and painting
- * it green/red would present it as signal.
+ * The premium/discount — the one number nobody else computes, and the reason
+ * this app exists. rwa.xyz lists a token's value and its underlying NAV as
+ * separate columns and never derives the spread; TradingView promotes exactly
+ * one derived figure (their pre-market gap) to its own column and it is the
+ * most useful thing on the page. This is ours, so it gets the headline slot.
+ *
+ * Returns the raw parts so callers can size it for their context.
  */
-export function PremiumPill({ asset }) {
+function usePremium(asset) {
   const p = premiumPct(asset)
   const thin = isThinlyTraded(asset)
   const value = p ?? asset.dayChange
-  // Parity hysteresis: with 2.5s live ticks, a premium wobbling around the
-  // band edge would flip "1:1" <-> "+0.06%" every tick. Enter the colored
-  // state only clearly outside the band (1.2x), return to 1:1 only clearly
-  // inside (0.8x); hold the previous face in between.
+  // Parity hysteresis: with 2.5s live ticks a premium wobbling around the band
+  // edge would flip presentation every tick. Enter the signal state only
+  // clearly outside the band (1.2x), return to noise only clearly inside
+  // (0.8x); hold the previous face in between.
   const parityRef = useRef(null)
 
-  if (value == null) {
-    return (
-      <span className="inline-block h-3.5 w-12 animate-pulse rounded-full bg-zinc-800 align-middle" />
-    )
-  }
-
-  let showParity = false
+  let parity = false
   if (p != null && !thin) {
     const abs = Math.abs(p)
-    if (abs < PARITY_BAND * 0.8) showParity = true
-    else if (abs >= PARITY_BAND * 1.2) showParity = false
-    else showParity = parityRef.current ?? abs < PARITY_BAND
-    parityRef.current = showParity
+    if (abs < PARITY_BAND * 0.8) parity = true
+    else if (abs >= PARITY_BAND * 1.2) parity = false
+    else parity = parityRef.current ?? abs < PARITY_BAND
+    parityRef.current = parity
   }
 
-  if (showParity) {
-    return (
-      <span className="inline-block rounded-full bg-zinc-800 px-2 py-0.5 text-xs font-medium tabular-nums text-zinc-400">
-        1:1
-      </span>
-    )
-  }
+  // Colour is REINFORCEMENT for the sign character, never the carrier. Within
+  // the parity band, or on a thin market, the gap is noise — so it renders in
+  // tertiary text rather than green/red. The unit never changes: previously a
+  // parity row showed "1:1" while its neighbours showed "+0.65%", which put
+  // two different units in one column and made it unscannable.
+  const muted = parity || thin || value == null
+  return { value, muted, thin, color: muted ? 'text-zinc-500' : changeColor(value) }
+}
 
-  const cls = thin
-    ? 'bg-zinc-800 text-zinc-500'
-    : value > 0
-      ? 'bg-gain/10 text-gain'
-      : value < 0
-        ? 'bg-loss/10 text-loss'
-        : 'bg-zinc-800 text-zinc-400'
+export function PremiumValue({ asset, size = 'row' }) {
+  const { value, color } = usePremium(asset)
+  if (value == null) {
+    return <span className="inline-block h-4 w-14 animate-pulse rounded bg-zinc-800 align-middle" />
+  }
+  // The premium outranks the prices that produce it — in the table it is the
+  // only cell heavier than the row's base weight.
+  const cls =
+    size === 'lead' ? 't-title' : size === 'table' ? 'text-[15px] font-semibold' : 't-label'
+  return <span className={`num ${cls} ${color}`}>{formatPct(value)}</span>
+}
+
+/*
+ * GapBar — a centred deviation bar. The gap becomes a distance you scan by
+ * shape instead of eight numbers you read in sequence. Sorted descending it
+ * draws the whole distribution as a wedge.
+ *
+ * `scale` is the gap at which the bar reaches full width — ±2%, which covers
+ * the live range (measured today: 0.07% to 1.96% across a watchlist).
+ *
+ * The length is SQUARE-ROOT scaled, not linear, and that is a deliberate call
+ * made against real data rather than a mockup. Linear at this scale renders a
+ * typical 0.25% gap as a 5px stub while one outlier fills the track; linear at
+ * a tighter scale pegs everything above ~0.7% so +0.72% and +1.96% become
+ * indistinguishable, which destroys the ranking the bar exists to show. Sqrt
+ * keeps the mapping monotonic — bigger gap is always a longer bar, so sorting
+ * still reads correctly — while giving small gaps enough length to compare.
+ * The exact figure is always printed beside it, so the bar is for ranking and
+ * the number is for magnitude.
+ */
+export function GapBar({ pct, thin = false, width = 104, scale = 2 }) {
+  const missing = pct == null || !Number.isFinite(pct)
+  const muted = thin || (!missing && Math.abs(pct) < PARITY_BAND)
+  const w = missing ? 0 : Math.min(Math.sqrt(Math.abs(pct) / scale), 1) * 50
+  const left = missing ? 50 : pct >= 0 ? 50 : 50 - w
   return (
-    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium tabular-nums ${cls}`}>
+    <span
+      data-gapbar=""
+      className="relative inline-block shrink-0 rounded-[2px]"
+      style={{
+        width,
+        height: 4,
+        background: missing ? 'rgb(255 255 255 / 0.04)' : 'rgb(255 255 255 / 0.06)',
+      }}
+      aria-hidden="true"
+    >
+      {/* Zero tick, overhanging the track. Sits ABOVE the fill so the origin
+          stays findable on a row whose bar starts at centre — at 22% it
+          disappeared behind every green fill. */}
+      <span
+        className="absolute z-10"
+        style={{ left: '50%', width: 1, top: -3, bottom: -3, background: 'rgb(255 255 255 / 0.38)' }}
+      />
+      {!missing && w > 0 && (
+        <span
+          className="absolute rounded-[2px]"
+          style={{
+            left: `${left}%`,
+            width: `${w}%`,
+            top: 0,
+            bottom: 0,
+            // Inside the parity band or on a thin market the gap is noise, so
+            // the bar is hollow rather than filled — present, not asserted.
+            background: muted ? 'transparent' : pct >= 0 ? 'var(--color-gain)' : 'var(--color-loss)',
+            boxShadow: muted ? 'inset 0 0 0 1px var(--color-zinc-600)' : undefined,
+          }}
+        />
+      )}
+    </span>
+  )
+}
+
+/* Kept for surfaces that still want the enclosed form (search results). */
+export function PremiumPill({ asset }) {
+  const { value, muted, color } = usePremium(asset)
+  if (value == null) {
+    return <span className="inline-block h-3.5 w-12 animate-pulse rounded-full bg-zinc-800 align-middle" />
+  }
+  const bg = muted ? 'bg-zinc-800' : value > 0 ? 'bg-gain/10' : value < 0 ? 'bg-loss/10' : 'bg-zinc-800'
+  return (
+    <span className={`num inline-block rounded-full px-2 py-0.5 text-xs font-medium ${bg} ${color}`}>
       {formatPct(value)}
     </span>
   )
 }
 
-/* 7-day price sparkline: a single colored stroke, direction by first-vs-last.
-   Pure decoration — rows render identically without data. */
+/*
+ * 7-day price trend. Deliberately NEUTRAL.
+ *
+ * It used to be green/red — which put it in the same colour language as the
+ * premium badge sitting 20px away, while measuring something entirely
+ * different (own price over 7d vs. gap against the underlying, right now). A
+ * row could show a green +0.29% premium beside a red line and both were
+ * correct. Two meanings, one colour vocabulary, no labels. The premium owns
+ * colour now; the trend is context, so it is a plain stroke.
+ */
 export function Sparkline({ points, width = 56, height = 14 }) {
   if (!Array.isArray(points) || points.length < 2) return null
   const min = Math.min(...points)
@@ -75,7 +153,6 @@ export function Sparkline({ points, width = 56, height = 14 }) {
         `${i === 0 ? 'M' : 'L'}${(i * step).toFixed(1)},${(height - 1 - ((v - min) / range) * (height - 2)).toFixed(1)}`
     )
     .join('')
-  const up = points[points.length - 1] >= points[0]
   return (
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden="true" className="inline-block">
       <path
@@ -83,52 +160,124 @@ export function Sparkline({ points, width = 56, height = 14 }) {
         pathLength="1"
         className="spark-draw"
         fill="none"
-        stroke={up ? 'var(--color-gain)' : 'var(--color-loss)'}
+        stroke="currentColor"
         strokeWidth="1.5"
         strokeLinejoin="round"
         strokeLinecap="round"
-        opacity="0.85"
       />
     </svg>
   )
 }
 
-/* One watchlist row: logo, ticker + company name, stock vs. token price, premium pill.
-   Company name over chain jargon in the primary view — recognition first. */
-export function AssetRow({ asset, onOpen, spark }) {
+/*
+ * Watchlist row, mobile. Premium leads; the two prices that produce it sit
+ * beneath as supporting evidence, separated by a thin slash so they read as
+ * one quantity rather than two columns.
+ *
+ * The per-row "STOCK"/"TOKEN" labels are gone — eight rows were reprinting
+ * their own column headers sixteen times. Headers belong at the top, once.
+ */
+export function AssetRow({ asset, onOpen, spark, marketOpen = true, barWidth = 88 }) {
+  const thin = isThinlyTraded(asset)
+  const { value } = usePremium(asset)
   return (
     <button
       onClick={() => onOpen(asset)}
-      className="flex w-full items-center gap-2.5 px-4 py-3 text-left transition-colors active:bg-zinc-900"
+      className="hover-row flex w-full items-center gap-3 border-b px-4 py-2.5 text-left transition-colors active:bg-zinc-900"
+      style={{ borderColor: 'var(--border-subtle)' }}
     >
-      <AssetLogo asset={asset} size={34} />
+      <AssetLogo asset={asset} size={32} />
       <div className="min-w-0 flex-1">
-        <div className="text-[15px] font-semibold text-zinc-100">{asset.ticker}</div>
-        <div className="truncate text-xs text-zinc-500">
-          {asset.name} · {asset.issuer}
-          {isThinlyTraded(asset) && <span className="text-zinc-600"> · thin trading</span>}
+        <div className="t-label text-zinc-100">{asset.ticker}</div>
+        <div className="t-caption truncate text-zinc-500">
+          {asset.name}
+          {thin && <span className="text-zinc-600"> · thin</span>}
         </div>
       </div>
-      <div className="w-[72px] text-right">
-        <div className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">Stock</div>
-        <div className="text-[13px] text-zinc-300">
-          {asset.underlying ? <PriceText value={asset.stockPrice} /> : '—'}
+      {/* The 7-day stroke is hidden while the market is shut: a week of token
+          movement next to a frozen stock leg invites a comparison that isn't
+          there. */}
+      {spark && marketOpen && (
+        <span className="hidden shrink-0 text-zinc-600 min-[360px]:inline">
+          <Sparkline points={spark} width={44} height={14} />
+        </span>
+      )}
+      <div className="shrink-0 text-right">
+        <div className="flex items-center justify-end gap-2">
+          <GapBar pct={value} thin={thin} width={barWidth} />
+          <PremiumValue asset={asset} />
         </div>
-      </div>
-      <div className="w-[72px] text-right">
-        <div className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">Token</div>
-        <div className="text-[13px] font-medium text-zinc-100">
+        <div className="num t-caption mt-1 text-zinc-500">
           <PriceText value={asset.tokenPrice} />
+          <span className="mx-1 text-zinc-700">/</span>
+          {asset.underlying ? <PriceText value={asset.stockPrice} /> : EM_DASH}
         </div>
       </div>
-      <div className="w-[64px] text-right">
-        <PremiumPill asset={asset} />
-        {spark && (
-          <div className="mt-1">
-            <Sparkline points={spark} />
-          </div>
-        )}
-      </div>
+    </button>
+  )
+}
+
+/*
+ * Desktop table. At 1440px the app previously rendered as a ~446px column with
+ * roughly 80% of the window black — a phone in a void. A wide screen is
+ * exactly where this product's comparison finally fits on one line, so it gets
+ * a real table: fixed row height, sticky header (DefiLlama's header scrolls
+ * away, which is the one thing they get wrong about tables), premium as the
+ * widest and boldest column after the ticker.
+ */
+const COLS =
+  'grid-cols-[minmax(170px,1.5fr)_140px_minmax(80px,0.8fr)_minmax(88px,0.9fr)_minmax(88px,0.9fr)_72px_64px]'
+
+export function AssetTableHeader() {
+  return (
+    <div
+      className={`sticky top-0 z-10 grid ${COLS} items-center gap-4 border-b bg-zinc-950 px-4 py-2`}
+      style={{ borderColor: 'var(--border-default)' }}
+    >
+      <span className="t-micro text-zinc-500">Asset</span>
+      <span className="t-micro text-zinc-500" />
+      <span className="t-micro text-right text-zinc-500">Gap</span>
+      <span className="t-micro text-right text-zinc-500">Token</span>
+      <span className="t-micro text-right text-zinc-500">Stock</span>
+      <span className="t-micro text-right text-zinc-500">7d</span>
+      <span className="t-micro text-right text-zinc-500">Chain</span>
+    </div>
+  )
+}
+
+export function AssetTableRow({ asset, onOpen, spark, marketOpen = true }) {
+  const thin = isThinlyTraded(asset)
+  const { value } = usePremium(asset)
+  return (
+    <button
+      onClick={() => onOpen(asset)}
+      className={`hover-row grid ${COLS} w-full items-center gap-4 border-b px-4 text-left transition-colors`}
+      style={{ borderColor: 'var(--border-subtle)', height: 'var(--row-h-pointer)' }}
+    >
+      <span className="flex min-w-0 items-center gap-2.5">
+        <AssetLogo asset={asset} size={22} />
+        <span className="t-label shrink-0 text-zinc-100">{asset.ticker}</span>
+        <span className="t-caption truncate text-zinc-500">
+          {asset.name}
+          {thin && <span className="text-zinc-600"> · thin</span>}
+        </span>
+      </span>
+      <span className="flex justify-end">
+        <GapBar pct={value} thin={thin} width={132} />
+      </span>
+      <span className="text-right">
+        <PremiumValue asset={asset} size="table" />
+      </span>
+      <span className="num t-label text-right text-zinc-100">
+        <PriceText value={asset.tokenPrice} />
+      </span>
+      <span className="num t-label text-right text-zinc-400">
+        {asset.underlying ? <PriceText value={asset.stockPrice} /> : EM_DASH}
+      </span>
+      <span className="text-right text-zinc-600">
+        {spark && marketOpen ? <Sparkline points={spark} width={64} height={16} /> : null}
+      </span>
+      <span className="t-caption truncate text-right text-zinc-500">{asset.chain || EM_DASH}</span>
     </button>
   )
 }
@@ -143,18 +292,21 @@ const FILTERS = [
 
 export function FilterChips({ value, onChange }) {
   return (
-    <div className="flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+    <div className="mt-3 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
       {FILTERS.map((f) => {
         const active = value === f.id
+        // Squared, not pills — the pill is reserved for status. And the active
+        // chip is a bordered surface rather than a filled accent block: a
+        // saturated swatch here was the brightest object on the screen,
+        // outranking every price on a page whose job is showing prices.
         return (
           <button
             key={f.id}
             onClick={() => onChange(f.id)}
-            className={`shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
-              active
-                ? 'bg-accent text-zinc-950'
-                : 'bg-zinc-900 text-zinc-400 active:bg-zinc-800'
+            className={`t-label shrink-0 rounded-md px-3 py-1.5 transition-colors ${
+              active ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 active:bg-zinc-900'
             }`}
+            style={active ? { boxShadow: 'inset 0 0 0 1px var(--border-strong)' } : undefined}
           >
             {f.label}
           </button>

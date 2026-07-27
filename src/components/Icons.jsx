@@ -189,3 +189,14 @@ export const WalletIcon = (p) => (
     <path d="M3 9h18" />
   </Base>
 )
+
+/* Screener: three bars of descending length, deviating from a centre line —
+   the same shape the ranked gap bars make when sorted. */
+export const TrendIcon = (p) => (
+  <Base {...p}>
+    <path d="M12 4v16" opacity="0.45" />
+    <path d="M12 7.5h6.5" />
+    <path d="M12 12h-4" />
+    <path d="M12 16.5h2.5" />
+  </Base>
+)

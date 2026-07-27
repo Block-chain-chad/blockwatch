@@ -139,7 +139,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
   // z sits ABOVE the search overlay (40): opening an asset from search keeps
   // search mounted underneath, so Back returns to the typed query.
   return (
-    <div className="bw-aurora screen-in fixed inset-0 z-[45] mx-auto max-w-md overflow-y-auto bg-zinc-950 pb-10">
+    <div className="screen-in fixed inset-0 z-[45] mx-auto max-w-md overflow-y-auto bg-zinc-950 pb-10">
       {/* Top padding travels with the sticky bar, so the notch / Dynamic
           Island never overlaps Back/Star/Share. env() is 0px on the web, so
           max(…) reproduces the previous py-3 exactly there. */}
@@ -342,7 +342,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
           {wallet.publicKey ? (
             <button
               onClick={() => setSwapOpen(true)}
-              className="bw-glow flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim"
             >
               Swap {asset.ticker}
             </button>
@@ -352,7 +352,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => track('trade_out', { ticker: asset.ticker, venue: 'jupiter' })}
-              className="bw-glow flex items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim"
+              className="flex items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim"
             >
               Trade {asset.ticker} on Jupiter ↗
             </a>

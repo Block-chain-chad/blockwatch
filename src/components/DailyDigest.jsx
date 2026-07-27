@@ -1,21 +1,34 @@
 import { usePrices } from '../state/PricesContext'
 import { premiumPct, isThinlyTraded } from '../lib/prices'
-import { formatPct, formatCompact, changeColor } from '../lib/format'
+import { formatPct, formatCompact, changeColor, isPlausiblePct } from '../lib/format'
 import { ChevronRight } from './Icons'
 
 /*
  * "Today in tokenized stocks" — the market's daily extremes, computed from
- * data already in memory (liquid assets only; thin tokens would win every
- * category with noise). Each row opens that asset's detail.
+ * data already in memory. Each row opens that asset's detail.
+ *
+ * Superlatives are gated twice: thin markets are excluded (their gaps are one
+ * stale print), and so are implausible magnitudes. Volume alone was not
+ * enough — WMKT clears the liquidity bar and still printed a −50.50% daily
+ * move straight into the headline slot, in the same confident voice as
+ * everything else. A superlative is a claim; the raw figure still shows on the
+ * asset's own row, where it is data rather than an assertion.
  */
 export default function DailyDigest({ onOpenAsset }) {
   const { assets } = usePrices()
   const liquid = assets.filter((a) => !isThinlyTraded(a))
 
+  // Two different plausible ranges. A premium of 20% is extraordinary but can
+  // be real on a genuinely dislocated token; a 20% DAILY move on a tokenized
+  // S&P product cannot be, and DSPY printed exactly that once WMKT was gated
+  // out. Day moves get the tighter bound — 12% still admits a real earnings
+  // gap on a single name while rejecting the obviously broken prints.
+  // (The rigorous version cross-checks against the underlying's own move; that
+  // needs a stock quote for every candidate, which the registry doesn't fetch.)
   const withPremium = liquid
     .map((a) => ({ asset: a, p: premiumPct(a) }))
-    .filter((x) => x.p != null)
-  const movers = liquid.filter((a) => a.dayChange != null)
+    .filter((x) => isPlausiblePct(x.p, 20))
+  const movers = liquid.filter((a) => isPlausiblePct(a.dayChange, 12))
   const traded = liquid.filter((a) => a.volume24h != null)
   if (withPremium.length === 0 || movers.length === 0) return null
 
