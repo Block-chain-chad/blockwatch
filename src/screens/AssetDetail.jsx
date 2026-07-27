@@ -15,10 +15,10 @@ import DualLineChart from '../components/DualLineChart'
 import PremiumChart from '../components/PremiumChart'
 import { useChartData, CHART_RANGES } from '../hooks/useChartData'
 import { useStockInfo } from '../hooks/useStockInfo'
-import { formatCompact, timeAgo } from '../lib/format'
-import { isThinlyTraded } from '../lib/prices'
+import { formatCompact, timeAgo, EM_DASH } from '../lib/format'
+import { isThinlyTraded, premiumPct } from '../lib/prices'
 import { ChevronLeft, ChevronDown, ShareIcon, PlusIcon, BellIcon, StarIcon } from '../components/Icons'
-import { formatPrice, formatPct, PremiumPill, changeColor } from '../components/shared'
+import { formatPrice, formatPct, GapBar, changeColor } from '../components/shared'
 import PriceText from '../components/PriceText'
 import UpdatedAgo from '../components/UpdatedAgo'
 import AssetLogo from '../components/AssetLogo'
@@ -74,7 +74,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
     })
   }
   const asset = useAsset(assetId)
-  const { marketOpen, assets } = usePrices()
+  const { marketOpen, assets, lastFetchAt } = usePrices()
 
   // This asset + its cross-issuer siblings (same underlying) need live token
   // prices and the underlying's quote — long-tail assets aren't polled
@@ -182,73 +182,127 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
           </div>
         </div>
 
-        <div className="mt-3 flex items-end justify-between">
-          <div>
-            <div className="text-3xl font-semibold">
-              {scrub ? (
-                <span className="tabular-nums">{formatPrice(scrub.price)}</span>
-              ) : (
-                <PriceText value={asset.tokenPrice} skeletonWidth="w-28" />
-              )}
-            </div>
-            {(() => {
-              // Robinhood-style range summary: how it's moved over the selected
-              // zoom — or, while scrubbing, from the period start to the finger.
-              if (chart.token.length < 2) return null
-              const first = chart.token[0].v
-              const ref = scrub?.price ?? chart.token[chart.token.length - 1].v
-              const pct = ((ref - first) / first) * 100
-              const intraday = range === '1D' || range === '1W'
-              const suffix = scrub
-                ? new Date(Math.round(scrub.t / 300_000) * 300_000).toLocaleString(
-                    'en-US',
-                    intraday
-                      ? { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }
-                      : { month: 'short', day: 'numeric', year: 'numeric' }
-                  )
-                : RANGE_WORDS[range]
-              return (
-                <div className={`mt-1 text-sm font-medium tabular-nums ${changeColor(pct)}`}>
-                  {ref >= first ? '▲' : '▼'} {formatPrice(Math.abs(ref - first))} ({formatPct(pct)}){' '}
-                  <span className="font-normal text-zinc-500">{suffix}</span>
-                </div>
-              )
-            })()}
-            <div className="mt-1 flex items-center gap-2 text-sm text-zinc-500">
-              {asset.underlying ? (
-                <span>
-                  {asset.underlying} stock{' '}
-                  <span className="tabular-nums text-zinc-300">
-                    {asset.stockPrice != null ? formatPrice(asset.stockPrice) : '—'}
+        {/*
+          The gap leads. It used to be a small pill in the corner while the
+          token price took the 3xl slot — but the token price alone is a fact
+          any tracker has. The distance between the two legs is the only number
+          this app computes, so it gets the display step, stated as a
+          percentage AND in money (a percentage is abstract; $0.78 is not).
+
+          Bordered, not filled: the two legs sit inside without becoming a card
+          within a card.
+        */}
+        {(() => {
+          const gap = premiumPct(asset)
+          const tokenNow = scrub?.price ?? asset.tokenPrice
+          const diff =
+            tokenNow != null && asset.stockPrice != null ? tokenNow - asset.stockPrice : null
+          const thin = isThinlyTraded(asset)
+
+          // Per-leg freshness. The two sides of this comparison have different
+          // ages: the token trades continuously while the share can be hours
+          // stale and shut. One global "updated 5m ago" would hide exactly the
+          // caveat that makes the gap readable.
+          const tokenAge = lastFetchAt ? timeAgo(lastFetchAt) : '—'
+          const stockAge = !asset.underlying
+            ? null
+            : marketOpen
+              ? lastFetchAt
+                ? `${timeAgo(lastFetchAt)} · live`
+                : '—'
+              : 'at last close'
+
+          return (
+            <div
+              className="mt-4 rounded-lg border"
+              style={{ borderColor: 'var(--border-default)' }}
+            >
+              <div className="px-4 pt-3.5">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="t-micro text-zinc-500">
+                    {asset.underlying ? `Gap vs ${asset.underlying}` : 'NAV-based'}
                   </span>
-                  {!marketOpen && asset.stockPrice != null && (
-                    <span className="text-zinc-600"> (last close)</span>
+                  {diff != null && (
+                    <span className="t-caption text-right text-zinc-500">
+                      {formatPrice(Math.abs(diff))}{' '}
+                      {diff >= 0 ? 'above the share' : 'below the share'}
+                    </span>
                   )}
-                </span>
-              ) : (
-                <span>NAV-based · no listed underlying</span>
-              )}
-            </div>
-          </div>
-          <div className="text-right">
-            <PremiumPill asset={asset} />
-            {spread && (
-              <div className="mt-2 space-y-0.5 text-xs tabular-nums">
-                <div>
-                  <span className="text-zinc-500">Bid </span>
-                  <span className="font-medium text-zinc-100">{formatPrice(spread.bid)}</span>
                 </div>
-                <div>
-                  <span className="text-zinc-500">Ask </span>
-                  <span className="font-medium text-zinc-100">{formatPrice(spread.ask)}</span>
-                </div>
-                <div className="text-[11px] text-zinc-600">
-                  {spread.spreadPct.toFixed(1)}% spread
+                <div className="mt-1.5 flex items-center justify-between gap-3">
+                  <span
+                    className={`num t-display ${thin ? 'text-zinc-500' : changeColor(gap)}`}
+                  >
+                    {gap != null ? formatPct(gap) : EM_DASH}
+                  </span>
+                  {/* Capped, not full-bleed. Stretched across the panel the
+                      track read as a progress meter — a long empty left half
+                      looks unfilled rather than "below zero". At row width it
+                      reads as what it is: a deviation from centre. */}
+                  <GapBar pct={gap} thin={thin} width={120} />
                 </div>
               </div>
-            )}
+
+              <div
+                className="mt-3.5 grid grid-cols-2 border-t"
+                style={{ borderColor: 'var(--border-subtle)' }}
+              >
+                <div className="px-4 py-3">
+                  <div className="t-caption text-zinc-500">{asset.ticker} token</div>
+                  <div className="num t-title mt-0.5 text-zinc-100">
+                    {scrub ? formatPrice(scrub.price) : <PriceText value={asset.tokenPrice} />}
+                  </div>
+                  <div className="t-caption mt-0.5 text-zinc-600">{tokenAge}</div>
+                </div>
+                {asset.underlying && (
+                  <div
+                    className="border-l px-4 py-3"
+                    style={{ borderColor: 'var(--border-subtle)' }}
+                  >
+                    <div className="t-caption text-zinc-500">{asset.underlying} share</div>
+                    <div className="num t-title mt-0.5 text-zinc-100">
+                      {asset.stockPrice != null ? formatPrice(asset.stockPrice) : EM_DASH}
+                    </div>
+                    <div className="t-caption mt-0.5 text-zinc-600">{stockAge}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* How the token itself moved over the selected zoom — or, while
+            scrubbing, from the period start to the finger. Secondary to the
+            gap now, so it reads as a caption rather than a headline. */}
+        {(() => {
+          if (chart.token.length < 2) return null
+          const first = chart.token[0].v
+          const ref = scrub?.price ?? chart.token[chart.token.length - 1].v
+          const pct = ((ref - first) / first) * 100
+          const intraday = range === '1D' || range === '1W'
+          const suffix = scrub
+            ? new Date(Math.round(scrub.t / 300_000) * 300_000).toLocaleString(
+                'en-US',
+                intraday
+                  ? { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }
+                  : { month: 'short', day: 'numeric', year: 'numeric' }
+              )
+            : RANGE_WORDS[range]
+          return (
+            <div className="num t-caption mt-2.5 text-zinc-500">
+              Token {formatPct(pct)} ({formatPrice(Math.abs(ref - first))}){' '}
+              <span className="text-zinc-600">{suffix}</span>
+            </div>
+          )
+        })()}
+
+        {spread && (
+          <div className="num t-caption mt-1 text-zinc-500">
+            Bid <span className="text-zinc-300">{formatPrice(spread.bid)}</span> · Ask{' '}
+            <span className="text-zinc-300">{formatPrice(spread.ask)}</span> ·{' '}
+            {spread.spreadPct.toFixed(1)}% spread
           </div>
-        </div>
+        )}
       </div>
 
       {isThinlyTraded(asset) && (
@@ -307,9 +361,12 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
               setScrub(null) // a new zoom invalidates the old finger position
               setRange(r)
             }}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-              range === r ? 'bg-accent text-zinc-950' : 'text-zinc-500 active:bg-zinc-900'
+            className={`t-label rounded-md px-3 py-1.5 transition-colors ${
+              range === r ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 active:bg-zinc-900'
             }`}
+            style={
+              range === r ? { boxShadow: 'inset 0 0 0 1px var(--border-strong)' } : undefined
+            }
           >
             {r}
           </button>
@@ -339,10 +396,17 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
           (rung two); otherwise route out to Jupiter (rung one). */}
       {asset.mint && (
         <div className="px-4 pt-3">
+          {/* Connecting a wallet is a decision the user made, so an in-app
+              swap keeps the filled accent. Routing OUT to Jupiter does not:
+              it was a full-width saturated block, unambiguously the loudest
+              object on a screen whose job is comparing two prices — shouting
+              an outbound link over the number the page exists to show. It is
+              a bordered button now: same size, same position, still obvious,
+              no longer the first thing your eye lands on. */}
           {wallet.publicKey ? (
             <button
               onClick={() => setSwapOpen(true)}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim"
+              className="t-label flex w-full items-center justify-center gap-2 rounded-lg bg-accent py-3 font-semibold text-zinc-950 transition-colors active:bg-accent-dim"
             >
               Swap {asset.ticker}
             </button>
@@ -352,7 +416,8 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => track('trade_out', { ticker: asset.ticker, venue: 'jupiter' })}
-              className="flex items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim"
+              className="t-label flex items-center justify-center gap-2 rounded-lg py-3 font-medium text-zinc-100 transition-colors active:bg-zinc-900"
+              style={{ boxShadow: 'inset 0 0 0 1px var(--border-strong)' }}
             >
               Trade {asset.ticker} on Jupiter ↗
             </a>

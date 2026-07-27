@@ -45,8 +45,8 @@ export default function PremiumChart({ premium }) {
   return (
     <div className="px-2 pt-4">
       <div className="flex items-baseline justify-between px-2 pb-1">
-        <span className="text-xs font-medium text-zinc-500">Premium history</span>
-        <span className="text-xs tabular-nums text-zinc-500">
+        <span className="t-micro text-zinc-500">Gap history</span>
+        <span className="num t-caption text-zinc-500">
           avg <span className="text-zinc-300">{formatPct(avg)}</span>
         </span>
       </div>
@@ -68,8 +68,11 @@ export default function PremiumChart({ premium }) {
           strokeWidth="1"
           strokeDasharray="3 5"
         />
+        {/* The zero axis. Labelled "1:1" everywhere else once, which put a
+            ratio in a column of percentages — same unit as the rest of the
+            screen now. */}
         <text x={W - PAD} y={Math.max(y0 - 4, 9)} textAnchor="end" fontSize="9" className="fill-zinc-600">
-          1:1
+          0%
         </text>
         <path
           d={path}

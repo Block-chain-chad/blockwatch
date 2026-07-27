@@ -155,7 +155,7 @@ export default function DualLineChart({
             )}
           </>
         ) : (
-          <span className="text-zinc-700">Touch and hold the chart to inspect</span>
+          <span className="text-zinc-600">Touch and hold the chart to inspect</span>
         )}
       </div>
       <svg

@@ -209,7 +209,7 @@ export function AssetRow({ asset, onOpen, spark, marketOpen = true, barWidth = 8
         </div>
         <div className="num t-caption mt-1 text-zinc-500">
           <PriceText value={asset.tokenPrice} />
-          <span className="mx-1 text-zinc-700">/</span>
+          <span className="mx-1 text-zinc-600">/</span>
           {asset.underlying ? <PriceText value={asset.stockPrice} /> : EM_DASH}
         </div>
       </div>
