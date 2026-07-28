@@ -1,0 +1,174 @@
+# Build a SIGNED iOS app on a cloud Mac and upload it to TestFlight.
+#
+# Stage 2. Stage 1 (ios-build.yml) compiles unsigned and needs no Apple
+# account; this one needs the paid Apple Developer Program and the six secrets
+# listed below. Both are manual-only — macOS runner minutes bill at 10x on
+# private repos, so nothing here fires on push.
+#
+# ── SETUP, ONCE ──────────────────────────────────────────────────────────────
+#
+# A. Register the app with Apple (App Store Connect → Apps → +):
+#      Bundle ID   app.blockwatch      (must match capacitor.config.json)
+#      Name        BlockWatch
+#      SKU         blockwatch
+#
+# B. Create an App Store Connect API key
+#    (Users and Access → Integrations → App Store Connect API → Team Keys → +):
+#      Name   BlockWatch CI      Access   App Manager
+#    You get ONE download of the .p8 file. Note the Key ID and Issuer ID.
+#
+# C. Create a Distribution certificate and export it as .p12 WITH a password.
+#    Then create an App Store provisioning profile for app.blockwatch.
+#    (Certificates, Identifiers & Profiles on developer.apple.com. Xcode does
+#    this for you if you ever get a Mac; from Windows, do it in the browser.)
+#
+# D. Add these six repository secrets
+#    (Settings → Secrets and variables → Actions). Encode the three binary
+#    files as base64 first — on Windows, in PowerShell:
+#      [Convert]::ToBase64String([IO.File]::ReadAllBytes("C:\path\to\file"))
+#
+#      APPSTORE_KEY_ID          short code, e.g. 2X9R4HXF34
+#      APPSTORE_ISSUER_ID       long dashed code from the API keys page
+#      APPSTORE_PRIVATE_KEY     contents of AuthKey_XXXX.p8, pasted as text
+#      IOS_CERTIFICATE_P12      base64 of the .p12
+#      IOS_CERTIFICATE_PASSWORD the password you set when exporting it
+#      IOS_PROVISIONING_PROFILE base64 of the .mobileprovision
+#
+#    Plus the three already set for stage 1: VITE_SUPABASE_URL,
+#    VITE_SUPABASE_ANON_KEY, VITE_POSTHOG_KEY.
+#
+# ── BEFORE THE FIRST RUN ─────────────────────────────────────────────────────
+#
+# Confirm the native data path is alive in production, or the app will install
+# and show no prices:
+#
+#   curl -sD - -o /dev/null \
+#     "https://blockwatch.app/api/finnhub?kind=quote&symbol=AAPL&c=app" \
+#     | grep -i "access-control"
+#
+# It must print: Access-Control-Allow-Origin: capacitor://localhost
+
+name: iOS TestFlight
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: 'Build number (must be higher than the last upload)'
+        required: true
+        default: '1'
+
+jobs:
+  testflight:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The money path and the number contract are pure functions; a broken
+      # build should never reach a tester's phone.
+      - name: Run tests
+        run: npm test
+
+      - name: Build web app (ios mode) and sync
+        run: npm run build:ios
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
+
+      # A throwaway keychain that exists only for this run, so the signing
+      # identity never lingers on a shared runner.
+      - name: Install signing certificate and profile
+        env:
+          P12: ${{ secrets.IOS_CERTIFICATE_P12 }}
+          P12_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+        run: |
+          KEYCHAIN=$RUNNER_TEMP/build.keychain
+          KEYCHAIN_PASSWORD=$(uuidgen)
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 3600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN" login.keychain
+
+          echo "$P12" | base64 --decode > $RUNNER_TEMP/cert.p12
+          security import $RUNNER_TEMP/cert.p12 -k "$KEYCHAIN" -P "$P12_PASSWORD" \
+            -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple: -s \
+            -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "$PROFILE" | base64 --decode \
+            > ~/Library/MobileDevice/Provisioning\ Profiles/build.mobileprovision
+
+          rm $RUNNER_TEMP/cert.p12
+
+      - name: Set build number
+        run: |
+          cd ios/App
+          /usr/libexec/PlistBuddy -c \
+            "Set :CFBundleVersion ${{ inputs.build_number }}" App/Info.plist
+
+      - name: Archive
+        run: |
+          xcodebuild archive \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath $RUNNER_TEMP/App.xcarchive \
+            -allowProvisioningUpdates
+
+      - name: Export .ipa
+        run: |
+          cat > $RUNNER_TEMP/ExportOptions.plist <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+            "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>export</string>
+            <key>uploadSymbols</key><true/>
+          </dict>
+          </plist>
+          PLIST
+          xcodebuild -exportArchive \
+            -archivePath $RUNNER_TEMP/App.xcarchive \
+            -exportPath $RUNNER_TEMP/export \
+            -exportOptionsPlist $RUNNER_TEMP/ExportOptions.plist \
+            -allowProvisioningUpdates
+
+      - name: Upload to TestFlight
+        env:
+          KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+          PRIVATE_KEY: ${{ secrets.APPSTORE_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/private_keys
+          echo "$PRIVATE_KEY" > ~/private_keys/AuthKey_$KEY_ID.p8
+          xcrun altool --upload-app \
+            --type ios \
+            --file "$RUNNER_TEMP/export/App.ipa" \
+            --apiKey "$KEY_ID" \
+            --apiIssuer "$ISSUER_ID"
+          rm -rf ~/private_keys
+
+      # Kept for 5 days so a failed upload doesn't mean rebuilding.
+      - name: Keep the build
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: BlockWatch-ipa-${{ inputs.build_number }}
+          path: ${{ runner.temp }}/export/*.ipa
+          retention-days: 5
+          if-no-files-found: ignore
