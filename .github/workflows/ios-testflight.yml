@@ -27,9 +27,17 @@
 # 2. Create an API key — App Store Connect -> Users and Access ->
 #    Integrations -> App Store Connect API -> Team Keys -> "+"
 #      Name    BlockWatch CI
-#      Access  App Manager
+#      Access  Admin        <-- MUST be Admin, not App Manager.
+#
+#    App Manager can upload builds but cannot create signing certificates, and
+#    cloud signing does exactly that. With App Manager the export step fails
+#    with "Cloud signing permission error" / "No signing certificate iOS
+#    Distribution found" — after the archive has already succeeded, so it looks
+#    like a signing bug rather than a permissions one. A key's role cannot be
+#    changed after creation; a wrong one has to be replaced.
+#
 #    You get exactly ONE download of the .p8 file. Keep the Key ID and the
-#    Issuer ID from that page.
+#    Issuer ID from that page (the Issuer ID is per-team, so it never changes).
 #
 # 3. Add three repository secrets — Settings -> Secrets and variables ->
 #    Actions. All three are plain text; no base64, no binary files.
