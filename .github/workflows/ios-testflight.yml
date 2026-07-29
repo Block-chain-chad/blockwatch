@@ -74,10 +74,24 @@ on:
 
 jobs:
   testflight:
-    runs-on: macos-15
+    # macos-26 for the SDK, not for the hardware. Apple rejects uploads built
+    # against an old SDK — "all iOS apps must be built with the iOS 26 SDK or
+    # later" — and it fails at UPLOAD, after a perfectly good signed .ipa
+    # exists, so the message is easy to mistake for a signing problem.
+    runs-on: macos-26
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+
+      # Pick the newest Xcode present rather than pinning a version, so this
+      # survives the runner image being updated under us.
+      - name: Select the newest Xcode
+        run: |
+          NEWEST=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "Using $NEWEST"
+          sudo xcode-select -s "$NEWEST"
+          xcodebuild -version
+          xcodebuild -showsdks | grep -i "iphoneos" || true
 
       - uses: actions/setup-node@v4
         with:
