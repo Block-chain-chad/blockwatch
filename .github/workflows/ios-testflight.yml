@@ -112,16 +112,22 @@ jobs:
             ios/App/App/Info.plist
           echo "Build ${{ inputs.build_number }}, team $TEAM_ID"
 
-      # No CODE_SIGN_IDENTITY here, deliberately. Two failed runs taught the
-      # rule: with CODE_SIGN_STYLE=Automatic, naming ANY identity counts as a
-      # manual specification and Xcode refuses with "conflicting provisioning
-      # settings". Capacitor's scaffold ships a development identity in the
-      # Release configuration, which made the first run ask Apple for a
-      # Development profile — those need a registered device, which a CI runner
-      # has none of. That key is now removed from project.pbxproj entirely,
-      # which is how an Xcode-managed project looks, and automatic signing is
-      # left to choose for itself.
-      - name: Archive (Apple manages the certificate)
+      # Archive UNSIGNED, then sign at export. Three runs established why:
+      #   1. Capacitor ships a development identity in Release, so Xcode asked
+      #      Apple for a Development profile -> "your team has no devices from
+      #      which to generate a provisioning profile".
+      #   2. Naming a distribution identity instead -> "conflicting provisioning
+      #      settings", because under CODE_SIGN_STYLE=Automatic any named
+      #      identity counts as a manual one.
+      #   3. Naming nothing at all -> automatic signing STILL asks for a
+      #      Development profile at archive time. That is simply what it does,
+      #      and Development profiles need a registered device a CI runner
+      #      hasn't got.
+      # Signing at export sidesteps the lot: -exportArchive with
+      # app-store-connect and -allowProvisioningUpdates creates the
+      # DISTRIBUTION certificate and App Store profile — neither of which needs
+      # a device — and signs the payload on the way out.
+      - name: Archive (unsigned — signing happens at export)
         env:
           KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
           ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
@@ -138,8 +144,10 @@ jobs:
             -authenticationKeyID "$KEY_ID" \
             -authenticationKeyIssuerID "$ISSUER_ID" \
             DEVELOPMENT_TEAM="$TEAM_ID" \
-            CODE_SIGN_STYLE=Automatic \
-            PRODUCT_BUNDLE_IDENTIFIER=app.blockwatch
+            PRODUCT_BUNDLE_IDENTIFIER=app.blockwatch \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
 
       - name: Export .ipa
         env:
@@ -156,6 +164,7 @@ jobs:
             <key>method</key><string>app-store-connect</string>
             <key>destination</key><string>export</string>
             <key>teamID</key><string>$TEAM_ID</string>
+            <key>signingStyle</key><string>automatic</string>
             <key>uploadSymbols</key><true/>
           </dict>
           </plist>
