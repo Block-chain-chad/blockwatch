@@ -1,3 +1,4 @@
+// src/lib/authErrors.test.js
 import { describe, it, expect } from 'vitest'
 import { mapAuthError } from './authErrors'
 
@@ -15,7 +16,7 @@ describe('mapAuthError', () => {
 
   it('wrong credentials keeps the existing copy', () => {
     const r = mapAuthError('Invalid login credentials')
-    expect(r.text).toBe('That email and password didn\'t match. Try again, or use "Forgot password?"')
+    expect(r.text).toBe("That email and password didn't match. Try again, or use “Forgot password?”")
     expect(r.action).toBeNull()
   })
 
