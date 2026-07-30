@@ -99,4 +99,14 @@ describe('handleAuthLink', () => {
     expect(consumePendingAuthResult()).toBeNull()
     unsub()
   })
+
+  it('same link delivered twice → verifyOtp called once, no second result', async () => {
+    supabase.auth.verifyOtp.mockResolvedValue({ data: { session: {} }, error: null })
+    const url = 'https://blockwatch.app/auth/confirm?token_hash=tdup&type=signup'
+    expect(await handleAuthLink(url)).toBe(true)
+    expect(await handleAuthLink(url)).toBe(true)
+    expect(supabase.auth.verifyOtp).toHaveBeenCalledTimes(1)
+    expect(consumePendingAuthResult()).toEqual({ kind: 'welcome' })
+    expect(consumePendingAuthResult()).toBeNull()
+  })
 })

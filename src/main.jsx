@@ -11,8 +11,8 @@ initTheme()
 
 // Emailed auth links (confirm / magic / reset) land on /auth/confirm.
 // Web: the URL is this page's own. Native: links arrive as Universal Link
-// events instead — see initNativeAuthLinks. The address bar is scrubbed
-// immediately so the one-time token never sits in history or a screenshot.
+// events instead — see the isNativeApp() branch below. The address bar is
+// scrubbed immediately so the one-time token never sits in history or a screenshot.
 if (!isNativeApp() && window.location.pathname === '/auth/confirm') {
   const link = window.location.href
   window.history.replaceState(null, '', '/')

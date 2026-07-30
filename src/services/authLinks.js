@@ -51,6 +51,12 @@ export function subscribeAuthLinks(cb) {
   return () => subscribers.delete(cb)
 }
 
+// A single emailed link can arrive twice on iOS cold start: getLaunchUrl()
+// and the retained appUrlOpen event both deliver it. The token is single-use,
+// so the second exchange would always fail and flash "expired" over a
+// successful sign-in — swallow repeats instead.
+const handledTokens = new Set()
+
 /**
  * Handle a possibly-auth URL. Returns true when the URL was an auth link
  * (so callers know it was consumed), false otherwise. Outcomes surface via
@@ -59,6 +65,8 @@ export function subscribeAuthLinks(cb) {
 export async function handleAuthLink(url) {
   const link = parseAuthLink(url)
   if (!link) return false
+  if (handledTokens.has(link.tokenHash)) return true
+  handledTokens.add(link.tokenHash)
   if (!supabase) {
     emit({ kind: 'expired' }) // auth unconfigured — treat as a dead link
     return true
