@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { useAuth } from '../state/AuthContext'
 import { useWaitlist } from '../state/WaitlistContext'
 import { isNativeApp } from '../lib/platform'
+import { passwordStrength } from '../lib/passwordStrength'
+import { mapAuthError } from '../lib/authErrors'
+import { EyeIcon, EyeOffIcon } from '../components/Icons'
 
 const MIN_PASSWORD = 8
 
@@ -10,21 +13,21 @@ const MIN_PASSWORD = 8
  * one-time email link as the passwordless fallback. Forgot-password sends a
  * recovery link; opening it prompts for a new password (see PasswordSheet).
  *
- * NATIVE: password only. An emailed link opens in Safari, not in the app —
- * there is no deep-link handler — so the session would start in the browser
- * and the app would never see it. The magic-link option is therefore hidden
- * on native; password sign-in works identically everywhere. Forgot-password
- * stays (finishing it in Safari is fine, you come back and sign in), but the
- * copy says so instead of implying you'll land back here signed in.
+ * NATIVE: emailed links (magic, confirm, reset) open the app directly via
+ * Universal Links — see services/authLinks.js. The magic-link option is
+ * therefore available everywhere.
  */
 export default function SignInSheet({ onClose }) {
-  const { signIn, signInPassword, signUpPassword, resetPassword } = useAuth()
+  const { signIn, signInPassword, signUpPassword, resetPassword, showWelcome, resendConfirmation } =
+    useAuth()
   const { entry } = useWaitlist()
   const [mode, setMode] = useState('signin') // signin | signup
   const [email, setEmail] = useState(entry?.email ?? '')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState(null) // { kind: 'error' | 'sent', text }
+  const [showPw, setShowPw] = useState(false)
+  const [resent, setResent] = useState(false)
 
   const emailOk = /\S+@\S+\.\S+/.test(email)
   const passwordOk = password.length >= MIN_PASSWORD
@@ -41,10 +44,12 @@ export default function SignInSheet({ onClose }) {
       if (mode === 'signin') {
         await signInPassword(email, password)
         onClose()
+        showWelcome()
       } else {
         const result = await signUpPassword(email, password)
         if (result === 'signed-in') {
           onClose()
+          showWelcome()
         } else if (result === 'exists') {
           setMode('signin')
           setNote({
@@ -55,21 +60,15 @@ export default function SignInSheet({ onClose }) {
           setNote({
             kind: 'sent',
             text: native
-              ? `Almost there — we emailed ${email.trim()}. The link opens in your browser and confirms your account; then come back here and sign in with your password.`
+              ? `Almost there — we emailed ${email.trim()}. Tap the link on this phone and the app will open with you signed in.`
               : `Almost there — we emailed ${email.trim()}. Click the link inside to confirm your account and you'll be signed in.`,
           })
         }
       }
     } catch (err) {
-      const msg = String(err?.message ?? '')
-      setNote({
-        kind: 'error',
-        text: msg.includes('Invalid login credentials')
-          ? "That email and password didn't match. Try again, or use “Forgot password?”"
-          : msg.includes('already registered')
-            ? 'That email already has an account — switch to Sign in.'
-            : "That didn't work — give it another try in a moment.",
-      })
+      const mapped = mapAuthError(err?.message)
+      setResent(false)
+      setNote({ kind: 'error', text: mapped.text, action: mapped.action })
     }
     setBusy(false)
   }
@@ -86,7 +85,7 @@ export default function SignInSheet({ onClose }) {
       setNote({
         kind: 'sent',
         text: native
-          ? `Reset link sent to ${email.trim()}. It opens in your browser — set your new password there, then come back here and sign in with it.`
+          ? `Reset link sent to ${email.trim()}. Tap it on this phone — the app opens and asks for your new password.`
           : `Reset link sent to ${email.trim()} — open it and you'll be asked to set a new password.`,
       })
     } catch {
@@ -153,20 +152,68 @@ export default function SignInSheet({ onClose }) {
             placeholder="you@email.com"
             className="mt-3 w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-600 outline-none ring-accent/60 focus:ring-2"
           />
-          <input
-            type="password"
-            required
-            autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder={mode === 'signin' ? 'Password' : `Password (at least ${MIN_PASSWORD} characters)`}
-            className="mt-2 w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-600 outline-none ring-accent/60 focus:ring-2"
-          />
+          <div className="relative mt-2">
+            <input
+              type={showPw ? 'text' : 'password'}
+              required
+              autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={mode === 'signin' ? 'Password' : `Password (at least ${MIN_PASSWORD} characters)`}
+              className="w-full rounded-xl bg-zinc-900 px-4 py-3 pr-12 text-sm text-zinc-100 placeholder-zinc-600 outline-none ring-accent/60 focus:ring-2"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPw((v) => !v)}
+              aria-label={showPw ? 'Hide password' : 'Show password'}
+              className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-zinc-500 active:text-zinc-300"
+            >
+              {showPw ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
+            </button>
+          </div>
+          {mode === 'signup' && password.length > 0 && (
+            <p
+              className={`mt-1.5 px-1 text-xs ${
+                {
+                  dim: 'text-zinc-600',
+                  warn: 'text-amber-500',
+                  okay: 'text-zinc-400',
+                  good: 'text-accent',
+                }[passwordStrength(password).tone]
+              }`}
+            >
+              Password strength: {passwordStrength(password).label}
+            </p>
+          )}
 
           {note && (
-            <p className={`mt-2 px-1 text-xs leading-relaxed ${note.kind === 'sent' ? 'text-accent' : 'text-zinc-400'}`}>
-              {note.text}
-            </p>
+            <div className="mt-2 px-1">
+              <p className={`text-xs leading-relaxed ${note.kind === 'sent' ? 'text-accent' : 'text-zinc-400'}`}>
+                {note.text}
+              </p>
+              {note.action === 'resend' && (
+                <button
+                  type="button"
+                  disabled={busy || resent}
+                  onClick={async () => {
+                    setBusy(true)
+                    try {
+                      await resendConfirmation(email)
+                      setResent(true)
+                    } catch {
+                      setNote({
+                        kind: 'error',
+                        text: "Couldn't resend just now — confirmation emails are rate-limited, wait a minute and try again.",
+                      })
+                    }
+                    setBusy(false)
+                  }}
+                  className="mt-1 text-xs font-medium text-accent disabled:opacity-40"
+                >
+                  {resent ? 'Sent — check your inbox' : 'Resend the email'}
+                </button>
+              )}
+            </div>
           )}
 
           <button
@@ -186,13 +233,9 @@ export default function SignInSheet({ onClose }) {
           ) : (
             <span />
           )}
-          {/* Hidden on native: the emailed link opens in Safari, so tapping
-              this would send someone to a browser session the app can't see. */}
-          {!native && (
-            <button onClick={magicLink} className="text-zinc-400 transition-colors active:text-zinc-200">
-              Email me a sign-in link instead
-            </button>
-          )}
+          <button onClick={magicLink} className="text-zinc-400 transition-colors active:text-zinc-200">
+            Email me a sign-in link instead
+          </button>
         </div>
       </div>
     </div>

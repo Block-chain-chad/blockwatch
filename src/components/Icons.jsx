@@ -200,3 +200,21 @@ export const TrendIcon = (p) => (
     <path d="M12 16.5h2.5" />
   </Base>
 )
+
+// Base's viewBox is 24x24 (center 12,12), not the 22x22 the brief's
+// coordinates assumed (center 11,11) — shifted both glyphs by (+1, +1) so
+// they sit centered like their neighbors instead of drifting toward the
+// top-left corner.
+export const EyeIcon = (p) => (
+  <Base {...p}>
+    <path d="M3.5 12s3.5-6 8.5-6 8.5 6 8.5 6-3.5 6-8.5 6-8.5-6-8.5-6z" />
+    <circle cx="12" cy="12" r="2.6" />
+  </Base>
+)
+
+export const EyeOffIcon = (p) => (
+  <Base {...p}>
+    <path d="M5 5l14 14" />
+    <path d="M9.6 6.6A9.4 9.4 0 0 1 12 6c5 0 8.5 6 8.5 6a15.7 15.7 0 0 1-2.7 3.3M7.2 7.9A15 15 0 0 0 3.5 12s3.5 6 8.5 6a8.9 8.9 0 0 0 3.4-.7" />
+  </Base>
+)
