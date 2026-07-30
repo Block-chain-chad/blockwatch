@@ -171,6 +171,22 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY=""
 
+      # An unsigned archive REQUESTS no entitlements, and the export re-sign
+      # only grants what the app requests — so Associated Domains never made
+      # it into the signature (runs 30506572819 and 30507445248 proved it,
+      # capability enabled both times). Ad-hoc signing ("-") the archived app
+      # with the entitlements file records the request without needing any
+      # certificate; the export then re-signs with the real distribution
+      # identity and profile, honoring the recorded request.
+      - name: Stamp entitlements into the archive (ad-hoc)
+        run: |
+          codesign --force --sign - \
+            --entitlements ios/App/App/App.entitlements \
+            "$RUNNER_TEMP/App.xcarchive/Products/Applications/App.app"
+          echo "--- entitlements now recorded in the archive ---"
+          codesign -d --entitlements :- \
+            "$RUNNER_TEMP/App.xcarchive/Products/Applications/App.app"
+
       - name: Export .ipa
         env:
           KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
