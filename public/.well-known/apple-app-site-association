@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": ["92Y88BW5VC.app.blockwatch"],
+        "components": [{ "/": "/auth/*" }]
+      }
+    ]
+  }
+}
