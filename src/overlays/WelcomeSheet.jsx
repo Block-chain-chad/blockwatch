@@ -19,6 +19,7 @@ export default function WelcomeSheet({ variant, onClose, onOpenSignIn }) {
 
   const assetCount = new Set([...watchlistIds, ...folders.flatMap((f) => f.assetIds ?? [])]).size
   const alertCount = Object.keys(rules).filter((id) => rules[id]?.drift || rules[id]?.price).length
+  const pluralSubject = assetCount !== 1 || alertCount > 0
 
   const expired = variant === 'expired'
   return (
@@ -54,7 +55,7 @@ export default function WelcomeSheet({ variant, onClose, onOpenSignIn }) {
               {assetCount > 0
                 ? `Your ${assetCount} tracked ${assetCount === 1 ? 'asset' : 'assets'}${
                     alertCount > 0 ? ` and ${alertCount} ${alertCount === 1 ? 'alert' : 'alerts'}` : ''
-                  } now sync to any device you sign in on.`
+                  } now ${pluralSubject ? 'sync' : 'syncs'} to any device you sign in on.`
                 : 'Anything you track or set an alert on now syncs to any device you sign in on.'}
             </p>
             <button
