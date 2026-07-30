@@ -9,8 +9,6 @@ import AboutSheet from './AboutSheet'
 import { getThemePref } from '../lib/theme'
 import {
   CloseIcon,
-  BellIcon,
-  GlobeIcon,
   MoonIcon,
   WalletIcon,
   HelpIcon,
@@ -108,8 +106,6 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
         </div>
 
         <div className="mt-4 divide-y divide-zinc-900">
-          <ListRow icon={<BellIcon size={20} />} label="Notifications" value="On" />
-          <ListRow icon={<GlobeIcon size={20} />} label="Display currency" value="USD" />
           <ListRow
             icon={<MoonIcon size={20} />}
             label="Appearance"

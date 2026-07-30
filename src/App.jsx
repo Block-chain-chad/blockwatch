@@ -18,12 +18,21 @@ import Trade from './screens/Trade'
 import AssetDetail from './screens/AssetDetail'
 import SearchOverlay from './overlays/SearchOverlay'
 import ProfileSheet from './overlays/ProfileSheet'
+import WelcomeSheet from './overlays/WelcomeSheet'
 
 /* When the user arrives via a password-recovery email link, prompt for the new password. */
 function RecoveryGate() {
   const { recovery, clearRecovery } = useAuth()
   if (!recovery) return null
   return <PasswordSheet recoveryMode onClose={clearRecovery} />
+}
+
+/* Post-sign-in confirmation, and the dead-emailed-link notice. Rendered at
+   App level because email links arrive with no sheet open. */
+function WelcomeGate({ onOpenSignIn }) {
+  const { welcome, clearWelcome } = useAuth()
+  if (!welcome) return null
+  return <WelcomeSheet variant={welcome} onClose={clearWelcome} onOpenSignIn={onOpenSignIn} />
 }
 
 export default function App() {
@@ -122,6 +131,7 @@ export default function App() {
           )}
           <UndoToast />
           <RecoveryGate />
+          <WelcomeGate onOpenSignIn={() => setShowProfile(true)} />
         </div>
       </WaitlistProvider>
       </FoldersProvider>
