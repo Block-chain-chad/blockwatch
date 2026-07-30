@@ -21,7 +21,7 @@ export default function SignInSheet({ onClose }) {
   const { signIn, signInPassword, signUpPassword, resetPassword, showWelcome, resendConfirmation } =
     useAuth()
   const { entry } = useWaitlist()
-  const [mode, setMode] = useState('signin') // signin | signup
+  const [mode, setMode] = useState('signin') // signin | signup | forgot
   const [email, setEmail] = useState(entry?.email ?? '')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
@@ -73,11 +73,9 @@ export default function SignInSheet({ onClose }) {
     setBusy(false)
   }
 
-  async function forgot() {
-    if (!emailOk || busy) {
-      setNote({ kind: 'error', text: 'Type your email above first, then tap Forgot password.' })
-      return
-    }
+  async function submitForgot(e) {
+    e.preventDefault()
+    if (!emailOk || busy) return
     setBusy(true)
     setNote(null)
     try {
@@ -85,8 +83,8 @@ export default function SignInSheet({ onClose }) {
       setNote({
         kind: 'sent',
         text: native
-          ? `Reset link sent to ${email.trim()}. Tap it on this phone — the app opens and asks for your new password.`
-          : `Reset link sent to ${email.trim()} — open it and you'll be asked to set a new password.`,
+          ? `If ${email.trim()} has an account, a reset link is on its way. Tap it on this phone — the app opens and asks for your new password.`
+          : `If ${email.trim()} has an account, a reset link is on its way — open it and you'll be asked to set a new password.`,
       })
     } catch {
       setNote({ kind: 'error', text: "Couldn't send the reset email — wait a minute and try again." })
@@ -116,33 +114,54 @@ export default function SignInSheet({ onClose }) {
       <div className="relative sheet-in w-full rounded-t-3xl bg-zinc-950 p-4 pb-[max(env(safe-area-inset-bottom),16px)] ring-1 ring-zinc-800/70">
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-zinc-800" />
 
-        <div className="flex rounded-xl bg-zinc-900 p-1">
-          {[
-            { id: 'signin', label: 'Sign in' },
-            { id: 'signup', label: 'Create account' },
-          ].map((t) => (
-            <button
-              key={t.id}
-              onClick={() => {
-                setMode(t.id)
-                setNote(null)
-              }}
-              className={`flex-1 rounded-lg py-2 text-[13px] font-medium transition-colors ${
-                mode === t.id ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+        {mode === 'forgot' ? (
+          <button
+            onClick={() => {
+              setMode('signin')
+              setNote(null)
+            }}
+            className="text-xs text-zinc-400 transition-colors active:text-zinc-200"
+          >
+            ← Back to sign in
+          </button>
+        ) : (
+          <div className="flex rounded-xl bg-zinc-900 p-1">
+            {[
+              { id: 'signin', label: 'Sign in' },
+              { id: 'signup', label: 'Create account' },
+            ].map((t) => (
+              <button
+                key={t.id}
+                onClick={() => {
+                  setMode(t.id)
+                  setNote(null)
+                }}
+                className={`flex-1 rounded-lg py-2 text-[13px] font-medium transition-colors ${
+                  mode === t.id ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        )}
 
-        <p className="mt-3 px-1 text-xs leading-relaxed text-zinc-500">
-          {mode === 'signin'
-            ? 'Your folders and alerts sync to every device you sign in on.'
-            : 'One account, every device — your folders and alerts follow you.'}
-        </p>
+        {mode === 'forgot' ? (
+          <>
+            <h2 className="mt-3 px-1 text-base font-semibold">Reset your password</h2>
+            <p className="mt-0.5 px-1 text-xs text-zinc-500">
+              Enter your account email and we'll send a link to set a new password.
+            </p>
+          </>
+        ) : (
+          <p className="mt-3 px-1 text-xs leading-relaxed text-zinc-500">
+            {mode === 'signin'
+              ? 'Your folders and alerts sync to every device you sign in on.'
+              : 'One account, every device — your folders and alerts follow you.'}
+          </p>
+        )}
 
-        <form onSubmit={submit}>
+        <form onSubmit={mode === 'forgot' ? submitForgot : submit}>
           <input
             type="email"
             required
@@ -152,25 +171,27 @@ export default function SignInSheet({ onClose }) {
             placeholder="you@email.com"
             className="mt-3 w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-600 outline-none ring-accent/60 focus:ring-2"
           />
-          <div className="relative mt-2">
-            <input
-              type={showPw ? 'text' : 'password'}
-              required
-              autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={mode === 'signin' ? 'Password' : `Password (at least ${MIN_PASSWORD} characters)`}
-              className="w-full rounded-xl bg-zinc-900 px-4 py-3 pr-12 text-sm text-zinc-100 placeholder-zinc-600 outline-none ring-accent/60 focus:ring-2"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPw((v) => !v)}
-              aria-label={showPw ? 'Hide password' : 'Show password'}
-              className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-zinc-500 active:text-zinc-300"
-            >
-              {showPw ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
-            </button>
-          </div>
+          {mode !== 'forgot' && (
+            <div className="relative mt-2">
+              <input
+                type={showPw ? 'text' : 'password'}
+                required
+                autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={mode === 'signin' ? 'Password' : `Password (at least ${MIN_PASSWORD} characters)`}
+                className="w-full rounded-xl bg-zinc-900 px-4 py-3 pr-12 text-sm text-zinc-100 placeholder-zinc-600 outline-none ring-accent/60 focus:ring-2"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw((v) => !v)}
+                aria-label={showPw ? 'Hide password' : 'Show password'}
+                className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-zinc-500 active:text-zinc-300"
+              >
+                {showPw ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
+              </button>
+            </div>
+          )}
           {mode === 'signup' && password.length > 0 && (
             <p
               className={`mt-1.5 px-1 text-xs ${
@@ -218,25 +239,41 @@ export default function SignInSheet({ onClose }) {
 
           <button
             type="submit"
-            disabled={!emailOk || !passwordOk || busy}
+            disabled={mode === 'forgot' ? !emailOk || busy : !emailOk || !passwordOk || busy}
             className="mt-3 w-full rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim disabled:opacity-40"
           >
-            {busy ? 'Working…' : mode === 'signin' ? 'Sign in' : 'Create account'}
+            {mode === 'forgot'
+              ? busy
+                ? 'Sending…'
+                : 'Send reset link'
+              : busy
+                ? 'Working…'
+                : mode === 'signin'
+                  ? 'Sign in'
+                  : 'Create account'}
           </button>
         </form>
 
-        <div className="mt-3 flex items-center justify-between px-1 text-xs">
-          {mode === 'signin' ? (
-            <button onClick={forgot} className="text-zinc-400 transition-colors active:text-zinc-200">
-              Forgot password?
+        {mode !== 'forgot' && (
+          <div className="mt-3 flex items-center justify-between px-1 text-xs">
+            {mode === 'signin' ? (
+              <button
+                onClick={() => {
+                  setMode('forgot')
+                  setNote(null)
+                }}
+                className="text-zinc-400 transition-colors active:text-zinc-200"
+              >
+                Forgot password?
+              </button>
+            ) : (
+              <span />
+            )}
+            <button onClick={magicLink} className="text-zinc-400 transition-colors active:text-zinc-200">
+              Email me a sign-in link instead
             </button>
-          ) : (
-            <span />
-          )}
-          <button onClick={magicLink} className="text-zinc-400 transition-colors active:text-zinc-200">
-            Email me a sign-in link instead
-          </button>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   )
