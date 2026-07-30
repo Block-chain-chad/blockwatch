@@ -200,6 +200,21 @@ jobs:
             -authenticationKeyID "$KEY_ID" \
             -authenticationKeyIssuerID "$ISSUER_ID"
 
+      # CODE_SIGNING_ALLOWED=NO at archive means signing happens only here, at
+      # export — so a missing Associated Domains capability on the App ID
+      # would still produce a GREEN build whose .ipa silently lacks the
+      # entitlement. That ships an app where Universal Links are dead, and it
+      # gets misdiagnosed later as CDN propagation. Check the signed payload
+      # before it ever reaches TestFlight.
+      - name: Verify Universal Links entitlement made it into the signed app
+        run: |
+          unzip -q "$RUNNER_TEMP/export/App.ipa" -d /tmp/ipa-check
+          codesign -d --entitlements :- /tmp/ipa-check/Payload/App.app | tee /tmp/entitlements.txt
+          grep -q "com.apple.developer.associated-domains" /tmp/entitlements.txt \
+            || { echo "::error::Signed app is MISSING the associated-domains entitlement — Universal Links will not work. Enable the Associated Domains capability on the app.blockwatch App ID at developer.apple.com, then re-run."; exit 1; }
+          grep -q "applinks:blockwatch.app" /tmp/entitlements.txt \
+            || { echo "::error::Entitlement present but applinks:blockwatch.app missing from it."; exit 1; }
+
       - name: Upload to TestFlight
         env:
           KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
