@@ -48,3 +48,55 @@ describe('parseAuthLink', () => {
     ).toEqual({ tokenHash: 'abc123', type: 'recovery' })
   })
 })
+
+import { vi, beforeEach } from 'vitest'
+import { handleAuthLink, consumePendingAuthResult, subscribeAuthLinks } from './authLinks'
+import { supabase } from './supabase'
+
+vi.mock('./supabase', () => ({
+  supabase: { auth: { verifyOtp: vi.fn() } },
+}))
+
+describe('handleAuthLink', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    consumePendingAuthResult() // drain any leftover pending state between tests
+  })
+
+  it('non-auth URLs: returns false, calls nothing, stores nothing', async () => {
+    expect(await handleAuthLink('https://blockwatch.app/privacy.html')).toBe(false)
+    expect(supabase.auth.verifyOtp).not.toHaveBeenCalled()
+    expect(consumePendingAuthResult()).toBeNull()
+  })
+
+  it('signup link → verifyOtp with token_hash, pending welcome', async () => {
+    supabase.auth.verifyOtp.mockResolvedValue({ data: { session: {} }, error: null })
+    const ok = await handleAuthLink('https://blockwatch.app/auth/confirm?token_hash=t1&type=signup')
+    expect(ok).toBe(true)
+    expect(supabase.auth.verifyOtp).toHaveBeenCalledWith({ token_hash: 't1', type: 'signup' })
+    expect(consumePendingAuthResult()).toEqual({ kind: 'welcome' })
+    expect(consumePendingAuthResult()).toBeNull() // one-shot
+  })
+
+  it('recovery link → pending recovery, not welcome', async () => {
+    supabase.auth.verifyOtp.mockResolvedValue({ data: { session: {} }, error: null })
+    await handleAuthLink('https://blockwatch.app/auth/confirm?token_hash=t2&type=recovery')
+    expect(consumePendingAuthResult()).toEqual({ kind: 'recovery' })
+  })
+
+  it('expired/used token → pending expired', async () => {
+    supabase.auth.verifyOtp.mockResolvedValue({ data: {}, error: { message: 'Token has expired or is invalid' } })
+    await handleAuthLink('https://blockwatch.app/auth/confirm?token_hash=t3&type=magiclink')
+    expect(consumePendingAuthResult()).toEqual({ kind: 'expired' })
+  })
+
+  it('delivers to a live subscriber instead of storing', async () => {
+    supabase.auth.verifyOtp.mockResolvedValue({ data: { session: {} }, error: null })
+    const cb = vi.fn()
+    const unsub = subscribeAuthLinks(cb)
+    await handleAuthLink('https://blockwatch.app/auth/confirm?token_hash=t4&type=signup')
+    expect(cb).toHaveBeenCalledWith({ kind: 'welcome' })
+    expect(consumePendingAuthResult()).toBeNull()
+    unsub()
+  })
+})
