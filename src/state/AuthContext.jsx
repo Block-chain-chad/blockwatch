@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase, pendingRecovery } from '../services/supabase'
+import { consumePendingAuthResult, subscribeAuthLinks } from '../services/authLinks'
 
 const AuthContext = createContext({ session: null, ready: true, available: false })
 
@@ -27,11 +28,25 @@ export function AuthProvider({ children }) {
   // True when the user arrived via a password-recovery email link — the app
   // should prompt them to set a new password.
   const [recovery, setRecovery] = useState(false)
+  // 'success' → WelcomeSheet's you're-in moment; 'expired' → its dead-link
+  // variant. Set from handled email links and from SignInSheet sign-ins.
+  const [welcome, setWelcome] = useState(null)
+
+  function applyAuthLinkResult(result) {
+    if (!result) return
+    if (result.kind === 'recovery') setRecovery(true)
+    else if (result.kind === 'welcome') setWelcome('success')
+    else if (result.kind === 'expired') setWelcome('expired')
+  }
 
   useEffect(() => {
     if (!supabase) return
     // Recovery may have fired before we mounted (see services/supabase.js).
     if (pendingRecovery) setRecovery(true)
+    // An emailed link may have been handled before this provider mounted
+    // (web: AccessGate delays mount; native: cold-start launch URL).
+    applyAuthLinkResult(consumePendingAuthResult())
+    const unsubLinks = subscribeAuthLinks(applyAuthLinkResult)
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session ?? null)
       setReady(true)
@@ -40,7 +55,10 @@ export function AuthProvider({ children }) {
       setSession(s ?? null)
       if (event === 'PASSWORD_RECOVERY') setRecovery(true)
     })
-    return () => sub.subscription.unsubscribe()
+    return () => {
+      sub.subscription.unsubscribe()
+      unsubLinks()
+    }
   }, [])
 
   async function signIn(email) {
@@ -89,6 +107,15 @@ export function AuthProvider({ children }) {
     if (error) throw error
   }
 
+  async function resendConfirmation(email) {
+    if (!supabase) throw new Error('auth not configured')
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email.trim().toLowerCase(),
+    })
+    if (error) throw error
+  }
+
   async function updatePassword(newPassword) {
     if (!supabase) throw new Error('auth not configured')
     const { error } = await supabase.auth.updateUser({ password: newPassword })
@@ -106,6 +133,10 @@ export function AuthProvider({ children }) {
     available: Boolean(supabase),
     recovery,
     clearRecovery: () => setRecovery(false),
+    welcome,
+    showWelcome: () => setWelcome('success'),
+    clearWelcome: () => setWelcome(null),
+    resendConfirmation,
     signIn,
     signInPassword,
     signUpPassword,
