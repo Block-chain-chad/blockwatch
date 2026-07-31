@@ -24,7 +24,7 @@ territory, alongside Vercel Pro.
 
 User decision: ~3-minute stock-price staleness is acceptable for beta (token
 prices are unaffected — Jupiter fast lane keeps ticking live). The existing
-UpdatedAgo pulse already shows honest data age; no client change needed.
+UpdatedAgo pulse shows honest FETCH age (not per-quote age: the stock leg can be up to ~4 min older than the label implies, and drift alerts may fire on a stock leg that stale — accepted within the 3-minute decision); no client change needed.
 
 ## Design
 

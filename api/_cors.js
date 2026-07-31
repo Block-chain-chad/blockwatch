@@ -93,7 +93,7 @@ export function isAppLane(req) {
  * `Vary: Origin` is set UNCONDITIONALLY — allowed origins, rejected origins,
  * app lane, and requests with no Origin header at all. This is not optional on
  * these endpoints: browsers omit Origin on same-origin GETs, so every web
- * visitor would otherwise populate Vercel's CDN (s-maxage=55) with an entry
+ * visitor would otherwise populate Vercel's CDN (s-maxage=180) with an entry
  * carrying neither Access-Control-Allow-Origin nor Vary. Per RFC 9111 §4.1 a
  * stored response with no Vary matches ANY request for that URI, so a
  * capacitor://localhost request could be served that header-less entry and
