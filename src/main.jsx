@@ -6,6 +6,7 @@ import ErrorBoundary from './components/ErrorBoundary.jsx'
 import { initTheme } from './lib/theme'
 import { isNativeApp } from './lib/platform'
 import { handleAuthLink } from './services/authLinks'
+import { initMonitoring } from './services/monitoring'
 
 initTheme()
 
@@ -39,3 +40,7 @@ createRoot(document.getElementById('root')).render(
     </ErrorBoundary>
   </StrictMode>,
 )
+
+// Crash reporting starts after first paint — it can never slow launch, and
+// if it fails to load the app runs exactly as before (see monitoring.js).
+setTimeout(initMonitoring, 0)

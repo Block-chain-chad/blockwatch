@@ -7,7 +7,8 @@ import { Component } from 'react'
  *
  * Deliberately dependency-free: it imports no context, no analytics and no app
  * state, because it has to keep working when a provider is the thing that
- * threw. Styling relies only on index.css.
+ * threw, and reports crashes only through an optional global set by
+ * services/monitoring.js. Styling relies only on index.css.
  *
  * Error boundaries must be class components (React 19), and they only catch
  * errors thrown while RENDERING — not in event handlers or async callbacks.
@@ -24,8 +25,11 @@ export default class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, info) {
-    // Console only — no network call, nothing that could throw in turn.
     console.error('App crashed:', error, info?.componentStack)
+    // Also reach the developer, when monitoring is up. Optional-chained global
+    // set lazily by services/monitoring.js — the boundary stays free of
+    // imports so it renders even when a dependency is what broke.
+    window.__bwReportError?.(error, info?.componentStack)
   }
 
   render() {
