@@ -10,7 +10,7 @@
 # archive/export/upload-to-TestFlight step.
 #
 # Required repository secrets (Settings → Secrets and variables → Actions):
-#   VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_POSTHOG_KEY
+#   VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_POSTHOG_KEY, VITE_SENTRY_DSN
 # These are the publishable client keys (same ones baked into the web
 # bundle), not server secrets.
 
@@ -40,6 +40,7 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
 
       - name: Compile iOS app (unsigned)
         run: |
