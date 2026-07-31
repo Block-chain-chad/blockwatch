@@ -42,5 +42,6 @@ createRoot(document.getElementById('root')).render(
 )
 
 // Crash reporting starts after first paint — it can never slow launch, and
-// if it fails to load the app runs exactly as before (see monitoring.js).
+// if it fails to load the app runs exactly as before (see monitoring.js;
+// the DSN is baked in at build time from VITE_SENTRY_DSN).
 setTimeout(initMonitoring, 0)
