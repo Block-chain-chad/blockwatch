@@ -8,9 +8,13 @@
 // unaffected.
 
 import { applyCors, handlePreflight, setCacheControl } from './_cors.js'
+import { rejectUnknownParams } from './_params.js'
 
 const ALLOWED = {
-  quote: { path: '/quote', cache: 's-maxage=55, stale-while-revalidate=300' },
+  // 180s shared cache: ~50 polled symbols become ~17 upstream calls/min per
+  // edge-cache copy, so several concurrent tester regions fit Finnhub's
+  // 60/min free tier. The client's UpdatedAgo pulse shows the honest age.
+  quote: { path: '/quote', cache: 's-maxage=180, stale-while-revalidate=600' },
   profile: { path: '/stock/profile2', cache: 's-maxage=86400, stale-while-revalidate=86400' },
   recommendation: { path: '/stock/recommendation', cache: 's-maxage=21600, stale-while-revalidate=86400' },
   earnings: { path: '/stock/earnings', cache: 's-maxage=21600, stale-while-revalidate=86400' },
@@ -20,8 +24,11 @@ const ALLOWED = {
   metric: { path: '/stock/metric', cache: 's-maxage=21600, stale-while-revalidate=86400' },
 }
 
+const ALLOWED_PARAMS = new Set(['kind', 'symbol', 'c'])
+
 export default async function handler(req, res) {
   if (handlePreflight(req, res)) return
+  if (rejectUnknownParams(req, res, ALLOWED_PARAMS)) return
   const originScoped = applyCors(req, res)
 
   const { kind, symbol } = req.query

@@ -9,9 +9,13 @@
 // unaffected.
 
 import { applyCors, handlePreflight, setCacheControl } from './_cors.js'
+import { rejectUnknownParams } from './_params.js'
+
+const ALLOWED_PARAMS = new Set(['symbol', 'c'])
 
 export default async function handler(req, res) {
   if (handlePreflight(req, res)) return
+  if (rejectUnknownParams(req, res, ALLOWED_PARAMS)) return
   const originScoped = applyCors(req, res)
 
   const symbol = String(req.query.symbol ?? '')

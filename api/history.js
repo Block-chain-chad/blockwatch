@@ -7,12 +7,16 @@
 // unaffected.
 
 import { applyCors, handlePreflight, setCacheControl } from './_cors.js'
+import { rejectUnknownParams } from './_params.js'
 
 const INTERVALS = new Set(['5m', '30m', '1d'])
 const RANGES = new Set(['1d', '5d', '1mo', '3mo', '1y'])
 
+const ALLOWED_PARAMS = new Set(['symbol', 'interval', 'range', 'c'])
+
 export default async function handler(req, res) {
   if (handlePreflight(req, res)) return
+  if (rejectUnknownParams(req, res, ALLOWED_PARAMS)) return
   const originScoped = applyCors(req, res)
 
   const { symbol, interval, range } = req.query
