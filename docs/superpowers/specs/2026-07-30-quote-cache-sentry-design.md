@@ -119,3 +119,5 @@ limiting stays a NON-GOAL until the Redis tier exists (documented above).
 - Sentry performance tracing/replay — errors only on the free tier.
 - CSP enforcement flip — separate errand, unchanged by this round beyond the
   connect-src addition.
+
+Deployed to production 2026-07-31.
