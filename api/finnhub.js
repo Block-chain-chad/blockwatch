@@ -28,8 +28,8 @@ const ALLOWED_PARAMS = new Set(['kind', 'symbol', 'c'])
 
 export default async function handler(req, res) {
   if (handlePreflight(req, res)) return
-  if (rejectUnknownParams(req, res, ALLOWED_PARAMS)) return
   const originScoped = applyCors(req, res)
+  if (rejectUnknownParams(req, res, ALLOWED_PARAMS)) return
 
   const { kind, symbol } = req.query
   const spec = ALLOWED[kind]

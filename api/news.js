@@ -15,8 +15,8 @@ const ALLOWED_PARAMS = new Set(['symbol', 'c'])
 
 export default async function handler(req, res) {
   if (handlePreflight(req, res)) return
-  if (rejectUnknownParams(req, res, ALLOWED_PARAMS)) return
   const originScoped = applyCors(req, res)
+  if (rejectUnknownParams(req, res, ALLOWED_PARAMS)) return
 
   const symbol = String(req.query.symbol ?? '')
   if (!/^[A-Z0-9.\-]{1,10}$/i.test(symbol)) {
