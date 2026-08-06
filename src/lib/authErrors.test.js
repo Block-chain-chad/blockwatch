@@ -1,4 +1,3 @@
-// src/lib/authErrors.test.js
 import { describe, it, expect } from 'vitest'
 import { mapAuthError } from './authErrors'
 

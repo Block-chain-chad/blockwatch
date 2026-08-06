@@ -221,6 +221,7 @@ export default function SignInSheet({ onClose }) {
                     try {
                       await resendConfirmation(email)
                       setResent(true)
+                      setNote({ kind: 'sent', text: `A fresh link is on its way to ${email.trim()}.` })
                     } catch {
                       setNote({
                         kind: 'error',

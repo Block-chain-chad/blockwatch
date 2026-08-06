@@ -1,4 +1,3 @@
-// src/lib/authErrors.js
 // Supabase auth error → user copy. Matching is substring-based because
 // Supabase message text carries no stable codes at this API surface.
 

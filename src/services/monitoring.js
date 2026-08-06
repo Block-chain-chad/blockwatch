@@ -28,6 +28,9 @@ export function initMonitoring() {
             if (crumb.data?.url) crumb.data.url = scrub(crumb.data.url)
             if (typeof crumb.message === 'string') crumb.message = scrub(crumb.message)
           }
+          for (const ex of event.exception?.values ?? []) {
+            if (typeof ex.value === 'string') ex.value = scrub(ex.value)
+          }
           return event
         },
       })
