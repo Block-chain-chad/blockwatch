@@ -120,7 +120,7 @@ export default function Trade({ onOpenProfile }) {
             <p className="mt-2 text-xs leading-relaxed text-zinc-500">
               {entry.pendingSync
                 ? `${entry.email} is saved on this device. We couldn't reach the waitlist server just now — we'll finish signing you up automatically.`
-                : `${entry.email} — we'll email you the moment trading opens.`}
+                : `${entry.email} — we'll email you when in-app trading opens.`}
             </p>
           </div>
         ) : (

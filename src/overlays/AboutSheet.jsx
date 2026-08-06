@@ -31,7 +31,7 @@ export default function AboutSheet({ onClose }) {
             Signing in is optional and simply syncs your setup across devices.
           </p>
           <p className="text-sm leading-relaxed text-zinc-400">
-            Trading isn't live yet — the Trade tab has a waitlist, and everyone on it hears
+            In-app trading isn't live yet — the Trade tab has a waitlist, and everyone on it hears
             first when it opens.
           </p>
           <div className="rounded-xl bg-zinc-900 p-3.5">

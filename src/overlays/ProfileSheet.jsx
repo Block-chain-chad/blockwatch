@@ -7,6 +7,7 @@ import AppearanceSheet from './AppearanceSheet'
 import PasswordSheet from './PasswordSheet'
 import AboutSheet from './AboutSheet'
 import { getThemePref } from '../lib/theme'
+import { isNativeApp } from '../lib/platform'
 import {
   CloseIcon,
   MoonIcon,
@@ -89,14 +90,14 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
               <div className="mt-1 text-xs text-zinc-500">
                 {entry.pendingSync
                   ? 'Saved on this device — finishing signup automatically.'
-                  : "We'll email you the moment trading opens."}
+                  : "One tap, without leaving BlockWatch — we'll email you when in-app trading opens."}
               </div>
             </>
           ) : (
             <button onClick={onGoToTrade} className="flex w-full items-center justify-between gap-3 text-left">
               <div>
                 <div className="text-sm font-semibold">Trading waitlist</div>
-                <div className="mt-0.5 text-xs text-zinc-500">Reserve your spot before launch</div>
+                <div className="mt-0.5 text-xs text-zinc-500">Be first when in-app trading opens</div>
               </div>
               <span className="shrink-0 rounded-full bg-accent px-3.5 py-1.5 text-[13px] font-semibold text-zinc-950">
                 Join
@@ -125,6 +126,12 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
               label={wallet.connecting ? 'Connecting…' : 'Connect wallet'}
               onClick={() => wallet.connect()}
             />
+          ) : isNativeApp() ? (
+            /* Native WebView: no wallet can inject here (Phantom's injection
+               only exists in real browsers), so "Get a wallet" reads as a lie
+               to people who own one. State the truth; connect works on the
+               website today, native needs a deeplink flow (queued). */
+            <ListRow icon={<WalletIcon size={20} />} label="Wallet connect" value="Coming to iPhone" />
           ) : (
             <ListRow
               icon={<WalletIcon size={20} />}
