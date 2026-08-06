@@ -338,12 +338,12 @@ export function ListRow({ icon, label, value, onClick, muted }) {
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors active:bg-zinc-800/60"
+      className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors ${onClick ? 'active:bg-zinc-800/60' : ''}`}
     >
       <span className="text-zinc-400">{icon}</span>
       <span className={`flex-1 text-[15px] ${muted ? 'text-zinc-500' : 'text-zinc-100'}`}>{label}</span>
       {value && <span className="text-sm text-zinc-500">{value}</span>}
-      <ChevronRight size={18} className="text-zinc-600" />
+      {onClick && <ChevronRight size={18} className="text-zinc-600" />}
     </button>
   )
 }
