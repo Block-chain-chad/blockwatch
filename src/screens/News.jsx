@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import Header from '../components/Header'
 import DailyDigest from '../components/DailyDigest'
+import TokenizationNews from '../components/TokenizationNews'
 import LearnCards from '../components/LearnCards'
 import { newsFeed } from '../data/mock'
 import { useAlerts } from '../state/AlertsContext'
@@ -35,6 +36,8 @@ export default function News({ onOpenProfile, onOpenAsset }) {
           plus your alerts, and it should be ordered that way rather than
           opening with an apology for the thing that isn't here. */}
       <DailyDigest onOpenAsset={onOpenAsset} />
+
+      <TokenizationNews />
 
       <h3
         className="t-micro mt-6 border-b px-4 pb-1.5 text-zinc-500"

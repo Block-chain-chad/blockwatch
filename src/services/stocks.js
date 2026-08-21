@@ -306,42 +306,52 @@ function dedupeRankSlice(items) {
 const newsCache = new Map()
 const NEWS_TTL = 30 * 60_000
 
+/** RSS XML → [{ id, headline, source, url, at }]. Shape only; no filtering —
+ *  the two news lanes rank by different maps. Mirrors api/_rss.js, which does
+ *  the same job server-side where there is no DOMParser. */
+function parseRssXml(text) {
+  const doc = new DOMParser().parseFromString(text, 'text/xml')
+  return [...doc.querySelectorAll('item')].map((el) => {
+    const source = el.querySelector('source')?.textContent?.trim() ?? ''
+    // Google appends " - Source" to titles; drop it, the source gets its own byline.
+    const rawTitle = el.querySelector('title')?.textContent ?? ''
+    const suffix = ` - ${source}`
+    const headline =
+      source && rawTitle.toLowerCase().endsWith(suffix.toLowerCase())
+        ? rawTitle.slice(0, rawTitle.length - suffix.length).trim()
+        : rawTitle.trim()
+    const link = el.querySelector('link')?.textContent?.trim() ?? ''
+    return {
+      id: el.querySelector('guid')?.textContent || link,
+      headline,
+      source,
+      url: link,
+      at: Date.parse(el.querySelector('pubDate')?.textContent ?? '') || 0,
+    }
+  })
+}
+
+/** Shared sanity gate: a real headline, with a link, from the last week. */
+function isUsableHeadline(i) {
+  return (
+    i.url &&
+    // real sentences only — feeds occasionally leak template tokens
+    // like "META_TITLE_QUOTE" as titles
+    i.headline.includes(' ') &&
+    i.headline.length >= 15 &&
+    i.at > Date.now() - 7 * 86_400_000
+  )
+}
+
 async function fetchGoogleNews(ticker) {
   const url = IS_PROD
     ? `${API_BASE}/api/news?symbol=${encodeURIComponent(ticker)}${API_CACHE_SUFFIX}`
     : `/gnews/rss/search?q=${encodeURIComponent(`"${ticker}" stock`)}&hl=en-US&gl=US&ceid=US:en`
   const res = await fetch(url)
   if (!res.ok) throw new Error(`news ${res.status}`)
-  const doc = new DOMParser().parseFromString(await res.text(), 'text/xml')
-  const items = [...doc.querySelectorAll('item')]
-    .map((el) => {
-      const source = el.querySelector('source')?.textContent?.trim() ?? ''
-      // Google appends " - Source" to titles; drop it, the source gets its own byline.
-      const rawTitle = el.querySelector('title')?.textContent ?? ''
-      const suffix = ` - ${source}`
-      const headline = rawTitle.toLowerCase().endsWith(suffix.toLowerCase())
-        ? rawTitle.slice(0, rawTitle.length - suffix.length).trim()
-        : rawTitle.trim()
-      const link = el.querySelector('link')?.textContent?.trim() ?? ''
-      return {
-        id: el.querySelector('guid')?.textContent || link,
-        headline,
-        source,
-        url: link,
-        at: Date.parse(el.querySelector('pubDate')?.textContent ?? '') || 0,
-      }
-    })
-    .filter(
-      (i) =>
-        i.url &&
-        newsRank(i.source) > 0 &&
-        // real sentences only — feeds occasionally leak template tokens
-        // like "META_TITLE_QUOTE" as titles
-        i.headline.includes(' ') &&
-        i.headline.length >= 15 &&
-        // match the section's promise: last week's headlines
-        i.at > Date.now() - 7 * 86_400_000
-    )
+  const items = parseRssXml(await res.text()).filter(
+    (i) => isUsableHeadline(i) && newsRank(i.source) > 0
+  )
   return dedupeRankSlice(items)
 }
 
@@ -379,6 +389,107 @@ export async function getCompanyNews(ticker) {
   if (!items) items = await getFinnhubNews(ticker)
   newsCache.set(ticker, { at: Date.now(), data: items })
   return items
+}
+
+/*
+ * The tokenization beat — a SEPARATE whitelist, deliberately not an extension
+ * of NEWS_SOURCE_RANK.
+ *
+ * Measured 2026-08-20: across 50 sampled headlines on tokenization queries,
+ * ZERO came from Bloomberg/Reuters/FT/WSJ. The wires barely cover this beat;
+ * it lives in crypto trade press. So the company-news map would reject almost
+ * all of it — and conversely, adding CoinDesk to that map would start leaking
+ * crypto coverage into "Latest NVIDIA news" on asset pages. Different beat,
+ * different bar, different map.
+ *
+ * Wires still rank top so Reuters wins whenever it does show up. Everything
+ * absent scores 0 and never appears, which is what keeps exchange blogs
+ * (Kraken Blog, Bitget), issuer PR (Ondo Finance) and the SEO farms
+ * (CryptoRank, Cryptonews.net, Startup Fortune, Altcoin Buzz…) out without
+ * needing a blocklist to chase.
+ */
+const TOKEN_NEWS_SOURCE_RANK = {
+  reuters: 5,
+  bloomberg: 5,
+  'financial times': 5,
+  'the wall street journal': 5,
+  cnbc: 4,
+  axios: 4,
+  coindesk: 3,
+  'the block': 3,
+  fortune: 3,
+  decrypt: 2,
+  forkast: 2,
+  'forkast.news': 2,
+  'finance magnates': 2,
+  'crowdfund insider': 2,
+  'crypto briefing': 2,
+}
+const tokenNewsRank = (source) => TOKEN_NEWS_SOURCE_RANK[(source || '').toLowerCase()] ?? 0
+
+// Dev only: prod gets all six merged server-side in one request. Kept in sync
+// with TOPIC_QUERIES in api/news.js.
+const TOKENIZATION_QUERIES = [
+  '"tokenized stocks"',
+  '"tokenized equities"',
+  '"tokenized securities"',
+  'xStocks',
+  '"Ondo Finance"',
+  'tokenization SEC equities',
+]
+
+const TOKEN_NEWS_LIMIT = 15
+let tokenNewsCache = null
+
+async function fetchTokenizationRaw() {
+  if (IS_PROD) {
+    const res = await fetch(`${API_BASE}/api/news?topic=tokenized${API_CACHE_SUFFIX}`)
+    if (!res.ok) throw new Error(`news ${res.status}`)
+    const body = await res.json()
+    return Array.isArray(body?.items) ? body.items : []
+  }
+  // No serverless function under vite dev, so fan out here instead. A failed
+  // leg shrinks the feed rather than emptying it, same as the server.
+  const settled = await Promise.allSettled(
+    TOKENIZATION_QUERIES.map(async (q) => {
+      const res = await fetch(
+        `/gnews/rss/search?q=${encodeURIComponent(q)}&hl=en-US&gl=US&ceid=US:en`
+      )
+      if (!res.ok) throw new Error(`news ${res.status}`)
+      return parseRssXml(await res.text())
+    })
+  )
+  const ok = settled.filter((s) => s.status === 'fulfilled')
+  if (ok.length === 0) throw new Error('news unreachable')
+  return ok.flatMap((s) => s.value)
+}
+
+/**
+ * Headlines about the tokenized-equity market itself:
+ * [{ id, headline, source, url, at }], newest first, vetted sources only.
+ *
+ * Ordering differs from dedupeRankSlice on purpose. A feed is chronological —
+ * rank decides what gets IN and which copy of a story survives, not where it
+ * sits. Sorting by rank would pin last week's Reuters piece above this
+ * morning's.
+ */
+export async function getTokenizationNews() {
+  if (tokenNewsCache && Date.now() - tokenNewsCache.at < NEWS_TTL) return tokenNewsCache.data
+  const raw = await fetchTokenizationRaw()
+  const ranked = raw
+    .filter((i) => isUsableHeadline(i) && tokenNewsRank(i.source) > 0)
+    .sort((a, b) => tokenNewsRank(b.source) - tokenNewsRank(a.source) || b.at - a.at)
+  const seen = new Set()
+  const deduped = []
+  for (const i of ranked) {
+    const key = i.headline.toLowerCase().trim()
+    if (seen.has(key)) continue
+    seen.add(key)
+    deduped.push(i)
+  }
+  const data = deduped.sort((a, b) => b.at - a.at).slice(0, TOKEN_NEWS_LIMIT)
+  tokenNewsCache = { at: Date.now(), data }
+  return data
 }
 
 export function loadStockCache() {
