@@ -15,7 +15,7 @@ function ago(ms) {
  * app polls on its own.
  */
 export default function UpdatedAgo({ className = '' }) {
-  const { lastFetchAt, status, marketOpen, refresh } = usePrices()
+  const { lastFetchAt, status, session, refresh } = usePrices()
   const [, setTick] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -39,7 +39,15 @@ export default function UpdatedAgo({ className = '' }) {
     )
   }
 
-  const closedNote = marketOpen ? '' : ' · US market closed — stock prices at last close'
+  // Pre and post get their own wording: "market closed" is true but misleading
+  // while the stock is actually trading and our quote is not following it.
+  const SESSION_NOTE = {
+    regular: '',
+    pre: ' · Pre-market — stock prices still at last close',
+    post: ' · After hours — stock prices at the 4pm close',
+    closed: ' · US market closed — stock prices at last close',
+  }
+  const closedNote = SESSION_NOTE[session] ?? ''
   const label = refreshing
     ? 'Refreshing…'
     : status === 'stale'

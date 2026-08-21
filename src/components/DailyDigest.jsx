@@ -16,12 +16,25 @@ import AssetLogo from './AssetLogo'
  * asset's own row, where it is data rather than an assertion.
  */
 export default function DailyDigest({ onOpenAsset }) {
-  const { assets } = usePrices()
+  const { assets, session } = usePrices()
   const liquid = assets.filter((a) => !isThinlyTraded(a))
+
+  /*
+   * Third gate, on top of liquidity and plausibility: the session.
+   *
+   * In pre/post the share is trading and our quote is not (Finnhub /quote is
+   * regular-session only), so a stock that jumps on earnings renders here as a
+   * token premium that does not exist. We cannot separate that from a real
+   * gap, and a superlative is a claim — so the bound tightens from 20% to 5%
+   * in those windows, which drops the phantom spikes without pretending the
+   * ordinary gaps are suspect. The raw figure still shows on the asset's own
+   * row, where it is data rather than an assertion. See lib/market.js.
+   */
+  const bound = session === 'pre' || session === 'post' ? 5 : 20
 
   const withPremium = liquid
     .map((a) => ({ asset: a, p: premiumPct(a) }))
-    .filter((x) => isPlausiblePct(x.p, 20))
+    .filter((x) => isPlausiblePct(x.p, bound))
   const traded = liquid.filter((a) => a.volume24h != null)
   if (withPremium.length === 0) return null
 

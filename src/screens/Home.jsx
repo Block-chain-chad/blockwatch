@@ -18,12 +18,33 @@ import {
 } from '../components/shared'
 
 /*
- * Overnight session strip: while the US market sleeps, tokens keep trading —
- * the biggest drift vs last close is the story only this app can tell.
- * Hidden entirely during market hours.
+ * Session strip: says which of the four US sessions we are in and, crucially,
+ * whether the gap can be trusted right now.
+ *
+ * Four states, not two. Pre and post used to fall into "overnight", which was
+ * wrong in the one way that matters: overnight the stock genuinely is not
+ * moving, so comparing a live token against the last close is fair. Between
+ * 04:00-09:30 and 16:00-20:00 the stock IS moving and our feed cannot see it
+ * (Finnhub /quote is regular-session only), so the same comparison invents a
+ * premium — loudest right after an earnings release, which is exactly when
+ * someone is looking. See lib/market.js.
  */
+const SESSION_DOT = {
+  regular: 'var(--color-session-open)',
+  pre: 'var(--color-session-overnight)',
+  post: 'var(--color-session-overnight)',
+  closed: 'var(--color-session-closed)',
+}
+
+const SESSION_NOTE = {
+  regular: 'US market open — both sides live, so the gap is a real spread right now.',
+  pre: 'Pre-market — the stock is trading again, but our price is still the last close, so gaps read wider than they are.',
+  post: 'After hours — the stock is still trading, but our price is the 4pm close, so gaps read wider than they are.',
+  closed: 'Overnight — the market is shut, tokens still trade.',
+}
+
 function SessionLine({ onOpenAsset }) {
-  const { assets, marketOpen } = usePrices()
+  const { assets, session } = usePrices()
 
   // A rule with a state dot, not a card. This was an indigo gradient panel
   // with a moon glyph — the heaviest object above the list, and a gradient
@@ -32,30 +53,35 @@ function SessionLine({ onOpenAsset }) {
   const dot = (
     <span
       className="mt-[5px] size-1.5 shrink-0 rounded-full"
-      style={{ background: marketOpen ? 'var(--color-session-open)' : 'var(--color-session-overnight)' }}
+      style={{ background: SESSION_DOT[session] }}
     />
   )
 
-  if (marketOpen) {
+  if (session === 'regular') {
     return (
       <div
         className="mx-4 mt-3.5 flex items-start gap-2 border-b pb-2.5"
         style={{ borderColor: 'var(--border-subtle)' }}
       >
         {dot}
-        <span className="t-caption text-zinc-400">
-          US market open — both sides live, so the gap is a real spread right now.
-        </span>
+        <span className="t-caption text-zinc-400">{SESSION_NOTE.regular}</span>
       </div>
     )
   }
 
   // Sanity band: no real tokenized stock drifts 20% overnight — bigger gaps
   // are stale prints on illiquid tokens, not a story worth telling.
+  //
+  // In pre/post the bound tightens to 5%, because a third source of big
+  // numbers appears: the stock itself moving while our quote sits at the
+  // close. We cannot tell that apart from a genuine premium, and naming a
+  // "widest gap" is a claim. The raw figure still shows on the asset's own
+  // row, where it is data rather than an assertion.
+  const bound = session === 'closed' ? 20 : 5
   const candidates = assets
     .filter((a) => !isThinlyTraded(a))
     .map((a) => ({ asset: a, p: premiumPct(a) }))
-    .filter((x) => x.p != null && Math.abs(x.p) >= 0.15 && Math.abs(x.p) <= 20)
+    .filter((x) => x.p != null && Math.abs(x.p) >= 0.15 && Math.abs(x.p) <= bound)
   const top = candidates.length
     ? candidates.reduce((m, x) => (Math.abs(x.p) > Math.abs(m.p) ? x : m))
     : null
@@ -66,9 +92,7 @@ function SessionLine({ onOpenAsset }) {
       style={{ borderColor: 'var(--border-subtle)' }}
     >
       {dot}
-      <span className="t-caption flex-1 text-zinc-400">
-        Overnight — the market is shut, tokens still trade.
-      </span>
+      <span className="t-caption flex-1 text-zinc-400">{SESSION_NOTE[session]}</span>
       {top && (
         <button onClick={() => onOpenAsset(top.asset)} className="t-caption shrink-0 text-right">
           <span className="text-zinc-500">Widest gap </span>

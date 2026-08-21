@@ -74,7 +74,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
     })
   }
   const asset = useAsset(assetId)
-  const { marketOpen, assets, lastFetchAt } = usePrices()
+  const { marketOpen, session, assets, lastFetchAt } = usePrices()
 
   // This asset + its cross-issuer siblings (same underlying) need live token
   // prices and the underlying's quote — long-tail assets aren't polled
@@ -204,13 +204,20 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
           // stale and shut. One global "updated 5m ago" would hide exactly the
           // caveat that makes the gap readable.
           const tokenAge = lastFetchAt ? timeAgo(lastFetchAt) : '—'
+          // In pre/post the share is trading and this quote is not following
+          // it, so "at last close" alone would understate how stale it is.
+          const STALE_LABEL = {
+            pre: 'at last close · pre-market',
+            post: 'at 4pm close · after hours',
+            closed: 'at last close',
+          }
           const stockAge = !asset.underlying
             ? null
             : marketOpen
               ? lastFetchAt
                 ? `${timeAgo(lastFetchAt)} · live`
                 : '—'
-              : 'at last close'
+              : (STALE_LABEL[session] ?? 'at last close')
 
           return (
             <div

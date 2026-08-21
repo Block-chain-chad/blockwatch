@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { ASSETS, BY_ID, CORE_IDS } from '../data/universe'
 import { mergeAssets } from '../lib/prices'
-import { isUsMarketOpen } from '../lib/market'
+import { isUsMarketOpen, getMarketSession } from '../lib/market'
 import { fetchTokenMarkets, loadPriceCache, savePriceCache, POLL_MS } from '../services/coingecko'
 import { fetchFastPrices, FAST_POLL_MS } from '../services/jupiter'
 import {
@@ -379,6 +379,10 @@ export function PricesProvider({ children }) {
       status: tokenState.status,
       stocksAt: stockState.at,
       marketOpen: isUsMarketOpen(),
+      // 'pre' | 'regular' | 'post' | 'closed'. marketOpen stays the boolean
+      // most callers want; session is for the surfaces that must distinguish
+      // "shut overnight" from "trading, but our quote is the 4pm close".
+      session: getMarketSession(),
       refresh: () => {
         // Debounced: mashing tap-to-refresh must not stack API bursts.
         if (Date.now() - lastRefreshRef.current < 5_000) return
