@@ -382,6 +382,16 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
             {asset.ticker} token
           </button>
         </div>
+        {/* Says the chips are tappable in words. Making them look like
+            controls was necessary but not sufficient — a first-time reader
+            still has to guess what soloing a line is FOR, so the line says
+            that too. Only shown when there are actually two lines to choose
+            between; with no underlying there is nothing to hide. */}
+        {asset.underlying && chart.stock.length >= 2 && (
+          <p className="t-caption pt-1.5 text-center text-zinc-600">
+            Tap either to hide that line and read the other on its own.
+          </p>
+        )}
       </div>
 
       {!chart.loading && !chart.error && <PremiumChart premium={chart.premium} />}
