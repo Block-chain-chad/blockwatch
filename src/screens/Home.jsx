@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Header from '../components/Header'
 import UpdatedAgo from '../components/UpdatedAgo'
 import OnboardingTip from '../components/OnboardingTip'
+import TreasuryYields from '../components/TreasuryYields'
 import { usePrices, useAssetSubscription } from '../state/PricesContext'
 import { useFolders } from '../state/FoldersContext'
 import { useSparklines } from '../hooks/useSparklines'
@@ -135,6 +136,13 @@ export default function Home({ onOpenProfile, onOpenAsset, onOpenSearch }) {
       <SessionLine onOpenAsset={onOpenAsset} />
 
       <FilterChips value={filter} onChange={setFilter} />
+
+      {/* Only under Bonds. The tokenized bond products are wrappers around
+          these yields, so the curve is the context that makes those three rows
+          mean something — and two of them have no underlying, so they cannot
+          show a gap and the filter otherwise reads as broken. Above the column
+          header because it is a different table, not part of the asset list. */}
+      {filter === 'bond' && <TreasuryYields />}
 
       {/* Column labels, printed once, replacing the per-row STOCK/TOKEN pairs
           and the dismissible card that used to explain the badge. */}

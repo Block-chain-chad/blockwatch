@@ -26,6 +26,12 @@ export const API_BASE = import.meta.env.VITE_API_BASE ?? ''
 // api/_cors.js. Keep the two in sync.
 export const API_CACHE_SUFFIX = isNativeApp() ? '&c=app' : ''
 
+// Same marker for endpoints that take no other query params (/api/rates), so
+// the lane opens the query string instead of continuing one. Derived from the
+// constant above rather than repeating the literal, which already has to stay
+// in sync with APP_LANE_PARAM server-side.
+export const API_CACHE_QUERY = API_CACHE_SUFFIX ? `?${API_CACHE_SUFFIX.slice(1)}` : ''
+
 // Absolute URL of the real website. Use this for links that must open OUTSIDE
 // the app (privacy policy, marketing pages): inside the native WebView a
 // relative "/privacy.html" resolves against capacitor://localhost, which the

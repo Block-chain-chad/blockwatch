@@ -25,6 +25,13 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/gnews/, ''),
       },
+      // FRED sends no CORS headers, and there is no serverless function under
+      // vite dev, so the yield curve comes through here in development.
+      '/fred': {
+        target: 'https://fred.stlouisfed.org',
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/fred/, ''),
+      },
     },
   },
 })
