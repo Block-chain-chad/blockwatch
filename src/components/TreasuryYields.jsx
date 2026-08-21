@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getTreasuryYields, MATURITIES } from '../services/rates'
+import { twosTensSpreadBp } from '../lib/rates'
 import { changeColor } from '../lib/format'
 
 /*
@@ -41,6 +42,7 @@ export default function TreasuryYields() {
   if (!data?.series) return null
   const rows = MATURITIES.filter((m) => data.series[m.id])
   if (rows.length === 0) return null
+  const spread = twosTensSpreadBp(data.series)
 
   return (
     <div className="pt-2">
@@ -71,9 +73,31 @@ export default function TreasuryYields() {
           </div>
         )
       })}
+      {/* The derived number, given the same treatment the premium gets on an
+          asset row: it is not printed anywhere on the curve, and it is the one
+          bond people actually watch. Quoted in bp to match the digest's issuer
+          gap — and there is now a Learn card explaining the unit.
+          "Inverted" is stated as the shape of the curve, which is what the
+          sign literally means. What that implies is not ours to say. */}
+      {spread != null && (
+        <div
+          className="flex items-baseline justify-between border-b px-4 py-2.5"
+          style={{ borderColor: 'var(--border-subtle)' }}
+        >
+          <span className="t-label text-zinc-300">
+            2s10s spread
+            {spread < 0 && <span className="t-caption ml-1.5 text-zinc-500">inverted</span>}
+          </span>
+          <span className="num t-label text-zinc-100">
+            {spread > 0 ? '+' : spread < 0 ? '−' : ''}
+            {Math.abs(spread)}bp
+          </span>
+        </div>
+      )}
+
       <p className="t-caption px-4 pt-2 text-zinc-600">
         Daily close, {data.asOf} · source US Treasury via FRED. Change is against the previous
-        reading.
+        reading. The spread is the 10-year yield minus the 2-year.
       </p>
     </div>
   )
