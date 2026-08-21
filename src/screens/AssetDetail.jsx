@@ -335,25 +335,51 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
           showToken={visibleLines.token}
           showStock={visibleLines.stock}
         />
-        <div className="flex items-center justify-center gap-4 pt-2 text-xs text-zinc-500">
+        {/* These are controls, not a caption, and they used to read as one:
+            swatch + label with no persistent affordance, press feedback that
+            only appeared once you were already pressing, and rounded-full —
+            which this system reserves for STATUS. A first-time user had no
+            reason to think the lines could be soloed at all.
+            Now they borrow FilterChips' language exactly (squared, active is a
+            bordered surface, same padding), so they read as the same kind of
+            thing. Off-state mutes the swatch rather than the whole chip:
+            opacity-40 on the button said "disabled", not "you turned this
+            off". */}
+        <div className="flex items-center justify-center gap-2 pt-2">
           {asset.underlying && chart.stock.length >= 2 && (
             <button
               onClick={() => toggleLine('stock')}
-              className={`flex items-center gap-1.5 rounded-full px-2 py-1 transition-all active:bg-zinc-900 ${
-                visibleLines.stock ? '' : 'opacity-40'
+              aria-pressed={visibleLines.stock}
+              className={`t-label flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
+                visibleLines.stock ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 active:bg-zinc-900'
               }`}
+              style={
+                visibleLines.stock
+                  ? { boxShadow: 'inset 0 0 0 1px var(--border-strong)' }
+                  : undefined
+              }
             >
-              <span className="h-0.5 w-4 rounded bg-zinc-500" /> {asset.underlying} stock
-              {chart.stockIsFlat && <span className="text-zinc-600">(last close)</span>}
+              <span
+                className={`h-0.5 w-4 rounded bg-zinc-400 ${visibleLines.stock ? '' : 'opacity-40'}`}
+              />
+              {asset.underlying} stock
+              {chart.stockIsFlat && <span className="text-zinc-500">(last close)</span>}
             </button>
           )}
           <button
             onClick={() => toggleLine('token')}
-            className={`flex items-center gap-1.5 rounded-full px-2 py-1 transition-all active:bg-zinc-900 ${
-              visibleLines.token ? '' : 'opacity-40'
+            aria-pressed={visibleLines.token}
+            className={`t-label flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
+              visibleLines.token ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 active:bg-zinc-900'
             }`}
+            style={
+              visibleLines.token ? { boxShadow: 'inset 0 0 0 1px var(--border-strong)' } : undefined
+            }
           >
-            <span className="h-0.5 w-4 rounded bg-accent" /> {asset.ticker} token
+            <span
+              className={`h-0.5 w-4 rounded bg-accent ${visibleLines.token ? '' : 'opacity-40'}`}
+            />
+            {asset.ticker} token
           </button>
         </div>
       </div>

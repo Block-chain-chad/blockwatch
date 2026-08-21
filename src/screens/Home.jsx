@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Header from '../components/Header'
 import UpdatedAgo from '../components/UpdatedAgo'
+import OnboardingTip from '../components/OnboardingTip'
 import { usePrices, useAssetSubscription } from '../state/PricesContext'
 import { useFolders } from '../state/FoldersContext'
 import { useSparklines } from '../hooks/useSparklines'
@@ -144,6 +145,11 @@ export default function Home({ onOpenProfile, onOpenAsset, onOpenSearch }) {
         <span className="t-micro text-zinc-500">Asset</span>
         <span className="t-micro text-zinc-500">Gap · token / stock</span>
       </div>
+
+      {/* Sits under the header it completes: the header names the column, the
+          tip says what the colours mean and that a row opens both price lines.
+          Dismiss-once, so this costs first-run height only. */}
+      <OnboardingTip />
 
       <div className="lg:hidden">
         {visible.map((a) => (

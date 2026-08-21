@@ -5,10 +5,22 @@ import { CloseIcon } from './Icons'
 const FLAG = 'bw.tip.premium.v1'
 
 /*
- * The app's single onboarding tooltip (brief: one contextual tip max, shown
- * once, at the moment it's relevant). It explains the premium pill — the one
- * concept a stock person won't already know — and appears only after real
- * pills are on screen.
+ * The app's single onboarding tip (brief: one contextual tip max, shown once,
+ * at the moment it's relevant). It explains the premium pill — the one concept
+ * a stock person won't already know — and appears only once real pills are on
+ * screen.
+ *
+ * It was dropped in "Redesign round one", where the per-row STOCK/TOKEN pairs
+ * and this card were both replaced by one printed column header. That header
+ * fixed the LABEL — you can see the column is a gap — but not the MEANING:
+ * what the colours say, and that a row opens both price lines charted
+ * together. A first-time tester on 2026-08-20 got stuck exactly there, so the
+ * tip is back, with the objection that removed it taken seriously:
+ *
+ *   - It is no longer a card. The redesign banned nested surfaces ("not a
+ *     single shadow or nested card here"), so this is a hairline caption row
+ *     like the session strip above it — about a third of the old height.
+ *   - It is still dismiss-once, so the cost lands on the first run only.
  */
 export default function OnboardingTip() {
   const { status } = usePrices()
@@ -32,8 +44,12 @@ export default function OnboardingTip() {
   }
 
   return (
-    <div className="mx-4 mb-1 mt-2 flex items-start gap-3 rounded-2xl bg-zinc-900 p-3.5 ring-1 ring-accent/25">
-      <p className="flex-1 text-xs leading-relaxed text-zinc-400">
+    <div
+      className="mx-4 flex items-start gap-2 border-b pb-2.5 pt-2.5"
+      style={{ borderColor: 'var(--border-subtle)' }}
+    >
+      <span className="mt-[5px] size-1.5 shrink-0 rounded-full bg-accent" />
+      <p className="t-caption flex-1 text-zinc-400">
         The pill on each row is the token's gap vs. the real stock —{' '}
         <span className="text-gain">green</span> trades above it,{' '}
         <span className="text-loss">red</span> below, gray is 1:1. Tap any row to see both
@@ -42,9 +58,9 @@ export default function OnboardingTip() {
       <button
         onClick={dismiss}
         aria-label="Dismiss tip"
-        className="mt-0.5 shrink-0 text-zinc-500 transition-colors active:text-zinc-300"
+        className="-m-2 shrink-0 p-2 text-zinc-500 transition-colors active:text-zinc-300"
       >
-        <CloseIcon size={16} />
+        <CloseIcon size={14} />
       </button>
     </div>
   )
