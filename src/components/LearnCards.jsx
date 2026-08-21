@@ -40,6 +40,33 @@ const LESSONS = [
       "When an asset has a sibling from the other issuer, its page shows an 'Also tokenized by' section so you can compare and pick the cheaper one.",
     ],
   },
+  {
+    id: 'basispoints',
+    title: "What's a basis point?",
+    body: [
+      'A basis point is one hundredth of a percent. A hundred of them make 1%, so a gap of 62bp is 0.62% — a little over half a percent.',
+      "Gaps this small get their own unit because most of them are small. Writing '0.62%' and '0.07%' next to each other makes them look alike; 62bp and 7bp do not. Once you are used to it, the number is faster to read, which is why the finance world quotes spreads this way.",
+      "You'll see it on the daily digest, where the widest gap between two issuers of the same company is quoted in bp.",
+    ],
+  },
+  {
+    id: 'issuerrisk',
+    title: 'What if the issuer goes under?',
+    body: [
+      "This is the honest risk of a tokenized stock, and it is different from the risk of the share itself. You own a claim on a share held by someone else — so you are exposed to that someone else, not just to the company's stock price.",
+      'The shares sit with a licensed custodian, held separately from the issuer\'s own money, which is what is meant to survive the issuer failing. That structure is the protection; it is not a government guarantee, and it is not the same as holding the share in a brokerage account in your own name.',
+      'What it does not protect against: the token drifting from the share price, a chain or exchange you cannot reach, or losing your own wallet keys. Each asset page lists its issuer under Details, so you can see who you are trusting.',
+    ],
+  },
+  {
+    id: 'custody',
+    title: 'Who actually holds my money?',
+    body: [
+      'Not us. BlockWatch is a tracker — it reads public prices and shows you the gap. It never takes custody of your funds, never moves them, and cannot trade on your behalf.',
+      "When you buy, that happens somewhere else. Tapping through to trade sends you out to Jupiter, where the swap settles on-chain from your own wallet. Your keys stay with you the whole time, which is what 'non-custodial' means: nobody in the middle can freeze, lend out or lose what you hold.",
+      'The flip side of that is real: if you lose your wallet keys, no one — including us — can recover them for you.',
+    ],
+  },
 ]
 
 function LearnSheet({ lesson, onClose }) {
