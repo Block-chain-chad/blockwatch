@@ -47,6 +47,7 @@ const STOCK_TTL = 5 * 60_000
 const poolCache = new Map() // assetKey -> { at, data: { network, pool } | null }
 const poolInflight = new Map() // assetKey -> Promise
 const candleCache = new Map() // `${assetKey}|${timeframeId}` -> { at, data }
+const candleInflight = new Map() // same key -> Promise, while a fetch is out
 const stockCache = new Map() // `${symbol}|${interval}|${range}` -> { at, data }
 
 const assetKey = (asset) => asset?.id ?? asset?.ticker ?? ''
@@ -112,30 +113,38 @@ export async function getTokenCandles(asset, timeframeId) {
   const key = `${assetKey(asset)}|${timeframe.id}`
   const hit = candleCache.get(key)
   if (hit && Date.now() - hit.at < timeframe.ttlMs) return hit.data
+  // Two mounts in quick succession (React's dev double-mount, a remount
+  // after an error boundary) must not be two upstream calls for one series.
+  if (candleInflight.has(key)) return candleInflight.get(key)
 
-  const resolved = await resolvePool(asset)
-  if (!resolved) return null
-  const { network, pool } = resolved
-
-  try {
-    const path = ohlcvPath(network, pool.address, timeframe.timeframe, timeframe.aggregate, timeframe.limit)
-    let candles
-    if (IS_PROD) {
-      const body = await fetchJson(
-        `${API_BASE}/api/candles?op=ohlcv&network=${network}&pool=${encodeURIComponent(pool.address)}` +
-          `&timeframe=${timeframe.timeframe}&aggregate=${timeframe.aggregate}&limit=${timeframe.limit}${API_CACHE_SUFFIX}`
-      )
-      candles = Array.isArray(body?.candles) ? body.candles : []
-    } else {
-      candles = normalizeOhlcv(await fetchJson(`/gt${GT_API_PREFIX}${path}`))
+  const promise = (async () => {
+    try {
+      const resolved = await resolvePool(asset)
+      if (!resolved) return null
+      const { network, pool } = resolved
+      const path = ohlcvPath(network, pool.address, timeframe.timeframe, timeframe.aggregate, timeframe.limit)
+      let candles
+      if (IS_PROD) {
+        const body = await fetchJson(
+          `${API_BASE}/api/candles?op=ohlcv&network=${network}&pool=${encodeURIComponent(pool.address)}` +
+            `&timeframe=${timeframe.timeframe}&aggregate=${timeframe.aggregate}&limit=${timeframe.limit}${API_CACHE_SUFFIX}`
+        )
+        candles = Array.isArray(body?.candles) ? body.candles : []
+      } else {
+        candles = normalizeOhlcv(await fetchJson(`/gt${GT_API_PREFIX}${path}`))
+      }
+      if (candles.length === 0) return null
+      const data = { network, pool, timeframe: timeframe.id, candles }
+      candleCache.set(key, { at: Date.now(), data })
+      return data
+    } catch {
+      return null
+    } finally {
+      candleInflight.delete(key)
     }
-    if (candles.length === 0) return null
-    const data = { network, pool, timeframe: timeframe.id, candles }
-    candleCache.set(key, { at: Date.now(), data })
-    return data
-  } catch {
-    return null
-  }
+  })()
+  candleInflight.set(key, promise)
+  return promise
 }
 
 /**

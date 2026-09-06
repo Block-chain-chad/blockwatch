@@ -24,13 +24,28 @@ const MAIN_HEIGHT = 220
 const RSI_HEIGHT = 80
 
 let colorCtx = null
-/** A CSS colour in a form the library parses, or the fallback if the browser cannot. */
+const SENTINEL = '#010203'
+/**
+ * A CSS colour as rgba(), or the fallback if the browser cannot parse it.
+ * Reading `fillStyle` back is not enough: Chrome serialises an oklch value
+ * as oklch again, which is the form the library rejects. Painting one pixel
+ * and reading it back yields sRGB whatever the input syntax was.
+ */
 function resolveColor(value, fallback) {
   try {
-    colorCtx ??= document.createElement('canvas').getContext('2d')
-    colorCtx.fillStyle = '#010203' // sentinel: an unparseable value leaves it untouched
+    if (!colorCtx) {
+      const canvas = document.createElement('canvas')
+      canvas.width = 1
+      canvas.height = 1
+      colorCtx = canvas.getContext('2d', { willReadFrequently: true })
+    }
+    colorCtx.fillStyle = SENTINEL // an unparseable value leaves this untouched
     colorCtx.fillStyle = value
-    return colorCtx.fillStyle === '#010203' ? fallback : colorCtx.fillStyle
+    if (colorCtx.fillStyle === SENTINEL) return fallback
+    colorCtx.clearRect(0, 0, 1, 1)
+    colorCtx.fillRect(0, 0, 1, 1)
+    const [r, g, b, a] = colorCtx.getImageData(0, 0, 1, 1).data
+    return `rgba(${r}, ${g}, ${b}, ${(a / 255).toFixed(3)})`
   } catch {
     return fallback
   }
