@@ -130,6 +130,11 @@ function whenLabel(time, intraday) {
  *                 omitted, every data change refits, as the phone expects
  *   ref         — { reset, scrollToLatest, setLog, isAuto, setAuto } for the
  *                 toolbar's Auto / Latest / Reset / Log buttons
+ *   hideReadout — drop the OHLC caption row above the chart (the desktop
+ *                 draws its legend on the chart instead)
+ *   height      — the main pane's height, a number of pixels or any CSS
+ *                 length (the desktop passes a clamp()); 220 by default
+ *   rsiHeight   — the RSI pane's height in pixels; 80 by default
  */
 export default function CandleChart({
   candles,
@@ -140,6 +145,9 @@ export default function CandleChart({
   onCrosshair,
   resetKey,
   ref,
+  hideReadout = false,
+  height: mainHeight = MAIN_HEIGHT,
+  rsiHeight = RSI_HEIGHT,
 }) {
   const hostRef = useRef(null)
   const chartRef = useRef(null) // { chart, candle, volume, sma20, ema50, rsi14, … }
@@ -337,7 +345,7 @@ export default function CandleChart({
         })
       }
       rsi.setData(refs.lines?.rsi14 ?? [])
-      refs.chart.panes()[1]?.setHeight(RSI_HEIGHT)
+      refs.chart.panes()[1]?.setHeight(rsiHeight)
       refs.rsi14 = rsi
     } else if (!wantRsi && refs.rsi14) {
       refs.chart.removeSeries(refs.rsi14)
@@ -345,9 +353,17 @@ export default function CandleChart({
       // Removing the last series leaves an empty pane behind in some builds.
       if (refs.chart.panes().length > 1) refs.chart.removePane(1)
     }
-  }, [ready, indicators.sma20, indicators.ema50, indicators.rsi14])
+  }, [ready, indicators.sma20, indicators.ema50, indicators.rsi14, rsiHeight])
 
-  const height = MAIN_HEIGHT + (indicators.rsi14 ? RSI_HEIGHT : 0)
+  // A number adds up in pixels; a CSS length (the desktop's clamp()) adds up
+  // in calc(). With no RSI pane the main height stands alone either way.
+  const rsiExtra = indicators.rsi14 ? rsiHeight : 0
+  const height =
+    typeof mainHeight === 'number'
+      ? mainHeight + rsiExtra
+      : rsiExtra
+        ? `calc(${mainHeight} + ${rsiExtra}px)`
+        : mainHeight
 
   const last = candles?.length ? candles[candles.length - 1] : null
   const shown = hover ?? last
@@ -358,6 +374,7 @@ export default function CandleChart({
     <div>
       {/* OHLC readout: the bar under the finger, or the latest. Same job as
           the scrub readout on the Gap chart, in a caption's voice. */}
+      {!hideReadout && (
       <div className="num t-caption flex flex-wrap items-baseline gap-x-3 px-1 text-zinc-500">
         {shown ? (
           <>
@@ -379,7 +396,8 @@ export default function CandleChart({
           <span>{EM_DASH}</span>
         )}
       </div>
-      <div className="relative mt-1.5" style={{ height }}>
+      )}
+      <div className={hideReadout ? 'relative' : 'relative mt-1.5'} style={{ height }}>
         {!ready && <div className="absolute inset-0 animate-pulse rounded-2xl bg-zinc-900" />}
         <div ref={hostRef} className="h-full w-full" />
       </div>

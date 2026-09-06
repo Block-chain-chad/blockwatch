@@ -1,26 +1,64 @@
-import { useEffect } from 'react'
-import { useAsset } from '../../state/PricesContext'
+import { Component, Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react'
+import { track } from '../../services/analytics'
 import { recordView } from '../../lib/recentViews'
+import { usePrices } from '../../state/PricesContext'
+import { useAssetWorkspace } from '../../hooks/useAssetWorkspace'
+import { useLocalState } from '../../hooks/useLocalState'
+import { DEFAULT_CHART_SETTINGS, normalizeChartSettings, secondsToBarClose, formatCountdown, legendChange } from '../../lib/chartSettings'
+import { chartTitle, DEFAULT_TITLE } from '../../lib/pageTitle'
+import { legendStatus, delayTooltip, isStockDelayed } from '../../lib/provenance'
+import { premiumPct } from '../../lib/prices'
+import { candleSeconds } from '../../lib/candles'
+import { coerceTimeframe, isIntraday, networkName, timeframeLabel } from '../../lib/candleSeries'
+import { formatPrice, formatPct, formatCompact, changeColor } from '../../lib/format'
+import DualLineChart from '../DualLineChart'
+import PremiumChart from '../PremiumChart'
+import SetAlertSheet from '../../overlays/SetAlertSheet'
+import ChartToolbar from './ChartToolbar'
+import IntervalPrompt from './IntervalPrompt'
+import DetailTabs from './DetailTabs'
 
 /*
- * PLACEHOLDER. The chart workspace (spec §6.9 — toolbar, the Gap / Candles
- * chart, the gap-history pane, the tabs under the chart, the legend, the tab
- * title) lands in the next stream and replaces this file whole. This version
- * exists so the shell compiles and can be looked at: it shows the selected
- * asset's ticker and the empty state, and feeds "Recently viewed" the way
- * the phone asset screen does.
+ * The center of the desktop (spec §6.9): the chart toolbar, the Gap chart
+ * over the gap-history pane (or the Candles chart), the legend on the
+ * chart, and the four tabs under it. TradingView's rule for settings
+ * (A15): mode, range, side, timeframe, indicators and the log scale belong
+ * to the chart slot, live in one localStorage object (bw.desktop.chart.v1),
+ * and do NOT reset when the asset changes. The data does.
  *
- * Props the real one takes: assetId, onSelectAsset, onScrub (the shell's
- * setter — a Gap-chart scrub drives the right column's gap panel), searchRef
- * (the legend's ticker button focuses the symbol search).
+ * The shell hands in `onScrub` (a Gap-chart scrub drives the right column's
+ * gap panel), `searchRef` (the legend's ticker focuses the symbol search)
+ * and `actionsRef`, which this component fills with what the keyboard map
+ * needs: the interval prompt, Alt+R / Alt+L, `/`, Alt+A. The tab title is
+ * the quote (A21) while this is mounted; never on phones, which never mount
+ * this file.
  */
-export default function ChartWorkspace({ assetId }) {
-  const asset = useAsset(assetId)
+const CandlesPanel = lazy(() => import('../CandlesPanel'))
 
-  useEffect(() => {
-    if (assetId) recordView(assetId)
-  }, [assetId])
+/* If that chunk cannot be fetched, the mode renders one caption line rather
+   than throwing to the app-level boundary (same as the phone screen). */
+class CandlesBoundary extends Component {
+  state = { failed: false }
+  static getDerivedStateFromError() {
+    return { failed: true }
+  }
+  componentDidCatch(error, info) {
+    console.error('Candles crashed:', error, info?.componentStack)
+    window.__bwReportError?.(error, info?.componentStack)
+  }
+  render() {
+    if (this.state.failed) {
+      return <p className="t-caption mt-3 px-4 text-zinc-600">Candles could not load right now.</p>
+    }
+    return this.props.children
+  }
+}
 
+const GAP_HEIGHT = 'clamp(240px, 38vh, 420px)'
+const CANDLES_HEIGHT = 'clamp(280px, 42vh, 480px)'
+const CANDLES_SKELETON = <div className="mx-3 mt-3 animate-pulse rounded-2xl bg-zinc-900" style={{ height: CANDLES_HEIGHT }} />
+
+export default function ChartWorkspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef }) {
   if (!assetId) {
     return (
       <div className="flex h-full items-center justify-center px-6">
@@ -30,10 +68,446 @@ export default function ChartWorkspace({ assetId }) {
       </div>
     )
   }
+  return (
+    <Workspace
+      assetId={assetId}
+      onSelectAsset={onSelectAsset}
+      onScrub={onScrub}
+      searchRef={searchRef}
+      actionsRef={actionsRef}
+    />
+  )
+}
+
+/** One time label for the legend: clock time on intraday bars, a date on daily ones. */
+function whenLabel(time, intraday) {
+  if (!Number.isFinite(time)) return ''
+  return new Date(time * 1000).toLocaleString(
+    'en-US',
+    intraday
+      ? { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }
+      : { month: 'short', day: 'numeric', year: 'numeric' }
+  )
+}
+
+function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef }) {
+  const [saved, setSaved] = useLocalState('bw.desktop.chart.v1', DEFAULT_CHART_SETTINGS)
+  const settings = useMemo(() => normalizeChartSettings(saved), [saved])
+  const { mode, range, side, timeframe, indicators, log } = settings
+  const patch = (p) => setSaved((s) => ({ ...normalizeChartSettings(s), ...p }))
+
+  const [chartRetry, setChartRetry] = useState(0)
+  const [visibleLines, setVisibleLines] = useState({ token: true, stock: true })
+  const [scrubT, setScrubT] = useState(null)
+  const [hoverBar, setHoverBar] = useState(null)
+  const [candleData, setCandleData] = useState(null)
+  const [auto, setAuto] = useState(true)
+  const [prompt, setPrompt] = useState(null) // { prefill } | null
+  const [alertOpen, setAlertOpen] = useState(false)
+  const [now, setNow] = useState(() => Date.now())
+  const chartRef = useRef(null)
+  const { stocksAt } = usePrices()
+
+  const {
+    asset,
+    staticAsset,
+    session,
+    chart,
+    info,
+    spread,
+    siblings,
+    hasTokenStats,
+    hasStockStats,
+    bothSides,
+  } = useAssetWorkspace(assetId, range, chartRetry)
+
+  // Feed the search's "Recently viewed" shelf, as the phone screen does.
+  useEffect(() => {
+    recordView(assetId)
+  }, [assetId])
+
+  // A new asset or range invalidates the old pointer position.
+  useEffect(() => {
+    setScrubT(null)
+    setHoverBar(null)
+  }, [assetId, range, mode, side, timeframe])
+
+  // The tab title is the quote — or, in Gap mode, the gap (A21).
+  const gapPct = asset ? premiumPct(asset) : null
+  useEffect(() => {
+    if (!asset) return
+    document.title = chartTitle({
+      ticker: asset.ticker,
+      price: asset.tokenPrice,
+      changePct: asset.dayChange,
+      mode,
+      gapPct,
+    })
+  }, [asset?.ticker, asset?.tokenPrice, asset?.dayChange, mode, gapPct]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => {
+    document.title = DEFAULT_TITLE
+  }, [])
+
+  // Countdown to bar close (A13): token side only, ticking once a second
+  // while there is a bar to count from. The stock leg is delayed; a countdown
+  // there would lie.
+  const lastBar = candleData?.candles?.length ? candleData.candles[candleData.candles.length - 1] : null
+  const countdownOn = mode === 'candles' && side === 'token' && lastBar != null
+  useEffect(() => {
+    if (!countdownOn) return undefined
+    setNow(Date.now())
+    const t = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [countdownOn])
+
+  // The log scale is a chart option, re-applied whenever the chart comes
+  // back (CandlesPanel remounts CandleChart on every fetch).
+  useEffect(() => {
+    if (mode === 'candles') chartRef.current?.setLog(log)
+  }, [mode, log, candleData])
+
+  // The Auto chip mirrors the price scale's autoScale flag. The library has
+  // no event for it — a drag on the axis turns it off silently, and the
+  // crosshair does not move during that drag — so it is read twice a
+  // second while the Candles chart is up (one option read; no layout).
+  useEffect(() => {
+    if (mode !== 'candles') return undefined
+    const t = setInterval(() => {
+      const on = chartRef.current?.isAuto()
+      if (typeof on === 'boolean') setAuto((prev) => (prev === on ? prev : on))
+    }, 500)
+    return () => clearInterval(t)
+  }, [mode])
+
+  // What the keyboard map can do to this workspace (hooks/useDesktopShortcuts).
+  useEffect(() => {
+    actionsRef.current = {
+      mode,
+      openIntervalPrompt: (prefill) => setPrompt({ prefill }),
+      closePrompt: () => {
+        if (!prompt) return false
+        setPrompt(null)
+        return true
+      },
+      reset: () => {
+        chartRef.current?.reset()
+        setAuto(true)
+      },
+      toggleLog: () => patch({ log: !log }),
+      focusIndicators: () => document.getElementById('desktop-indicator-sma20')?.focus(),
+      openAlert: () => {
+        if (asset?.underlying) setAlertOpen(true)
+      },
+    }
+    return () => {
+      actionsRef.current = null
+    }
+  })
+
+  if (!asset || !staticAsset) return null
+
+  function toggleLine(key) {
+    setVisibleLines((v) => {
+      const next = { ...v, [key]: !v[key] }
+      return next.token || next.stock ? next : v
+    })
+  }
+
+  function setMode(next) {
+    if (next === mode) return
+    if (next === 'candles') {
+      onScrub(null)
+      setScrubT(null)
+      track('chart_mode', { mode: 'candles', ticker: asset.ticker })
+    }
+    patch({ mode: next })
+  }
+
+  function setSide(next) {
+    if (next === side) return
+    // The stock side offers fewer bar lengths; land on the nearest it has.
+    patch({ side: next, timeframe: coerceTimeframe(timeframe, next) })
+  }
+
+  function applyInterval(parsed) {
+    setPrompt(null)
+    if (parsed.kind === 'range') patch({ range: parsed.id })
+    else patch({ timeframe: coerceTimeframe(parsed.id, side) })
+  }
+
+  function onCrosshair(bar) {
+    setHoverBar(bar)
+    setAuto(chartRef.current?.isAuto() ?? true)
+  }
+
+  // --- The legend's words ------------------------------------------------
+  const stockAge = stocksAt ? (Date.now() - stocksAt) / 1000 : null
+  const stockDelayed = isStockDelayed(session, stockAge)
+  const tokenVenue = networkName(candleData?.network) ?? asset.chain ?? 'DEX'
+  const tokenStatus = legendStatus('token', session, null, { venue: tokenVenue })
+  const stockStatus = legendStatus('stock', session, stockAge)
+  const shownBar = hoverBar ?? lastBar
+  const change = legendChange(candleData?.candles, shownBar)
+  const barDir = shownBar ? shownBar.close - shownBar.open : null
+  const closeColor = barDir == null ? 'text-zinc-300' : changeColor(barDir)
+  const countdown = countdownOn
+    ? formatCountdown(secondsToBarClose(lastBar.time, candleSeconds(timeframe), now / 1000))
+    : ''
+
+  const tickerButton = (
+    <button
+      type="button"
+      onClick={() => searchRef.current?.focus('')}
+      title="Symbol search"
+      className="t-body font-medium text-zinc-100 transition-colors hover:text-accent"
+    >
+      {mode === 'candles' && side === 'stock' ? asset.underlying : asset.ticker}
+    </button>
+  )
+  const intervalButton = (
+    <button
+      type="button"
+      onClick={() => setPrompt({ prefill: '' })}
+      title="Change interval"
+      className="t-body text-zinc-300 transition-colors hover:text-accent"
+    >
+      {mode === 'gap' ? range : timeframeLabel(timeframe)}
+    </button>
+  )
+  const DelayBadge = (
+    <span className="text-[10px] font-bold leading-none text-amber-400" title={delayTooltip()}>
+      D
+    </span>
+  )
 
   return (
-    <div className="px-6 py-4">
-      <span className="t-label text-zinc-100">{asset?.ticker ?? assetId}</span>
+    <div className="flex min-h-full flex-col">
+      <ChartToolbar
+        asset={asset}
+        settings={settings}
+        onMode={setMode}
+        onRange={(r) => {
+          onScrub(null)
+          setScrubT(null)
+          patch({ range: r })
+        }}
+        onSide={setSide}
+        onTimeframe={(id) => patch({ timeframe: id })}
+        onIndicators={(next) => patch({ indicators: next })}
+        onLog={() => patch({ log: !log })}
+        auto={auto}
+        onAuto={() => {
+          chartRef.current?.setAuto()
+          setAuto(true)
+        }}
+        onLatest={() => chartRef.current?.scrollToLatest()}
+        onReset={() => {
+          chartRef.current?.reset()
+          setAuto(true)
+        }}
+      />
+
+      <div className="px-6 pb-10">
+        {mode === 'gap' && (
+          <div className="relative mt-3">
+            {/* The legend, Gap mode: the title row over the chart's own
+                readout row (the readout is DualLineChart's, kept as is so
+                the Gap chart stays the phone's), then one provenance line
+                per leg (A23). */}
+            <div className="mb-1 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-2">
+              {tickerButton}
+              {intervalButton}
+              {asset.underlying && (
+                <span className="t-caption text-zinc-500">vs {asset.underlying}</span>
+              )}
+              <span className="t-caption text-zinc-500">{tokenStatus}</span>
+              {asset.underlying && (
+                <span className="t-caption flex items-center gap-1 text-zinc-500">
+                  {stockDelayed && DelayBadge}
+                  {stockStatus}
+                </span>
+              )}
+            </div>
+            <div className="flex flex-col" style={{ height: GAP_HEIGHT }}>
+              <DualLineChart
+                fill
+                token={chart.token}
+                stock={chart.stock}
+                premium={chart.premium}
+                loading={chart.loading}
+                error={chart.error}
+                onRetry={() => setChartRetry((n) => n + 1)}
+                onScrub={onScrub}
+                onScrubT={setScrubT}
+                showToken={visibleLines.token}
+                showStock={visibleLines.stock}
+                idleHint="Hover the chart to inspect"
+              />
+            </div>
+            <div className="flex items-center justify-center gap-2 pt-2">
+              {asset.underlying && chart.stock.length >= 2 && (
+                <button
+                  onClick={() => toggleLine('stock')}
+                  aria-pressed={visibleLines.stock}
+                  className={`t-label flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
+                    visibleLines.stock ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 active:bg-zinc-900'
+                  }`}
+                  style={
+                    visibleLines.stock
+                      ? { boxShadow: 'inset 0 0 0 1px var(--border-strong)' }
+                      : undefined
+                  }
+                >
+                  <span
+                    className={`h-0.5 w-4 rounded bg-zinc-400 ${visibleLines.stock ? '' : 'opacity-40'}`}
+                  />
+                  {asset.underlying} stock
+                  {chart.stockIsFlat && <span className="text-zinc-500">(last close)</span>}
+                </button>
+              )}
+              <button
+                onClick={() => toggleLine('token')}
+                aria-pressed={visibleLines.token}
+                className={`t-label flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
+                  visibleLines.token ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 active:bg-zinc-900'
+                }`}
+                style={
+                  visibleLines.token ? { boxShadow: 'inset 0 0 0 1px var(--border-strong)' } : undefined
+                }
+              >
+                <span
+                  className={`h-0.5 w-4 rounded bg-accent ${visibleLines.token ? '' : 'opacity-40'}`}
+                />
+                {asset.ticker} token
+              </button>
+            </div>
+            {asset.underlying && chart.stock.length >= 2 && (
+              <p className="t-caption pt-1.5 text-center text-zinc-500">
+                Click either to hide that line and read the other on its own.
+              </p>
+            )}
+            {/* The gap-history pane, its rule following the Gap chart's
+                pointer (A11). 96px of chart under its own header. */}
+            {!chart.loading && !chart.error && chart.premium.length >= 2 && (
+              <div className="flex flex-col" style={{ height: 132 }}>
+                <PremiumChart fill premium={chart.premium} scrubT={scrubT} />
+              </div>
+            )}
+            {prompt && (
+              <IntervalPrompt
+                mode="gap"
+                initial={prompt.prefill}
+                onApply={applyInterval}
+                onCancel={() => setPrompt(null)}
+              />
+            )}
+          </div>
+        )}
+
+        {mode === 'candles' && (
+          <div className="relative mt-3" tabIndex={0} aria-label="Price chart">
+            {/* The legend (A8, A23): inset from the pane corner on a
+                half-alpha plate, TradingView's status line. Title row —
+                symbol and interval as buttons, the venue, the provenance;
+                values row — O H L C, the change, the volume, the time, and
+                on the token side the countdown to bar close (A13). */}
+            <div className="pointer-events-none absolute left-4 top-4 z-10 max-w-[calc(100%-4rem)] rounded-md bg-zinc-950/50 px-2 py-1">
+              <div className="pointer-events-auto flex flex-wrap items-baseline gap-x-2">
+                {tickerButton}
+                {intervalButton}
+                <span className="t-caption text-zinc-500">
+                  {side === 'stock' ? 'NASDAQ' : tokenVenue}
+                </span>
+                <span className="t-caption flex items-center gap-1 text-zinc-500">
+                  {side === 'stock' && stockDelayed && DelayBadge}
+                  {side === 'stock' ? stockStatus : tokenStatus}
+                </span>
+              </div>
+              <div className="num t-caption flex flex-wrap items-baseline gap-x-2 text-zinc-500">
+                {shownBar ? (
+                  <>
+                    <span>
+                      O <span className="text-zinc-300">{formatPrice(shownBar.open)}</span>
+                    </span>
+                    <span>
+                      H <span className="text-zinc-300">{formatPrice(shownBar.high)}</span>
+                    </span>
+                    <span>
+                      L <span className="text-zinc-300">{formatPrice(shownBar.low)}</span>
+                    </span>
+                    <span>
+                      C <span className={closeColor}>{formatPrice(shownBar.close)}</span>
+                    </span>
+                    {change && (
+                      <span className={changeColor(change.delta)}>
+                        Δ {formatPrice(Math.abs(change.delta))} ({formatPct(change.pct)})
+                      </span>
+                    )}
+                    {Number.isFinite(shownBar.volume) && (
+                      <span>
+                        Vol <span className="text-zinc-300">{formatCompact(shownBar.volume)}</span>
+                      </span>
+                    )}
+                    <span className="text-zinc-600">{whenLabel(shownBar.time, isIntraday(timeframe))}</span>
+                    {countdown && !hoverBar && (
+                      <span className="text-zinc-500">closes in {countdown}</span>
+                    )}
+                  </>
+                ) : (
+                  <span>—</span>
+                )}
+              </div>
+            </div>
+
+            <CandlesBoundary>
+              <Suspense fallback={CANDLES_SKELETON}>
+                <CandlesPanel
+                  asset={staticAsset}
+                  side={side}
+                  timeframe={timeframe}
+                  indicators={indicators}
+                  onSide={setSide}
+                  onTimeframe={(id) => patch({ timeframe: id })}
+                  onIndicators={(next) => patch({ indicators: next })}
+                  hideControls
+                  onData={setCandleData}
+                  chartProps={{
+                    fontSize: 12,
+                    magnet: true,
+                    hideReadout: true,
+                    height: CANDLES_HEIGHT,
+                    rsiHeight: 96,
+                    resetKey: `${asset.id}:${side}:${timeframe}`,
+                    onCrosshair,
+                    ref: chartRef,
+                  }}
+                />
+              </Suspense>
+            </CandlesBoundary>
+            {prompt && (
+              <IntervalPrompt
+                mode="candles"
+                initial={prompt.prefill}
+                onApply={applyInterval}
+                onCancel={() => setPrompt(null)}
+              />
+            )}
+          </div>
+        )}
+
+        <DetailTabs
+          asset={asset}
+          info={info}
+          spread={spread}
+          siblings={siblings}
+          hasTokenStats={hasTokenStats}
+          hasStockStats={hasStockStats}
+          bothSides={bothSides}
+          onSelectAsset={onSelectAsset}
+        />
+      </div>
+
+      {alertOpen && <SetAlertSheet asset={asset} onClose={() => setAlertOpen(false)} />}
     </div>
   )
 }

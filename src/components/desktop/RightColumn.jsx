@@ -21,7 +21,14 @@ const FOLDER_EMPTY = 'No assets here yet.'
  * moved. The watchlist block keeps at least 200px and the column scrolls when
  * the numbers below need more than what is left (§7 Q4).
  */
-export default function RightColumn({ assetId, onSelectAsset, listSource, onListSource, scrub }) {
+export default function RightColumn({
+  assetId,
+  onSelectAsset,
+  listSource,
+  onListSource,
+  scrub,
+  onVisibleIds,
+}) {
   const { assets } = usePrices()
   const { folders, watchlistIds } = useFolders()
   const [filter, setFilter] = useLocalState('bw.desktop.filter.v1', 'all')
@@ -37,6 +44,13 @@ export default function RightColumn({ assetId, onSelectAsset, listSource, onList
 
   const members = assets.filter((a) => list.assetIds.includes(a.id))
   const ids = filterAssets(members, filter).map((a) => a.id)
+
+  // The shell steps ↓/↑ through exactly the rows on screen (§6.8); report
+  // them when they change, not on every price tick.
+  const idsKey = ids.join('\n')
+  useEffect(() => {
+    onVisibleIds?.(idsKey ? idsKey.split('\n') : [])
+  }, [idsKey, onVisibleIds])
   const emptyText = list.isFolder
     ? FOLDER_EMPTY
     : members.length === 0

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import CandleChart from './CandleChart'
 import { Chip } from './shared'
 import { useCandles } from '../hooks/useCandles'
@@ -21,7 +21,9 @@ import { INDICATORS, timeframesFor, coerceTimeframe, isIntraday, networkName } f
  * `indicators` with their `onSide` / `onTimeframe` / `onIndicators`, set
  * `hideControls` to drop the chip rows (the toolbar draws them), and
  * `chartProps` to reach the chart (fontSize, magnet, onCrosshair, resetKey,
- * ref). Each setting falls back to local state on its own when its prop is
+ * ref), and `onData` to learn what was fetched (the desktop legend needs
+ * the latest bar and the pool's network; null when there is nothing to
+ * draw). Each setting falls back to local state on its own when its prop is
  * omitted; with all of them omitted this is exactly the phone panel.
  *
  * `asset` is the STATIC universe record (id, ticker, mint, issuer,
@@ -41,6 +43,7 @@ export default function CandlesPanel({
   onIndicators,
   hideControls = false,
   chartProps,
+  onData,
 }) {
   const [ownSide, setOwnSide] = useState('token')
   const [ownTimeframe, setOwnTimeframe] = useState(DEFAULT_TIMEFRAME_ID)
@@ -49,6 +52,16 @@ export default function CandlesPanel({
   const timeframe = timeframeProp ?? ownTimeframe
   const indicators = indicatorsProp ?? ownIndicators
   const candles = useCandles(asset, side, timeframe)
+
+  // Tell the caller what arrived, once per fetch. The latest callback is
+  // read through a ref so an inline function does not re-fire the effect.
+  const onDataRef = useRef(onData)
+  useEffect(() => {
+    onDataRef.current = onData
+  })
+  useEffect(() => {
+    onDataRef.current?.(candles.loading ? null : (candles.data ?? null))
+  }, [candles.loading, candles.data])
 
   function switchSide(next) {
     if (onSide) onSide(next)

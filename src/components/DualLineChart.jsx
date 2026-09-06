@@ -43,6 +43,8 @@ function nearest(series, t) {
  *   scrubT   — the scrub time, controlled from outside (for crosshair sync
  *              with the gap-history pane); omitted → internal state
  *   onScrubT — called with the raw pointer time (or null) on every scrub
+ *   idleHint — the readout row's text while nothing is scrubbed; the phone
+ *              default speaks of touch, the desktop passes a hover line
  */
 export default function DualLineChart({
   token,
@@ -57,6 +59,7 @@ export default function DualLineChart({
   fill = false,
   scrubT: scrubTProp,
   onScrubT,
+  idleHint = 'Touch and hold the chart to inspect',
 }) {
   const svgRef = useRef(null)
   const [ownScrubT, setOwnScrubT] = useState(null)
@@ -252,7 +255,7 @@ export default function DualLineChart({
             )}
           </>
         ) : (
-          <span className="text-zinc-500">Touch and hold the chart to inspect</span>
+          <span className="text-zinc-500">{idleHint}</span>
         )}
       </div>
       {/* In fill mode the SVG is measured through this box, which takes what

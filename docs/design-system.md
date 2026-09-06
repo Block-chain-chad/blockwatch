@@ -268,30 +268,80 @@ and the permanent explainer come out of the scroll flow.
 
 ### Desktop (≥1024px)
 
-Currently the app renders as a ~290–446px column in a 1440px window with ~80% of
-the screen black, and dead space below the tab bar. It does not acknowledge
-desktop exists.
+The desktop is TradingView's frame — a top bar, an icon rail, the chart in
+the middle, the watchlist on the right, tabs under the chart — with the
+**gap** in every slot TradingView reserves for price. It mounts at `lg`
+(64rem = 1024px) in a browser only, never inside the Capacitor WebView; under
+1024px, and at every width in the native app, the phone tree renders
+byte-identical to before. Home on the desktop *is* the chart workspace: the
+phone Home's jobs are split across the top bar (search, session), the right
+column (watchlist, chips, yields) and the center (the chart). Full-bleed, no
+width cap. (`docs/research/2026-09-06/onstock-desktop-spec.md` §1 is the
+source; this section is its summary.)
 
-Desktop is where the product's core comparison finally fits on one line. The
-layout becomes a real table:
+#### Regions
 
-```
-TICKER    NAME          TOKEN      STOCK      PREMIUM    7D        CHAIN
-NVDAx     NVIDIA       $208.19    $206.84     +0.65%    ▁▃▅▇      SOL
-```
+All values are CSS pixels. `lg` = 1024, `xl` = 1280, `2xl` = 1536. Tokens
+live in `src/index.css` `:root`.
 
-Sticky ticker column, sticky header (DefiLlama gets this wrong — their header
-scrolls away), fixed row height, `min(Npx, 40vw)` column widths so no column can
-eat a phone screen. Max 1200px, centred.
+| Region | Width | Height | Scrolls? | Token |
+|---|---|---|---|---|
+| Shell | full window width | `100dvh` | no | — |
+| Top bar | full width | **48** | no | `--topbar-h` |
+| Nav rail | **64** | `100dvh − 48` | no | `--rail-w` |
+| Center | `1fr`, min **560** | `100dvh − 48` | yes (own scroll) | — |
+| Right column | **320** at 1024–1279 · **360** at 1280–1535 · **400** from 1536 | `100dvh − 48` | yes (own scroll) | `--right-col` |
+| Watchlist block (top of the right column) | full column | `flex: 1`, min **200** | yes | — |
+| Asset numbers block (bottom of the right column) | full column | auto | with the column | — |
+| Chart toolbar | center width | **38** (28px pills inside) | no | — |
+| Gap chart (`DualLineChart fill`) | center width − 48 | `clamp(240px, 38vh, 420px)` | — | — |
+| Gap history (`PremiumChart fill`) | center width − 48 | **96** of chart under its header | — | — |
+| Candles chart (`CandleChart`) | center width − 48 | `clamp(280px, 42vh, 480px)` + **96** RSI pane when on | — | — |
+| Tab strip | center width | **40** | no | — |
+| Tab panel content | max **720**, left-aligned on the center gutter | auto | with the center | — |
+| Takeover screens (Gaps / Folders / News / Trade) | max **640**, centred | auto | with the center | — |
 
-**Premium is the widest, boldest column after the ticker.** It is the reason the
-table exists.
+Gutters inside the center are 24px. Watchlist rows stay the phone `AssetRow`
+(56px, the "minimalistic" two-line shape); the denser 31px table row is
+Phase 2.
 
-Opening an asset on desktop docks it: the watchlist stays on the left at
-phone-shell width (448px, the same AssetRow the phone list uses, selected row
-in surface-1), the asset screen fills the right pane, and each pane scrolls on
-its own. The asset content keeps its phone width until the charts draw in real
-pixels; until then a wider pane would only scale the axis text.
+#### Breakpoints and what collapses
+
+| Viewport | Behaviour |
+|---|---|
+| < 1024 | The phone tree, byte-identical: Home list/table, bottom `TabBar`, `AssetDetail` as a full-screen overlay, `SearchOverlay`, bottom sheets. |
+| 1024–1279 | Desktop shell. Right column 320 (`AssetRow barWidth={64}`); the session strip shows dot + short word ("Open", "Pre-market", "After hours", "Overnight") with the sentence as a tooltip; symbol search 240 wide. |
+| 1280–1535 | Right column 360 (`barWidth={88}`), search 320, the session strip adds the "Widest gap" link when the market is shut. |
+| ≥ 1536 | Right column 400; the chart absorbs the rest. |
+| Any width, Shift+F | Fullscreen chart: rail and right column hidden, top bar stays, center fills. Esc or Shift+F again restores. Not persisted. |
+
+The chart toolbar does not collapse by breakpoint. It measures itself, as
+TradingView's does, and steps through three densities — every label; then
+Auto / Latest / Reset / Log as icons with tooltips; then the side chips
+ticker-only, the indicator chips period-less and every pill tightened. If
+the compact row still overflows (Candles mode under ≈1180px) it scrolls;
+nothing is hidden and there is no "…" menu. Tooltips and accessible names
+keep the full words at every density.
+
+Sheets (Add to folder, Set alert, Share, Swap, the shortcut list) are centred
+dialogs from `lg`: rounded on every corner, no handle, a fade instead of the
+rise.
+
+#### State the shell owns
+
+| State | Where | Persistence |
+|---|---|---|
+| `tab` | `App` | none — which rail item is lit; `home` is the chart |
+| `openAssetId` | `App` | `bw.desktop.asset.v1` — the selected asset |
+| `listSource` | `App` | `bw.desktop.list.v1` — `watchlist` or a folder id |
+| `mode`, `range`, `side`, `timeframe`, `indicators`, `log` | `ChartWorkspace` | `bw.desktop.chart.v1` — settings belong to the chart slot and do **not** reset when the asset changes |
+| `detailTab` | `DetailTabs` | `bw.desktop.tab.v1` |
+| `filter` | `RightColumn` | `bw.desktop.filter.v1` |
+| `fullscreen` | `DesktopShell` | none |
+
+First load selects `bw.desktop.asset.v1` → else the last viewed → else the
+first watchlist row → else nothing (the center says "Search for a ticker, or
+pick one from your watchlist.").
 
 ---
 
