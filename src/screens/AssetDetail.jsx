@@ -22,6 +22,7 @@ import { formatPrice, formatPct, GapBar, changeColor } from '../components/share
 import PriceText from '../components/PriceText'
 import UpdatedAgo from '../components/UpdatedAgo'
 import AssetLogo from '../components/AssetLogo'
+import WatchlistPane from '../components/WatchlistPane'
 
 const RANGES = Object.keys(CHART_RANGES)
 const RANGE_WORDS = { '1D': 'today', '1W': 'past week', '1M': 'past month', '3M': 'past 3 months', '1Y': 'past year' }
@@ -139,7 +140,24 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
   // z sits ABOVE the search overlay (40): opening an asset from search keeps
   // search mounted underneath, so Back returns to the typed query.
   return (
-    <div className="screen-in fixed inset-0 z-[45] mx-auto max-w-md overflow-y-auto bg-zinc-950 pb-10">
+    <div
+      className="screen-in fixed inset-0 z-[45] mx-auto max-w-md overflow-y-auto bg-zinc-950 pb-10 lg:flex lg:max-w-[var(--content-max)] lg:overflow-hidden lg:pb-0 lg:border-x"
+      style={{ borderColor: 'var(--border-subtle)' }}
+    >
+      {/* Desktop only: the watchlist docks on the left at phone-shell width
+          (28rem = max-w-md) so the same AssetRow the phone list uses fits.
+          Switching remounts this screen via App's key, which is fine — the
+          pane's only side effects are a price subscription and a cached
+          sparkline fetch. */}
+      <aside
+        className="hidden lg:block lg:w-[28rem] lg:shrink-0 lg:overflow-y-auto lg:border-r"
+        style={{ borderColor: 'var(--border-subtle)' }}
+      >
+        <WatchlistPane currentId={asset.id} onOpen={(a) => onSwitchAsset(a.id)} />
+      </aside>
+      {/* On desktop this pane is the scroll container, so the sticky header
+          below keeps pinning to it. Under lg: it is an inert wrapper. */}
+      <div className="lg:min-w-0 lg:flex-1 lg:overflow-y-auto lg:pb-10">
       {/* Top padding travels with the sticky bar, so the notch / Dynamic
           Island never overlaps Back/Star/Share. env() is 0px on the web, so
           max(…) reproduces the previous py-3 exactly there. */}
@@ -875,6 +893,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
       </div>
 
       <UpdatedAgo className="pt-4 text-center" />
+      </div>
 
       {foldersOpen && <AddToFolderSheet asset={asset} onClose={() => setFoldersOpen(false)} />}
       {alertOpen && <SetAlertSheet asset={asset} onClose={() => setAlertOpen(false)} />}

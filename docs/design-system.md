@@ -287,6 +287,12 @@ eat a phone screen. Max 1200px, centred.
 **Premium is the widest, boldest column after the ticker.** It is the reason the
 table exists.
 
+Opening an asset on desktop docks it: the watchlist stays on the left at
+phone-shell width (448px, the same AssetRow the phone list uses, selected row
+in surface-1), the asset screen fills the right pane, and each pane scrolls on
+its own. The asset content keeps its phone width until the charts draw in real
+pixels; until then a wider pane would only scale the axis text.
+
 ---
 
 ## 8. What this removes
