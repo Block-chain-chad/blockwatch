@@ -316,6 +316,29 @@ export function FilterChips({ value, onChange }) {
   )
 }
 
+/*
+ * One control chip in FilterChips' language, for surfaces that build their
+ * own rows of them (the chart mode, series, interval and indicator controls
+ * on the asset screen). Same squared shape, t-label, bordered surface when
+ * active. `swatch` is an optional line colour class, muted rather than
+ * hidden when off — the same rule the chart legend follows.
+ */
+export function Chip({ active, onClick, swatch, children }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-pressed={active}
+      className={`t-label flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
+        active ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 active:bg-zinc-900'
+      }`}
+      style={active ? { boxShadow: 'inset 0 0 0 1px var(--border-strong)' } : undefined}
+    >
+      {swatch && <span className={`h-0.5 w-4 rounded ${swatch} ${active ? '' : 'opacity-40'}`} />}
+      {children}
+    </button>
+  )
+}
+
 export function filterAssets(list, filter) {
   return filter === 'all' ? list : list.filter((a) => a.type === filter)
 }
