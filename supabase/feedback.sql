@@ -1,4 +1,4 @@
--- BlockWatch feedback table. Run once in the Supabase SQL editor.
+-- OnStock feedback table. Run once in the Supabase SQL editor.
 --
 -- The anon (browser) key can INSERT feedback but never read it back —
 -- messages and emails are only visible to you in the dashboard.

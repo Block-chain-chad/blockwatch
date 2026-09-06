@@ -1,4 +1,4 @@
--- BlockWatch accounts: per-user synced folders and alert rules.
+-- OnStock accounts: per-user synced folders and alert rules.
 -- Run once in the Supabase SQL editor.
 --
 -- Row-level security: every signed-in user can only ever read/write rows

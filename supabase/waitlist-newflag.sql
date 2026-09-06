@@ -1,4 +1,4 @@
--- BlockWatch waitlist: teach join_waitlist to report whether the address was
+-- OnStock waitlist: teach join_waitlist to report whether the address was
 -- actually NEW, so the welcome email is sent once per address instead of once
 -- per join attempt.
 --
