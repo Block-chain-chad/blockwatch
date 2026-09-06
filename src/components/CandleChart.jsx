@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useImperativeHandle, useRef, useState } from 'react'
 import * as lib from 'lightweight-charts'
 import { toCandlestickData, toVolumeData, indicatorLines } from '../lib/candleSeries'
 import { formatPrice, EM_DASH } from '../lib/format'
@@ -69,12 +69,12 @@ function themeColors() {
   }
 }
 
-function chartOptions(c, intraday) {
+function chartOptions(c, intraday, fontSize = 11, magnet = false) {
   return {
     layout: {
       background: { type: lib.ColorType.Solid, color: 'transparent' },
       textColor: c.text,
-      fontSize: 11,
+      fontSize,
       // Attribution is the "Charts by TradingView" link rendered beside the
       // chart instead, where it reads as a caption rather than a watermark.
       attributionLogo: false,
@@ -84,7 +84,9 @@ function chartOptions(c, intraday) {
     rightPriceScale: { borderColor: c.axis },
     timeScale: { borderColor: c.axis, timeVisible: intraday, secondsVisible: false, rightOffset: 2 },
     crosshair: {
-      mode: lib.CrosshairMode.Normal,
+      // Magnet snaps the crosshair to OHLC values (TradingView's desktop
+      // default); Normal follows the pointer, which a finger needs.
+      mode: magnet ? lib.CrosshairMode.Magnet : lib.CrosshairMode.Normal,
       vertLine: { color: c.crosshair, labelBackgroundColor: c.surface },
       horzLine: { color: c.crosshair, labelBackgroundColor: c.surface },
     },
@@ -116,17 +118,55 @@ function whenLabel(time, intraday) {
  *                 there is something to draw
  *   intraday    — bars shorter than a day (axis shows clock time)
  *   indicators  — { sma20, ema50, rsi14 } booleans
+ *
+ * Desktop props, every one optional and inert when omitted, so the phone
+ * call site (which passes none of them) renders and behaves as before:
+ *   fontSize    — scale text size; 11 on phones, 12 on the desktop
+ *   magnet      — crosshair snaps to OHLC (CrosshairMode.Magnet)
+ *   onCrosshair — called with the same bar-or-null the readout receives
+ *   resetKey    — when given, the chart refits ONLY when this changes (the
+ *                 desktop passes asset:side:timeframe), so a 30-second
+ *                 refresh of the same bars keeps the user's zoom and scroll;
+ *                 omitted, every data change refits, as the phone expects
+ *   ref         — { reset, scrollToLatest, setLog, isAuto, setAuto } for the
+ *                 toolbar's Auto / Latest / Reset / Log buttons
+ *   hideReadout — drop the OHLC caption row above the chart (the desktop
+ *                 draws its legend on the chart instead)
+ *   height      — the main pane's height, a number of pixels or any CSS
+ *                 length (the desktop passes a clamp()); 220 by default
+ *   rsiHeight   — the RSI pane's height in pixels; 80 by default
  */
-export default function CandleChart({ candles, intraday = true, indicators = {} }) {
+export default function CandleChart({
+  candles,
+  intraday = true,
+  indicators = {},
+  fontSize = 11,
+  magnet = false,
+  onCrosshair,
+  resetKey,
+  ref,
+  hideReadout = false,
+  height: mainHeight = MAIN_HEIGHT,
+  rsiHeight = RSI_HEIGHT,
+}) {
   const hostRef = useRef(null)
   const chartRef = useRef(null) // { chart, candle, volume, sma20, ema50, rsi14, … }
   const [ready, setReady] = useState(false)
   // The bar under the crosshair, or null for "the latest".
   const [hover, setHover] = useState(null)
+  // Latest callback, read by the one crosshair subscription made at mount.
+  const onCrosshairRef = useRef(onCrosshair)
+  useEffect(() => {
+    onCrosshairRef.current = onCrosshair
+  })
+  // The resetKey the last fitContent() ran for (see the data effect).
+  const lastFitKey = useRef(undefined)
 
   // Build the chart on mount; tear it down on unmount. The axis mode
   // (intraday) is applied again by the data effect, so it is not a
-  // dependency here — a new timeframe never rebuilds the chart.
+  // dependency here — a new timeframe never rebuilds the chart. Likewise
+  // fontSize and magnet: their own effect below applies them once `ready`
+  // flips, before the skeleton lifts, and again whenever they change.
   useEffect(() => {
     const host = hostRef.current
     if (!host) return undefined
@@ -166,6 +206,8 @@ export default function CandleChart({ candles, intraday = true, indicators = {} 
       ema50: overlay(c.ema50),
       rsi14: null,
       intraday: false,
+      fontSize: 11,
+      magnet: false,
       volumeColors: { up: c.up, down: c.down },
       repaintVolume: null,
       lines: null,
@@ -174,13 +216,15 @@ export default function CandleChart({ candles, intraday = true, indicators = {} 
 
     chart.subscribeCrosshairMove((param) => {
       const bar = param.time != null ? param.seriesData.get(candle) : null
-      setHover(bar && Number.isFinite(bar.close) ? { ...bar, time: param.time } : null)
+      const next = bar && Number.isFinite(bar.close) ? { ...bar, time: param.time } : null
+      setHover(next)
+      onCrosshairRef.current?.(next)
     })
 
     // Theme flips toggle a class on <html>; recolour without rebuilding.
     const observer = new MutationObserver(() => {
       const t = themeColors()
-      chart.applyOptions(chartOptions(t, refs.intraday))
+      chart.applyOptions(chartOptions(t, refs.intraday, refs.fontSize, refs.magnet))
       candle.applyOptions({ upColor: t.up, downColor: t.down, wickUpColor: t.up, wickDownColor: t.down })
       refs.sma20.applyOptions({ color: t.sma20 })
       refs.ema50.applyOptions({ color: t.ema50 })
@@ -199,7 +243,23 @@ export default function CandleChart({ candles, intraday = true, indicators = {} 
     }
   }, [])
 
-  // Data: whenever the candles change, push every series and refit.
+  // Text size and crosshair mode, applied without a rebuild. The theme
+  // observer re-applies the whole option set, so it reads them from refs.
+  useEffect(() => {
+    const refs = chartRef.current
+    if (!ready || !refs) return
+    refs.fontSize = fontSize
+    refs.magnet = magnet
+    refs.chart.applyOptions({
+      layout: { fontSize },
+      crosshair: { mode: magnet ? lib.CrosshairMode.Magnet : lib.CrosshairMode.Normal },
+    })
+  }, [ready, fontSize, magnet])
+
+  // Data: whenever the candles change, push every series and refit — unless
+  // a resetKey is in play, in which case only a NEW key refits: the desktop
+  // refreshes the same timeframe every 30 seconds and a refit there would
+  // throw away the user's zoom (the phone passes no key and refits always).
   useEffect(() => {
     const refs = chartRef.current
     if (!ready || !refs) return
@@ -213,9 +273,44 @@ export default function CandleChart({ candles, intraday = true, indicators = {} 
     refs.rsi14?.setData(lines.rsi14)
     refs.intraday = intraday
     refs.chart.applyOptions({ timeScale: { timeVisible: intraday } })
-    refs.chart.timeScale().fitContent()
+    if (resetKey === undefined || lastFitKey.current !== resetKey) {
+      refs.chart.timeScale().fitContent()
+      lastFitKey.current = resetKey
+    }
     setHover(null)
-  }, [ready, candles, intraday])
+    onCrosshairRef.current?.(null)
+  }, [ready, candles, intraday, resetKey])
+
+  // The toolbar's handle. Each method reads the live chart when called, so
+  // the object never needs rebuilding; before mount they are no-ops.
+  useImperativeHandle(
+    ref,
+    () => ({
+      // "Reset chart view": fit every bar and hand the price scale back to
+      // auto — the two things a drag on either axis takes away.
+      reset() {
+        const refs = chartRef.current
+        if (!refs) return
+        refs.chart.timeScale().fitContent()
+        refs.chart.priceScale('right').applyOptions({ autoScale: true })
+      },
+      scrollToLatest() {
+        chartRef.current?.chart.timeScale().scrollToRealTime()
+      },
+      setLog(on) {
+        chartRef.current?.chart
+          .priceScale('right')
+          .applyOptions({ mode: on ? lib.PriceScaleMode.Logarithmic : lib.PriceScaleMode.Normal })
+      },
+      isAuto() {
+        return chartRef.current?.chart.priceScale('right').options().autoScale ?? true
+      },
+      setAuto() {
+        chartRef.current?.chart.priceScale('right').applyOptions({ autoScale: true })
+      },
+    }),
+    []
+  )
 
   // Indicator toggles: overlays flip visibility; RSI adds or removes its pane.
   useEffect(() => {
@@ -250,7 +345,7 @@ export default function CandleChart({ candles, intraday = true, indicators = {} 
         })
       }
       rsi.setData(refs.lines?.rsi14 ?? [])
-      refs.chart.panes()[1]?.setHeight(RSI_HEIGHT)
+      refs.chart.panes()[1]?.setHeight(rsiHeight)
       refs.rsi14 = rsi
     } else if (!wantRsi && refs.rsi14) {
       refs.chart.removeSeries(refs.rsi14)
@@ -258,9 +353,17 @@ export default function CandleChart({ candles, intraday = true, indicators = {} 
       // Removing the last series leaves an empty pane behind in some builds.
       if (refs.chart.panes().length > 1) refs.chart.removePane(1)
     }
-  }, [ready, indicators.sma20, indicators.ema50, indicators.rsi14])
+  }, [ready, indicators.sma20, indicators.ema50, indicators.rsi14, rsiHeight])
 
-  const height = MAIN_HEIGHT + (indicators.rsi14 ? RSI_HEIGHT : 0)
+  // A number adds up in pixels; a CSS length (the desktop's clamp()) adds up
+  // in calc(). With no RSI pane the main height stands alone either way.
+  const rsiExtra = indicators.rsi14 ? rsiHeight : 0
+  const height =
+    typeof mainHeight === 'number'
+      ? mainHeight + rsiExtra
+      : rsiExtra
+        ? `calc(${mainHeight} + ${rsiExtra}px)`
+        : mainHeight
 
   const last = candles?.length ? candles[candles.length - 1] : null
   const shown = hover ?? last
@@ -271,6 +374,7 @@ export default function CandleChart({ candles, intraday = true, indicators = {} 
     <div>
       {/* OHLC readout: the bar under the finger, or the latest. Same job as
           the scrub readout on the Gap chart, in a caption's voice. */}
+      {!hideReadout && (
       <div className="num t-caption flex flex-wrap items-baseline gap-x-3 px-1 text-zinc-500">
         {shown ? (
           <>
@@ -292,7 +396,8 @@ export default function CandleChart({ candles, intraday = true, indicators = {} 
           <span>{EM_DASH}</span>
         )}
       </div>
-      <div className="relative mt-1.5" style={{ height }}>
+      )}
+      <div className={hideReadout ? 'relative' : 'relative mt-1.5'} style={{ height }}>
         {!ready && <div className="absolute inset-0 animate-pulse rounded-2xl bg-zinc-900" />}
         <div ref={hostRef} className="h-full w-full" />
       </div>

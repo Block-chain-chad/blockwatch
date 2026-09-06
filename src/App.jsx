@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { track } from './services/analytics'
 import AccessGate from './components/AccessGate'
 import { AuthProvider, useAuth } from './state/AuthContext'
@@ -19,6 +19,14 @@ import AssetDetail from './screens/AssetDetail'
 import SearchOverlay from './overlays/SearchOverlay'
 import ProfileSheet from './overlays/ProfileSheet'
 import WelcomeSheet from './overlays/WelcomeSheet'
+import { useMediaQuery } from './hooks/useMediaQuery'
+import { useLocalState } from './hooks/useLocalState'
+import { isNativeApp } from './lib/platform'
+
+/* The desktop shell is its own chunk: it mounts only at 1024px and up in a
+   browser, so a phone never downloads it and the main bundle stays the size
+   it was before the desktop existed. */
+const DesktopShell = lazy(() => import('./components/desktop/DesktopShell'))
 
 /* When the user arrives via a password-recovery email link, prompt for the new password. */
 function RecoveryGate() {
@@ -42,6 +50,13 @@ export default function App() {
   const [showSearch, setShowSearch] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
 
+  // The one gate (spec §6.1 rule 2): the desktop shell mounts at lg (1024px)
+  // in a browser only. Inside the Capacitor WebView every width is the phone
+  // tree — an iPad in landscape keeps today's behaviour (§7 Q2).
+  const desktop = useMediaQuery('(min-width: 64rem)') && !isNativeApp()
+  // What the desktop's right column lists: 'watchlist' or a folder id.
+  const [listSource, setListSource] = useLocalState('bw.desktop.list.v1', 'watchlist')
+
   const openProfile = () => setShowProfile(true)
   const openAsset = (asset) => setOpenAssetId(asset.id)
 
@@ -53,7 +68,9 @@ export default function App() {
   function switchTab(next) {
     setTab(next)
     setOpenFolderId(null)
-    setOpenAssetId(null)
+    // On the desktop the chart keeps its asset while you look at News and
+    // come back; on the phone the tab bar closes the detail overlay.
+    if (!desktop) setOpenAssetId(null)
   }
 
   let screen
@@ -94,31 +111,56 @@ export default function App() {
       <WaitlistProvider>
         {/* dvh, not vh: mobile URL bars collapse and 100vh layouts jump.
             The shell stays phone-width up to lg because the native iOS build
-            renders inside it; from lg it opens out to the content max so the
-            desktop table has somewhere to live. Previously this was max-w-md
-            at every width, so a 1440px window was ~80% empty. */}
+            renders inside it; from lg in the native app it opens out to the
+            content max so Home's table has somewhere to live, and in a
+            browser the desktop shell takes the full window (§7 Q1). */}
         <div
-          className="mx-auto min-h-dvh max-w-md bg-zinc-950 md:border-x lg:max-w-[var(--content-max)]"
+          className={
+            desktop
+              ? 'mx-auto min-h-dvh max-w-md bg-zinc-950 md:border-x lg:max-w-none lg:border-x-0'
+              : 'mx-auto min-h-dvh max-w-md bg-zinc-950 md:border-x lg:max-w-[var(--content-max)]'
+          }
           style={{ borderColor: 'var(--border-subtle)' }}
         >
-          {screen}
-          <TabBar tab={tab} onChange={switchTab} />
+          {desktop ? (
+            <Suspense fallback={null}>
+              <DesktopShell
+                tab={tab}
+                onTab={switchTab}
+                assetId={openAssetId}
+                onSelectAsset={(id) => {
+                  setOpenAssetId(id)
+                  setTab('home')
+                }}
+                listSource={listSource}
+                onListSource={setListSource}
+                openFolderId={openFolderId}
+                onOpenFolder={setOpenFolderId}
+                onOpenProfile={openProfile}
+              />
+            </Suspense>
+          ) : (
+            <>
+              {screen}
+              <TabBar tab={tab} onChange={switchTab} />
 
-          {openAssetId && (
-            <AssetDetail
-              key={openAssetId} // remount on switch: fresh scroll + chart state
-              assetId={openAssetId}
-              onBack={() => setOpenAssetId(null)}
-              onSwitchAsset={setOpenAssetId}
-            />
-          )}
-          {showSearch && (
-            <SearchOverlay
-              onClose={() => setShowSearch(false)}
-              // Search stays mounted while the detail opens on top of it, so
-              // Back lands on the results the user was just looking at.
-              onOpenAsset={(a) => setOpenAssetId(a.id)}
-            />
+              {openAssetId && (
+                <AssetDetail
+                  key={openAssetId} // remount on switch: fresh scroll + chart state
+                  assetId={openAssetId}
+                  onBack={() => setOpenAssetId(null)}
+                  onSwitchAsset={setOpenAssetId}
+                />
+              )}
+              {showSearch && (
+                <SearchOverlay
+                  onClose={() => setShowSearch(false)}
+                  // Search stays mounted while the detail opens on top of it, so
+                  // Back lands on the results the user was just looking at.
+                  onOpenAsset={(a) => setOpenAssetId(a.id)}
+                />
+              )}
+            </>
           )}
           {showProfile && (
             <ProfileSheet
