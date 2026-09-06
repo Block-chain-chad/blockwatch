@@ -1,6 +1,6 @@
 {
-  "name": "BlockWatch",
-  "short_name": "BlockWatch",
+  "name": "OnStock",
+  "short_name": "OnStock",
   "description": "Track tokenized stocks against their real share prices.",
   "start_url": "/",
   "display": "standalone",
