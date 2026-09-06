@@ -26,7 +26,7 @@ export default function WalletSheet({ onClose }) {
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-zinc-800" />
         <h2 className="px-1 text-base font-semibold">Wallet</h2>
         <p className="mt-1 px-1 text-xs text-zinc-500">
-          Connected via Phantom. BlockWatch can see this address — never your keys or funds.
+          Connected via Phantom. OnStock can see this address — never your keys or funds.
         </p>
 
         <div className="mt-3 select-text break-all rounded-xl bg-zinc-900 p-3.5 text-xs tabular-nums leading-relaxed text-zinc-300">

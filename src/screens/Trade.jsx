@@ -5,7 +5,7 @@ import { track } from '../services/analytics'
 import { CheckCircleIcon, WalletIcon, BellIcon } from '../components/Icons'
 
 /*
- * Rung one of the trading ladder: BlockWatch doesn't execute trades yet, but
+ * Rung one of the trading ladder: OnStock doesn't execute trades yet, but
  * the market is open TODAY on external venues — so point honestly at them,
  * and keep the waitlist as the promise of in-app trading to come.
  */
@@ -57,7 +57,7 @@ export default function Trade({ onOpenProfile }) {
         <h2 className="t-title">The market is open</h2>
         <p className="t-body mt-1.5 text-zinc-400">
           Tokenized stocks trade 24/7 on the venues below. In-app trading is
-          what we're building — until then, BlockWatch gets you to the right
+          what we're building — until then, OnStock gets you to the right
           place with the right numbers.
         </p>
 
@@ -152,7 +152,7 @@ export default function Trade({ onOpenProfile }) {
 
         <p className="mt-6 text-center text-[11px] leading-relaxed text-zinc-400">
           External venues are independent services with their own terms and
-          regional availability. BlockWatch routes, it never holds funds.
+          regional availability. OnStock routes, it never holds funds.
         </p>
       </div>
     </div>

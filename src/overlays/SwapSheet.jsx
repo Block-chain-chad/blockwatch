@@ -7,7 +7,7 @@ import { getSwapQuote, executeSwap, toRaw, fromRaw, USDC_DECIMALS } from '../ser
  * quote refreshes as you type and every few seconds, showing the guaranteed
  * minimum received and the route's price impact. Confirming hands an unsigned
  * transaction to the wallet — the user signs and sends inside Phantom, funds
- * never touch BlockWatch. No platform fee is applied anywhere.
+ * never touch OnStock. No platform fee is applied anywhere.
  */
 
 // Price impact is the silent way to lose money on a thin token: warn loudly
@@ -465,7 +465,7 @@ export default function SwapSheet({ asset, onClose }) {
 
             <p className="mt-3 px-1 text-[11px] leading-relaxed text-zinc-400">
               Swap runs on Jupiter from your own wallet — you approve and send it in your wallet;
-              BlockWatch never holds your funds. Prices move; you're guaranteed at least the
+              OnStock never holds your funds. Prices move; you're guaranteed at least the
               minimum shown. Not investment advice.
             </p>
           </>

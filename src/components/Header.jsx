@@ -29,7 +29,7 @@ export default function Header({ title, brand = false, onOpenProfile }) {
             <path d="M8 21 L13 14 L17 17 L24 8" stroke="#2dd4bf" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M8 24 L13 19 L17 21 L24 13" stroke="#52525b" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          <span className="text-lg font-semibold tracking-tight">BlockWatch</span>
+          <span className="text-lg font-semibold tracking-tight">OnStock</span>
         </div>
       ) : (
         <h1 className="text-xl font-semibold tracking-tight">{title}</h1>

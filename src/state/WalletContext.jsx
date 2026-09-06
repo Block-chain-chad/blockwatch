@@ -5,7 +5,7 @@ import { track } from '../services/analytics'
  * Phantom wallet connection — phase one of non-custodial trading. Talks to
  * the injected provider (window.phantom.solana) directly: no SDK, no key
  * handling, nothing custodial. The wallet app holds the keys and signs;
- * BlockWatch only ever learns the public address.
+ * OnStock only ever learns the public address.
  *
  * No provider (normal mobile Safari, most desktops) is a first-class state:
  * the UI offers "Get Phantom" instead. Previously-approved sites reconnect

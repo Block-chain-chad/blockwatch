@@ -90,7 +90,7 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
               <div className="mt-1 text-xs text-zinc-500">
                 {entry.pendingSync
                   ? 'Saved on this device — finishing signup automatically.'
-                  : "One tap, without leaving BlockWatch — we'll email you when in-app trading opens."}
+                  : "One tap, without leaving OnStock — we'll email you when in-app trading opens."}
               </div>
             </>
           ) : (
@@ -147,7 +147,7 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
           />
           <ListRow
             icon={<InfoIcon size={20} />}
-            label="About BlockWatch"
+            label="About OnStock"
             onClick={() => setAboutOpen(true)}
           />
           <ListRow
@@ -167,7 +167,7 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
           )}
         </div>
 
-        <div className="px-4 pt-3 text-center text-[11px] text-zinc-600">BlockWatch v0.1 · MVP preview</div>
+        <div className="px-4 pt-3 text-center text-[11px] text-zinc-600">OnStock v0.1 · MVP preview</div>
       </div>
 
       {feedbackOpen && <FeedbackSheet onClose={() => setFeedbackOpen(false)} />}

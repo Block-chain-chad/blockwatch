@@ -467,7 +467,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
           )}
           <p className="mt-1.5 text-center text-[11px] leading-relaxed text-zinc-400">
             {wallet.publicKey
-              ? 'Swaps run from your own wallet — BlockWatch never holds funds.'
+              ? 'Swaps run from your own wallet — OnStock never holds funds.'
               : 'Opens Jupiter, an external venue — you swap from your own wallet. Availability depends on your region. Not investment advice.'}
           </p>
         </div>
