@@ -84,6 +84,7 @@ export async function resolvePool(asset) {
 
   const promise = (async () => {
     let data = null
+    let failed = false
     for (const network of networksFor(asset)) {
       try {
         const pool = choosePool(await searchCandidates(asset.ticker, network), asset)
@@ -92,10 +93,17 @@ export async function resolvePool(asset) {
           break
         }
       } catch {
-        // this network is unreachable or has nothing — try the next
+        // this network is unreachable right now — try the next, but remember
+        // that we did not actually get an answer from it
+        failed = true
       }
     }
-    poolCache.set(key, { at: Date.now(), data })
+    // A search that completed and matched nothing is a real miss and is
+    // cached for POOL_MISS_TTL. A search that errored (a 429 on the shared
+    // GeckoTerminal budget, a network drop) is not an answer, so it leaves
+    // the cache alone and the next mount retries instead of reporting
+    // "no pool" for an hour.
+    if (data || !failed) poolCache.set(key, { at: Date.now(), data })
     poolInflight.delete(key)
     return data
   })()
