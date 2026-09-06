@@ -83,7 +83,7 @@ export default async function handler(req, res) {
   if (rejectUnknownParams(req, res, ALL_PARAMS)) return
 
   const op = str(req.query.op)
-  const allowed = OP_PARAMS[op]
+  const allowed = Object.hasOwn(OP_PARAMS, op) ? OP_PARAMS[op] : null
   if (!allowed) return res.status(400).json({ error: 'bad request' })
   if (rejectUnknownParams(req, res, allowed)) return
 
@@ -122,7 +122,7 @@ async function ohlcvOp(req, res, originScoped, network) {
   const aggregate = str(req.query.aggregate)
   const limit = str(req.query.limit)
 
-  const aggregates = TIMEFRAME_AGGREGATES[timeframe]
+  const aggregates = Object.hasOwn(TIMEFRAME_AGGREGATES, timeframe) ? TIMEFRAME_AGGREGATES[timeframe] : null
   if (
     !POOL_ADDRESS[network].test(pool) ||
     !aggregates ||

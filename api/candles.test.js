@@ -103,6 +103,8 @@ describe('api/candles — refuses before upstream', () => {
     ['limit off the steps', ohlcvQuery({ limit: '250' })],
     ['unknown bucket', ohlcvQuery({ timeframe: 'week', aggregate: '1' })],
     ['wrong cache-lane value', { op: 'resolve', ticker: 'AAPLx', network: 'solana', c: 'web' }],
+    ['prototype key as op', { op: 'constructor', network: 'solana' }],
+    ['prototype key as bucket', ohlcvQuery({ timeframe: 'constructor', aggregate: '1' })],
   ]
   for (const [label, query] of bad) {
     it(`400s on ${label}`, async () => {
