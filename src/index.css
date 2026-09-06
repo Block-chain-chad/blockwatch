@@ -83,6 +83,23 @@
   --row-h: 56px; /* touch   */
   --row-h-pointer: 44px; /* pointer */
   --content-max: 1200px;
+
+  /* Desktop shell regions (docs/research/2026-09-06/onstock-desktop-spec.md
+     §1.2). The right column widens by breakpoint below; nothing else does. */
+  --topbar-h: 48px;
+  --rail-w: 64px;
+  --right-col: 320px;
+}
+
+@media (min-width: 80rem) {
+  :root {
+    --right-col: 360px;
+  }
+}
+@media (min-width: 96rem) {
+  :root {
+    --right-col: 400px;
+  }
 }
 
 /* Light theme. The zinc scale inverts; borders flip to black alpha; the
@@ -289,11 +306,21 @@ textarea {
   animation: bw-fade 0.15s ease-out both;
 }
 
+/* Sheets become centred dialogs on desktop; no rise, just the fade. Scoped to
+   lg here rather than as a `lg:` variant because `.sheet-in` above is an
+   unlayered rule, which beats anything in Tailwind's utilities layer. */
+@media (min-width: 64rem) {
+  .sheet-in-center {
+    animation: bw-fade 0.15s ease-out both;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .price-tick,
   .chart-draw,
   .spark-draw,
   .sheet-in,
+  .sheet-in-center,
   .screen-in,
   .overlay-in {
     animation: none;

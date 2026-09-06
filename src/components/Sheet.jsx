@@ -136,15 +136,21 @@ export default function Sheet({
         aria-modal="true"
         aria-label={label}
         aria-labelledby={label ? undefined : titleId}
-        className={`fixed inset-0 mx-auto flex max-w-md items-end ${className}`}
+        className={`fixed inset-0 mx-auto flex max-w-md items-end lg:items-center lg:justify-center ${className}`}
       >
         <button aria-label={closeLabel} onClick={onClose} className="absolute inset-0 overlay-in bg-black/60" />
+        {/* At lg the same panel is a centred dialog: rounded on every corner,
+            no handle, and it fades in place instead of rising — a phone-width
+            sheet rising in the middle of a 1440px window reads as broken.
+            `sheet-in-center` is a plain class scoped to lg in index.css (an
+            unlayered rule, so it can override `.sheet-in`, which a Tailwind
+            `lg:` variant inside the utilities layer could not). */}
         <div
           ref={panelRef}
           tabIndex={-1}
-          className={`relative sheet-in w-full rounded-t-3xl bg-zinc-950 outline-none ring-1 ring-zinc-800/70 ${PAD[pad].panel}`}
+          className={`relative sheet-in sheet-in-center w-full rounded-t-3xl bg-zinc-950 outline-none ring-1 ring-zinc-800/70 lg:max-w-md lg:rounded-2xl ${PAD[pad].panel}`}
         >
-          <div className={`mx-auto h-1 w-10 rounded-full bg-zinc-800 ${PAD[pad].handle}`} />
+          <div className={`mx-auto h-1 w-10 rounded-full bg-zinc-800 lg:hidden ${PAD[pad].handle}`} />
           {children}
         </div>
       </div>

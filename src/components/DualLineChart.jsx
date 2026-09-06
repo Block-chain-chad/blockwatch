@@ -1,8 +1,11 @@
 import { useRef, useState } from 'react'
 import { formatPrice, formatPct, changeColor } from '../lib/format'
+import { useFillSize } from '../hooks/useFillSize'
 
-const W = 360
-const H = 180
+// The phone draws a fixed viewBox scaled to the column; desktop `fill` mode
+// swaps these for the measured pixel size of the box the chart sits in.
+const BASE_W = 360
+const BASE_H = 180
 const PAD = 6
 
 function linePath(series, x, y) {
@@ -33,6 +36,13 @@ function nearest(series, t) {
  * Scrubbing: drag (touch) or hover (mouse) to inspect any moment — a
  * crosshair snaps to the nearest data points and the readout above shows
  * both prices plus the gap at that time.
+ *
+ * Desktop additions, all off by default so the phone render is unchanged:
+ *   fill     — draw at the pixel size of the wrapper (a ResizeObserver sets
+ *              the SVG's width/height) instead of scaling a 360×180 viewBox
+ *   scrubT   — the scrub time, controlled from outside (for crosshair sync
+ *              with the gap-history pane); omitted → internal state
+ *   onScrubT — called with the raw pointer time (or null) on every scrub
  */
 export default function DualLineChart({
   token,
@@ -44,17 +54,25 @@ export default function DualLineChart({
   onScrub,
   showToken = true,
   showStock = true,
+  fill = false,
+  scrubT: scrubTProp,
+  onScrubT,
 }) {
   const svgRef = useRef(null)
-  const [scrubT, setScrubT] = useState(null)
+  const [ownScrubT, setOwnScrubT] = useState(null)
+  const [size, measureRef] = useFillSize(fill)
+  const scrubT = scrubTProp !== undefined ? scrubTProp : ownScrubT
+  const W = size ? size.w : BASE_W
+  const H = size ? size.h : BASE_H
+  const boxH = fill ? 'h-full' : 'h-[204px]'
 
   if (loading) {
-    return <div className="mx-1 h-[204px] animate-pulse rounded-2xl bg-zinc-900" />
+    return <div className={`mx-1 ${boxH} animate-pulse rounded-2xl bg-zinc-900`} />
   }
 
   if (error) {
     return (
-      <div className="mx-1 flex h-[204px] flex-col items-center justify-center rounded-2xl bg-zinc-900/60 px-6 text-center">
+      <div className={`mx-1 flex ${boxH} flex-col items-center justify-center rounded-2xl bg-zinc-900/60 px-6 text-center`}>
         <p className="text-sm text-zinc-400">
           We couldn't load the chart right now — prices above are still live.
         </p>
@@ -73,7 +91,7 @@ export default function DualLineChart({
   // pills sit right below this box.
   if (token.length < 2) {
     return (
-      <div className="mx-1 flex h-[204px] flex-col items-center justify-center rounded-2xl bg-zinc-900/60 px-6 text-center">
+      <div className={`mx-1 flex ${boxH} flex-col items-center justify-center rounded-2xl bg-zinc-900/60 px-6 text-center`}>
         <p className="text-sm text-zinc-400">
           Not enough trading activity to chart this range — this token trades
           thinly. Try a longer range below.
@@ -109,7 +127,8 @@ export default function DualLineChart({
   // Emitted from the pointer path (not an effect) so hook order stays clean
   // above the early returns.
   function updateScrub(t) {
-    setScrubT(t)
+    setOwnScrubT(t)
+    onScrubT?.(t)
     if (!onScrub) return
     if (t == null) return onScrub(null)
     const st = token.length > 0 ? nearest(token, t) : null
@@ -131,8 +150,86 @@ export default function DualLineChart({
         : { month: 'short', day: 'numeric', year: 'numeric' }
     )
 
+  const svg = (
+    <svg
+      ref={svgRef}
+      viewBox={`0 0 ${W} ${H}`}
+      width={fill ? W : undefined}
+      height={fill ? H : undefined}
+      className={fill ? 'block cursor-crosshair' : 'w-full cursor-crosshair'}
+      style={{ touchAction: 'none' }}
+      aria-label="Stock vs. token price chart"
+      onPointerDown={(e) => updateScrub(timeFromPointer(e.clientX))}
+      onPointerMove={(e) => updateScrub(timeFromPointer(e.clientX))}
+      onPointerUp={() => updateScrub(null)}
+      onPointerLeave={() => updateScrub(null)}
+      onPointerCancel={() => updateScrub(null)}
+    >
+      {[0.25, 0.5, 0.75].map((f) => (
+        <line
+          key={f}
+          x1={PAD}
+          x2={W - PAD}
+          y1={H * f}
+          y2={H * f}
+          className="stroke-zinc-800"
+          strokeWidth="1"
+          strokeDasharray="3 5"
+        />
+      ))}
+      <text x={W - PAD} y="12" textAnchor="end" fontSize="10" className="fill-zinc-500">
+        {formatPrice(vMax)}
+      </text>
+      <text x={W - PAD} y={H - 8} textAnchor="end" fontSize="10" className="fill-zinc-500">
+        {formatPrice(vMin)}
+      </text>
+      {stockVisible && (
+        <path
+          key={`s-${stock.length}-${stock[0]?.t ?? 0}`}
+          d={linePath(stock, x, y)}
+          pathLength="1"
+          fill="none"
+          className="chart-draw stroke-zinc-500"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      )}
+      {tokenVisible && (
+        <path
+          key={`t-${token.length}-${token[0]?.t ?? 0}`}
+          d={linePath(token, x, y)}
+          pathLength="1"
+          fill="none"
+          className="chart-draw stroke-accent"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      )}
+      {scrubAnchor && (
+        <>
+          <line
+            x1={x(scrubAnchor.t)}
+            x2={x(scrubAnchor.t)}
+            y1={PAD}
+            y2={H - PAD}
+            className="stroke-zinc-600"
+            strokeWidth="1"
+          />
+          {scrubStock && (
+            <circle cx={x(scrubStock.t)} cy={y(scrubStock.v)} r="3.5" className="fill-zinc-500" />
+          )}
+          {scrubToken && (
+            <circle cx={x(scrubToken.t)} cy={y(scrubToken.v)} r="3.5" className="fill-accent" />
+          )}
+        </>
+      )}
+    </svg>
+  )
+
   return (
-    <div>
+    <div className={fill ? 'flex h-full flex-col' : undefined}>
       {/* Readout row: fixed height so scrubbing never shifts layout */}
       <div className="flex h-5 items-center justify-between px-2 text-[11px] tabular-nums">
         {scrubAnchor ? (
@@ -158,79 +255,15 @@ export default function DualLineChart({
           <span className="text-zinc-500">Touch and hold the chart to inspect</span>
         )}
       </div>
-      <svg
-        ref={svgRef}
-        viewBox={`0 0 ${W} ${H}`}
-        className="w-full cursor-crosshair"
-        style={{ touchAction: 'none' }}
-        aria-label="Stock vs. token price chart"
-        onPointerDown={(e) => updateScrub(timeFromPointer(e.clientX))}
-        onPointerMove={(e) => updateScrub(timeFromPointer(e.clientX))}
-        onPointerUp={() => updateScrub(null)}
-        onPointerLeave={() => updateScrub(null)}
-        onPointerCancel={() => updateScrub(null)}
-      >
-        {[0.25, 0.5, 0.75].map((f) => (
-          <line
-            key={f}
-            x1={PAD}
-            x2={W - PAD}
-            y1={H * f}
-            y2={H * f}
-            className="stroke-zinc-800"
-            strokeWidth="1"
-            strokeDasharray="3 5"
-          />
-        ))}
-        <text x={W - PAD} y="12" textAnchor="end" fontSize="10" className="fill-zinc-500">
-          {formatPrice(vMax)}
-        </text>
-        <text x={W - PAD} y={H - 8} textAnchor="end" fontSize="10" className="fill-zinc-500">
-          {formatPrice(vMin)}
-        </text>
-        {stockVisible && (
-          <path
-            key={`s-${stock.length}-${stock[0]?.t ?? 0}`}
-            d={linePath(stock, x, y)}
-            pathLength="1"
-            fill="none"
-            className="chart-draw stroke-zinc-500"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        )}
-        {tokenVisible && (
-          <path
-            key={`t-${token.length}-${token[0]?.t ?? 0}`}
-            d={linePath(token, x, y)}
-            pathLength="1"
-            fill="none"
-            className="chart-draw stroke-accent"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        )}
-        {scrubAnchor && (
-          <>
-            <line
-              x1={x(scrubAnchor.t)}
-              x2={x(scrubAnchor.t)}
-              y1={PAD}
-              y2={H - PAD}
-              className="stroke-zinc-600"
-              strokeWidth="1"
-            />
-            {scrubStock && (
-              <circle cx={x(scrubStock.t)} cy={y(scrubStock.v)} r="3.5" className="fill-zinc-500" />
-            )}
-            {scrubToken && (
-              <circle cx={x(scrubToken.t)} cy={y(scrubToken.v)} r="3.5" className="fill-accent" />
-            )}
-          </>
-        )}
-      </svg>
+      {/* In fill mode the SVG is measured through this box, which takes what
+          the readout row leaves; on the phone the SVG scales itself. */}
+      {fill ? (
+        <div ref={measureRef} className="min-h-0 flex-1">
+          {svg}
+        </div>
+      ) : (
+        svg
+      )}
     </div>
   )
 }
