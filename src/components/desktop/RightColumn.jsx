@@ -81,6 +81,7 @@ export default function RightColumn({
           barWidth={wide ? 88 : 64}
           header={null}
           emptyText={emptyText}
+          showDelayed
         />
       </div>
 

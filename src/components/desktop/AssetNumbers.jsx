@@ -7,6 +7,7 @@ import { ASSETS } from '../../data/universe'
 import { alertLabelFor } from '../../hooks/useAssetWorkspace'
 import { formatPrice, formatCompact } from '../../lib/format'
 import { isThinlyTraded } from '../../lib/prices'
+import { isStockDelayed } from '../../lib/provenance'
 import { ShareIcon, PlusIcon, BellIcon, StarIcon } from '../Icons'
 import AssetLogo from '../AssetLogo'
 import GapPanel from '../asset/GapPanel'
@@ -33,7 +34,7 @@ const ICON_BTN =
 
 export default function AssetNumbers({ assetId, scrub }) {
   const asset = useAsset(assetId)
-  const { session, marketOpen, lastFetchAt } = usePrices()
+  const { session, marketOpen, lastFetchAt, stocksAt } = usePrices()
   const { folders, watchlistIds, toggleWatchlist } = useFolders()
   const { rules } = useAlerts()
   const [spread, setSpread] = useState(null)
@@ -64,6 +65,10 @@ export default function AssetNumbers({ assetId, scrub }) {
   const alertLabel = alertLabelFor(rules[asset.id])
   const folderLabel =
     memberCount > 0 ? `In ${memberCount} folder${memberCount === 1 ? '' : 's'}` : 'Add to folder'
+  // The stock line's D badge keys on the same test as the chart legend and
+  // the watchlist rows (spec A23), so the three can never disagree.
+  const stockAge = stocksAt ? (Date.now() - stocksAt) / 1000 : null
+  const stockDelayed = isStockDelayed(session, stockAge)
 
   return (
     <section aria-label={`${asset.ticker} numbers`} className="pb-4">
@@ -121,6 +126,7 @@ export default function AssetNumbers({ assetId, scrub }) {
           session={session}
           marketOpen={marketOpen}
           lastFetchAt={lastFetchAt}
+          delayed={stockDelayed}
         />
 
         {spread && (

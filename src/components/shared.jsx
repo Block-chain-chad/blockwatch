@@ -4,6 +4,7 @@ import { SearchIcon, ChevronRight } from './Icons'
 import PriceText from './PriceText'
 import AssetLogo from './AssetLogo'
 import { formatPrice, formatPct, changeColor, EM_DASH } from '../lib/format'
+import { delayTooltip } from '../lib/provenance'
 import { WEB_BASE } from '../services/apiBase'
 
 export { formatPrice, formatPct, changeColor }
@@ -177,7 +178,17 @@ export function Sparkline({ points, width = 56, height = 14 }) {
  * The per-row "STOCK"/"TOKEN" labels are gone — eight rows were reprinting
  * their own column headers sixteen times. Headers belong at the top, once.
  */
-export function AssetRow({ asset, onOpen, spark, marketOpen = true, barWidth = 88 }) {
+/* `delayed` (desktop only; every phone call site omits it) puts TradingView's
+   yellow D beside the stock price while the share quote is not live — the
+   same badge the chart legend shows on the stock leg. */
+export function AssetRow({
+  asset,
+  onOpen,
+  spark,
+  marketOpen = true,
+  barWidth = 88,
+  delayed = false,
+}) {
   const thin = isThinlyTraded(asset)
   const { value } = usePremium(asset)
   return (
@@ -211,6 +222,14 @@ export function AssetRow({ asset, onOpen, spark, marketOpen = true, barWidth = 8
           <PriceText value={asset.tokenPrice} />
           <span className="mx-1 text-zinc-600">/</span>
           {asset.underlying ? <PriceText value={asset.stockPrice} /> : EM_DASH}
+          {delayed && asset.underlying && (
+            <span
+              className="ml-1 text-[10px] font-bold leading-none text-amber-400"
+              title={delayTooltip()}
+            >
+              D
+            </span>
+          )}
         </div>
       </div>
     </button>

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { usePrices, useAssetSubscription } from '../state/PricesContext'
 import { useFolders } from '../state/FoldersContext'
 import { useSparklines } from '../hooks/useSparklines'
+import { isStockDelayed } from '../lib/provenance'
 import { AssetRow } from './shared'
 
 const EMPTY_TEXT = 'Your watchlist is empty — add the tokens you care about.'
@@ -17,9 +18,12 @@ const EMPTY_TEXT = 'Your watchlist is empty — add the tokens you care about.'
  *
  * The desktop right column drives it with `assetIds` (a folder's rows rather
  * than the watchlist), its own `subscriptionKey`, the column's `barWidth`,
- * a `header` node in place of the fixed one (null for none) and an
- * `emptyText` for the folder case. Every one of them defaults to what the
- * pane did before, so the existing call site renders the same DOM.
+ * a `header` node in place of the fixed one (null for none), an `emptyText`
+ * for the folder case and `showDelayed`, which puts the legend's D badge on
+ * every row's stock price while the share quote is not live (spec A23) —
+ * the same `isStockDelayed` the chart legend keys on, so the two can never
+ * disagree. Every one of them defaults to what the pane did before, so the
+ * existing call site renders the same DOM.
  */
 export default function WatchlistPane({
   currentId,
@@ -29,13 +33,16 @@ export default function WatchlistPane({
   barWidth,
   header,
   emptyText = EMPTY_TEXT,
+  showDelayed = false,
 }) {
-  const { assets, marketOpen } = usePrices()
+  const { assets, marketOpen, session, stocksAt } = usePrices()
   const { watchlistIds } = useFolders()
   const ids = assetIds ?? watchlistIds
   useAssetSubscription(subscriptionKey, ids)
   const sparks = useSparklines(ids)
   const watched = assets.filter((a) => ids.includes(a.id))
+  const stockAge = stocksAt ? (Date.now() - stocksAt) / 1000 : null
+  const stockDelayed = showDelayed && isStockDelayed(session, stockAge)
 
   // App keys <AssetDetail> by asset id, so every sidebar click remounts this
   // pane inside a fresh <aside> whose scrollTop is back at 0. Bring the row
@@ -81,6 +88,7 @@ export default function WatchlistPane({
             spark={sparks[a.id]}
             marketOpen={marketOpen}
             barWidth={barWidth}
+            delayed={stockDelayed}
           />
         </div>
       ))}

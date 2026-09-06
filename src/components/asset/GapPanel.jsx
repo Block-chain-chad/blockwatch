@@ -1,6 +1,7 @@
 import { timeAgo, EM_DASH } from '../../lib/format'
 import { isThinlyTraded, premiumPct } from '../../lib/prices'
 import { formatPrice, formatPct, GapBar, changeColor } from '../shared'
+import { delayTooltip } from '../../lib/provenance'
 import PriceText from '../PriceText'
 
 /*
@@ -16,8 +17,18 @@ import PriceText from '../PriceText'
   `scrub` is the chart's finger position (null = live): while scrubbing,
   the token leg shows the price under the finger and the gap money line
   follows it.
+
+  `delayed` (desktop only; the phone screen omits it) puts the legend's
+  yellow D beside the share price while the quote is not live (spec A23).
 */
-export default function GapPanel({ asset, scrub, session, marketOpen, lastFetchAt }) {
+export default function GapPanel({
+  asset,
+  scrub,
+  session,
+  marketOpen,
+  lastFetchAt,
+  delayed = false,
+}) {
   const gap = premiumPct(asset)
   const tokenNow = scrub?.price ?? asset.tokenPrice
   const diff =
@@ -94,6 +105,14 @@ export default function GapPanel({ asset, scrub, session, marketOpen, lastFetchA
             <div className="t-caption text-zinc-500">{asset.underlying} share</div>
             <div className="num t-title mt-0.5 text-zinc-100">
               {asset.stockPrice != null ? formatPrice(asset.stockPrice) : EM_DASH}
+              {delayed && (
+                <span
+                  className="ml-1.5 align-middle text-[10px] font-bold leading-none text-amber-400"
+                  title={delayTooltip()}
+                >
+                  D
+                </span>
+              )}
             </div>
             <div className="t-caption mt-0.5 text-zinc-500">{stockAge}</div>
           </div>

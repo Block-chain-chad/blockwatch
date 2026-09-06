@@ -9,6 +9,8 @@ import DualLineChart from '../components/DualLineChart'
 import PremiumChart from '../components/PremiumChart'
 import { CHART_RANGES } from '../hooks/useChartData'
 import { useAssetWorkspace } from '../hooks/useAssetWorkspace'
+import { useMediaQuery } from '../hooks/useMediaQuery'
+import WatchlistPane from '../components/WatchlistPane'
 import { formatCompact } from '../lib/format'
 import { isThinlyTraded } from '../lib/prices'
 import { ChevronLeft, ShareIcon, PlusIcon, BellIcon, StarIcon } from '../components/Icons'
@@ -61,8 +63,15 @@ class CandlesBoundary extends Component {
 const CANDLES_SKELETON = <div className="mx-3 mt-3 h-[204px] animate-pulse rounded-2xl bg-zinc-900" />
 
 /* The phone asset screen: a full-screen overlay above the tab bar. The
-   desktop has its own shell (components/desktop) and never mounts this. */
+   desktop has its own shell (components/desktop) and never mounts this in a
+   browser at >= 1024px. The lg: dock below (the docked WatchlistPane, the
+   flex root and the two scroll wrappers) is kept exactly as release/onstock
+   has it: under 1024px every one of those classes is inert, so the phone
+   DOM stays byte-identical to the base, and inside the native shell at iPad
+   widths — where the desktop gate is off — the screen behaves exactly as
+   today. */
 export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
+  const desktop = useMediaQuery('(min-width: 64rem)')
   const [range, setRange] = useState('1D')
   // Scrubbing the chart drives the headline price (Robinhood-style); null =
   // live. Cleared on range switch and on pointer release (chart emits null).
@@ -117,7 +126,25 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
   // z sits ABOVE the search overlay (40): opening an asset from search keeps
   // search mounted underneath, so Back returns to the typed query.
   return (
-    <div className="screen-in fixed inset-0 z-[45] mx-auto max-w-md overflow-y-auto bg-zinc-950 pb-10">
+    <div
+      className="screen-in fixed inset-0 z-[45] mx-auto max-w-md overflow-y-auto bg-zinc-950 pb-10 lg:flex lg:max-w-[var(--content-max)] lg:overflow-hidden lg:pb-0 lg:border-x"
+      style={{ borderColor: 'var(--border-subtle)' }}
+    >
+      {/* Desktop only: the watchlist docks on the left at phone-shell width
+          (28rem = max-w-md) so the same AssetRow the phone list uses fits.
+          Switching remounts this screen via App's key, which is fine — the
+          pane's only side effects are a price subscription and a cached
+          sparkline fetch. */}
+      <aside
+        className="hidden lg:block lg:w-[28rem] lg:shrink-0 lg:overflow-y-auto lg:border-r"
+        style={{ borderColor: 'var(--border-subtle)' }}
+      >
+        {desktop && <WatchlistPane currentId={asset.id} onOpen={(a) => onSwitchAsset(a.id)} />}
+      </aside>
+      {/* On desktop this pane is the scroll container, so the sticky header
+          below keeps pinning to it. Under lg: it is an inert wrapper. */}
+      <div className="lg:min-w-0 lg:flex-1 lg:overflow-y-auto lg:pb-10">
+      <div className="lg:max-w-md">
       {/* Top padding travels with the sticky bar, so the notch / Dynamic
           Island never overlaps Back/Star/Share. env() is 0px on the web, so
           max(…) reproduces the previous py-3 exactly there. */}
@@ -411,6 +438,8 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
       />
 
       <UpdatedAgo className="pt-4 text-center" />
+      </div>
+      </div>
 
       {foldersOpen && <AddToFolderSheet asset={asset} onClose={() => setFoldersOpen(false)} />}
       {alertOpen && <SetAlertSheet asset={asset} onClose={() => setAlertOpen(false)} />}

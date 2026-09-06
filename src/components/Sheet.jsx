@@ -136,8 +136,13 @@ export default function Sheet({
         aria-modal="true"
         aria-label={label}
         aria-labelledby={label ? undefined : titleId}
-        className={`fixed inset-0 mx-auto flex max-w-md items-end lg:items-center lg:justify-center ${className}`}
+        className={`fixed inset-0 mx-auto flex max-w-md items-end lg:max-w-none lg:items-center lg:justify-center ${className}`}
       >
+        {/* The root must span the whole window at lg: the scrim and the
+            click-to-close live on it, and a phone-width root would leave the
+            chart, toolbar and watchlist beside a 448px strip clickable under
+            an open dialog — the focus trap only catches the keyboard. The
+            panel below keeps its own lg:max-w-md. */}
         <button aria-label={closeLabel} onClick={onClose} className="absolute inset-0 overlay-in bg-black/60" />
         {/* At lg the same panel is a centred dialog: rounded on every corner,
             no handle, and it fades in place instead of rising — a phone-width
