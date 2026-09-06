@@ -28,7 +28,6 @@ export default function SignInSheet({ onClose }) {
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState(null) // { kind: 'error' | 'sent', text }
   const [showPw, setShowPw] = useState(false)
-  const [resent, setResent] = useState(false)
 
   const emailOk = /\S+@\S+\.\S+/.test(email)
   const passwordOk = password.length >= MIN_PASSWORD
@@ -68,7 +67,6 @@ export default function SignInSheet({ onClose }) {
       }
     } catch (err) {
       const mapped = mapAuthError(err?.message)
-      setResent(false)
       setNote({ kind: 'error', text: mapped.text, action: mapped.action })
     }
     setBusy(false)
@@ -217,12 +215,11 @@ export default function SignInSheet({ onClose }) {
             {note.action === 'resend' && (
               <button
                 type="button"
-                disabled={busy || resent}
+                disabled={busy}
                 onClick={async () => {
                   setBusy(true)
                   try {
                     await resendConfirmation(email)
-                    setResent(true)
                     setNote({ kind: 'sent', text: `A fresh link is on its way to ${email.trim()}.` })
                   } catch {
                     setNote({
@@ -234,7 +231,7 @@ export default function SignInSheet({ onClose }) {
                 }}
                 className="mt-1 text-xs font-medium text-accent disabled:opacity-40"
               >
-                {resent ? 'Sent — check your inbox' : 'Resend the email'}
+                Resend the email
               </button>
             )}
           </div>
