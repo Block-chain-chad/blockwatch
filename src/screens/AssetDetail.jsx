@@ -65,6 +65,12 @@ class CandlesBoundary extends Component {
   static getDerivedStateFromError() {
     return { failed: true }
   }
+  componentDidCatch(error, info) {
+    // Same reporting as the app-level ErrorBoundary: the caption alone hides
+    // a crash of this chunk from the console and from monitoring.
+    console.error('Candles crashed:', error, info?.componentStack)
+    window.__bwReportError?.(error, info?.componentStack)
+  }
   render() {
     if (this.state.failed) {
       return <p className="t-caption mt-3 px-4 text-zinc-600">Candles could not load right now.</p>
