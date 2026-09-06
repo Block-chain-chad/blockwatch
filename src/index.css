@@ -39,8 +39,11 @@
   --color-zinc-200: oklch(0.92 0.004 250);
   --color-zinc-300: oklch(0.86 0.005 250);
   --color-zinc-400: oklch(0.76 0.007 250); /* secondary  */
-  --color-zinc-500: oklch(0.62 0.009 250); /* tertiary   */
-  --color-zinc-600: oklch(0.5 0.01 250); /* quaternary */
+  --color-zinc-500: oklch(0.62 0.009 250); /* tertiary — the floor for text */
+  /* Decoration only: chevrons, dividers, sparklines, bars. At 3.3:1 on the
+     page and 3.0:1 on a sheet it fails AA for text of any size we set, so
+     readable text never goes below zinc-500 (5.4:1 / 4.9:1). */
+  --color-zinc-600: oklch(0.5 0.01 250);
 
   /* -- Brand ------------------------------------------------------------- */
   /* Actions and active states ONLY. Never decoration, never a surface. */

@@ -259,7 +259,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
                   <div className="num t-title mt-0.5 text-zinc-100">
                     {scrub ? formatPrice(scrub.price) : <PriceText value={asset.tokenPrice} />}
                   </div>
-                  <div className="t-caption mt-0.5 text-zinc-600">{tokenAge}</div>
+                  <div className="t-caption mt-0.5 text-zinc-500">{tokenAge}</div>
                 </div>
                 {asset.underlying && (
                   <div
@@ -270,7 +270,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
                     <div className="num t-title mt-0.5 text-zinc-100">
                       {asset.stockPrice != null ? formatPrice(asset.stockPrice) : EM_DASH}
                     </div>
-                    <div className="t-caption mt-0.5 text-zinc-600">{stockAge}</div>
+                    <div className="t-caption mt-0.5 text-zinc-500">{stockAge}</div>
                   </div>
                 )}
               </div>
@@ -298,7 +298,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
           return (
             <div className="num t-caption mt-2.5 text-zinc-500">
               Token {formatPct(pct)} ({formatPrice(Math.abs(ref - first))}){' '}
-              <span className="text-zinc-600">{suffix}</span>
+              <span className="text-zinc-500">{suffix}</span>
             </div>
           )
         })()}
@@ -388,7 +388,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
             that too. Only shown when there are actually two lines to choose
             between; with no underlying there is nothing to hide. */}
         {asset.underlying && chart.stock.length >= 2 && (
-          <p className="t-caption pt-1.5 text-center text-zinc-600">
+          <p className="t-caption pt-1.5 text-center text-zinc-500">
             Tap either to hide that line and read the other on its own.
           </p>
         )}
@@ -581,10 +581,10 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
                 {bothSides && (
                   <div className="grid grid-cols-[1.1fr_1fr_1fr] items-center gap-x-3 gap-y-2.5 pb-1">
                     <div />
-                    <div className="text-right text-[10px] font-semibold uppercase tracking-wide text-zinc-600">
+                    <div className="text-right text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
                       {asset.underlying} stock
                     </div>
-                    <div className="text-right text-[10px] font-semibold uppercase tracking-wide text-zinc-600">
+                    <div className="text-right text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
                       {asset.ticker} token
                     </div>
                     <CompareRow
@@ -635,7 +635,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
                 <dl className={`space-y-2.5 ${bothSides ? 'pt-2' : ''}`}>
                   {hasTokenStats && (
                     <>
-                      <div className="text-[11px] font-semibold uppercase tracking-wide text-zinc-600">
+                      <div className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
                         {asset.ticker} token
                       </div>
                       {!bothSides && (
@@ -669,7 +669,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
                     </>
                   )}
                   {hasStockStats && (
-                    <div className={`text-[11px] font-semibold uppercase tracking-wide text-zinc-600 ${hasTokenStats ? 'pt-2' : ''}`}>
+                    <div className={`text-[11px] font-semibold uppercase tracking-wide text-zinc-500 ${hasTokenStats ? 'pt-2' : ''}`}>
                       {asset.underlying} stock
                     </div>
                   )}
@@ -713,7 +713,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
                     />
                   )}
                   {hasStockStats && (
-                    <p className="pt-1 text-[11px] leading-relaxed text-zinc-600">
+                    <p className="pt-1 text-[11px] leading-relaxed text-zinc-500">
                       Stock figures describe {asset.underlying}, the share this token tracks.
                     </p>
                   )}
@@ -763,7 +763,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
               <span>
                 <span className="font-semibold text-loss tabular-nums">{pct(sell)}%</span> Sell
               </span>
-              <span className="ml-auto text-zinc-600">{total} analysts</span>
+              <span className="ml-auto text-zinc-500">{total} analysts</span>
             </div>
           </div>
         )
@@ -794,7 +794,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
               )
             })}
           </div>
-          <p className="mt-1.5 px-1 text-[11px] text-zinc-600">
+          <p className="mt-1.5 px-1 text-[11px] text-zinc-500">
             Quarterly results for {asset.underlying}, the stock this token tracks.
           </p>
         </div>
@@ -815,13 +815,13 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
                 <div className="line-clamp-2 text-[13px] font-medium leading-snug text-zinc-100">
                   {n.headline}
                 </div>
-                <div className="mt-1 text-[11px] text-zinc-600">
+                <div className="mt-1 text-[11px] text-zinc-500">
                   {n.source} · {timeAgo(n.at)}
                 </div>
               </a>
             ))}
           </div>
-          <p className="mt-1.5 px-1 text-[11px] text-zinc-600">
+          <p className="mt-1.5 px-1 text-[11px] text-zinc-500">
             Coverage of {asset.underlying}, the stock this token tracks. Links open the source.
           </p>
         </div>

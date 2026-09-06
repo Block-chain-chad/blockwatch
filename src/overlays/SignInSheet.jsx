@@ -169,7 +169,7 @@ export default function SignInSheet({ onClose }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@email.com"
-            className="mt-3 w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-600 outline-none ring-accent/60 focus:ring-2"
+            className="mt-3 w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none ring-accent/60 focus:ring-2"
           />
           {mode !== 'forgot' && (
             <div className="relative mt-2">
@@ -180,7 +180,7 @@ export default function SignInSheet({ onClose }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={mode === 'signin' ? 'Password' : `Password (at least ${MIN_PASSWORD} characters)`}
-                className="w-full rounded-xl bg-zinc-900 px-4 py-3 pr-12 text-sm text-zinc-100 placeholder-zinc-600 outline-none ring-accent/60 focus:ring-2"
+                className="w-full rounded-xl bg-zinc-900 px-4 py-3 pr-12 text-sm text-zinc-100 placeholder-zinc-500 outline-none ring-accent/60 focus:ring-2"
               />
               <button
                 type="button"
@@ -196,7 +196,7 @@ export default function SignInSheet({ onClose }) {
             <p
               className={`mt-1.5 px-1 text-xs ${
                 {
-                  dim: 'text-zinc-600',
+                  dim: 'text-zinc-500',
                   warn: 'text-amber-500',
                   okay: 'text-zinc-400',
                   good: 'text-accent',

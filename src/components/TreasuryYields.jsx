@@ -95,7 +95,7 @@ export default function TreasuryYields() {
         </div>
       )}
 
-      <p className="t-caption px-4 pt-2 text-zinc-600">
+      <p className="t-caption px-4 pt-2 text-zinc-500">
         Daily close, {data.asOf} · source US Treasury via FRED. Change is against the previous
         reading. The spread is the 10-year yield minus the 2-year.
       </p>

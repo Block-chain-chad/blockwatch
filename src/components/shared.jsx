@@ -191,7 +191,7 @@ export function AssetRow({ asset, onOpen, spark, marketOpen = true, barWidth = 8
         <div className="t-label text-zinc-100">{asset.ticker}</div>
         <div className="t-caption truncate text-zinc-500">
           {asset.name}
-          {thin && <span className="text-zinc-600"> · thin</span>}
+          {thin && <span className="text-zinc-500"> · thin</span>}
         </div>
       </div>
       {/* The 7-day stroke is hidden while the market is shut: a week of token
@@ -259,7 +259,7 @@ export function AssetTableRow({ asset, onOpen, spark, marketOpen = true }) {
         <span className="t-label shrink-0 text-zinc-100">{asset.ticker}</span>
         <span className="t-caption truncate text-zinc-500">
           {asset.name}
-          {thin && <span className="text-zinc-600"> · thin</span>}
+          {thin && <span className="text-zinc-500"> · thin</span>}
         </span>
       </span>
       <span className="flex justify-end">

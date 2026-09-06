@@ -70,14 +70,14 @@ export function FoldersList({ onOpenProfile, onOpenFolder }) {
                       </span>
                     </>
                   ) : (
-                    <span className="t-caption text-zinc-600">Empty — add assets from search</span>
+                    <span className="t-caption text-zinc-500">Empty — add assets from search</span>
                   )}
                 </div>
               </div>
               {avgGap != null && (
                 <div className="shrink-0 text-right">
                   <div className={`num t-label ${changeColor(avgGap)}`}>{formatPct(avgGap)}</div>
-                  <div className="t-caption mt-0.5 text-zinc-600">avg gap</div>
+                  <div className="t-caption mt-0.5 text-zinc-500">avg gap</div>
                 </div>
               )}
               <ChevronRight size={18} className="shrink-0 text-zinc-600" />

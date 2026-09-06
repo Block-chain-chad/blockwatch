@@ -155,7 +155,7 @@ export default function DualLineChart({
             )}
           </>
         ) : (
-          <span className="text-zinc-600">Touch and hold the chart to inspect</span>
+          <span className="text-zinc-500">Touch and hold the chart to inspect</span>
         )}
       </div>
       <svg
@@ -182,10 +182,10 @@ export default function DualLineChart({
             strokeDasharray="3 5"
           />
         ))}
-        <text x={W - PAD} y="12" textAnchor="end" fontSize="10" className="fill-zinc-600">
+        <text x={W - PAD} y="12" textAnchor="end" fontSize="10" className="fill-zinc-500">
           {formatPrice(vMax)}
         </text>
-        <text x={W - PAD} y={H - 8} textAnchor="end" fontSize="10" className="fill-zinc-600">
+        <text x={W - PAD} y={H - 8} textAnchor="end" fontSize="10" className="fill-zinc-500">
           {formatPrice(vMin)}
         </text>
         {stockVisible && (

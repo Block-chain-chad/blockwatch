@@ -97,7 +97,7 @@ export default function News({ onOpenProfile, onOpenAsset }) {
                     </div>
                   </>
                 )}
-                <div className="t-caption mt-1 text-zinc-600">Price alert · {timeAgo(item.at)}</div>
+                <div className="t-caption mt-1 text-zinc-500">Price alert · {timeAgo(item.at)}</div>
               </div>
             </button>
           ) : (
@@ -107,7 +107,7 @@ export default function News({ onOpenProfile, onOpenAsset }) {
               </span>
               <div className="min-w-0 flex-1">
                 <div className="t-label text-zinc-100">{item.title}</div>
-                <div className="t-caption mt-1 text-zinc-600">
+                <div className="t-caption mt-1 text-zinc-500">
                   {item.source} · {timeAgo(item.at)}
                 </div>
               </div>

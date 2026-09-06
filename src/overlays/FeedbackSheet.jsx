@@ -53,14 +53,14 @@ export default function FeedbackSheet({ onClose }) {
               maxLength={2000}
               rows={4}
               placeholder="What's on your mind?"
-              className="mt-3 w-full resize-none rounded-xl bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-600 outline-none ring-accent/60 focus:ring-2"
+              className="mt-3 w-full resize-none rounded-xl bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none ring-accent/60 focus:ring-2"
             />
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email for a reply (optional)"
-              className="mt-2 w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-600 outline-none ring-accent/60 focus:ring-2"
+              className="mt-2 w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none ring-accent/60 focus:ring-2"
             />
             {status === 'error' && (
               <p className="mt-2 px-1 text-xs text-zinc-400">

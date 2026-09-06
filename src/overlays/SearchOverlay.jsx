@@ -199,7 +199,7 @@ export default function SearchOverlay({ onClose, onOpenAsset, pickerFolderId = n
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search tickers or companies"
-            className="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-600 outline-none"
+            className="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-500 outline-none"
           />
           {query && (
             <button
@@ -295,7 +295,7 @@ export default function SearchOverlay({ onClose, onOpenAsset, pickerFolderId = n
                         <div className="text-[13px] tabular-nums text-zinc-300">
                           {formatPrice(l.price)}
                         </div>
-                        <div className="text-[10px] uppercase tracking-wide text-zinc-600">
+                        <div className="text-[10px] uppercase tracking-wide text-zinc-500">
                           tracking soon
                         </div>
                       </div>
@@ -321,7 +321,7 @@ export default function SearchOverlay({ onClose, onOpenAsset, pickerFolderId = n
             <p className="text-sm text-zinc-400">
               No tokenized version of “{query}” yet.
             </p>
-            <p className="mt-1 text-xs text-zinc-600">
+            <p className="mt-1 text-xs text-zinc-500">
               We track new listings daily — try one of these in the meantime.
             </p>
             <div className="mt-4 flex flex-wrap justify-center gap-2">

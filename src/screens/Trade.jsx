@@ -99,7 +99,7 @@ export default function Trade({ onOpenProfile }) {
               style={{ borderColor: 'var(--border-subtle)' }}
             >
               <span className="t-label text-zinc-400">{v.name}</span>
-              <span className="t-caption text-zinc-600">Exchange · xStocks ↗</span>
+              <span className="t-caption text-zinc-500">Exchange · xStocks ↗</span>
             </a>
           ))}
         </div>
@@ -135,7 +135,7 @@ export default function Trade({ onOpenProfile }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@email.com"
-              className="mt-3 w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-600 outline-none ring-accent/60 focus:ring-2"
+              className="mt-3 w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none ring-accent/60 focus:ring-2"
             />
             <button
               type="submit"

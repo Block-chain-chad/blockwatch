@@ -62,7 +62,7 @@ export default function TokenizationNews() {
           </div>
         </a>
       ))}
-      <p className="t-caption px-4 pt-2 text-zinc-600">
+      <p className="t-caption px-4 pt-2 text-zinc-500">
         Coverage of the tokenized-equity market. Links open the source.
       </p>
     </div>

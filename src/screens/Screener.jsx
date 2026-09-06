@@ -146,7 +146,7 @@ export default function Screener({ onOpenProfile, onOpenAsset }) {
                   <div className="t-caption truncate text-zinc-500">
                     {g.name}
                     {multi && (
-                      <span className="text-zinc-600">
+                      <span className="text-zinc-500">
                         {' · '}
                         {g.members.length} issuers
                       </span>
@@ -164,10 +164,10 @@ export default function Screener({ onOpenProfile, onOpenAsset }) {
                     {multi ? (
                       <>
                         {formatPct(g.lo)} to {formatPct(g.hi)}
-                        <span className="text-zinc-600"> · {g.spreadBp}bp apart</span>
+                        <span className="text-zinc-500"> · {g.spreadBp}bp apart</span>
                       </>
                     ) : (
-                      <span className="text-zinc-600">1 issuer</span>
+                      <span className="text-zinc-500">1 issuer</span>
                     )}
                   </div>
                 </div>
@@ -204,7 +204,7 @@ export default function Screener({ onOpenProfile, onOpenAsset }) {
                       </div>
                       <div className="t-caption truncate text-zinc-500">
                         {m.a.issuer}
-                        {m.a.chain && <span className="text-zinc-600"> · {m.a.chain}</span>}
+                        {m.a.chain && <span className="text-zinc-500"> · {m.a.chain}</span>}
                       </div>
                     </div>
                     <span className="num t-caption text-right text-zinc-500">

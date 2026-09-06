@@ -66,7 +66,7 @@ export default function AccessGate({ children }) {
             setStatus('idle')
           }}
           placeholder="Access code"
-          className="w-full rounded-xl bg-zinc-900 px-4 py-3 text-center text-sm tracking-wide text-zinc-100 placeholder-zinc-600 outline-none ring-accent/60 focus:ring-2"
+          className="w-full rounded-xl bg-zinc-900 px-4 py-3 text-center text-sm tracking-wide text-zinc-100 placeholder-zinc-500 outline-none ring-accent/60 focus:ring-2"
         />
         {status === 'wrong' && (
           <p className="mt-2 text-center text-xs text-zinc-500">

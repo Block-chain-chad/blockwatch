@@ -60,7 +60,7 @@ export default function PasswordSheet({ recoveryMode = false, onClose }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={`New password (at least ${MIN_PASSWORD} characters)`}
-              className="mt-3 w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-600 outline-none ring-accent/60 focus:ring-2"
+              className="mt-3 w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none ring-accent/60 focus:ring-2"
             />
             {status === 'error' && (
               <p className="mt-2 px-1 text-xs text-zinc-400">

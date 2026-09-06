@@ -71,7 +71,7 @@ export default function PremiumChart({ premium }) {
         {/* The zero axis. Labelled "1:1" everywhere else once, which put a
             ratio in a column of percentages — same unit as the rest of the
             screen now. */}
-        <text x={W - PAD} y={Math.max(y0 - 4, 9)} textAnchor="end" fontSize="9" className="fill-zinc-600">
+        <text x={W - PAD} y={Math.max(y0 - 4, 9)} textAnchor="end" fontSize="9" className="fill-zinc-500">
           0%
         </text>
         <path

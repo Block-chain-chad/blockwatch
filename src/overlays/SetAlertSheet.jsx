@@ -132,7 +132,7 @@ export default function SetAlertSheet({ asset, onClose }) {
                 value={target}
                 onChange={(e) => setTarget(e.target.value)}
                 placeholder="0.00"
-                className="w-full bg-transparent text-sm tabular-nums text-zinc-100 placeholder-zinc-600 outline-none"
+                className="w-full bg-transparent text-sm tabular-nums text-zinc-100 placeholder-zinc-500 outline-none"
               />
             </div>
             <p className="mt-2 h-4 px-1 text-xs text-zinc-500">

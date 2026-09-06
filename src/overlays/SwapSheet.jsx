@@ -356,7 +356,7 @@ export default function SwapSheet({ asset, onClose }) {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
-                className="mt-1 w-full rounded-xl bg-zinc-900 px-4 py-3 text-lg tabular-nums text-zinc-100 placeholder-zinc-600 outline-none ring-accent/60 focus:ring-2"
+                className="mt-1 w-full rounded-xl bg-zinc-900 px-4 py-3 text-lg tabular-nums text-zinc-100 placeholder-zinc-500 outline-none ring-accent/60 focus:ring-2"
               />
             </label>
 

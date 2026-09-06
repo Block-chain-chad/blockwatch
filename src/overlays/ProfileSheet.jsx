@@ -167,7 +167,7 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
           )}
         </div>
 
-        <div className="px-4 pt-3 text-center text-[11px] text-zinc-600">BlockWatch v0.1 · MVP preview</div>
+        <div className="px-4 pt-3 text-center text-[11px] text-zinc-500">BlockWatch v0.1 · MVP preview</div>
       </div>
 
       {feedbackOpen && <FeedbackSheet onClose={() => setFeedbackOpen(false)} />}

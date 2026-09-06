@@ -173,8 +173,9 @@ Small, cheap, and they compound if ignored.
 - **Tests cover the money path only.** `swap.js` and `format.js` are covered;
   `PricesContext`, the alert engine and the folder sync are not. The price
   shield and the alert hysteresis are the two most likely to break silently.
-- **WCAG contrast is about 15% done.** Four legal paragraphs were fixed; 26
-  `text-zinc-600` instances remain across 9 files.
+- **WCAG contrast — done.** Readable text never goes below `zinc-500`;
+  `zinc-600` is decoration only (chevrons, dividers, sparklines). The rule is
+  written on the token in `index.css`.
 - **Accessible sheets.** The bottom sheets are not real modals — no focus trap,
   no Escape, no `role="dialog"`. A keyboard user can tab out of a live swap.
 - **No rate limiting on the API proxies.** A trivial script can burn the shared

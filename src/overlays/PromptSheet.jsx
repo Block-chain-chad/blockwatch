@@ -26,7 +26,7 @@ export default function PromptSheet({ title, placeholder, initial = '', submitLa
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder={placeholder}
-          className="mt-3 w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-600 outline-none ring-accent/60 focus:ring-2"
+          className="mt-3 w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none ring-accent/60 focus:ring-2"
         />
         <div className="mt-3 flex gap-2">
           <button

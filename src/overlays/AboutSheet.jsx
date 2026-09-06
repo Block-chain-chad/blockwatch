@@ -41,7 +41,7 @@ export default function AboutSheet({ onClose }) {
               hold funds, execute trades, or give investment advice.
             </p>
           </div>
-          <p className="text-center text-[11px] text-zinc-600">BlockWatch v0.1 · MVP preview</p>
+          <p className="text-center text-[11px] text-zinc-500">BlockWatch v0.1 · MVP preview</p>
         </div>
 
         <button

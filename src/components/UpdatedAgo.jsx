@@ -31,7 +31,7 @@ export default function UpdatedAgo({ className = '' }) {
 
   if (!lastFetchAt) {
     return (
-      <div className={`text-xs text-zinc-600 ${className}`}>
+      <div className={`text-xs text-zinc-500 ${className}`}>
         {status === 'error'
           ? "We can't reach the price feed — check your connection. Retrying automatically."
           : 'Fetching live prices…'}
@@ -63,7 +63,7 @@ export default function UpdatedAgo({ className = '' }) {
         setRefreshing(true)
         refresh()
       }}
-      className={`block w-full text-xs text-zinc-600 transition-colors active:text-zinc-400 ${className}`}
+      className={`block w-full text-xs text-zinc-500 transition-colors active:text-zinc-400 ${className}`}
     >
       <span
         aria-hidden="true"
