@@ -73,7 +73,7 @@ const CACHE = Object.freeze({
   day: 's-maxage=3600, stale-while-revalidate=86400',
 })
 
-const UPSTREAM_HEADERS = { Accept: 'application/json', 'User-Agent': 'BlockWatch tracker' }
+const UPSTREAM_HEADERS = { Accept: 'application/json', 'User-Agent': 'OnStock tracker' }
 
 const str = (v) => (typeof v === 'string' ? v : '')
 

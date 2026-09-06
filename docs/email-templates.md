@@ -1,10 +1,10 @@
 # Supabase auth email templates
 
 Paste each into Supabase dashboard → Authentication → Emails. The links go
-DIRECTLY to blockwatch.app carrying a one-time token (`{{ .TokenHash }}`);
+DIRECTLY to onstock.app carrying a one-time token (`{{ .TokenHash }}`);
 the old `{{ .ConfirmationURL }}` bounced through Supabase's server, and iOS
 refuses to open the app on a redirect. Site URL must remain
-`https://blockwatch.app`.
+`https://onstock.app`.
 
 ## 1. Confirm signup — subject: `Confirm your OnStock account`
 
