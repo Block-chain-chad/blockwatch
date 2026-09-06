@@ -1,6 +1,8 @@
-# React + Vite
+# OnStock
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+OnStock is a tracker for tokenized stocks. It shows each token side by side with the real share it represents, so the number that matters — the gap between the two prices — is always on screen. Web app in React + Vite, serverless proxies in `api/`, iOS shell via Capacitor in `ios/`. Tracking is free and needs no account; the app never holds funds or executes trades.
+
+## Tooling notes (from the Vite template)
 
 Currently, two official plugins are available:
 
