@@ -29,7 +29,7 @@ export default async function handler(req, res) {
   try {
     const upstream = await fetch(
       `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=${interval}&range=${range}`,
-      { headers: { 'User-Agent': 'Mozilla/5.0 (BlockWatch tracker)' } }
+      { headers: { 'User-Agent': 'Mozilla/5.0 (OnStock tracker)' } }
     )
     if (!upstream.ok) return res.status(upstream.status).json({ error: 'upstream error' })
     const data = await upstream.json()

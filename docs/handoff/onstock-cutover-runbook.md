@@ -28,13 +28,15 @@ The site says OnStock at both hosts. Candles, desktop pane, code debts go live.
 
 ## 4. Merge PR #7 (cutover) — me, on your word
 Redirects turn on; CORS and CSP know the new host; iPhone files carry both.
-- Check: `curl -I https://blockwatch.app/` → `301` to `https://onstock.app/`
+- Check: `curl -sI https://blockwatch.app/ | grep -iE '^HTTP|^location'` → **308** with
+  `location: https://onstock.app/` (Vercel issues 308 for permanent redirects, not 301)
 - Check: `curl -I https://blockwatch.app/.well-known/apple-app-site-association`
   → **200**, not a redirect (build 10's universal links depend on it)
-- Check: `https://blockwatch.app/api/finnhub?kind=quote&symbol=AAPL&c=app`
-  → 200 with `Access-Control-Allow-Origin: capacitor://localhost`
-  (build 10 keeps working until testers update)
-- Check: `https://www.onstock.app` → 301 to the apex.
+- Check: `curl -sI 'https://blockwatch.app/api/finnhub?kind=quote&symbol=AAPL&c=app' -H 'Origin: capacitor://localhost' | grep -iE '^HTTP|access-control-allow-origin'`
+  → **200** and `capacitor://localhost` — no redirect (build 10 keeps working until testers update)
+- Check: `curl -sI https://www.onstock.app/ | grep -iE '^HTTP|^location'` → 308 to `https://onstock.app/`
+- Check: `curl -sI 'https://blockwatch.app/auth/confirm?token_hash=x&type=signup' | grep -i '^location'`
+  → the query string survives the redirect (old sign-up emails opened on a desktop depend on it)
 
 ## 5. Dashboards — you (five minutes total; I can't reach these)
 - **Supabase** → Authentication → URL Configuration: Site URL
@@ -48,8 +50,13 @@ Redirects turn on; CORS and CSP know the new host; iPhone files carry both.
 - **Email**: set up `contact@onstock.app` (forwarding to your inbox is enough)
   before you put it on anything public.
 
-## 6. GitHub secret for native builds — me
-`VITE_API_BASE` → `https://onstock.app`. Build 11 bakes it in.
+## 6. Point the native build at the new host — me, after step 5
+There is no secret for this: the iPhone build reads `VITE_API_BASE` from the
+committed `.env.ios` file, which PR #7 deliberately leaves on blockwatch.app.
+Once Supabase's redirect URLs include onstock.app (step 5), change line 5 of
+`.env.ios` to `VITE_API_BASE=https://onstock.app` and commit to `main`. That is
+what makes build 11 call the new host, link to it, and send sign-up emails
+back to it. Doing this before step 5 would break sign-up on build 11.
 
 ## 7. Build 11 — me
 Dispatch `ios-testflight.yml` with build number **11**. It carries the OnStock

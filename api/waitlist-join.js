@@ -147,10 +147,10 @@ export default async function handler(req, res) {
     // Deliberately not logging the address — emails stay out of Vercel logs.
     console.warn('RESEND_API_KEY not set; welcome email skipped')
   } else if (isNew) {
-    // Link back to wherever this deployment actually serves from — the
-    // *.vercel.app URL during the gated beta, blockwatch.app automatically
-    // once the custom domain is connected. Vercel routes requests by Host,
-    // so this header is always one of the project's own domains.
+    // Link back to wherever this deployment actually serves from — a
+    // *.vercel.app preview, or onstock.app in production. Vercel routes
+    // requests by Host, so this header is always one of the project's own
+    // domains; blockwatch.app keeps redirecting here for old links.
     const siteHost = req.headers.host || 'onstock.app'
     const siteUrl = `https://${siteHost}`
     try {

@@ -69,6 +69,17 @@
       "permanent": true
     },
     {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.onstock.app"
+        }
+      ],
+      "destination": "https://onstock.app/",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [
         {
