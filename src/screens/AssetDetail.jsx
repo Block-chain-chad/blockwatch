@@ -15,6 +15,7 @@ import DualLineChart from '../components/DualLineChart'
 import PremiumChart from '../components/PremiumChart'
 import { useChartData, CHART_RANGES } from '../hooks/useChartData'
 import { useStockInfo } from '../hooks/useStockInfo'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 import { formatCompact, timeAgo, EM_DASH } from '../lib/format'
 import { isThinlyTraded, premiumPct } from '../lib/prices'
 import { ChevronLeft, ChevronDown, ShareIcon, PlusIcon, BellIcon, StarIcon } from '../components/Icons'
@@ -112,6 +113,10 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
   const { rules } = useAlerts()
   const chart = useChartData(asset ?? { id: assetId }, range, chartRetry)
   const info = useStockInfo(asset?.underlying)
+  // `hidden lg:block` on the aside only hides the watchlist pane; it would
+  // still mount and subscribe every watchlist ticker on phones and in the
+  // iOS shell. Gate the pane itself on Tailwind's lg (64rem) instead.
+  const desktop = useMediaQuery('(min-width: 64rem)')
   if (!asset) return null
   const memberCount = folders.filter((f) => f.assetIds.includes(asset.id)).length
   const alertRule = rules[asset.id]
@@ -153,11 +158,12 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
         className="hidden lg:block lg:w-[28rem] lg:shrink-0 lg:overflow-y-auto lg:border-r"
         style={{ borderColor: 'var(--border-subtle)' }}
       >
-        <WatchlistPane currentId={asset.id} onOpen={(a) => onSwitchAsset(a.id)} />
+        {desktop && <WatchlistPane currentId={asset.id} onOpen={(a) => onSwitchAsset(a.id)} />}
       </aside>
       {/* On desktop this pane is the scroll container, so the sticky header
           below keeps pinning to it. Under lg: it is an inert wrapper. */}
       <div className="lg:min-w-0 lg:flex-1 lg:overflow-y-auto lg:pb-10">
+      <div className="lg:max-w-md">
       {/* Top padding travels with the sticky bar, so the notch / Dynamic
           Island never overlaps Back/Star/Share. env() is 0px on the web, so
           max(…) reproduces the previous py-3 exactly there. */}
@@ -893,6 +899,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
       </div>
 
       <UpdatedAgo className="pt-4 text-center" />
+      </div>
       </div>
 
       {foldersOpen && <AddToFolderSheet asset={asset} onClose={() => setFoldersOpen(false)} />}
