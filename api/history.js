@@ -9,8 +9,10 @@
 import { applyCors, handlePreflight, setCacheControl } from './_cors.js'
 import { rejectUnknownParams } from './_params.js'
 
-const INTERVALS = new Set(['5m', '30m', '1d'])
-const RANGES = new Set(['1d', '5d', '1mo', '3mo', '1y'])
+// Exported so src/lib/candles.js can keep its client-side mirror in sync
+// (a test compares the two); the handler itself is unchanged.
+export const INTERVALS = new Set(['5m', '30m', '1d'])
+export const RANGES = new Set(['1d', '5d', '1mo', '3mo', '1y'])
 
 const ALLOWED_PARAMS = new Set(['symbol', 'interval', 'range', 'c'])
 

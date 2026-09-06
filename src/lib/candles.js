@@ -122,6 +122,19 @@ export function choosePool(candidates, asset) {
 // --- Stock candles from the Yahoo chart payload ------------------------------
 
 /**
+ * What /api/history accepts. A client-side mirror of INTERVALS / RANGES in
+ * api/history.js — mirrored rather than imported so the browser bundle does
+ * not pull the serverless handler in; candles.test.js checks the two agree.
+ * Used to refuse a request locally instead of spending a round trip on a 400.
+ */
+export const STOCK_INTERVALS = Object.freeze(['5m', '30m', '1d'])
+export const STOCK_RANGES = Object.freeze(['1d', '5d', '1mo', '3mo', '1y'])
+
+export function isStockRequest(interval, range) {
+  return STOCK_INTERVALS.includes(interval) && STOCK_RANGES.includes(range)
+}
+
+/**
  * Yahoo v8 chart JSON (what /api/history relays) -> ascending candles in the
  * shared shape. Yahoo aligns five parallel arrays by index and leaves nulls
  * where a bucket had no trade; those rows are dropped, not zero-filled.

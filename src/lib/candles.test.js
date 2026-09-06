@@ -10,8 +10,12 @@ import {
   choosePool,
   normalizeYahooCandles,
   lastClose,
+  STOCK_INTERVALS,
+  STOCK_RANGES,
+  isStockRequest,
 } from './candles'
 import { NETWORKS, TIMEFRAME_AGGREGATES } from '../../api/_geckoterminal.js'
+import { INTERVALS, RANGES } from '../../api/history.js'
 
 /*
  * Two things can go quietly wrong here. A timeframe that GeckoTerminal does
@@ -43,11 +47,21 @@ describe('timeframes', () => {
   })
 
   it('maps onto a Yahoo request only where one exists', () => {
-    // Must stay inside api/history.js's INTERVALS / RANGES allowlists.
     expect(stockRequestFor('5m')).toEqual({ interval: '5m', range: '5d' })
     expect(stockRequestFor('1d')).toEqual({ interval: '1d', range: '1y' })
     expect(stockRequestFor('4h')).toBeNull()
     expect(stockRequestFor('nope')).toBeNull()
+    for (const t of TIMEFRAMES) {
+      if (t.stock) expect(isStockRequest(t.stock.interval, t.stock.range)).toBe(true)
+    }
+  })
+
+  it('mirrors the /api/history allowlists exactly', () => {
+    expect(new Set(STOCK_INTERVALS)).toEqual(INTERVALS)
+    expect(new Set(STOCK_RANGES)).toEqual(RANGES)
+    expect(isStockRequest('5m', '5d')).toBe(true)
+    expect(isStockRequest('1h', '5d')).toBe(false)
+    expect(isStockRequest('5m', '2y')).toBe(false)
   })
 
   it('knows the width of a candle in seconds', () => {

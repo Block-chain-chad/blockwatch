@@ -20,7 +20,9 @@
 //
 // Verified against the live API on 2026-09-05.
 
-const GT_BASE = 'https://api.geckoterminal.com/api/v2'
+export const GT_HOST = 'https://api.geckoterminal.com'
+export const GT_API_PREFIX = '/api/v2'
+const GT_BASE = `${GT_HOST}${GT_API_PREFIX}`
 
 /** Networks this app resolves pools on. Keys are GeckoTerminal network ids. */
 export const NETWORKS = Object.freeze(['solana', 'eth'])

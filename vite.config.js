@@ -32,6 +32,14 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/fred/, ''),
       },
+      // GeckoTerminal (token candles). It does send CORS headers, but going
+      // through the dev server keeps the client code one code path away from
+      // production, where /api/candles fronts it. See services/candles.js.
+      '/gt': {
+        target: 'https://api.geckoterminal.com',
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/gt/, ''),
+      },
     },
   },
 })
