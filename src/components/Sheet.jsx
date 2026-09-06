@@ -56,6 +56,11 @@ export default function Sheet({
   const panelRef = useRef(null)
   const onCloseRef = useRef(onClose)
   const titleId = useId()
+  // Captured during the first render, not in an effect: by the time effects
+  // run React has already focused any child with autoFocus, and the opener
+  // would read as the sheet's own field.
+  const openerRef = useRef(undefined)
+  if (openerRef.current === undefined) openerRef.current = document.activeElement
 
   useEffect(() => {
     onCloseRef.current = onClose
@@ -74,8 +79,8 @@ export default function Sheet({
 
     // React runs autoFocus before effects, so a field that asked for focus
     // already has it; otherwise the panel takes it so keys reach the trap.
-    const opener = document.activeElement
-    if (!root.contains(opener)) panelRef.current?.focus({ preventScroll: true })
+    const opener = openerRef.current
+    if (!root.contains(document.activeElement)) panelRef.current?.focus({ preventScroll: true })
 
     function onKeyDown(e) {
       if (!isTop() || e.defaultPrevented) return
@@ -96,8 +101,11 @@ export default function Sheet({
 
     // Focus that lands outside (a screen reader cursor, a programmatic focus
     // from the screen behind) is pulled back to the first thing in the sheet.
+    // Focus inside any other modal is never the page behind: a child sheet's
+    // autoFocus fires before the child has pushed itself onto the stack, so
+    // this one is still top at that instant and must leave it alone.
     function onFocusIn(e) {
-      if (!isTop() || root.contains(e.target)) return
+      if (!isTop() || e.target?.closest?.('[aria-modal="true"]')) return
       const first = focusables(root)[0] ?? panelRef.current
       first?.focus({ preventScroll: true })
     }
