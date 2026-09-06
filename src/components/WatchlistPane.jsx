@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { usePrices, useAssetSubscription } from '../state/PricesContext'
 import { useFolders } from '../state/FoldersContext'
 import { useSparklines } from '../hooks/useSparklines'
@@ -19,6 +20,16 @@ export default function WatchlistPane({ currentId, onOpen }) {
   const sparks = useSparklines(watchlistIds)
   const watched = assets.filter((a) => watchlistIds.includes(a.id))
 
+  // App keys <AssetDetail> by asset id, so every sidebar click remounts this
+  // pane inside a fresh <aside> whose scrollTop is back at 0. Bring the row
+  // for the open asset back into view once, on mount. 'nearest' does nothing
+  // when the row is already visible, and on phones the aside is display:none
+  // so there is no layout box and the call is a no-op.
+  const currentRef = useRef(null)
+  useEffect(() => {
+    currentRef.current?.scrollIntoView?.({ block: 'nearest' })
+  }, [])
+
   if (watched.length === 0) {
     return (
       <p className="t-caption px-4 py-6 text-zinc-500">
@@ -39,6 +50,7 @@ export default function WatchlistPane({ currentId, onOpen }) {
       {watched.map((a) => (
         <div
           key={a.id}
+          ref={a.id === currentId ? currentRef : undefined}
           aria-current={a.id === currentId ? 'true' : undefined}
           className={a.id === currentId ? 'bg-zinc-900' : undefined}
         >
