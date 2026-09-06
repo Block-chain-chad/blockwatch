@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Component, Suspense, lazy, useEffect, useState } from 'react'
 import { useAsset, usePrices, useAssetSubscription } from '../state/PricesContext'
 import { getTokenSpread } from '../services/jupiter'
 import { track } from '../services/analytics'
@@ -18,7 +18,7 @@ import { useStockInfo } from '../hooks/useStockInfo'
 import { formatCompact, timeAgo, EM_DASH } from '../lib/format'
 import { isThinlyTraded, premiumPct } from '../lib/prices'
 import { ChevronLeft, ChevronDown, ShareIcon, PlusIcon, BellIcon, StarIcon } from '../components/Icons'
-import { formatPrice, formatPct, GapBar, changeColor } from '../components/shared'
+import { formatPrice, formatPct, GapBar, changeColor, Chip } from '../components/shared'
 import PriceText from '../components/PriceText'
 import UpdatedAgo from '../components/UpdatedAgo'
 import AssetLogo from '../components/AssetLogo'
@@ -51,6 +51,36 @@ function CompareRow({ label, stock, token }) {
 const compactNum = (n) =>
   Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(n)
 
+/* The Candles mode, loaded the first time someone taps it. It brings the
+   TradingView charting library with it, which is why it is not in the main
+   bundle: the Gap chart is what the app is about and what most sessions
+   look at. */
+const CandlesPanel = lazy(() => import('../components/CandlesPanel'))
+
+/* If that chunk cannot be fetched (offline, a stale deploy), the mode renders
+   one caption line rather than throwing to the app-level boundary, which
+   would blank the whole screen over a secondary surface. */
+class CandlesBoundary extends Component {
+  state = { failed: false }
+  static getDerivedStateFromError() {
+    return { failed: true }
+  }
+  componentDidCatch(error, info) {
+    // Same reporting as the app-level ErrorBoundary: the caption alone hides
+    // a crash of this chunk from the console and from monitoring.
+    console.error('Candles crashed:', error, info?.componentStack)
+    window.__bwReportError?.(error, info?.componentStack)
+  }
+  render() {
+    if (this.state.failed) {
+      return <p className="t-caption mt-3 px-4 text-zinc-600">Candles could not load right now.</p>
+    }
+    return this.props.children
+  }
+}
+
+const CANDLES_SKELETON = <div className="mx-3 mt-3 h-[204px] animate-pulse rounded-2xl bg-zinc-900" />
+
 export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
   const [range, setRange] = useState('1D')
   // Scrubbing the chart drives the headline price (Robinhood-style); null =
@@ -65,6 +95,10 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
   const wallet = useWallet()
   const [chartRetry, setChartRetry] = useState(0)
   const [visibleLines, setVisibleLines] = useState({ token: true, stock: true })
+  // Chart mode. Gap is the app's thesis and the default; Candles is one side
+  // of it at a time, drawn the way a trader expects. Nothing in Gap mode
+  // changes when the other mode exists.
+  const [chartMode, setChartMode] = useState('gap')
 
   // Legend taps solo a line; at least one always stays visible.
   function toggleLine(key) {
@@ -323,98 +357,145 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
         </div>
       )}
 
-      <div className="mt-5 px-2">
-        <DualLineChart
-          token={chart.token}
-          stock={chart.stock}
-          premium={chart.premium}
-          loading={chart.loading}
-          error={chart.error}
-          onRetry={() => setChartRetry((n) => n + 1)}
-          onScrub={setScrub}
-          showToken={visibleLines.token}
-          showStock={visibleLines.stock}
-        />
-        {/* These are controls, not a caption, and they used to read as one:
-            swatch + label with no persistent affordance, press feedback that
-            only appeared once you were already pressing, and rounded-full —
-            which this system reserves for STATUS. A first-time user had no
-            reason to think the lines could be soloed at all.
-            Now they borrow FilterChips' language exactly (squared, active is a
-            bordered surface, same padding), so they read as the same kind of
-            thing. Off-state mutes the swatch rather than the whole chip:
-            opacity-40 on the button said "disabled", not "you turned this
-            off". */}
-        <div className="flex items-center justify-center gap-2 pt-2">
-          {asset.underlying && chart.stock.length >= 2 && (
+      {/* Chart mode. Two chips in the range row's language, left-aligned so
+          they read as a heading for the chart rather than a control inside
+          it. Switching away from Gap clears a scrub so the headline price
+          returns to live. */}
+      <div className="mt-5 flex gap-2 px-4">
+        <Chip
+          active={chartMode === 'gap'}
+          onClick={() => setChartMode('gap')}
+        >
+          Gap
+        </Chip>
+        <Chip
+          active={chartMode === 'candles'}
+          onClick={() => {
+            if (chartMode === 'candles') return
+            setScrub(null)
+            setChartMode('candles')
+            track('chart_mode', { mode: 'candles', ticker: asset.ticker })
+          }}
+        >
+          Candles
+        </Chip>
+      </div>
+
+      {/* Candles mode. Mounted only while showing, so leaving it tears the
+          chart down and Gap mode never spends a GeckoTerminal request. The
+          static record goes in, not the live asset: the panel's fetch keys
+          on object identity and the live one changes every tick. */}
+      {chartMode === 'candles' && staticAsset && (
+        <CandlesBoundary>
+          <Suspense fallback={CANDLES_SKELETON}>
+            <CandlesPanel asset={staticAsset} />
+          </Suspense>
+        </CandlesBoundary>
+      )}
+
+      {chartMode === 'gap' && (
+        <div className="mt-3 px-2">
+          <DualLineChart
+            token={chart.token}
+            stock={chart.stock}
+            premium={chart.premium}
+            loading={chart.loading}
+            error={chart.error}
+            onRetry={() => setChartRetry((n) => n + 1)}
+            onScrub={setScrub}
+            showToken={visibleLines.token}
+            showStock={visibleLines.stock}
+          />
+          {/* These are controls, not a caption, and they used to read as one:
+              swatch + label with no persistent affordance, press feedback that
+              only appeared once you were already pressing, and rounded-full —
+              which this system reserves for STATUS. A first-time user had no
+              reason to think the lines could be soloed at all.
+              Now they borrow FilterChips' language exactly (squared, active is a
+              bordered surface, same padding), so they read as the same kind of
+              thing. Off-state mutes the swatch rather than the whole chip:
+              opacity-40 on the button said "disabled", not "you turned this
+              off". */}
+          <div className="flex items-center justify-center gap-2 pt-2">
+            {asset.underlying && chart.stock.length >= 2 && (
+              <button
+                onClick={() => toggleLine('stock')}
+                aria-pressed={visibleLines.stock}
+                className={`t-label flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
+                  visibleLines.stock ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 active:bg-zinc-900'
+                }`}
+                style={
+                  visibleLines.stock
+                    ? { boxShadow: 'inset 0 0 0 1px var(--border-strong)' }
+                    : undefined
+                }
+              >
+                <span
+                  className={`h-0.5 w-4 rounded bg-zinc-400 ${visibleLines.stock ? '' : 'opacity-40'}`}
+                />
+                {asset.underlying} stock
+                {chart.stockIsFlat && <span className="text-zinc-500">(last close)</span>}
+              </button>
+            )}
             <button
-              onClick={() => toggleLine('stock')}
-              aria-pressed={visibleLines.stock}
+              onClick={() => toggleLine('token')}
+              aria-pressed={visibleLines.token}
               className={`t-label flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
-                visibleLines.stock ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 active:bg-zinc-900'
+                visibleLines.token ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 active:bg-zinc-900'
               }`}
               style={
-                visibleLines.stock
-                  ? { boxShadow: 'inset 0 0 0 1px var(--border-strong)' }
-                  : undefined
+                visibleLines.token ? { boxShadow: 'inset 0 0 0 1px var(--border-strong)' } : undefined
               }
             >
               <span
-                className={`h-0.5 w-4 rounded bg-zinc-400 ${visibleLines.stock ? '' : 'opacity-40'}`}
+                className={`h-0.5 w-4 rounded bg-accent ${visibleLines.token ? '' : 'opacity-40'}`}
               />
-              {asset.underlying} stock
-              {chart.stockIsFlat && <span className="text-zinc-500">(last close)</span>}
+              {asset.ticker} token
             </button>
+          </div>
+          {/* Says the chips are tappable in words. Making them look like
+              controls was necessary but not sufficient — a first-time reader
+              still has to guess what soloing a line is FOR, so the line says
+              that too. Only shown when there are actually two lines to choose
+              between; with no underlying there is nothing to hide. */}
+          {/* Says the chips are tappable in words. Making them look like
+              controls was necessary but not sufficient — a first-time reader
+              still has to guess what soloing a line is FOR, so the line says
+              that too. Only shown when there are actually two lines to choose
+              between; with no underlying there is nothing to hide. */}
+          {asset.underlying && chart.stock.length >= 2 && (
+            <p className="t-caption pt-1.5 text-center text-zinc-500">
+              Tap either to hide that line and read the other on its own.
+            </p>
           )}
-          <button
-            onClick={() => toggleLine('token')}
-            aria-pressed={visibleLines.token}
-            className={`t-label flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
-              visibleLines.token ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 active:bg-zinc-900'
-            }`}
-            style={
-              visibleLines.token ? { boxShadow: 'inset 0 0 0 1px var(--border-strong)' } : undefined
-            }
-          >
-            <span
-              className={`h-0.5 w-4 rounded bg-accent ${visibleLines.token ? '' : 'opacity-40'}`}
-            />
-            {asset.ticker} token
-          </button>
         </div>
-        {/* Says the chips are tappable in words. Making them look like
-            controls was necessary but not sufficient — a first-time reader
-            still has to guess what soloing a line is FOR, so the line says
-            that too. Only shown when there are actually two lines to choose
-            between; with no underlying there is nothing to hide. */}
-        {asset.underlying && chart.stock.length >= 2 && (
-          <p className="t-caption pt-1.5 text-center text-zinc-500">
-            Tap either to hide that line and read the other on its own.
-          </p>
-        )}
-      </div>
+      )}
 
-      {!chart.loading && !chart.error && <PremiumChart premium={chart.premium} />}
+      {chartMode === 'gap' && !chart.loading && !chart.error && (
+        <PremiumChart premium={chart.premium} />
+      )}
 
-      <div className="flex justify-center gap-2 px-4 pt-4">
-        {RANGES.map((r) => (
-          <button
-            key={r}
-            onClick={() => {
-              setScrub(null) // a new zoom invalidates the old finger position
-              setRange(r)
-            }}
-            className={`t-label rounded-md px-3 py-1.5 transition-colors ${
-              range === r ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 active:bg-zinc-900'
-            }`}
-            style={
-              range === r ? { boxShadow: 'inset 0 0 0 1px var(--border-strong)' } : undefined
-            }
-          >
-            {r}
-          </button>
-        ))}
-      </div>
+      {chartMode === 'gap' && (
+        <div className="flex justify-center gap-2 px-4 pt-4">
+          {RANGES.map((r) => (
+            <button
+              key={r}
+              onClick={() => {
+                setScrub(null) // a new zoom invalidates the old finger position
+                setRange(r)
+              }}
+              className={`t-label rounded-md px-3 py-1.5 transition-colors ${
+                range === r ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 active:bg-zinc-900'
+              }`}
+              style={
+                range === r ? { boxShadow: 'inset 0 0 0 1px var(--border-strong)' } : undefined
+              }
+            >
+              {r}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className={`grid gap-3 px-4 pt-6 ${asset.underlying ? 'grid-cols-2' : 'grid-cols-1'}`}>
         <button
