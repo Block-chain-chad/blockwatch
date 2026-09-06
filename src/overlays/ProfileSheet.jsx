@@ -22,6 +22,7 @@ import { ListRow } from '../components/shared'
 import { WEB_BASE } from '../services/apiBase'
 import { useWallet, shortAddress } from '../state/WalletContext'
 import WalletSheet from './WalletSheet'
+import Sheet, { SheetTitle } from '../components/Sheet'
 
 export default function ProfileSheet({ onClose, onGoToTrade }) {
   const { entry } = useWaitlist()
@@ -35,22 +36,15 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
   const [passwordOpen, setPasswordOpen] = useState(false)
   const themeLabel = { dark: 'Dark', light: 'Light', system: 'System' }[getThemePref()]
   return (
-    <div className="fixed inset-0 z-50 mx-auto flex max-w-md items-end justify-center">
-      <button
-        aria-label="Close profile"
-        onClick={onClose}
-        className="absolute inset-0 overlay-in bg-black/60"
-      />
-      <div className="relative sheet-in w-full rounded-t-3xl bg-zinc-950 pb-[max(env(safe-area-inset-bottom),16px)] ring-1 ring-zinc-800/70">
-        <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-zinc-800" />
-
+    <>
+      <Sheet onClose={onClose} closeLabel="Close profile" pad={0}>
         <div className="flex items-center justify-between px-4 pt-4">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-base font-semibold text-zinc-300">
               {user ? user.email[0].toUpperCase() : <PersonIcon size={20} />}
             </div>
             <div className="min-w-0">
-              <div className="truncate font-semibold">{user ? user.email : 'Guest'}</div>
+              <SheetTitle className="truncate font-semibold">{user ? user.email : 'Guest'}</SheetTitle>
               <div className="text-xs text-zinc-500">
                 {user ? 'Folders & alerts synced across devices' : 'No account needed to track'}
               </div>
@@ -168,14 +162,15 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
         </div>
 
         <div className="px-4 pt-3 text-center text-[11px] text-zinc-500">BlockWatch v0.1 · MVP preview</div>
-      </div>
+      </Sheet>
 
+      {/* Siblings of the dialog, not children: each is its own modal above it. */}
       {feedbackOpen && <FeedbackSheet onClose={() => setFeedbackOpen(false)} />}
       {signInOpen && <SignInSheet onClose={() => setSignInOpen(false)} />}
       {appearanceOpen && <AppearanceSheet onClose={() => setAppearanceOpen(false)} />}
       {aboutOpen && <AboutSheet onClose={() => setAboutOpen(false)} />}
       {passwordOpen && <PasswordSheet onClose={() => setPasswordOpen(false)} />}
       {walletOpen && <WalletSheet onClose={() => setWalletOpen(false)} />}
-    </div>
+    </>
   )
 }

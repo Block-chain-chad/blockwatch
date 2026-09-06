@@ -176,8 +176,11 @@ Small, cheap, and they compound if ignored.
 - **WCAG contrast — done.** Readable text never goes below `zinc-500`;
   `zinc-600` is decoration only (chevrons, dividers, sparklines). The rule is
   written on the token in `index.css`.
-- **Accessible sheets.** The bottom sheets are not real modals — no focus trap,
-  no Escape, no `role="dialog"`. A keyboard user can tab out of a live swap.
+- **Accessible sheets — done.** Every bottom sheet renders through
+  `components/Sheet.jsx`: `role="dialog"`, `aria-modal`, labelled by its own
+  heading, focus trapped and restored, Escape closes, body scroll locked. The
+  key logic is `lib/focusTrap.js`, tested. New sheets go through it; a
+  hand-rolled scrim is a regression.
 - **No rate limiting on the API proxies.** A trivial script can burn the shared
   Finnhub quota. Related to 1.3 and fixed by the same server-side cache.
 - **CoinGecko is keyless.** Public endpoint, no SLA, no recourse if throttled.

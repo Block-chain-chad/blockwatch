@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useWallet } from '../state/WalletContext'
 import { getSwapQuote, executeSwap, toRaw, fromRaw, USDC_DECIMALS } from '../services/swap'
+import Sheet, { SheetTitle } from '../components/Sheet'
 
 /*
  * Non-custodial swap sheet. Buy (spend USDC) or sell (spend token); a live
@@ -245,232 +246,227 @@ export default function SwapSheet({ asset, onClose }) {
   const outLabel = side === 'buy' ? asset.ticker : 'USDC'
 
   return (
-    <div className="fixed inset-0 z-[55] mx-auto flex max-w-md items-end">
-      <button aria-label="Close" onClick={onClose} className="absolute inset-0 overlay-in bg-black/60" />
-      <div className="relative sheet-in w-full rounded-t-3xl bg-zinc-950 p-4 pb-[max(env(safe-area-inset-bottom),16px)] ring-1 ring-zinc-800/70">
-        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-zinc-800" />
-
-        {status === 'done' ? (
-          <div className="px-1 pb-2 text-center">
-            <h2 className="text-lg font-semibold">Swap submitted</h2>
-            <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-              Your {side === 'buy' ? `${asset.ticker} purchase` : `sale of ${asset.ticker}`} was
-              sent to the Solana network. Submitted isn't the same as confirmed — your wallet is
-              the one that knows. It usually confirms in a few seconds, Phantom will notify you,
-              and you can watch it here:
-            </p>
+    <Sheet onClose={onClose} className="z-[55]">
+      {status === 'done' ? (
+        <div className="px-1 pb-2 text-center">
+          <SheetTitle className="text-lg font-semibold">Swap submitted</SheetTitle>
+          <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+            Your {side === 'buy' ? `${asset.ticker} purchase` : `sale of ${asset.ticker}`} was
+            sent to the Solana network. Submitted isn't the same as confirmed — your wallet is
+            the one that knows. It usually confirms in a few seconds, Phantom will notify you,
+            and you can watch it here:
+          </p>
+          <a
+            href={`https://solscan.io/tx/${sig}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 inline-block text-sm text-accent"
+          >
+            View transaction ↗
+          </a>
+          <button
+            onClick={onClose}
+            className="mt-5 w-full rounded-xl bg-zinc-900 py-3 text-sm font-medium text-zinc-200 active:bg-zinc-800"
+          >
+            Done
+          </button>
+        </div>
+      ) : status === 'failed' ? (
+        <div className="px-1 pb-2 text-center">
+          <SheetTitle className="text-lg font-semibold">Couldn’t build this swap</SheetTitle>
+          <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+            Nothing was sent and nothing left your wallet — safe to try again.
+          </p>
+          <button
+            onClick={() => {
+              // Back to the form with amount and side intact — no retyping.
+              setStatus('idle')
+              setMessage(null)
+            }}
+            className="mt-5 w-full rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim"
+          >
+            Try again
+          </button>
+          <button
+            onClick={onClose}
+            className="mt-2 w-full rounded-xl bg-zinc-900 py-3 text-sm font-medium text-zinc-200 active:bg-zinc-800"
+          >
+            Close
+          </button>
+        </div>
+      ) : status === 'unknown' ? (
+        <div className="px-1 pb-2 text-center">
+          <SheetTitle className="text-lg font-semibold">Check your wallet first</SheetTitle>
+          <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+            We lost the connection before we could confirm this swap — but it
+            may still have gone through. Check your wallet's recent activity
+            before trying again, so you don't swap twice.
+          </p>
+          {publicKey && (
             <a
-              href={`https://solscan.io/tx/${sig}`}
+              href={`https://solscan.io/account/${publicKey}`}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-3 inline-block text-sm text-accent"
             >
-              View transaction ↗
+              View my wallet activity ↗
             </a>
-            <button
-              onClick={onClose}
-              className="mt-5 w-full rounded-xl bg-zinc-900 py-3 text-sm font-medium text-zinc-200 active:bg-zinc-800"
-            >
-              Done
-            </button>
-          </div>
-        ) : status === 'failed' ? (
-          <div className="px-1 pb-2 text-center">
-            <h2 className="text-lg font-semibold">Couldn’t build this swap</h2>
-            <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-              Nothing was sent and nothing left your wallet — safe to try again.
-            </p>
-            <button
-              onClick={() => {
-                // Back to the form with amount and side intact — no retyping.
-                setStatus('idle')
-                setMessage(null)
-              }}
-              className="mt-5 w-full rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim"
-            >
-              Try again
-            </button>
-            <button
-              onClick={onClose}
-              className="mt-2 w-full rounded-xl bg-zinc-900 py-3 text-sm font-medium text-zinc-200 active:bg-zinc-800"
-            >
-              Close
-            </button>
-          </div>
-        ) : status === 'unknown' ? (
-          <div className="px-1 pb-2 text-center">
-            <h2 className="text-lg font-semibold">Check your wallet first</h2>
-            <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-              We lost the connection before we could confirm this swap — but it
-              may still have gone through. Check your wallet's recent activity
-              before trying again, so you don't swap twice.
-            </p>
-            {publicKey && (
-              <a
-                href={`https://solscan.io/account/${publicKey}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-3 inline-block text-sm text-accent"
-              >
-                View my wallet activity ↗
-              </a>
-            )}
-            <button
-              onClick={onClose}
-              className="mt-5 w-full rounded-xl bg-zinc-900 py-3 text-sm font-medium text-zinc-200 active:bg-zinc-800"
-            >
-              Close
-            </button>
-          </div>
-        ) : (
-          <>
-            <h2 className="px-1 text-base font-semibold">Swap {asset.ticker}</h2>
+          )}
+          <button
+            onClick={onClose}
+            className="mt-5 w-full rounded-xl bg-zinc-900 py-3 text-sm font-medium text-zinc-200 active:bg-zinc-800"
+          >
+            Close
+          </button>
+        </div>
+      ) : (
+        <>
+          <SheetTitle className="px-1 text-base font-semibold">Swap {asset.ticker}</SheetTitle>
 
-            <div className="mt-3 flex rounded-xl bg-zinc-900 p-1">
-              {['buy', 'sell'].map((s) => (
-                <button
-                  key={s}
-                  onClick={() => {
-                    setSide(s)
-                    setAmount('')
-                    setQuote(null)
-                    setAckedImpact(null)
-                    setStatus('idle')
-                    setMessage(null)
-                  }}
-                  className={`flex-1 rounded-lg py-2 text-[13px] font-medium capitalize transition-colors ${
-                    side === s ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500'
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-
-            <label className="mt-3 block">
-              <span className="px-1 text-xs text-zinc-500">You pay ({unitLabel})</span>
-              <input
-                type="number"
-                inputMode="decimal"
-                min="0"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-                className="mt-1 w-full rounded-xl bg-zinc-900 px-4 py-3 text-lg tabular-nums text-zinc-100 placeholder-zinc-500 outline-none ring-accent/60 focus:ring-2"
-              />
-            </label>
-
-            <div className="mt-3 space-y-1.5 rounded-xl bg-zinc-900/60 p-3.5 text-sm">
-              <div className="flex justify-between">
-                <span className="text-zinc-500">You receive</span>
-                <span className="tabular-nums text-zinc-100">
-                  {received != null
-                    ? `${fmtAmount(received)} ${outLabel}`
-                    : quoting
-                      ? 'Quoting…'
-                      : '—'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-zinc-500">Minimum received</span>
-                <span className="tabular-nums text-zinc-400">
-                  {minReceived != null ? `${fmtAmount(minReceived)} ${outLabel}` : '—'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-zinc-500">Price impact</span>
-                <span className={`tabular-nums ${impact != null && impact > 1 ? 'text-loss' : 'text-zinc-400'}`}>
-                  {impact != null ? `${impact.toFixed(2)}%` : impactUnknown ? 'Unknown' : '—'}
-                </span>
-              </div>
-            </div>
-
-            {message && (
-              <p className="mt-2 px-1 text-xs leading-relaxed text-zinc-400">{message}</p>
-            )}
-
-            {decimalsFailed && (
-              <p className="mt-2 px-1 text-xs leading-relaxed text-zinc-400">
-                Couldn’t load this token’s details. Close this and try again in a moment.
-              </p>
-            )}
-
-            {impactUnknown && (
-              <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-500/50 bg-amber-500/10 p-3">
-                <span aria-hidden="true" className="text-sm leading-5 text-amber-500">
-                  ▲
-                </span>
-                <p className="text-xs leading-relaxed text-zinc-100">
-                  <span className="font-semibold">Price impact unknown.</span> We couldn't get an
-                  estimate for this route, so we can't tell you how much the trade itself will move
-                  the price. Check the amount you'll receive above before confirming.
-                </p>
-              </div>
-            )}
-
-            {impactWarn && (
-              <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-500/50 bg-amber-500/10 p-3">
-                <span aria-hidden="true" className="text-sm leading-5 text-amber-500">
-                  ▲
-                </span>
-                <p className="text-xs leading-relaxed text-zinc-100">
-                  <span className="font-semibold">High price impact.</span> This trade moves the
-                  pool ~{impact.toFixed(2)}%. You'll get noticeably less than the market price.
-                </p>
-              </div>
-            )}
-
-            {impactNeedsAck && (
-              <div className="mt-3 rounded-xl border border-loss/60 bg-loss/10 p-3">
-                <p className="text-xs leading-relaxed text-zinc-100">
-                  <span className="font-semibold text-loss">Very high price impact.</span> This
-                  trade moves the pool ~{impact.toFixed(2)}%. That cost comes straight out of
-                  what you receive — a smaller amount usually costs far less.
-                </p>
-                <label className="mt-2 flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg px-1">
-                  <input
-                    type="checkbox"
-                    checked={ackCovers}
-                    onChange={(e) => setAckedImpact(e.target.checked ? impact : null)}
-                    style={{ accentColor: 'var(--color-accent)' }}
-                    className="h-5 w-5 shrink-0"
-                  />
-                  <span className="text-xs leading-relaxed text-zinc-100">
-                    I understand I may lose ~{impact.toFixed(1)}% on this trade.
-                  </span>
-                </label>
-              </div>
-            )}
-
-            {publicKey ? (
+          <div className="mt-3 flex rounded-xl bg-zinc-900 p-1">
+            {['buy', 'sell'].map((s) => (
               <button
-                onClick={confirm}
-                // `quoting` is deliberately NOT a disable condition. A quote
-                // stays on screen while the 8s refresh is in flight, so
-                // disabling on it killed the button for a fraction of every
-                // cycle — maddening on a high-impact trade you just
-                // acknowledged. `!quote` already covers "nothing to confirm".
-                disabled={!quote || status === 'signing' || blockedByImpact}
-                className="mt-3 w-full rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim disabled:opacity-40"
+                key={s}
+                onClick={() => {
+                  setSide(s)
+                  setAmount('')
+                  setQuote(null)
+                  setAckedImpact(null)
+                  setStatus('idle')
+                  setMessage(null)
+                }}
+                className={`flex-1 rounded-lg py-2 text-[13px] font-medium capitalize transition-colors ${
+                  side === s ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500'
+                }`}
               >
-                {status === 'signing'
-                  ? 'Confirm in your wallet…'
-                  : `Swap ${side === 'buy' ? 'into' : 'out of'} ${asset.ticker}`}
+                {s}
               </button>
-            ) : (
-              <p className="mt-3 rounded-xl bg-zinc-900 py-3 text-center text-sm text-zinc-400">
-                Connect a wallet in your profile to swap.
-              </p>
-            )}
+            ))}
+          </div>
 
-            <p className="mt-3 px-1 text-[11px] leading-relaxed text-zinc-400">
-              Swap runs on Jupiter from your own wallet — you approve and send it in your wallet;
-              BlockWatch never holds your funds. Prices move; you're guaranteed at least the
-              minimum shown. Not investment advice.
+          <label className="mt-3 block">
+            <span className="px-1 text-xs text-zinc-500">You pay ({unitLabel})</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              min="0"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0.00"
+              className="mt-1 w-full rounded-xl bg-zinc-900 px-4 py-3 text-lg tabular-nums text-zinc-100 placeholder-zinc-500 outline-none ring-accent/60 focus:ring-2"
+            />
+          </label>
+
+          <div className="mt-3 space-y-1.5 rounded-xl bg-zinc-900/60 p-3.5 text-sm">
+            <div className="flex justify-between">
+              <span className="text-zinc-500">You receive</span>
+              <span className="tabular-nums text-zinc-100">
+                {received != null
+                  ? `${fmtAmount(received)} ${outLabel}`
+                  : quoting
+                    ? 'Quoting…'
+                    : '—'}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-zinc-500">Minimum received</span>
+              <span className="tabular-nums text-zinc-400">
+                {minReceived != null ? `${fmtAmount(minReceived)} ${outLabel}` : '—'}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-zinc-500">Price impact</span>
+              <span className={`tabular-nums ${impact != null && impact > 1 ? 'text-loss' : 'text-zinc-400'}`}>
+                {impact != null ? `${impact.toFixed(2)}%` : impactUnknown ? 'Unknown' : '—'}
+              </span>
+            </div>
+          </div>
+
+          {message && (
+            <p className="mt-2 px-1 text-xs leading-relaxed text-zinc-400">{message}</p>
+          )}
+
+          {decimalsFailed && (
+            <p className="mt-2 px-1 text-xs leading-relaxed text-zinc-400">
+              Couldn’t load this token’s details. Close this and try again in a moment.
             </p>
-          </>
-        )}
-      </div>
-    </div>
+          )}
+
+          {impactUnknown && (
+            <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-500/50 bg-amber-500/10 p-3">
+              <span aria-hidden="true" className="text-sm leading-5 text-amber-500">
+                ▲
+              </span>
+              <p className="text-xs leading-relaxed text-zinc-100">
+                <span className="font-semibold">Price impact unknown.</span> We couldn't get an
+                estimate for this route, so we can't tell you how much the trade itself will move
+                the price. Check the amount you'll receive above before confirming.
+              </p>
+            </div>
+          )}
+
+          {impactWarn && (
+            <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-500/50 bg-amber-500/10 p-3">
+              <span aria-hidden="true" className="text-sm leading-5 text-amber-500">
+                ▲
+              </span>
+              <p className="text-xs leading-relaxed text-zinc-100">
+                <span className="font-semibold">High price impact.</span> This trade moves the
+                pool ~{impact.toFixed(2)}%. You'll get noticeably less than the market price.
+              </p>
+            </div>
+          )}
+
+          {impactNeedsAck && (
+            <div className="mt-3 rounded-xl border border-loss/60 bg-loss/10 p-3">
+              <p className="text-xs leading-relaxed text-zinc-100">
+                <span className="font-semibold text-loss">Very high price impact.</span> This
+                trade moves the pool ~{impact.toFixed(2)}%. That cost comes straight out of
+                what you receive — a smaller amount usually costs far less.
+              </p>
+              <label className="mt-2 flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg px-1">
+                <input
+                  type="checkbox"
+                  checked={ackCovers}
+                  onChange={(e) => setAckedImpact(e.target.checked ? impact : null)}
+                  style={{ accentColor: 'var(--color-accent)' }}
+                  className="h-5 w-5 shrink-0"
+                />
+                <span className="text-xs leading-relaxed text-zinc-100">
+                  I understand I may lose ~{impact.toFixed(1)}% on this trade.
+                </span>
+              </label>
+            </div>
+          )}
+
+          {publicKey ? (
+            <button
+              onClick={confirm}
+              // `quoting` is deliberately NOT a disable condition. A quote
+              // stays on screen while the 8s refresh is in flight, so
+              // disabling on it killed the button for a fraction of every
+              // cycle — maddening on a high-impact trade you just
+              // acknowledged. `!quote` already covers "nothing to confirm".
+              disabled={!quote || status === 'signing' || blockedByImpact}
+              className="mt-3 w-full rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim disabled:opacity-40"
+            >
+              {status === 'signing'
+                ? 'Confirm in your wallet…'
+                : `Swap ${side === 'buy' ? 'into' : 'out of'} ${asset.ticker}`}
+            </button>
+          ) : (
+            <p className="mt-3 rounded-xl bg-zinc-900 py-3 text-center text-sm text-zinc-400">
+              Connect a wallet in your profile to swap.
+            </p>
+          )}
+
+          <p className="mt-3 px-1 text-[11px] leading-relaxed text-zinc-400">
+            Swap runs on Jupiter from your own wallet — you approve and send it in your wallet;
+            BlockWatch never holds your funds. Prices move; you're guaranteed at least the
+            minimum shown. Not investment advice.
+          </p>
+        </>
+      )}
+    </Sheet>
   )
 }

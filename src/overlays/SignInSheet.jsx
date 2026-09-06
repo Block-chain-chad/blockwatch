@@ -5,6 +5,7 @@ import { isNativeApp } from '../lib/platform'
 import { passwordStrength } from '../lib/passwordStrength'
 import { mapAuthError } from '../lib/authErrors'
 import { EyeIcon, EyeOffIcon } from '../components/Icons'
+import Sheet, { SheetTitle } from '../components/Sheet'
 
 const MIN_PASSWORD = 8
 
@@ -109,173 +110,173 @@ export default function SignInSheet({ onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[55] mx-auto flex max-w-md items-end">
-      <button aria-label="Close" onClick={onClose} className="absolute inset-0 overlay-in bg-black/60" />
-      <div className="relative sheet-in w-full rounded-t-3xl bg-zinc-950 p-4 pb-[max(env(safe-area-inset-bottom),16px)] ring-1 ring-zinc-800/70">
-        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-zinc-800" />
-
-        {mode === 'forgot' ? (
-          <button
-            onClick={() => {
-              setMode('signin')
-              setNote(null)
-            }}
-            className="text-xs text-zinc-400 transition-colors active:text-zinc-200"
-          >
-            ← Back to sign in
-          </button>
-        ) : (
-          <div className="flex rounded-xl bg-zinc-900 p-1">
-            {[
-              { id: 'signin', label: 'Sign in' },
-              { id: 'signup', label: 'Create account' },
-            ].map((t) => (
-              <button
-                key={t.id}
-                onClick={() => {
-                  setMode(t.id)
-                  setNote(null)
-                }}
-                className={`flex-1 rounded-lg py-2 text-[13px] font-medium transition-colors ${
-                  mode === t.id ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500'
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {mode === 'forgot' ? (
-          <>
-            <h2 className="mt-3 px-1 text-base font-semibold">Reset your password</h2>
-            <p className="mt-0.5 px-1 text-xs text-zinc-500">
-              Enter your account email and we'll send a link to set a new password.
-            </p>
-          </>
-        ) : (
-          <p className="mt-3 px-1 text-xs leading-relaxed text-zinc-500">
-            {mode === 'signin'
-              ? 'Your folders and alerts sync to every device you sign in on.'
-              : 'One account, every device — your folders and alerts follow you.'}
-          </p>
-        )}
-
-        <form onSubmit={mode === 'forgot' ? submitForgot : submit}>
-          <input
-            type="email"
-            required
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@email.com"
-            className="mt-3 w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none ring-accent/60 focus:ring-2"
-          />
-          {mode !== 'forgot' && (
-            <div className="relative mt-2">
-              <input
-                type={showPw ? 'text' : 'password'}
-                required
-                autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder={mode === 'signin' ? 'Password' : `Password (at least ${MIN_PASSWORD} characters)`}
-                className="w-full rounded-xl bg-zinc-900 px-4 py-3 pr-12 text-sm text-zinc-100 placeholder-zinc-500 outline-none ring-accent/60 focus:ring-2"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPw((v) => !v)}
-                aria-label={showPw ? 'Hide password' : 'Show password'}
-                className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-zinc-500 active:text-zinc-300"
-              >
-                {showPw ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
-              </button>
-            </div>
-          )}
-          {mode === 'signup' && password.length > 0 && (
-            <p
-              className={`mt-1.5 px-1 text-xs ${
-                {
-                  dim: 'text-zinc-500',
-                  warn: 'text-amber-500',
-                  okay: 'text-zinc-400',
-                  good: 'text-accent',
-                }[passwordStrength(password).tone]
+    <Sheet
+      onClose={onClose}
+      className="z-[55]"
+      // Only the forgot view has a heading; the other two are named by their tab.
+      label={mode === 'forgot' ? undefined : mode === 'signin' ? 'Sign in' : 'Create account'}
+    >
+      {mode === 'forgot' ? (
+        <button
+          onClick={() => {
+            setMode('signin')
+            setNote(null)
+          }}
+          className="text-xs text-zinc-400 transition-colors active:text-zinc-200"
+        >
+          ← Back to sign in
+        </button>
+      ) : (
+        <div className="flex rounded-xl bg-zinc-900 p-1">
+          {[
+            { id: 'signin', label: 'Sign in' },
+            { id: 'signup', label: 'Create account' },
+          ].map((t) => (
+            <button
+              key={t.id}
+              onClick={() => {
+                setMode(t.id)
+                setNote(null)
+              }}
+              className={`flex-1 rounded-lg py-2 text-[13px] font-medium transition-colors ${
+                mode === t.id ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500'
               }`}
             >
-              Password strength: {passwordStrength(password).label}
-            </p>
-          )}
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
 
-          {note && (
-            <div className="mt-2 px-1">
-              <p className={`text-xs leading-relaxed ${note.kind === 'sent' ? 'text-accent' : 'text-zinc-400'}`}>
-                {note.text}
-              </p>
-              {note.action === 'resend' && (
-                <button
-                  type="button"
-                  disabled={busy || resent}
-                  onClick={async () => {
-                    setBusy(true)
-                    try {
-                      await resendConfirmation(email)
-                      setResent(true)
-                      setNote({ kind: 'sent', text: `A fresh link is on its way to ${email.trim()}.` })
-                    } catch {
-                      setNote({
-                        kind: 'error',
-                        text: "Couldn't resend just now — confirmation emails are rate-limited, wait a minute and try again.",
-                      })
-                    }
-                    setBusy(false)
-                  }}
-                  className="mt-1 text-xs font-medium text-accent disabled:opacity-40"
-                >
-                  {resent ? 'Sent — check your inbox' : 'Resend the email'}
-                </button>
-              )}
-            </div>
-          )}
+      {mode === 'forgot' ? (
+        <>
+          <SheetTitle className="mt-3 px-1 text-base font-semibold">Reset your password</SheetTitle>
+          <p className="mt-0.5 px-1 text-xs text-zinc-500">
+            Enter your account email and we'll send a link to set a new password.
+          </p>
+        </>
+      ) : (
+        <p className="mt-3 px-1 text-xs leading-relaxed text-zinc-500">
+          {mode === 'signin'
+            ? 'Your folders and alerts sync to every device you sign in on.'
+            : 'One account, every device — your folders and alerts follow you.'}
+        </p>
+      )}
 
-          <button
-            type="submit"
-            disabled={mode === 'forgot' ? !emailOk || busy : !emailOk || !passwordOk || busy}
-            className="mt-3 w-full rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim disabled:opacity-40"
-          >
-            {mode === 'forgot'
-              ? busy
-                ? 'Sending…'
-                : 'Send reset link'
-              : busy
-                ? 'Working…'
-                : mode === 'signin'
-                  ? 'Sign in'
-                  : 'Create account'}
-          </button>
-        </form>
-
+      <form onSubmit={mode === 'forgot' ? submitForgot : submit}>
+        <input
+          type="email"
+          required
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@email.com"
+          className="mt-3 w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none ring-accent/60 focus:ring-2"
+        />
         {mode !== 'forgot' && (
-          <div className="mt-3 flex items-center justify-between px-1 text-xs">
-            {mode === 'signin' ? (
-              <button
-                onClick={() => {
-                  setMode('forgot')
-                  setNote(null)
-                }}
-                className="text-zinc-400 transition-colors active:text-zinc-200"
-              >
-                Forgot password?
-              </button>
-            ) : (
-              <span />
-            )}
-            <button onClick={magicLink} className="text-zinc-400 transition-colors active:text-zinc-200">
-              Email me a sign-in link instead
+          <div className="relative mt-2">
+            <input
+              type={showPw ? 'text' : 'password'}
+              required
+              autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={mode === 'signin' ? 'Password' : `Password (at least ${MIN_PASSWORD} characters)`}
+              className="w-full rounded-xl bg-zinc-900 px-4 py-3 pr-12 text-sm text-zinc-100 placeholder-zinc-500 outline-none ring-accent/60 focus:ring-2"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPw((v) => !v)}
+              aria-label={showPw ? 'Hide password' : 'Show password'}
+              className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-zinc-500 active:text-zinc-300"
+            >
+              {showPw ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
             </button>
           </div>
         )}
-      </div>
-    </div>
+        {mode === 'signup' && password.length > 0 && (
+          <p
+            className={`mt-1.5 px-1 text-xs ${
+              {
+                dim: 'text-zinc-500',
+                warn: 'text-amber-500',
+                okay: 'text-zinc-400',
+                good: 'text-accent',
+              }[passwordStrength(password).tone]
+            }`}
+          >
+            Password strength: {passwordStrength(password).label}
+          </p>
+        )}
+
+        {note && (
+          <div className="mt-2 px-1">
+            <p className={`text-xs leading-relaxed ${note.kind === 'sent' ? 'text-accent' : 'text-zinc-400'}`}>
+              {note.text}
+            </p>
+            {note.action === 'resend' && (
+              <button
+                type="button"
+                disabled={busy || resent}
+                onClick={async () => {
+                  setBusy(true)
+                  try {
+                    await resendConfirmation(email)
+                    setResent(true)
+                    setNote({ kind: 'sent', text: `A fresh link is on its way to ${email.trim()}.` })
+                  } catch {
+                    setNote({
+                      kind: 'error',
+                      text: "Couldn't resend just now — confirmation emails are rate-limited, wait a minute and try again.",
+                    })
+                  }
+                  setBusy(false)
+                }}
+                className="mt-1 text-xs font-medium text-accent disabled:opacity-40"
+              >
+                {resent ? 'Sent — check your inbox' : 'Resend the email'}
+              </button>
+            )}
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={mode === 'forgot' ? !emailOk || busy : !emailOk || !passwordOk || busy}
+          className="mt-3 w-full rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim disabled:opacity-40"
+        >
+          {mode === 'forgot'
+            ? busy
+              ? 'Sending…'
+              : 'Send reset link'
+            : busy
+              ? 'Working…'
+              : mode === 'signin'
+                ? 'Sign in'
+                : 'Create account'}
+        </button>
+      </form>
+
+      {mode !== 'forgot' && (
+        <div className="mt-3 flex items-center justify-between px-1 text-xs">
+          {mode === 'signin' ? (
+            <button
+              onClick={() => {
+                setMode('forgot')
+                setNote(null)
+              }}
+              className="text-zinc-400 transition-colors active:text-zinc-200"
+            >
+              Forgot password?
+            </button>
+          ) : (
+            <span />
+          )}
+          <button onClick={magicLink} className="text-zinc-400 transition-colors active:text-zinc-200">
+            Email me a sign-in link instead
+          </button>
+        </div>
+      )}
+    </Sheet>
   )
 }

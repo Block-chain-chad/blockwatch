@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { premiumPct } from '../lib/prices'
 import { formatPrice, formatPct } from '../lib/format'
 import { track } from '../services/analytics'
+import Sheet, { SheetTitle } from '../components/Sheet'
 
 const CARD = 1080 // square PNG, social-friendly
 
@@ -123,66 +124,62 @@ export default function ShareSheet({ asset, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 mx-auto flex max-w-md items-end">
-      <button aria-label="Close" onClick={onClose} className="absolute inset-0 overlay-in bg-black/60" />
-      <div className="relative sheet-in w-full rounded-t-3xl bg-zinc-950 p-4 pb-[max(env(safe-area-inset-bottom),16px)] ring-1 ring-zinc-800/70">
-        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-zinc-800" />
-        <h2 className="px-1 text-base font-semibold">Share {asset.ticker}</h2>
+    <Sheet onClose={onClose}>
+      <SheetTitle className="px-1 text-base font-semibold">Share {asset.ticker}</SheetTitle>
 
-        {/* DOM preview mirroring the generated PNG */}
-        <div className="mt-3 rounded-2xl bg-zinc-900 p-5 ring-1 ring-zinc-800/60">
-          <div className="flex items-center gap-1.5">
-            <svg width="18" height="18" viewBox="0 0 32 32" aria-hidden="true">
-              <path d="M8 21 L13 14 L17 17 L24 8" stroke="#2dd4bf" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M8 24 L13 19 L17 21 L24 13" stroke="#52525b" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span className="text-xs font-semibold text-zinc-300">BlockWatch</span>
-          </div>
-          <div className="mt-3 text-xs text-zinc-500">
-            {asset.name} · {asset.issuer}
-            {asset.chain ? ` on ${asset.chain}` : ''}
-          </div>
-          <div className="text-xl font-bold">{asset.ticker}</div>
-          {p != null ? (
-            <>
-              <div className={`mt-1 text-4xl font-bold tabular-nums ${p > 0 ? 'text-gain' : p < 0 ? 'text-loss' : 'text-zinc-400'}`}>
-                {formatPct(p)}
-              </div>
-              <div className="mt-0.5 text-sm text-zinc-400">vs {asset.underlying} stock</div>
-            </>
-          ) : (
-            <div className="mt-1 text-4xl font-bold tabular-nums">
-              {asset.tokenPrice != null ? formatPrice(asset.tokenPrice) : '—'}
+      {/* DOM preview mirroring the generated PNG */}
+      <div className="mt-3 rounded-2xl bg-zinc-900 p-5 ring-1 ring-zinc-800/60">
+        <div className="flex items-center gap-1.5">
+          <svg width="18" height="18" viewBox="0 0 32 32" aria-hidden="true">
+            <path d="M8 21 L13 14 L17 17 L24 8" stroke="#2dd4bf" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M8 24 L13 19 L17 21 L24 13" stroke="#52525b" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <span className="text-xs font-semibold text-zinc-300">BlockWatch</span>
+        </div>
+        <div className="mt-3 text-xs text-zinc-500">
+          {asset.name} · {asset.issuer}
+          {asset.chain ? ` on ${asset.chain}` : ''}
+        </div>
+        <div className="text-xl font-bold">{asset.ticker}</div>
+        {p != null ? (
+          <>
+            <div className={`mt-1 text-4xl font-bold tabular-nums ${p > 0 ? 'text-gain' : p < 0 ? 'text-loss' : 'text-zinc-400'}`}>
+              {formatPct(p)}
             </div>
-          )}
-          <div className="mt-3 text-xs text-zinc-500">
-            {asset.tokenPrice != null && <>Token {formatPrice(asset.tokenPrice)}</>}
-            {asset.stockPrice != null && <> · Stock {formatPrice(asset.stockPrice)}</>}
+            <div className="mt-0.5 text-sm text-zinc-400">vs {asset.underlying} stock</div>
+          </>
+        ) : (
+          <div className="mt-1 text-4xl font-bold tabular-nums">
+            {asset.tokenPrice != null ? formatPrice(asset.tokenPrice) : '—'}
           </div>
+        )}
+        <div className="mt-3 text-xs text-zinc-500">
+          {asset.tokenPrice != null && <>Token {formatPrice(asset.tokenPrice)}</>}
+          {asset.stockPrice != null && <> · Stock {formatPrice(asset.stockPrice)}</>}
         </div>
-
-        <div className="mt-4 flex gap-2">
-          <button
-            onClick={share}
-            className="flex-1 rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim"
-          >
-            Share
-          </button>
-          <button
-            onClick={copy}
-            className="flex-1 rounded-xl bg-zinc-900 py-3 text-sm font-medium text-zinc-200 transition-colors active:bg-zinc-800"
-          >
-            Copy image
-          </button>
-          <button
-            onClick={() => download()}
-            className="flex-1 rounded-xl bg-zinc-900 py-3 text-sm font-medium text-zinc-200 transition-colors active:bg-zinc-800"
-          >
-            Save image
-          </button>
-        </div>
-        {note && <p className="mt-2 px-1 text-center text-xs text-zinc-500">{note}</p>}
       </div>
-    </div>
+
+      <div className="mt-4 flex gap-2">
+        <button
+          onClick={share}
+          className="flex-1 rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim"
+        >
+          Share
+        </button>
+        <button
+          onClick={copy}
+          className="flex-1 rounded-xl bg-zinc-900 py-3 text-sm font-medium text-zinc-200 transition-colors active:bg-zinc-800"
+        >
+          Copy image
+        </button>
+        <button
+          onClick={() => download()}
+          className="flex-1 rounded-xl bg-zinc-900 py-3 text-sm font-medium text-zinc-200 transition-colors active:bg-zinc-800"
+        >
+          Save image
+        </button>
+      </div>
+      {note && <p className="mt-2 px-1 text-center text-xs text-zinc-500">{note}</p>}
+    </Sheet>
   )
 }

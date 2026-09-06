@@ -22,6 +22,7 @@ import {
 import AssetLogo from '../components/AssetLogo'
 import PromptSheet from '../overlays/PromptSheet'
 import SearchOverlay from '../overlays/SearchOverlay'
+import Sheet, { SheetTitle } from '../components/Sheet'
 
 export function FoldersList({ onOpenProfile, onOpenFolder }) {
   const { assets } = usePrices()
@@ -121,33 +122,29 @@ export function FoldersList({ onOpenProfile, onOpenFolder }) {
 /* Rename / Delete action sheet for a folder. */
 function FolderMenu({ folder, onClose, onRename, onDelete }) {
   return (
-    <div className="fixed inset-0 z-[55] mx-auto flex max-w-md items-end">
-      <button aria-label="Close" onClick={onClose} className="absolute inset-0 overlay-in bg-black/60" />
-      <div className="relative sheet-in w-full rounded-t-3xl bg-zinc-950 pb-[max(env(safe-area-inset-bottom),16px)] ring-1 ring-zinc-800/70">
-        <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-zinc-800" />
-        <div className="truncate px-5 pb-1 pt-4 text-sm text-zinc-500">{folder.name}</div>
-        <button
-          onClick={() => {
-            onClose()
-            onRename()
-          }}
-          className="flex w-full items-center gap-3 px-5 py-3.5 text-left text-[15px] transition-colors active:bg-zinc-900"
-        >
-          <PencilIcon size={19} className="text-zinc-400" />
-          Rename folder
-        </button>
-        <button
-          onClick={() => {
-            onClose()
-            onDelete()
-          }}
-          className="flex w-full items-center gap-3 px-5 py-3.5 text-left text-[15px] transition-colors active:bg-zinc-900"
-        >
-          <TrashIcon size={19} className="text-zinc-400" />
-          Delete folder
-        </button>
-      </div>
-    </div>
+    <Sheet onClose={onClose} className="z-[55]" pad={0}>
+      <SheetTitle className="truncate px-5 pb-1 pt-4 text-sm text-zinc-500">{folder.name}</SheetTitle>
+      <button
+        onClick={() => {
+          onClose()
+          onRename()
+        }}
+        className="flex w-full items-center gap-3 px-5 py-3.5 text-left text-[15px] transition-colors active:bg-zinc-900"
+      >
+        <PencilIcon size={19} className="text-zinc-400" />
+        Rename folder
+      </button>
+      <button
+        onClick={() => {
+          onClose()
+          onDelete()
+        }}
+        className="flex w-full items-center gap-3 px-5 py-3.5 text-left text-[15px] transition-colors active:bg-zinc-900"
+      >
+        <TrashIcon size={19} className="text-zinc-400" />
+        Delete folder
+      </button>
+    </Sheet>
   )
 }
 
