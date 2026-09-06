@@ -43,7 +43,7 @@ export default function CandlesPanel({ asset }) {
         ? `Token candles are the largest ${network ?? asset.chain ?? 'DEX'} pool, one venue, not a composite.`
         : `${asset.underlying} share candles, regular session only, via Yahoo Finance.`
       : side === 'token'
-        ? `No candles for ${asset.ticker} — no pool with trades was found on ${asset.chain ?? 'Solana or Ethereum'}.`
+        ? `No ${asset.ticker} candles right now.`
         : `No ${asset.underlying} candles at this interval.`
 
   return (
