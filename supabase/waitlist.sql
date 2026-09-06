@@ -1,4 +1,4 @@
--- BlockWatch waitlist schema. Run once in the Supabase SQL editor.
+-- OnStock waitlist schema. Run once in the Supabase SQL editor.
 --
 -- Design: the anon (browser) key can do exactly one thing — call
 -- join_waitlist(email) — and learns nothing but its own position number.

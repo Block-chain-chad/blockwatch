@@ -1,4 +1,4 @@
-# BlockWatch — what happens next
+# OnStock — what happens next
 
 Written 2026-07-29, the day the app reached a real iPhone.
 
@@ -44,7 +44,7 @@ Once approved, invite by email or turn on the public link.
 
 ### 1.2 "What to Test" — draft
 
-> BlockWatch compares tokenized stocks against the real shares they track.
+> OnStock compares tokenized stocks against the real shares they track.
 > The number to look at is the **gap** — how far a token's price sits from
 > its underlying share.
 >
@@ -66,7 +66,7 @@ That last question is the real one. Everything else is bug-hunting.
 ### 1.3 Finnhub rate limit — THE technical blocker
 
 Free tier is **60 API calls per minute, shared across every user of the app.**
-Measured: BlockWatch requests up to 50 stock symbols per minute in a single
+Measured: OnStock requests up to 50 stock symbols per minute in a single
 lane. Two or three concurrent testers exhaust the quota, and the symptom is
 prices silently going stale rather than an error — which looks exactly like the
 CORS bug that took two rounds to fix.
@@ -188,6 +188,6 @@ Small, cheap, and they compound if ignored.
 
 ## The measure that matters
 
-Not users, not revenue, not the App Store. **Ten people who open BlockWatch in
+Not users, not revenue, not the App Store. **Ten people who open OnStock in
 a week and come back.** Everything in Phase 3 is a guess until that number
 exists, and everything in Phase 1 exists to make it possible.
