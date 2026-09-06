@@ -9,6 +9,17 @@ import { useChartData } from './useChartData'
 import { useStockInfo } from './useStockInfo'
 
 /**
+ * The alert button's caption for one asset's rule (or no rule). Shared with
+ * the desktop right column, which reads the rule without the chart bundle.
+ */
+export function alertLabelFor(rule) {
+  if (!rule) return 'Set alert'
+  if (rule.drift && rule.price) return '2 alerts set'
+  if (rule.drift) return `Alert at ±${rule.drift.threshold}%`
+  return `Alert at ${formatPrice(rule.price.target)}`
+}
+
+/**
  * Everything the asset screen knows about one asset, in one place: the live
  * record, its price subscription, the gap chart series for `range`, the
  * underlying's company info, the DEX spread, the cross-issuer siblings, and
@@ -55,14 +66,7 @@ export function useAssetWorkspace(assetId, range, chartRetry = 0) {
   const info = useStockInfo(asset?.underlying)
 
   const memberCount = asset ? folders.filter((f) => f.assetIds.includes(asset.id)).length : 0
-  const alertRule = rules[assetId]
-  const alertLabel = !alertRule
-    ? 'Set alert'
-    : alertRule.drift && alertRule.price
-      ? '2 alerts set'
-      : alertRule.drift
-        ? `Alert at ±${alertRule.drift.threshold}%`
-        : `Alert at ${formatPrice(alertRule.price.target)}`
+  const alertLabel = alertLabelFor(rules[assetId])
   const inWatchlist = watchlistIds.includes(assetId)
   // Same underlying, different issuer — the cross-issuer comparison.
   const siblings = asset?.underlying
