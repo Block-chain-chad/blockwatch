@@ -151,7 +151,7 @@ export default async function handler(req, res) {
     // *.vercel.app URL during the gated beta, blockwatch.app automatically
     // once the custom domain is connected. Vercel routes requests by Host,
     // so this header is always one of the project's own domains.
-    const siteHost = req.headers.host || 'blockwatch.app'
+    const siteHost = req.headers.host || 'onstock.app'
     const siteUrl = `https://${siteHost}`
     try {
       const sendRes = await fetch('https://api.resend.com/emails', {
@@ -161,6 +161,8 @@ export default async function handler(req, res) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          // The address stays on blockwatch.app until Resend has verified
+          // onstock.app; sending from an unverified domain is rejected outright.
           from: 'OnStock <contact@blockwatch.app>',
           to: [email],
           subject: "You're on the OnStock waitlist",

@@ -21,7 +21,15 @@ export const NATIVE_ORIGINS = new Set([
   'ionic://localhost', // Capacitor's alternate iOS scheme
 ])
 
-const ALLOWED = new Set([...NATIVE_ORIGINS, 'https://blockwatch.app', 'https://www.blockwatch.app'])
+// Both domains stay allowed while blockwatch.app redirects to onstock.app:
+// build 10 on phones still calls the old host, and old emails still link to it.
+const ALLOWED = new Set([
+  ...NATIVE_ORIGINS,
+  'https://onstock.app',
+  'https://www.onstock.app',
+  'https://blockwatch.app',
+  'https://www.blockwatch.app',
+])
 
 /** True when this Origin is one of our own native WebView schemes. */
 export function isNativeOrigin(origin) {
@@ -139,7 +147,7 @@ function setCorsMethodHeaders(res) {
  * i.e. ordinary web visitors cache exactly as they always have.
  *
  * `originScoped` (from applyCors) is true when the response names ONE specific
- * origin — e.g. a browser at https://blockwatch.app that sent an Origin header.
+ * origin — e.g. a browser at https://onstock.app that sent an Origin header.
  * Such a response must never be stored where a different origin could be handed
  * it, so it becomes `private` (browser cache only) and `s-maxage`
  * (shared-cache-only) becomes the equivalent `max-age`, preserving the same
