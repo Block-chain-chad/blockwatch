@@ -7,6 +7,7 @@ import { usePrices, useAssetSubscription } from '../state/PricesContext'
 import { useFolders } from '../state/FoldersContext'
 import { useSparklines } from '../hooks/useSparklines'
 import { premiumPct, isThinlyTraded } from '../lib/prices'
+import { SESSION_DOT, SESSION_NOTE } from '../lib/sessionCopy'
 import {
   AssetRow,
   AssetTableHeader,
@@ -21,30 +22,10 @@ import {
 
 /*
  * Session strip: says which of the four US sessions we are in and, crucially,
- * whether the gap can be trusted right now.
- *
- * Four states, not two. Pre and post used to fall into "overnight", which was
- * wrong in the one way that matters: overnight the stock genuinely is not
- * moving, so comparing a live token against the last close is fair. Between
- * 04:00-09:30 and 16:00-20:00 the stock IS moving and our feed cannot see it
- * (Finnhub /quote is regular-session only), so the same comparison invents a
- * premium — loudest right after an earnings release, which is exactly when
- * someone is looking. See lib/market.js.
+ * whether the gap can be trusted right now. The four-state copy itself lives
+ * in lib/sessionCopy.js (the desktop top bar shows the same states as a dot
+ * and a short word); the reasoning for four states rather than two is there.
  */
-const SESSION_DOT = {
-  regular: 'var(--color-session-open)',
-  pre: 'var(--color-session-overnight)',
-  post: 'var(--color-session-overnight)',
-  closed: 'var(--color-session-closed)',
-}
-
-const SESSION_NOTE = {
-  regular: 'US market open — both sides live, so the gap is a real spread right now.',
-  pre: 'Pre-market — the stock is trading again, but our price is still the last close, so gaps read wider than they are.',
-  post: 'After hours — the stock is still trading, but our price is the 4pm close, so gaps read wider than they are.',
-  closed: 'Overnight — the market is shut, tokens still trade.',
-}
-
 function SessionLine({ onOpenAsset }) {
   const { assets, session } = usePrices()
 
