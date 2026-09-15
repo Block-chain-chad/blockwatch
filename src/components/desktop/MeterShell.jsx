@@ -4,6 +4,8 @@ import { useFolders } from '../../state/FoldersContext'
 import { useAsset } from '../../state/PricesContext'
 import { useLocalState } from '../../hooks/useLocalState'
 import { useMeterShortcuts } from '../../hooks/useMeterShortcuts'
+import { useWindowWidth } from '../../hooks/useWindowWidth'
+import { bigScreen } from '../../lib/bigScreen'
 import { getRecentViews } from '../../lib/recentViews'
 import { ASSET_IDS } from '../../data/universe'
 import { pickInitialAsset } from '../../lib/desktopState'
@@ -48,6 +50,13 @@ export default function MeterShell({ tab, onTab, assetId, onSelectAsset, openFol
   const { watchlistIds, toggleWatchlist } = useFolders()
   const alertAsset = useAsset(alertFor)
   const asset = useAsset(assetId)
+
+  // The one window measurement (spec 2026-09-15 §2.1): bigScreen sizes the
+  // Board's rule, the Readout column and the gap history from it, and the
+  // shell hands the result down. Memoised on the width so a price re-render
+  // does not hand the children a fresh object.
+  const width = useWindowWidth()
+  const big = useMemo(() => bigScreen(width), [width])
 
   // Owner question 1's default: open on Watching when it has rows, else the
   // Board; after that the last lens is remembered.
@@ -209,9 +218,9 @@ export default function MeterShell({ tab, onTab, assetId, onSelectAsset, openFol
     const chartShown = chartOpen && Boolean(assetId)
     body = (
       <>
-        <div hidden={chartShown} className="grid min-h-0" style={{ gridTemplateColumns: 'minmax(0, 1fr) min(560px, 39vw)' }}>
+        <div hidden={chartShown} className="grid min-h-0" style={{ gridTemplateColumns: `minmax(0, 1fr) ${big.readout}` }}>
           <main className="min-h-0 min-w-0">
-            <Board selectedId={assetId} onSelect={select} actionsRef={boardRef} lens={effectiveLens} onLens={setLens} />
+            <Board selectedId={assetId} onSelect={select} actionsRef={boardRef} lens={effectiveLens} onLens={setLens} big={big} />
           </main>
           <aside className="min-h-0 min-w-0 overflow-y-auto border-l" style={{ borderColor: 'var(--border-default)' }}>
             {/* The Readout mounts only with an asset: its hooks would otherwise
@@ -225,6 +234,7 @@ export default function MeterShell({ tab, onTab, assetId, onSelectAsset, openFol
                 onOpenChart={openChart}
                 sheet={chartShown ? null : sheet}
                 onSheet={setSheet}
+                big={big}
               />
             ) : (
               <div className="flex h-full items-center justify-center px-6">
@@ -252,7 +262,14 @@ export default function MeterShell({ tab, onTab, assetId, onSelectAsset, openFol
   return (
     <div
       className="grid h-dvh w-full overflow-hidden"
-      style={{ gridTemplateColumns: 'minmax(0, 1fr)', gridTemplateRows: fullscreen ? '0px 1fr' : '56px 1fr' }}
+      style={{
+        gridTemplateColumns: 'minmax(0, 1fr)',
+        gridTemplateRows: fullscreen ? '0px 1fr' : '56px 1fr',
+        // Past 2560 the Meter centres with plain page-background margins and
+        // no border; the masthead inside spans the content max (spec §2.4).
+        maxWidth: big.contentMax ?? undefined,
+        marginInline: big.contentMax == null ? undefined : 'auto',
+      }}
     >
       <div hidden={fullscreen}>
         <Masthead active={mastheadActive} onTab={onMastheadTab} searchRef={searchRef} onSelectAsset={(id) => select(id, { from: 'search' })} onOpenProfile={onOpenProfile} />
