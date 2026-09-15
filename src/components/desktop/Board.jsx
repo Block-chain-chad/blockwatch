@@ -13,6 +13,8 @@ import {
 import { ageWords } from '../../lib/provenance'
 import { formatPct, formatPrice } from '../../lib/format'
 import { GapBar } from '../shared'
+import { BIG_SCREEN_BASE } from '../../lib/bigScreen'
+import RuleTicks from './RuleTicks'
 import { ChevronRight, ChevronDown } from '../Icons'
 import AssetLogo from '../AssetLogo'
 import PriceText from '../PriceText'
@@ -25,16 +27,18 @@ import PriceText from '../PriceText'
  * tick lines up. Rows past the viewport are not rendered (lib/board.js's
  * visibleWindow); order is frozen once every company is in.
  *
- * Column grid: company flexes (min 160px) · share 120 · gap 224 · wrappers
- * 104 · cheapest 80 · chevron 24, inside 24 px gutters.
+ * Column grid: company flexes (min 160px) · share 120 · gap (the rule plus
+ * 80: 12 gap, the 56 px signed label, 12 trailing; 224 at 1440 and below,
+ * lib/bigScreen.js decides above that) · wrappers 104 · cheapest 80 ·
+ * chevron 24, inside 24 px gutters.
  */
-const GRID = 'minmax(160px, 1fr) 120px 224px 104px 80px 24px'
+const gridFor = (gapColumn) => `minmax(160px, 1fr) 120px ${gapColumn}px 104px 80px 24px`
 const CHIP = 't-label flex h-7 shrink-0 items-center rounded-md px-2.5 transition-colors'
 const CHIP_ON = 'bg-zinc-800 text-zinc-100'
 const CHIP_OFF = 'text-zinc-500 hover:text-zinc-300'
 const chipStyle = (on) => (on ? { boxShadow: 'inset 0 0 0 1px var(--border-strong)' } : undefined)
 
-export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }) {
+export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, big = BIG_SCREEN_BASE }) {
   const { assets, session, stocksAt, lastFetchAt } = usePrices()
   const { watchlistIds } = useFolders()
   const [sort, setSort] = useLocalState('bw.meter.sort.v1', 'widest')
@@ -160,6 +164,7 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }
   const stockAge = stocksAt ? (now - stocksAt) / 1000 : null
   const tokenAge = lastFetchAt ? (now - lastFetchAt) / 1000 : null
   const activeSort = BOARD_SORTS.find((s) => s.id === sort) ?? BOARD_SORTS[0]
+  const grid = gridFor(big.gapColumn)
 
   return (
     <section aria-label="Gap Board" className="flex h-full min-h-0 flex-col">
@@ -202,11 +207,18 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }
 
       <div
         className="grid h-8 shrink-0 items-center border-b px-6"
-        style={{ gridTemplateColumns: GRID, borderColor: 'var(--border-subtle)' }}
+        style={{ gridTemplateColumns: grid, borderColor: 'var(--border-subtle)' }}
       >
         <span className="t-micro text-zinc-500">Company</span>
         <span className="t-micro text-zinc-500">Share · age</span>
-        <span className="t-micro text-zinc-500">Gap vs share · widest wrapper</span>
+        {big.boardTicks ? (
+          <div className="flex flex-col gap-1">
+            <span className="t-micro text-zinc-500">Gap vs share · widest wrapper</span>
+            <RuleTicks width={big.rule} />
+          </div>
+        ) : (
+          <span className="t-micro text-zinc-500">Gap vs share · widest wrapper</span>
+        )}
         <span className="t-micro text-zinc-500">Wrappers</span>
         <span className="t-micro text-zinc-500">Cheapest</span>
         <span />
@@ -253,7 +265,7 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }
                 className={`hover-row grid h-14 cursor-pointer items-center border-b px-6 ${
                   focused ? 'bg-zinc-900' : selectedHere ? 'bg-zinc-900/60' : ''
                 } ${c.muted ? 'opacity-60' : ''}`}
-                style={{ gridTemplateColumns: GRID, borderColor: open ? 'transparent' : 'var(--border-subtle)' }}
+                style={{ gridTemplateColumns: grid, borderColor: open ? 'transparent' : 'var(--border-subtle)' }}
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <AssetLogo asset={c.logoAsset} size={36} />
@@ -269,7 +281,7 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }
                   <div className="t-caption text-zinc-500">{shareAgeWord(session, c.logoAsset.stockQuote?.asOf, now)}</div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <GapBar pct={c.lead} thin={c.muted} width={144} height={6} tone="accent" />
+                  <GapBar pct={c.lead} thin={c.muted} width={big.rule} height={6} tone="accent" />
                   <span className={`num t-label w-14 text-right ${c.muted ? 'text-zinc-500' : 'text-zinc-100'}`}>
                     {formatPct(c.lead)}
                   </span>
@@ -307,7 +319,7 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }
                 focused ? 'bg-zinc-800' : 'bg-zinc-900'
               } ${w.muted ? 'opacity-60' : ''}`}
               style={{
-                gridTemplateColumns: GRID,
+                gridTemplateColumns: grid,
                 borderColor: 'var(--border-subtle)',
                 boxShadow: selected ? 'inset 0 0 0 1px var(--border-strong)' : undefined,
               }}
@@ -328,7 +340,7 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <GapBar pct={w.gap} thin={w.muted} width={144} height={6} tone="accent" />
+                <GapBar pct={w.gap} thin={w.muted} width={big.rule} height={6} tone="accent" />
                 <span className={`num t-label w-14 text-right ${w.muted ? 'text-zinc-500' : 'text-zinc-100'}`}>
                   {formatPct(w.gap)}
                 </span>
