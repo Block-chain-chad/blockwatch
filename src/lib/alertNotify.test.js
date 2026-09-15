@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { NOTIFY_KEY, alertNotification, unseenEvents, notifyOfferVisible, shouldPost } from './alertNotify'
+import { NOTIFY_KEY, NOTIFY_OFFER_COPY, alertNotification, unseenEvents, notifyOfferVisible, shouldPost } from './alertNotify'
 
 const DRIFT = {
   id: 'nvdax-d-1', kind: 'alert', type: 'drift', assetId: 'nvdax', ticker: 'NVDAx', underlying: 'NVDA',
@@ -84,5 +84,13 @@ describe('shouldPost', () => {
 describe('NOTIFY_KEY', () => {
   it('is a bw.meter key', () => {
     expect(NOTIFY_KEY).toBe('bw.meter.notify.v1')
+  })
+})
+
+describe('NOTIFY_OFFER_COPY', () => {
+  it('asks the question and says a tab must be open', () => {
+    expect(NOTIFY_OFFER_COPY).toMatch(/^Get a system notification when this fires/)
+    expect(NOTIFY_OFFER_COPY).toContain('while OnStock is open in a tab')
+    expect(NOTIFY_OFFER_COPY.endsWith('?')).toBe(true)
   })
 })

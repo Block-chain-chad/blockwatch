@@ -4,7 +4,7 @@ import { premiumPct, isThinlyTraded } from '../lib/prices'
 import { formatPct, formatPrice } from '../lib/format'
 import Sheet, { SheetTitle } from '../components/Sheet'
 import { useLocalState } from '../hooks/useLocalState'
-import { NOTIFY_KEY, notifyOfferVisible } from '../lib/alertNotify'
+import { NOTIFY_KEY, NOTIFY_OFFER_COPY, notifyOfferVisible } from '../lib/alertNotify'
 
 const THRESHOLDS = [0.5, 1, 2, 5]
 
@@ -186,7 +186,7 @@ function NotifyOffer() {
   return (
     <div className="mt-4 flex items-center gap-3 px-1">
       <p className="flex-1 text-xs leading-relaxed text-zinc-500">
-        Get a system notification when this fires, while OnStock is open in a tab?
+        {NOTIFY_OFFER_COPY}
       </p>
       <button
         type="button"
@@ -196,7 +196,25 @@ function NotifyOffer() {
           new Promise((resolve) => {
             const r = Notification.requestPermission(resolve)
             if (r && typeof r.then === 'function') r.then(resolve)
-          }).then((result) => setSaved(result === 'granted' ? 'on' : 'declined'))
+          })
+            .then((result) => {
+              const answer = result === 'granted' ? 'on' : 'declined'
+              // The sheet may have closed before the browser bubble was
+              // answered: write the answer straight to storage so it survives
+              // this component unmounting, then mirror it into state for a
+              // sheet that is still open.
+              try {
+                localStorage.setItem(NOTIFY_KEY, JSON.stringify(answer))
+              } catch {
+                // storage unavailable: the in-memory answer still stands for this sheet
+              }
+              setSaved(answer)
+            })
+            .catch(() => {
+              // The browser refused to ask (no user gesture, or an unsupported
+              // call shape): leave the answer unrecorded so the offer can be
+              // made again next time.
+            })
         }}
         className="shrink-0 rounded-lg bg-zinc-900 px-3 py-2 text-xs font-medium text-zinc-100 transition-colors hover:bg-zinc-800 active:bg-zinc-800"
       >

@@ -15,6 +15,9 @@ import { meterHeadline } from './pageTitle'
 /** The answer to the one-time ask: 'on' | 'declined'; absent = never asked. */
 export const NOTIFY_KEY = 'bw.meter.notify.v1'
 
+/** The one-time ask's sentence (spec §4.1): both the question and the honesty about a tab being open. */
+export const NOTIFY_OFFER_COPY = 'Get a system notification when this fires, while OnStock is open in a tab?'
+
 /**
  * alertNotification(event) → { title, body, tag }
  *   drift  title 'NVDAx +1.42% gap' (the Meter headline, no product suffix)
