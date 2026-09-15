@@ -175,7 +175,7 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }
         <span className="mx-2 h-4 w-px bg-zinc-800" aria-hidden="true" />
         <SortMenu value={activeSort} onPick={(id) => setSort(id)} />
         <span className="mx-2 h-4 w-px bg-zinc-800" aria-hidden="true" />
-        <label className="t-label flex items-center gap-2 text-zinc-400">
+        <label className="t-label flex shrink-0 items-center gap-2 whitespace-nowrap text-zinc-400">
           <input
             type="checkbox"
             checked={credibleOnly}
@@ -185,7 +185,7 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }
           Credible only
         </label>
         <div className="flex-1" />
-        <span className="num t-caption text-zinc-500">
+        <span className="num t-caption min-w-0 truncate text-right text-zinc-500" title={headerLine({ count: companies.length, session, stockAgeSeconds: stockAge })}>
           {headerLine({ count: companies.length, session, stockAgeSeconds: stockAge })}
         </span>
       </div>
@@ -383,7 +383,7 @@ function SortMenu({ value, onPick }) {
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className="t-label flex h-7 items-center gap-1 text-zinc-300 hover:text-zinc-100"
+        className="t-label flex h-7 items-center gap-1 whitespace-nowrap text-zinc-300 hover:text-zinc-100"
       >
         Sort: {value.label.toLowerCase()}
         <ChevronDown size={14} />
