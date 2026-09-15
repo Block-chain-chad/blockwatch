@@ -4,6 +4,7 @@ import { useFolders } from '../../state/FoldersContext'
 import { useAsset } from '../../state/PricesContext'
 import { useLocalState } from '../../hooks/useLocalState'
 import { useMeterShortcuts } from '../../hooks/useMeterShortcuts'
+import { useAlertNotifications } from '../../hooks/useAlertNotifications'
 import { useWindowWidth } from '../../hooks/useWindowWidth'
 import { bigScreen } from '../../lib/bigScreen'
 import { getRecentViews } from '../../lib/recentViews'
@@ -57,6 +58,10 @@ export default function MeterShell({ tab, onTab, assetId, onSelectAsset, openFol
   // does not hand the children a fresh object.
   const width = useWindowWidth()
   const big = useMemo(() => bigScreen(width), [width])
+
+  // Fired alerts reach the operating system while a Meter tab is open
+  // (spec 2026-09-15 §4.1); the hook decides focus and permission.
+  useAlertNotifications()
 
   // Owner question 1's default: open on Watching when it has rows, else the
   // Board; after that the last lens is remembered.
@@ -288,9 +293,9 @@ export default function MeterShell({ tab, onTab, assetId, onSelectAsset, openFol
           renders here. */}
       {chartOpen && asset && sheet === 'folder' && <AddToFolderSheet asset={asset} onClose={() => setSheet(null)} />}
       {chartOpen && asset && sheet === 'share' && <ShareSheet asset={asset} onClose={() => setSheet(null)} />}
-      {chartOpen && asset?.underlying && sheet === 'alert' && <SetAlertSheet asset={asset} onClose={() => setSheet(null)} />}
+      {chartOpen && asset?.underlying && sheet === 'alert' && <SetAlertSheet asset={asset} onClose={() => setSheet(null)} notify />}
       {/* Alerts need a share leg to compare against, as ChartWorkspace's openAlert gates. */}
-      {alertAsset?.underlying && <SetAlertSheet asset={alertAsset} onClose={() => setAlertFor(null)} />}
+      {alertAsset?.underlying && <SetAlertSheet asset={alertAsset} onClose={() => setAlertFor(null)} notify />}
     </div>
   )
 }

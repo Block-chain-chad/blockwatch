@@ -3,6 +3,8 @@ import { useAlerts } from '../state/AlertsContext'
 import { premiumPct, isThinlyTraded } from '../lib/prices'
 import { formatPct, formatPrice } from '../lib/format'
 import Sheet, { SheetTitle } from '../components/Sheet'
+import { useLocalState } from '../hooks/useLocalState'
+import { NOTIFY_KEY, notifyOfferVisible } from '../lib/alertNotify'
 
 const THRESHOLDS = [0.5, 1, 2, 5]
 
@@ -11,7 +13,7 @@ const THRESHOLDS = [0.5, 1, 2, 5]
  *  - Drift: |premium| crosses ±X% (re-arms when it comes back inside)
  *  - Price target: token crosses $X (one-shot, direction from current price)
  */
-export default function SetAlertSheet({ asset, onClose }) {
+export default function SetAlertSheet({ asset, onClose, notify = false }) {
   const { rules, setDriftAlert, setPriceAlert, removeAlert } = useAlerts()
   const existing = rules[asset.id] ?? {}
   const [tab, setTab] = useState(existing.price && !existing.drift ? 'price' : 'drift')
@@ -84,6 +86,7 @@ export default function SetAlertSheet({ asset, onClose }) {
               </button>
             ))}
           </div>
+          {notify && <NotifyOffer />}
           <div className="mt-4 flex gap-2">
             {existing.drift && (
               <button
@@ -138,6 +141,7 @@ export default function SetAlertSheet({ asset, onClose }) {
               asset.tokenPrice != null &&
               `Fires when the token ${direction === 'above' ? 'rises above' : 'falls below'} ${formatPrice(targetNum)}, then removes itself.`}
           </p>
+          {notify && <NotifyOffer />}
           <div className="mt-3 flex gap-2">
             {existing.price && (
               <button
@@ -164,5 +168,40 @@ export default function SetAlertSheet({ asset, onClose }) {
         </>
       )}
     </Sheet>
+  )
+}
+
+/*
+ * The one-time ask for system notifications (spec 2026-09-15 §4.1), desktop
+ * only: rendered when the Meter passes `notify`, and then only while the
+ * browser has not been asked and this app has not been told no. Granted is
+ * remembered as 'on', denied or dismissed as 'declined', in
+ * bw.meter.notify.v1. Saving the alert never waits on the answer. A child
+ * component so the phone sheet (notify absent) never touches the key.
+ */
+function NotifyOffer() {
+  const [saved, setSaved] = useLocalState(NOTIFY_KEY, null)
+  const permission = typeof Notification === 'undefined' ? null : Notification.permission
+  if (!notifyOfferVisible({ permission, saved })) return null
+  return (
+    <div className="mt-4 flex items-center gap-3 px-1">
+      <p className="flex-1 text-xs leading-relaxed text-zinc-500">
+        Get a system notification when this fires, while OnStock is open in a tab?
+      </p>
+      <button
+        type="button"
+        onClick={() => {
+          // Older Safari takes a callback and returns undefined; everything
+          // current returns a promise. Resolve once either way.
+          new Promise((resolve) => {
+            const r = Notification.requestPermission(resolve)
+            if (r && typeof r.then === 'function') r.then(resolve)
+          }).then((result) => setSaved(result === 'granted' ? 'on' : 'declined'))
+        }}
+        className="shrink-0 rounded-lg bg-zinc-900 px-3 py-2 text-xs font-medium text-zinc-100 transition-colors hover:bg-zinc-800 active:bg-zinc-800"
+      >
+        Turn on
+      </button>
+    </div>
   )
 }

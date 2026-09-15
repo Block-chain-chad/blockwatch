@@ -261,7 +261,7 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
       />
 
       {sheet === 'folder' && <AddToFolderSheet asset={asset} onClose={() => onSheet(null)} />}
-      {sheet === 'alert' && asset.underlying && <SetAlertSheet asset={asset} onClose={() => onSheet(null)} />}
+      {sheet === 'alert' && asset.underlying && <SetAlertSheet asset={asset} onClose={() => onSheet(null)} notify />}
       {sheet === 'share' && <ShareSheet asset={asset} onClose={() => onSheet(null)} />}
     </section>
   )
