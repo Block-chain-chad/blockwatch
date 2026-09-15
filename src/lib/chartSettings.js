@@ -6,21 +6,47 @@
 
 import { TIMEFRAMES, DEFAULT_TIMEFRAME_ID } from './candles'
 import { RANGE_IDS } from './intervalInput'
+import { normalizeKeys } from './indicatorCatalog'
 
 export const CHART_MODES = Object.freeze(['gap', 'candles'])
 export const CHART_SIDES = Object.freeze(['token', 'stock'])
-export const INDICATOR_IDS = Object.freeze(['sma20', 'ema50', 'rsi14'])
+
+/*
+ * `indicators` used to be three booleans — { sma20, ema50, rsi14 } — because
+ * three was the whole catalogue. It is a LIST OF KEYS now (see
+ * lib/indicatorCatalog.js), so the same indicator can be added twice at
+ * different lengths and the set is open-ended.
+ *
+ * LEGACY_INDICATORS migrates what is already in people's localStorage: an
+ * object of booleans becomes the equivalent keys, in the order the chips
+ * used to sit in. Dropping it would silently clear the indicators of anyone
+ * who had them on, which reads as the feature breaking.
+ */
+const LEGACY_INDICATORS = Object.freeze({ sma20: 'sma:20', ema50: 'ema:50', rsi14: 'rsi:14' })
 
 export const DEFAULT_CHART_SETTINGS = Object.freeze({
   mode: 'gap',
   range: '1D',
   side: 'token',
   timeframe: DEFAULT_TIMEFRAME_ID,
-  indicators: Object.freeze({ sma20: false, ema50: false, rsi14: false }),
+  indicators: Object.freeze([]),
   log: false,
 })
 
 const TIMEFRAME_IDS = TIMEFRAMES.map((t) => t.id)
+
+/** The stored `indicators` value as a key list, whichever shape it is in. */
+export function migrateIndicators(raw) {
+  if (Array.isArray(raw)) return normalizeKeys(raw)
+  if (raw && typeof raw === 'object') {
+    return normalizeKeys(
+      Object.entries(LEGACY_INDICATORS)
+        .filter(([legacy]) => raw[legacy] === true)
+        .map(([, key]) => key)
+    )
+  }
+  return []
+}
 
 /**
  * A settings object with every field valid: unknown or missing fields take
@@ -29,14 +55,12 @@ const TIMEFRAME_IDS = TIMEFRAMES.map((t) => t.id)
 export function normalizeChartSettings(raw) {
   const r = raw && typeof raw === 'object' ? raw : {}
   const d = DEFAULT_CHART_SETTINGS
-  const indicators = {}
-  for (const id of INDICATOR_IDS) indicators[id] = r.indicators?.[id] === true
   return {
     mode: CHART_MODES.includes(r.mode) ? r.mode : d.mode,
     range: RANGE_IDS.includes(r.range) ? r.range : d.range,
     side: CHART_SIDES.includes(r.side) ? r.side : d.side,
     timeframe: TIMEFRAME_IDS.includes(r.timeframe) ? r.timeframe : d.timeframe,
-    indicators,
+    indicators: migrateIndicators(r.indicators),
     log: r.log === true,
   }
 }

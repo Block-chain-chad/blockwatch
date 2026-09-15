@@ -3,7 +3,8 @@ import CandleChart from './CandleChart'
 import { Chip } from './shared'
 import { useCandles } from '../hooks/useCandles'
 import { DEFAULT_TIMEFRAME_ID } from '../lib/candles'
-import { INDICATORS, timeframesFor, coerceTimeframe, isIntraday, networkName } from '../lib/candleSeries'
+import { timeframesFor, coerceTimeframe, isIntraday, networkName } from '../lib/candleSeries'
+import { QUICK_KEYS, describeKey } from '../lib/indicatorCatalog'
 
 /*
  * The Candles mode of the asset chart: one side of the gap at a time, drawn
@@ -31,7 +32,10 @@ import { INDICATORS, timeframesFor, coerceTimeframe, isIntraday, networkName } f
  * on it directly.
  */
 
-const INDICATOR_SWATCH = { sma20: 'bg-accent', ema50: 'bg-zinc-300', rsi14: 'bg-zinc-400' }
+/* Matches CandleChart's palette, cycled by position in the active list. */
+const SWATCHES = ['bg-accent', 'bg-zinc-300', 'bg-zinc-400']
+/* One frozen empty list so the uncontrolled default keeps a stable identity. */
+const EMPTY_KEYS = Object.freeze([])
 
 export default function CandlesPanel({
   asset,
@@ -47,7 +51,7 @@ export default function CandlesPanel({
 }) {
   const [ownSide, setOwnSide] = useState('token')
   const [ownTimeframe, setOwnTimeframe] = useState(DEFAULT_TIMEFRAME_ID)
-  const [ownIndicators, setOwnIndicators] = useState({ sma20: false, ema50: false, rsi14: false })
+  const [ownIndicators, setOwnIndicators] = useState(EMPTY_KEYS)
   const side = sideProp ?? ownSide
   const timeframe = timeframeProp ?? ownTimeframe
   const indicators = indicatorsProp ?? ownIndicators
@@ -76,9 +80,12 @@ export default function CandlesPanel({
     else setOwnTimeframe(id)
   }
 
-  function toggleIndicator(id) {
-    if (onIndicators) onIndicators({ ...indicators, [id]: !indicators[id] })
-    else setOwnIndicators((v) => ({ ...v, [id]: !v[id] }))
+  function toggleIndicator(key) {
+    const next = indicators.includes(key)
+      ? indicators.filter((k) => k !== key)
+      : [...indicators, key]
+    if (onIndicators) onIndicators(next)
+    else setOwnIndicators(next)
   }
 
   const network = candles.data ? networkName(candles.data.network) : null
@@ -135,19 +142,26 @@ export default function CandlesPanel({
         ) : null}
       </div>
 
-      {/* Indicators. Overlays share the price scale; RSI opens a pane of its
-          own under the bars. Only offered when there is a chart to draw them
-          on. */}
+      {/* Indicators. Overlays share the price scale; the oscillators open a
+          pane of their own under the bars. Only offered when there is a
+          chart to draw them on.
+
+          The phone keeps its three one-tap chips rather than the desktop's
+          searchable catalogue: eleven entries and a search field do not fit
+          a 390px column, and these three are what the row has always
+          offered. QUICK_KEYS is that set; the chip's swatch takes its colour
+          from the indicator's position on the chart, not from the chip's
+          position here, so a chip and its line always agree. */}
       {!hideControls && candles.data && (
         <div className="mt-2 flex gap-2 overflow-x-auto px-2 pb-1 [scrollbar-width:none]">
-          {INDICATORS.map((d) => (
+          {QUICK_KEYS.map((key) => (
             <Chip
-              key={d.id}
-              active={indicators[d.id]}
-              swatch={INDICATOR_SWATCH[d.id]}
-              onClick={() => toggleIndicator(d.id)}
+              key={key}
+              active={indicators.includes(key)}
+              swatch={SWATCHES[Math.max(0, indicators.indexOf(key)) % SWATCHES.length]}
+              onClick={() => toggleIndicator(key)}
             >
-              {d.label}
+              {describeKey(key)}
             </Chip>
           ))}
         </div>

@@ -1,9 +1,10 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { RANGE_IDS } from '../../lib/intervalInput'
-import { INDICATORS, timeframesFor } from '../../lib/candleSeries'
+import { timeframesFor } from '../../lib/candleSeries'
+import { describeKey, parseKey } from '../../lib/indicatorCatalog'
 import { tipProps } from '../../lib/tooltip'
 import { nextDensity, DENSITY } from '../../lib/toolbarDensity'
-import { FitIcon, SkipEndIcon, ResetIcon, LogIcon } from '../Icons'
+import { FitIcon, SkipEndIcon, ResetIcon, LogIcon, IndicatorsIcon, CloseIcon } from '../Icons'
 import ToolbarTooltips from './Tooltip'
 
 /*
@@ -25,8 +26,9 @@ import ToolbarTooltips from './Tooltip'
  * Interval chips the stock side cannot serve stay visible but disabled with
  * a tooltip saying why (A7) — TradingView greys what the data cannot serve.
  */
-const INDICATOR_SWATCH = { sma20: 'bg-accent', ema50: 'bg-zinc-300', rsi14: 'bg-zinc-400' }
-const INDICATOR_SHORT = { sma20: 'SMA', ema50: 'EMA', rsi14: 'RSI' }
+/* Matches CandleChart's line palette, cycled by the indicator's slot in the
+   active list, so a chip's swatch is the colour of its line. */
+const SWATCHES = ['bg-accent', 'bg-zinc-300', 'bg-zinc-400']
 const RANGE_WORDS = { '1D': 'Past day', '1W': 'Past week', '1M': 'Past month', '3M': 'Past 3 months', '1Y': 'Past year' }
 
 /*
@@ -85,6 +87,7 @@ export default function ChartToolbar({
   onSide,
   onTimeframe,
   onIndicators,
+  onOpenIndicators,
   onLog,
   auto,
   onAuto,
@@ -210,19 +213,40 @@ export default function ChartToolbar({
 
             <Rule hidden={dense} />
 
-            {INDICATORS.map((d, i) => (
-              <ToolChip
-                key={d.id}
-                id={`desktop-indicator-${d.id}`}
-                dense={dense}
-                active={!!indicators[d.id]}
-                swatch={INDICATOR_SWATCH[d.id]}
-                onClick={() => onIndicators({ ...indicators, [d.id]: !indicators[d.id] })}
-                {...tipProps(d.label, i === 0 ? ['/'] : undefined)}
-              >
-                {dense ? INDICATOR_SHORT[d.id] : d.label}
-              </ToolChip>
-            ))}
+            {/* The catalogue's way in, sitting where the three fixed chips
+                used to: right after the intervals. Everything on the chart
+                is then listed to its right, one removable chip each, so the
+                row still says at a glance what is drawn — which is what the
+                fixed chips were good at and a dialog on its own is not. */}
+            <ToolChip
+              id="desktop-indicators-button"
+              dense={dense}
+              onClick={onOpenIndicators}
+              {...tipProps('Indicators', ['/'])}
+            >
+              <IndicatorsIcon size={16} />
+              {!icons && <span>Indicators</span>}
+            </ToolChip>
+
+            {indicators.map((key, i) => {
+              const parsed = parseKey(key)
+              if (!parsed) return null
+              const label = describeKey(key)
+              return (
+                <ToolChip
+                  key={key}
+                  dense={dense}
+                  active
+                  swatch={SWATCHES[i % SWATCHES.length]}
+                  onClick={() => onIndicators(indicators.filter((k) => k !== key))}
+                  aria-label={`Remove ${label}`}
+                  {...tipProps(`${label} — click to remove`)}
+                >
+                  {dense ? parsed.entry.short : label}
+                  <CloseIcon size={12} className="opacity-50" />
+                </ToolChip>
+              )
+            })}
           </>
         )}
 

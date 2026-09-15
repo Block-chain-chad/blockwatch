@@ -253,3 +253,13 @@ export const LogIcon = (p) => (
     <path d="M6 18c2-8 6-11 13-12" />
   </Base>
 )
+
+/* Indicators: an oscillating line over a flat one — a study drawn across a
+   series, which is what every entry in the catalogue is. Deliberately not
+   LogIcon's single rising curve, which already means the log scale. */
+export const IndicatorsIcon = (p) => (
+  <Base {...p}>
+    <path d="M3 12h3l3-6 3 12 3-8 3 4h2" />
+    <path d="M3 19h18" opacity="0.45" />
+  </Base>
+)

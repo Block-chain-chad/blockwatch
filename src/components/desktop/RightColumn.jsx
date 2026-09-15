@@ -30,7 +30,7 @@ export default function RightColumn({
   onVisibleIds,
 }) {
   const { assets } = usePrices()
-  const { folders, watchlistIds } = useFolders()
+  const { folders, watchlistIds, toggleWatchlist, toggleAssetInFolder } = useFolders()
   const [filter, setFilter] = useLocalState('bw.desktop.filter.v1', 'all')
   const wide = useMediaQuery('(min-width: 80rem)')
 
@@ -82,6 +82,10 @@ export default function RightColumn({
           header={null}
           emptyText={emptyText}
           showDelayed
+          onRemove={(a) =>
+            list.isFolder ? toggleAssetInFolder(list.id, a.id) : toggleWatchlist(a.id)
+          }
+          removeLabel={list.isFolder ? `Remove from ${list.name}` : 'Remove from watchlist'}
         />
       </div>
 

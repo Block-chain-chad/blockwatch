@@ -1,6 +1,7 @@
 import { useEffect, useImperativeHandle, useRef, useState } from 'react'
 import * as lib from 'lightweight-charts'
-import { toCandlestickData, toVolumeData, indicatorLines } from '../lib/candleSeries'
+import { toCandlestickData, toVolumeData, toLineData, cleanCandles } from '../lib/candleSeries'
+import { computePlots, parseKey } from '../lib/indicatorCatalog'
 import { formatPrice, EM_DASH } from '../lib/format'
 
 /*
@@ -22,6 +23,8 @@ import { formatPrice, EM_DASH } from '../lib/format'
 
 const MAIN_HEIGHT = 220
 const RSI_HEIGHT = 80
+/* One frozen empty list, so the default prop keeps a stable identity. */
+const EMPTY_KEYS = Object.freeze([])
 
 let colorCtx = null
 const SENTINEL = '#010203'
@@ -60,13 +63,26 @@ function themeColors() {
     axis: token('--border-default', 'rgba(255, 255, 255, 0.1)'),
     up: token('--color-gain', '#3fb950'),
     down: token('--color-loss', '#f85149'),
-    // The same pair the Gap chart uses for its two lines: accent and neutral.
-    sma20: token('--color-accent', '#2dd4bf'),
-    ema50: token('--color-zinc-300', '#d0d2d8'),
-    rsi14: token('--color-zinc-400', '#b3b6be'),
+    // Indicator lines. Three, cycled per active indicator, so two moving
+    // averages at different lengths never come out the same colour. There is
+    // no fourth: this system's remaining colours (gain, loss) mean direction,
+    // and borrowing one would say a line is "up".
+    palette: [
+      token('--color-accent', '#2dd4bf'),
+      token('--color-zinc-300', '#d0d2d8'),
+      token('--color-zinc-400', '#b3b6be'),
+    ],
+    muted: token('--color-zinc-600', '#6b6f78'),
     crosshair: token('--color-zinc-600', '#6b6f78'),
     surface: token('--color-zinc-800', '#26272b'),
   }
+}
+
+/** The colour a plot's tone resolves to, cycling `primary` by slot. */
+function toneColor(colors, tone, slot) {
+  if (tone === 'muted') return colors.muted
+  const offset = tone === 'secondary' ? 1 : 0
+  return colors.palette[(slot + offset) % colors.palette.length]
 }
 
 function chartOptions(c, intraday, fontSize = 11, magnet = false) {
@@ -113,11 +129,117 @@ function whenLabel(time, intraday) {
 }
 
 /**
+ * Put the active indicators on the chart, replacing whatever is there.
+ *
+ * Wholesale rather than a diff on purpose. Lightweight Charts numbers panes
+ * positionally, so removing the pane of one indicator renumbers every pane
+ * after it; a diff would have to track that renumbering through add, remove
+ * and reorder, and the failure mode is a line silently drawn in the wrong
+ * pane. Rebuilding is a few dozen series operations on a chart that already
+ * redraws every 30 seconds, and it cannot get the mapping wrong.
+ *
+ * Overlays share the price pane and its scale. Every separate-pane indicator
+ * gets a pane of its own, in list order, with its bands drawn as price lines
+ * and its scale fixed when the catalogue declares one (RSI is 0–100 whatever
+ * the readings happen to be, or the bands mean nothing).
+ */
+function rebuildIndicators(refs, keys, candles, colors, paneHeight) {
+  const { chart } = refs
+  for (const entry of refs.indicatorSeries) {
+    try {
+      chart.removeSeries(entry.series)
+    } catch {
+      // Already gone with its pane; nothing to undo.
+    }
+  }
+  refs.indicatorSeries = []
+  // Drop every pane but the price pane, highest index first so the ones
+  // still to be removed keep their numbers.
+  for (let i = chart.panes().length - 1; i >= 1; i--) {
+    try {
+      chart.removePane(i)
+    } catch {
+      // A build that will not remove a pane leaves it empty; harmless.
+    }
+  }
+  refs.paneCount = 1
+
+  const clean = cleanCandles(candles)
+  const times = clean.map((c) => c.time)
+  let pane = 0
+
+  keys.forEach((key, slot) => {
+    const parsed = parseKey(key)
+    if (!parsed) return
+    const { entry } = parsed
+    const plots = computePlots(key, clean)
+    if (plots.length === 0) return
+    const separate = entry.pane === 'separate'
+    if (separate) pane += 1
+    const paneIndex = separate ? pane : 0
+    const scale = entry.scale ?? {}
+
+    plots.forEach((plot, i) => {
+      const options = {
+        color: toneColor(colors, plot.tone, slot),
+        lineWidth: 1,
+        priceLineVisible: false,
+        lastValueVisible: separate && i === 0,
+        crosshairMarkerVisible: false,
+        priceFormat:
+          scale.decimals == null
+            ? priceFormat
+            : {
+                type: 'custom',
+                formatter: (v) => v.toFixed(scale.decimals),
+                minMove: 10 ** -scale.decimals,
+              },
+      }
+      // A bounded oscillator keeps its full range on screen; without this the
+      // scale hugs the readings and the 30/70 bands drift off the pane.
+      if (scale.min != null && scale.max != null) {
+        options.autoscaleInfoProvider = () => ({
+          priceRange: { minValue: scale.min, maxValue: scale.max },
+        })
+      }
+      const series = chart.addSeries(lib.LineSeries, options, paneIndex)
+      series.setData(toLineData(times, plot.values))
+      if (separate && i === 0) {
+        for (const level of scale.bands ?? []) {
+          series.createPriceLine({
+            price: level,
+            color: colors.grid,
+            lineWidth: 1,
+            lineStyle: lib.LineStyle.Solid,
+            axisLabelVisible: false,
+          })
+        }
+        if (scale.zeroLine) {
+          series.createPriceLine({
+            price: 0,
+            color: colors.grid,
+            lineWidth: 1,
+            lineStyle: lib.LineStyle.Solid,
+            axisLabelVisible: false,
+          })
+        }
+      }
+      refs.indicatorSeries.push({ key, plotId: plot.id, series })
+    })
+  })
+
+  refs.paneCount = pane + 1
+  for (let i = 1; i < refs.paneCount; i++) chart.panes()[i]?.setHeight(paneHeight)
+}
+
+/**
  * Props:
  *   candles     — shared shape, ascending; the caller has already decided
  *                 there is something to draw
  *   intraday    — bars shorter than a day (axis shows clock time)
- *   indicators  — { sma20, ema50, rsi14 } booleans
+ *   indicators  — active indicator KEYS in draw order, e.g. ['sma:20',
+ *                 'rsi:14']; see lib/indicatorCatalog.js. Unknown keys are
+ *                 skipped rather than throwing.
  *
  * Desktop props, every one optional and inert when omitted, so the phone
  * call site (which passes none of them) renders and behaves as before:
@@ -134,12 +256,13 @@ function whenLabel(time, intraday) {
  *                 draws its legend on the chart instead)
  *   height      — the main pane's height, a number of pixels or any CSS
  *                 length (the desktop passes a clamp()); 220 by default
- *   rsiHeight   — the RSI pane's height in pixels; 80 by default
+ *   rsiHeight   — the height in pixels of EACH separate indicator pane; 80
+ *                 by default (the name is historical: RSI was the only one)
  */
 export default function CandleChart({
   candles,
   intraday = true,
-  indicators = {},
+  indicators = EMPTY_KEYS,
   fontSize = 11,
   magnet = false,
   onCrosshair,
@@ -147,10 +270,20 @@ export default function CandleChart({
   ref,
   hideReadout = false,
   height: mainHeight = MAIN_HEIGHT,
-  rsiHeight = RSI_HEIGHT,
+  rsiHeight: paneHeight = RSI_HEIGHT,
 }) {
+  const keys = Array.isArray(indicators) ? indicators : EMPTY_KEYS
+  // The identity the effects key on: a new array of the same keys must not
+  // count as a change, or every parent render would rebuild the chart.
+  const keysKey = keys.join('|')
+  // Read inside redrawIndicators, which is built by the data effect and also
+  // called by the theme observer — both need the CURRENT list, not the one
+  // captured when they were created.
+  const keysRef = useRef(keys)
+  keysRef.current = keys
+
   const hostRef = useRef(null)
-  const chartRef = useRef(null) // { chart, candle, volume, sma20, ema50, rsi14, … }
+  const chartRef = useRef(null) // { chart, candle, volume, indicatorSeries, … }
   const [ready, setReady] = useState(false)
   // The bar under the crosshair, or null for "the latest".
   const [hover, setHover] = useState(null)
@@ -188,29 +321,20 @@ export default function CandleChart({
       priceLineVisible: false,
     })
     volume.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } })
-    const overlay = (color) =>
-      chart.addSeries(lib.LineSeries, {
-        color,
-        lineWidth: 1,
-        priceLineVisible: false,
-        lastValueVisible: false,
-        crosshairMarkerVisible: false,
-        visible: false,
-        priceFormat,
-      })
     const refs = {
       chart,
       candle,
       volume,
-      sma20: overlay(c.sma20),
-      ema50: overlay(c.ema50),
-      rsi14: null,
+      // Every indicator line currently on the chart, in the order the active
+      // list put them. Rebuilt wholesale — see rebuildIndicators.
+      indicatorSeries: [],
+      paneCount: 1,
       intraday: false,
       fontSize: 11,
       magnet: false,
       volumeColors: { up: c.up, down: c.down },
       repaintVolume: null,
-      lines: null,
+      redrawIndicators: null,
     }
     chartRef.current = refs
 
@@ -226,11 +350,11 @@ export default function CandleChart({
       const t = themeColors()
       chart.applyOptions(chartOptions(t, refs.intraday, refs.fontSize, refs.magnet))
       candle.applyOptions({ upColor: t.up, downColor: t.down, wickUpColor: t.up, wickDownColor: t.down })
-      refs.sma20.applyOptions({ color: t.sma20 })
-      refs.ema50.applyOptions({ color: t.ema50 })
-      refs.rsi14?.applyOptions({ color: t.rsi14 })
       refs.volumeColors = { up: t.up, down: t.down }
       refs.repaintVolume?.()
+      // Indicator panes carry band lines in theme colours too, so they are
+      // rebuilt rather than recoloured in place.
+      refs.redrawIndicators?.()
     })
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
     setReady(true)
@@ -266,11 +390,12 @@ export default function CandleChart({
     refs.repaintVolume = () => refs.volume.setData(toVolumeData(candles, refs.volumeColors))
     refs.candle.setData(toCandlestickData(candles))
     refs.repaintVolume()
-    const lines = indicatorLines(candles)
-    refs.lines = lines
-    refs.sma20.setData(lines.sma20)
-    refs.ema50.setData(lines.ema50)
-    refs.rsi14?.setData(lines.rsi14)
+    // New bars mean new indicator values, so the lines are rebuilt with the
+    // data. redrawIndicators closes over the current candles and keys, and
+    // the theme observer calls it too.
+    refs.redrawIndicators = () =>
+      rebuildIndicators(refs, keysRef.current, candles, themeColors(), paneHeight)
+    refs.redrawIndicators()
     refs.intraday = intraday
     refs.chart.applyOptions({ timeScale: { timeVisible: intraday } })
     if (resetKey === undefined || lastFitKey.current !== resetKey) {
@@ -279,7 +404,7 @@ export default function CandleChart({
     }
     setHover(null)
     onCrosshairRef.current?.(null)
-  }, [ready, candles, intraday, resetKey])
+  }, [ready, candles, intraday, resetKey, paneHeight])
 
   // The toolbar's handle. Each method reads the live chart when called, so
   // the object never needs rebuilding; before mount they are no-ops.
@@ -312,52 +437,19 @@ export default function CandleChart({
     []
   )
 
-  // Indicator toggles: overlays flip visibility; RSI adds or removes its pane.
+  // The active list changed: redraw the indicator layer. Keyed on the joined
+  // list rather than the array, so a caller that rebuilds an equal array on
+  // every render does not tear the chart down each time.
   useEffect(() => {
     const refs = chartRef.current
-    if (!ready || !refs) return
-    refs.sma20.applyOptions({ visible: !!indicators.sma20 })
-    refs.ema50.applyOptions({ visible: !!indicators.ema50 })
-    const wantRsi = !!indicators.rsi14
-    if (wantRsi && !refs.rsi14) {
-      const c = themeColors()
-      const rsi = refs.chart.addSeries(
-        lib.LineSeries,
-        {
-          color: c.rsi14,
-          lineWidth: 1,
-          priceLineVisible: false,
-          lastValueVisible: true,
-          crosshairMarkerVisible: false,
-          priceFormat: { type: 'custom', formatter: (v) => v.toFixed(0), minMove: 1 },
-          autoscaleInfoProvider: () => ({ priceRange: { minValue: 0, maxValue: 100 } }),
-        },
-        1
-      )
-      // The bands the reading is judged against, as hairlines.
-      for (const level of [30, 70]) {
-        rsi.createPriceLine({
-          price: level,
-          color: c.axis,
-          lineWidth: 1,
-          lineStyle: lib.LineStyle.Solid,
-          axisLabelVisible: false,
-        })
-      }
-      rsi.setData(refs.lines?.rsi14 ?? [])
-      refs.chart.panes()[1]?.setHeight(rsiHeight)
-      refs.rsi14 = rsi
-    } else if (!wantRsi && refs.rsi14) {
-      refs.chart.removeSeries(refs.rsi14)
-      refs.rsi14 = null
-      // Removing the last series leaves an empty pane behind in some builds.
-      if (refs.chart.panes().length > 1) refs.chart.removePane(1)
-    }
-  }, [ready, indicators.sma20, indicators.ema50, indicators.rsi14, rsiHeight])
+    if (!ready || !refs || !refs.redrawIndicators) return
+    refs.redrawIndicators()
+  }, [ready, keysKey, paneHeight])
 
   // A number adds up in pixels; a CSS length (the desktop's clamp()) adds up
-  // in calc(). With no RSI pane the main height stands alone either way.
-  const rsiExtra = indicators.rsi14 ? rsiHeight : 0
+  // in calc(). With no extra pane the main height stands alone either way.
+  const extraPanes = keys.filter((k) => parseKey(k)?.entry.pane === 'separate').length
+  const rsiExtra = extraPanes * paneHeight
   const height =
     typeof mainHeight === 'number'
       ? mainHeight + rsiExtra

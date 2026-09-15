@@ -1,5 +1,18 @@
 import { describe, it, expect } from 'vitest'
-import { sma, ema, rsi, vwap } from './indicators'
+import {
+  sma,
+  ema,
+  rsi,
+  vwap,
+  wma,
+  stdev,
+  bollinger,
+  macd,
+  stochastic,
+  atr,
+  roc,
+  obv,
+} from './indicators'
 
 /*
  * Indicators are compared against values worked out by hand in the comments,
@@ -108,5 +121,154 @@ describe('vwap', () => {
   it('survives junk', () => {
     expect(vwap(null)).toEqual([])
     expect(vwap([null, {}])).toEqual([null, null])
+  })
+})
+
+describe('wma', () => {
+  it('weights the newest value heaviest', () => {
+    // (1*1 + 2*2 + 3*3) / 6 = 14/6; (2*1 + 3*2 + 4*3) / 6 = 20/6
+    expect(round(wma([1, 2, 3, 4], 3), 4)).toEqual([null, null, 2.3333, 3.3333])
+  })
+
+  it('nulls a window containing a hole', () => {
+    // Only [3,4,5] is whole: (3*1 + 4*2 + 5*3) / 6 = 26/6
+    expect(round(wma([1, null, 3, 4, 5], 3), 4)).toEqual([null, null, null, null, 4.3333])
+  })
+
+  it('survives junk', () => {
+    expect(wma(null, 3)).toEqual([])
+    expect(wma([1, 2, 3], 0)).toEqual([null, null, null])
+  })
+})
+
+describe('stdev', () => {
+  it('is the population deviation, not the sample one', () => {
+    // mean 2, deviations -1,0,1 -> sqrt(2/3) = 0.8165 (sample would be 1)
+    expect(round(stdev([1, 2, 3], 3), 4)).toEqual([null, null, 0.8165])
+  })
+
+  it('is zero on a flat window', () => {
+    expect(stdev([5, 5, 5], 3)).toEqual([null, null, 0])
+  })
+})
+
+describe('bollinger', () => {
+  it('puts the bands mult deviations either side of the basis', () => {
+    const { middle, upper, lower } = bollinger([1, 2, 3], 3, 2)
+    expect(round(middle, 4)).toEqual([null, null, 2])
+    expect(round(upper, 4)).toEqual([null, null, 3.633])
+    expect(round(lower, 4)).toEqual([null, null, 0.367])
+  })
+
+  it('nulls all three arrays through the warm-up', () => {
+    const r = bollinger([1, 2, 3, 4], 3, 2)
+    for (const arr of [r.middle, r.upper, r.lower]) {
+      expect(arr).toHaveLength(4)
+      expect(arr.slice(0, 2)).toEqual([null, null])
+    }
+  })
+})
+
+describe('macd', () => {
+  it('is the fast EMA minus the slow one', () => {
+    const closes = Array.from({ length: 40 }, (_, i) => 100 + i)
+    const { macd: line } = macd(closes, 3, 6, 4)
+    const fast = ema(closes, 3)
+    const slow = ema(closes, 6)
+    expect(round(line, 6)[39]).toBe(Number((fast[39] - slow[39]).toFixed(6)))
+  })
+
+  it('seeds the signal from the MACD line, not from its warm-up nulls', () => {
+    const closes = Array.from({ length: 40 }, (_, i) => 100 + Math.sin(i) * 3)
+    const { macd: line, signal, histogram } = macd(closes, 3, 6, 4)
+    // The slow EMA needs 6 bars, then the signal needs 4 MACD values: the
+    // first signal must land at index 8, not somewhere past bar 40.
+    const firstLine = line.findIndex((v) => v != null)
+    const firstSignal = signal.findIndex((v) => v != null)
+    expect(firstLine).toBe(5)
+    expect(firstSignal).toBe(firstLine + 3)
+    expect(histogram[firstSignal]).toBeCloseTo(line[firstSignal] - signal[firstSignal], 10)
+  })
+
+  it('returns three arrays the length of the input', () => {
+    const r = macd([1, 2, 3], 12, 26, 9)
+    expect(r.macd).toHaveLength(3)
+    expect(r.signal).toHaveLength(3)
+    expect(r.histogram).toHaveLength(3)
+  })
+})
+
+describe('stochastic', () => {
+  const bar = (high, low, close) => ({ high, low, close })
+
+  it('reads 100 at the top of the range and 0 at the bottom', () => {
+    const up = [bar(10, 0, 5), bar(10, 0, 5), bar(10, 0, 10)]
+    expect(stochastic(up, 3, 1, 1).k[2]).toBe(100)
+    const down = [bar(10, 0, 5), bar(10, 0, 5), bar(10, 0, 0)]
+    expect(stochastic(down, 3, 1, 1).k[2]).toBe(0)
+  })
+
+  it('reads 50 on a flat range rather than dividing by zero', () => {
+    const flat = [bar(5, 5, 5), bar(5, 5, 5), bar(5, 5, 5)]
+    expect(stochastic(flat, 3, 1, 1).k[2]).toBe(50)
+  })
+
+  it('smooths %K and averages it again for %D', () => {
+    const candles = Array.from({ length: 20 }, (_, i) => bar(10 + i, i, 5 + i))
+    const { k, d } = stochastic(candles, 5, 3, 3)
+    expect(k).toHaveLength(20)
+    expect(d).toHaveLength(20)
+    // %D trails %K by dLen - 1 more bars.
+    expect(d.findIndex((v) => v != null) - k.findIndex((v) => v != null)).toBe(2)
+  })
+})
+
+describe('atr', () => {
+  const bar = (high, low, close) => ({ high, low, close })
+
+  it('averages the true range, which spans the previous close', () => {
+    // Every bar: high-low = 2, and the gap never widens it. ATR = 2.
+    const candles = Array.from({ length: 20 }, () => bar(11, 9, 10))
+    expect(atr(candles, 3)[19]).toBeCloseTo(2, 10)
+  })
+
+  it('counts a gap through the previous close', () => {
+    // bar 1 opens far above bar 0's close: TR = |high - prevClose| = 10
+    const candles = [bar(11, 9, 10), bar(20, 19, 19), bar(20, 19, 19), bar(20, 19, 19)]
+    // TRs at 1,2,3 = 10, 1, 1 -> seed mean over 3 = 4
+    expect(atr(candles, 3)[3]).toBeCloseTo(4, 10)
+  })
+
+  it('is null when there are not enough bars', () => {
+    expect(atr([bar(1, 1, 1), bar(1, 1, 1)], 14)).toEqual([null, null])
+    expect(atr(null, 14)).toEqual([])
+  })
+})
+
+describe('roc', () => {
+  it('is the percentage change n bars back', () => {
+    expect(roc([100, 110, 121], 1)).toEqual([null, 10, 10])
+  })
+
+  it('is null when the base is zero or missing', () => {
+    expect(roc([0, 5], 1)).toEqual([null, null])
+    expect(roc([null, 5], 1)).toEqual([null, null])
+  })
+})
+
+describe('obv', () => {
+  const bar = (close, volume) => ({ close, volume })
+
+  it('adds volume on an up close and subtracts it on a down close', () => {
+    expect(obv([bar(10, 0), bar(11, 5), bar(10, 3), bar(10, 7)])).toEqual([0, 5, 2, 2])
+  })
+
+  it('carries the line forward across an unusable bar', () => {
+    expect(obv([bar(10, 0), bar(11, 5), bar(null, 3), bar(12, 4)])).toEqual([0, 5, 5, 5])
+  })
+
+  it('survives junk', () => {
+    expect(obv(null)).toEqual([])
+    expect(obv([])).toEqual([])
   })
 })

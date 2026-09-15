@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   DEFAULT_CHART_SETTINGS,
   normalizeChartSettings,
+  migrateIndicators,
   secondsToBarClose,
   formatCountdown,
   legendChange,
@@ -23,7 +24,7 @@ describe('normalizeChartSettings', () => {
       range: '1W',
       side: 'stock',
       timeframe: '5m',
-      indicators: { sma20: true, ema50: false, rsi14: true },
+      indicators: ['sma:20', 'rsi:14'],
       log: true,
     }
     expect(normalizeChartSettings(s)).toEqual(s)
@@ -38,15 +39,56 @@ describe('normalizeChartSettings', () => {
     expect(n.timeframe).toBe(DEFAULT_CHART_SETTINGS.timeframe)
   })
 
-  it('coerces indicator and log flags to booleans and drops extras', () => {
-    const n = normalizeChartSettings({
-      indicators: { sma20: 1, ema50: 'yes', vwap: true },
-      log: 'true',
-      extra: 1,
-    })
-    expect(n.indicators).toEqual({ sma20: false, ema50: false, rsi14: false })
+  it('coerces the log flag to a boolean and drops extras', () => {
+    const n = normalizeChartSettings({ log: 'true', extra: 1 })
     expect(n.log).toBe(false)
     expect(n).not.toHaveProperty('extra')
+  })
+
+  it('drops indicator keys the catalogue does not know', () => {
+    expect(normalizeChartSettings({ indicators: ['sma:20', 'made-up'] }).indicators).toEqual([
+      'sma:20',
+    ])
+  })
+})
+
+/*
+ * The stored shape changed from three booleans to a key list. Anyone who had
+ * indicators on before the change still has the old object in localStorage,
+ * and silently clearing their chart would read as the feature breaking.
+ */
+describe('migrateIndicators', () => {
+  it('turns the old boolean object into the equivalent keys', () => {
+    expect(migrateIndicators({ sma20: true, ema50: false, rsi14: true })).toEqual([
+      'sma:20',
+      'rsi:14',
+    ])
+  })
+
+  it('keeps the old chip order', () => {
+    expect(migrateIndicators({ rsi14: true, sma20: true, ema50: true })).toEqual([
+      'sma:20',
+      'ema:50',
+      'rsi:14',
+    ])
+  })
+
+  it('ignores truthy-but-not-true values, as the old normalizer did', () => {
+    expect(migrateIndicators({ sma20: 1, ema50: 'yes' })).toEqual([])
+  })
+
+  it('ignores legacy keys that were never real', () => {
+    expect(migrateIndicators({ vwap: true, sma20: true })).toEqual(['sma:20'])
+  })
+
+  it('passes a list straight through, normalised', () => {
+    expect(migrateIndicators(['rsi:14', 'nope', 'sma:0'])).toEqual(['rsi:14', 'sma:1'])
+  })
+
+  it('reads anything else as empty', () => {
+    expect(migrateIndicators(undefined)).toEqual([])
+    expect(migrateIndicators('sma:20')).toEqual([])
+    expect(migrateIndicators(7)).toEqual([])
   })
 
   it('accepts every timeframe and range the chips offer', () => {

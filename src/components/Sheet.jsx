@@ -44,11 +44,16 @@ function focusables(root) {
   return Array.from(root.querySelectorAll(FOCUSABLE_SELECTOR))
 }
 
+/* Panel width at lg, where a sheet becomes a centred dialog. Phones keep the
+   full-width sheet at every size; only the desktop dialog widens. */
+const SIZE = { md: 'lg:max-w-md', lg: 'lg:max-w-2xl' }
+
 export default function Sheet({
   onClose,
   label,
   closeLabel = 'Close',
   pad = 4,
+  size = 'md',
   className = 'z-50',
   children,
 }) {
@@ -153,7 +158,7 @@ export default function Sheet({
         <div
           ref={panelRef}
           tabIndex={-1}
-          className={`relative sheet-in sheet-in-center w-full rounded-t-3xl bg-zinc-950 outline-none ring-1 ring-zinc-800/70 lg:max-w-md lg:rounded-2xl ${PAD[pad].panel}`}
+          className={`relative sheet-in sheet-in-center w-full rounded-t-3xl bg-zinc-950 outline-none ring-1 ring-zinc-800/70 lg:rounded-2xl ${SIZE[size] ?? SIZE.md} ${PAD[pad].panel}`}
         >
           <div className={`mx-auto h-1 w-10 rounded-full bg-zinc-800 lg:hidden ${PAD[pad].handle}`} />
           {children}

@@ -4,6 +4,7 @@ import { useFolders } from '../state/FoldersContext'
 import { useSparklines } from '../hooks/useSparklines'
 import { isStockDelayed } from '../lib/provenance'
 import { AssetRow } from './shared'
+import { TrashIcon } from './Icons'
 
 const EMPTY_TEXT = 'Your watchlist is empty — add the tokens you care about.'
 
@@ -24,6 +25,12 @@ const EMPTY_TEXT = 'Your watchlist is empty — add the tokens you care about.'
  * the same `isStockDelayed` the chart legend keys on, so the two can never
  * disagree. Every one of them defaults to what the pane did before, so the
  * existing call site renders the same DOM.
+ *
+ * `onRemove` adds the row's remove button (TradingView reveals its own on
+ * row hover). It is a prop rather than a call to toggleWatchlist here
+ * because the pane also renders a FOLDER's rows: only the caller knows
+ * which list a row is being taken out of. Omitted, no button renders and
+ * the DOM is unchanged.
  */
 export default function WatchlistPane({
   currentId,
@@ -34,6 +41,8 @@ export default function WatchlistPane({
   header,
   emptyText = EMPTY_TEXT,
   showDelayed = false,
+  onRemove,
+  removeLabel = 'Remove from watchlist',
 }) {
   const { assets, marketOpen, session, stocksAt } = usePrices()
   const { watchlistIds } = useFolders()
@@ -80,7 +89,7 @@ export default function WatchlistPane({
           key={a.id}
           ref={a.id === currentId ? currentRef : undefined}
           aria-current={a.id === currentId ? 'true' : undefined}
-          className={a.id === currentId ? 'bg-zinc-900' : undefined}
+          className={`group relative ${a.id === currentId ? 'bg-zinc-900' : ''}`}
         >
           <AssetRow
             asset={a}
@@ -90,6 +99,24 @@ export default function WatchlistPane({
             barWidth={barWidth}
             delayed={stockDelayed}
           />
+          {/* Sits over the row's right edge, which is where the prices are,
+              so it only appears on hover or keyboard focus — the numbers are
+              what the row is for. Removal is undoable from the folders
+              toast, so it asks nothing first. */}
+          {onRemove && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                onRemove(a)
+              }}
+              aria-label={`${removeLabel}: ${a.ticker}`}
+              title={removeLabel}
+              className="absolute right-1 top-1/2 -translate-y-1/2 rounded-md bg-zinc-950/90 p-1.5 text-zinc-500 opacity-0 transition-opacity hover:text-loss focus-visible:opacity-100 group-hover:opacity-100"
+            >
+              <TrashIcon size={15} />
+            </button>
+          )}
         </div>
       ))}
     </>

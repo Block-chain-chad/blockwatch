@@ -139,7 +139,13 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
         className="hidden lg:block lg:w-[28rem] lg:shrink-0 lg:overflow-y-auto lg:border-r"
         style={{ borderColor: 'var(--border-subtle)' }}
       >
-        {desktop && <WatchlistPane currentId={asset.id} onOpen={(a) => onSwitchAsset(a.id)} />}
+        {desktop && (
+          <WatchlistPane
+            currentId={asset.id}
+            onOpen={(a) => onSwitchAsset(a.id)}
+            onRemove={(a) => toggleWatchlist(a.id)}
+          />
+        )}
       </aside>
       {/* On desktop this pane is the scroll container, so the sticky header
           below keeps pinning to it. Under lg: it is an inert wrapper. */}

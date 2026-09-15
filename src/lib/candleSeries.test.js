@@ -4,8 +4,6 @@ import {
   toCandlestickData,
   toVolumeData,
   toLineData,
-  indicatorLines,
-  INDICATORS,
   timeframesFor,
   coerceTimeframe,
   isIntraday,
@@ -14,6 +12,7 @@ import {
 } from './candleSeries'
 import { TIMEFRAMES, STOCK_INTERVALS } from './candles'
 import { sma } from './indicators'
+import { computePlots } from './indicatorCatalog'
 
 /*
  * Lightweight Charts throws on a series that is not strictly ascending in
@@ -99,33 +98,37 @@ describe('toLineData', () => {
   })
 })
 
-describe('indicatorLines', () => {
-  it('returns one line per offered indicator, each aligned to the candle times', () => {
+/*
+ * The indicator set moved to lib/indicatorCatalog.js, but the property the
+ * old indicatorLines tests protected still matters and is still this file's:
+ * an indicator's warm-up must be OMITTED from the line, not sent as a point,
+ * so the line starts at the bar the indicator is first defined on. An
+ * off-by-one here draws every indicator a candle away from its price.
+ */
+describe('toLineData over a computed indicator', () => {
+  it('starts the line at the first defined bar, not at the first candle', () => {
     const candles = Array.from({ length: 60 }, (_, i) => bar(1000 + i * 60, 100 + Math.sin(i)))
-    const lines = indicatorLines(candles)
-    expect(Object.keys(lines).sort()).toEqual(INDICATORS.map((d) => d.id).sort())
-    // SMA 20 is defined from the 20th bar, EMA 50 from the 50th, RSI 14 from the 15th.
-    expect(lines.sma20).toHaveLength(60 - 19)
-    expect(lines.ema50).toHaveLength(60 - 49)
-    expect(lines.rsi14).toHaveLength(60 - 14)
-    expect(lines.sma20[0].time).toBe(1000 + 19 * 60)
-    expect(lines.rsi14[0].time).toBe(1000 + 14 * 60)
-    for (const p of lines.rsi14) {
+    const times = candles.map((c) => c.time)
+
+    const smaLine = toLineData(times, computePlots('sma:20', candles)[0].values)
+    expect(smaLine).toHaveLength(60 - 19)
+    expect(smaLine[0].time).toBe(1000 + 19 * 60)
+
+    const rsiLine = toLineData(times, computePlots('rsi:14', candles)[0].values)
+    expect(rsiLine).toHaveLength(60 - 14)
+    expect(rsiLine[0].time).toBe(1000 + 14 * 60)
+    for (const p of rsiLine) {
       expect(p.value).toBeGreaterThanOrEqual(0)
       expect(p.value).toBeLessThanOrEqual(100)
     }
   })
 
   it('is empty, not broken, on a series too short to warm up', () => {
-    const lines = indicatorLines([bar(1, 1), bar(2, 2)])
-    expect(lines.sma20).toEqual([])
-    expect(lines.ema50).toEqual([])
-    expect(lines.rsi14).toEqual([])
-  })
-
-  it('names exactly one pane indicator and the rest overlays', () => {
-    expect(INDICATORS.filter((d) => d.kind === 'pane').map((d) => d.id)).toEqual(['rsi14'])
-    expect(INDICATORS.filter((d) => d.kind === 'overlay').map((d) => d.id)).toEqual(['sma20', 'ema50'])
+    const candles = [bar(1, 1), bar(2, 2)]
+    const times = candles.map((c) => c.time)
+    for (const key of ['sma:20', 'ema:50', 'rsi:14']) {
+      expect(toLineData(times, computePlots(key, candles)[0].values)).toEqual([])
+    }
   })
 })
 

@@ -9,13 +9,16 @@ import { chartTitle, DEFAULT_TITLE } from '../../lib/pageTitle'
 import { legendStatus, delayTooltip, isStockDelayed } from '../../lib/provenance'
 import { premiumPct } from '../../lib/prices'
 import { candleSeconds } from '../../lib/candles'
-import { coerceTimeframe, isIntraday, networkName, timeframeLabel } from '../../lib/candleSeries'
-import { formatPrice, formatPct, formatCompact, changeColor } from '../../lib/format'
+import { coerceTimeframe, isIntraday, networkName, timeframeLabel, cleanCandles } from '../../lib/candleSeries'
+import { computePlots, describeKey } from '../../lib/indicatorCatalog'
+import { formatPrice, formatPct, formatCompact, changeColor, EM_DASH } from '../../lib/format'
+import { CloseIcon } from '../Icons'
 import DualLineChart from '../DualLineChart'
 import PremiumChart from '../PremiumChart'
 import SetAlertSheet from '../../overlays/SetAlertSheet'
 import ChartToolbar from './ChartToolbar'
 import IntervalPrompt from './IntervalPrompt'
+import IndicatorDialog from './IndicatorDialog'
 import DetailTabs from './DetailTabs'
 
 /*
@@ -57,6 +60,24 @@ class CandlesBoundary extends Component {
 const GAP_HEIGHT = 'clamp(240px, 38vh, 420px)'
 const CANDLES_HEIGHT = 'clamp(280px, 42vh, 480px)'
 const CANDLES_SKELETON = <div className="mx-3 mt-3 animate-pulse rounded-2xl bg-zinc-900" style={{ height: CANDLES_HEIGHT }} />
+
+/* CandleChart's line palette as classes — the legend swatch has to be the
+   colour of the line it names, and both cycle on the indicator's slot. */
+const SWATCHES = ['bg-accent', 'bg-zinc-300', 'bg-zinc-400']
+
+/*
+ * An indicator reading in the legend. Indicators are not all prices: RSI is
+ * 0–100, ROC is a percentage, OBV runs to the millions. formatPrice would
+ * print "$71.4" for an RSI and "$1,204,000,000" for an OBV, so the magnitude
+ * picks the format — compact above a million, two decimals below, four for
+ * the sub-penny readings a cheap token produces.
+ */
+function formatIndicator(value) {
+  const abs = Math.abs(value)
+  if (abs >= 1_000_000) return formatCompact(value)
+  if (abs >= 1) return value.toFixed(2)
+  return value.toFixed(4)
+}
 
 export default function ChartWorkspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef }) {
   if (!assetId) {
@@ -104,6 +125,7 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef }) {
   const [auto, setAuto] = useState(true)
   const [prompt, setPrompt] = useState(null) // { prefill } | null
   const [alertOpen, setAlertOpen] = useState(false)
+  const [indicatorsOpen, setIndicatorsOpen] = useState(false)
   const [now, setNow] = useState(() => Date.now())
   const chartRef = useRef(null)
   const { stocksAt } = usePrices()
@@ -153,6 +175,40 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef }) {
   // there would lie.
   const lastBar = candleData?.candles?.length ? candleData.candles[candleData.candles.length - 1] : null
   const countdownOn = mode === 'candles' && side === 'token' && lastBar != null
+
+  /*
+   * One legend row per active indicator, with its reading at the bar under
+   * the crosshair (the latest bar when the pointer is away) — TradingView's
+   * status line. Without this an indicator is an unnamed line: the chart
+   * draws it, and nothing on screen says what it is or what it reads.
+   *
+   * Computed here rather than handed back out of CandleChart because the
+   * values are a pure function of candles the workspace already holds, and
+   * routing them through the chart would make the legend wait on a canvas
+   * render to catch up with the crosshair.
+   *
+   * Sits above the `if (!asset)` return with the other hooks: a hook after
+   * an early return runs in a different order on the renders that take it.
+   */
+  const indicatorRows = useMemo(() => {
+    if (mode !== 'candles' || indicators.length === 0) return []
+    const clean = cleanCandles(candleData?.candles ?? [])
+    if (clean.length === 0) return []
+    const bar = hoverBar ?? lastBar
+    const found = bar ? clean.findIndex((c) => c.time === bar.time) : -1
+    const at = found >= 0 ? found : clean.length - 1
+    return indicators.map((key, slot) => ({
+      key,
+      slot,
+      label: describeKey(key),
+      plots: computePlots(key, clean).map((p) => ({
+        id: p.id,
+        label: p.label,
+        tone: p.tone,
+        value: p.values[at],
+      })),
+    }))
+  }, [mode, indicators, candleData, hoverBar, lastBar])
   useEffect(() => {
     if (!countdownOn) return undefined
     setNow(Date.now())
@@ -194,7 +250,9 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef }) {
         setAuto(true)
       },
       toggleLog: () => patch({ log: !log }),
-      focusIndicators: () => document.getElementById('desktop-indicator-sma20')?.focus(),
+      // `/` opens the catalogue, as it does on TradingView. It used to move
+      // focus to the first of three fixed chips, which no longer exist.
+      focusIndicators: () => setIndicatorsOpen(true),
       openAlert: () => {
         if (asset?.underlying) setAlertOpen(true)
       },
@@ -254,6 +312,7 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef }) {
     ? formatCountdown(secondsToBarClose(lastBar.time, candleSeconds(timeframe), now / 1000))
     : ''
 
+
   const tickerButton = (
     <button
       type="button"
@@ -294,6 +353,7 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef }) {
         onSide={setSide}
         onTimeframe={(id) => patch({ timeframe: id })}
         onIndicators={(next) => patch({ indicators: next })}
+        onOpenIndicators={() => setIndicatorsOpen(true)}
         onLog={() => patch({ log: !log })}
         auto={auto}
         onAuto={() => {
@@ -457,6 +517,46 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef }) {
                   <span>—</span>
                 )}
               </div>
+
+              {/* One row per indicator, under the price line it is drawn
+                  over. The swatch is the line's own colour (same palette,
+                  same cycle as CandleChart), so a row and its line can be
+                  matched up without reading the names. The X removes it —
+                  TradingView's hover controls, without the hover, because a
+                  control that only exists on hover cannot be found. */}
+              {indicatorRows.map((row) => (
+                <div
+                  key={row.key}
+                  className="num t-caption flex flex-wrap items-baseline gap-x-2 text-zinc-500"
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`mb-[3px] inline-block h-0.5 w-3 rounded ${
+                      SWATCHES[row.slot % SWATCHES.length]
+                    }`}
+                  />
+                  <span className="text-zinc-400">{row.label}</span>
+                  {row.plots.map((p) => (
+                    <span key={p.id}>
+                      {row.plots.length > 1 && <span className="text-zinc-600">{p.label} </span>}
+                      <span className="text-zinc-300">
+                        {p.value == null ? EM_DASH : formatIndicator(p.value)}
+                      </span>
+                    </span>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      patch({ indicators: indicators.filter((k) => k !== row.key) })
+                    }
+                    aria-label={`Remove ${row.label}`}
+                    title={`Remove ${row.label}`}
+                    className="rounded px-1 text-zinc-600 transition-colors hover:text-loss"
+                  >
+                    <CloseIcon size={11} />
+                  </button>
+                </div>
+              ))}
             </div>
 
             <CandlesBoundary>
@@ -508,6 +608,14 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef }) {
       </div>
 
       {alertOpen && <SetAlertSheet asset={asset} onClose={() => setAlertOpen(false)} />}
+
+      {indicatorsOpen && (
+        <IndicatorDialog
+          active={indicators}
+          onChange={(next) => patch({ indicators: next })}
+          onClose={() => setIndicatorsOpen(false)}
+        />
+      )}
     </div>
   )
 }
