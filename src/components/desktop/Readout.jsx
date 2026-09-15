@@ -46,13 +46,7 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
   const { asset, chart, info, spread, siblings, hasTokenStats, hasStockStats, bothSides } =
     useAssetWorkspace(assetId, range, chartRetry)
 
-  if (!assetId) {
-    return (
-      <div className="flex h-full items-center justify-center px-6">
-        <p className="t-body text-center text-zinc-400">Pick a company on the Board, or search for a ticker.</p>
-      </div>
-    )
-  }
+  // MeterShell mounts the Readout only with an asset and owns the empty state.
   if (!asset) return null
 
   const gap = premiumPct(asset)

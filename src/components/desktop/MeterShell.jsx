@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { track } from '../../services/analytics'
 import { useFolders } from '../../state/FoldersContext'
 import { useAsset } from '../../state/PricesContext'
@@ -82,8 +82,9 @@ export default function MeterShell({ tab, onTab, assetId, onSelectAsset, openFol
     track('meter_open', { home: 'meter', visit: visit.kind, days: visit.days })
   }, [])
 
-  // Leaving the Board for a takeover closes the chart; picking an asset
-  // anywhere returns to the Board.
+  // Leaving the Board for a takeover closes the chart; a pick from the
+  // chart's own tabs or the masthead search while the chart is open stays
+  // in the chart.
   useEffect(() => {
     if (tab !== 'home') setChartOpen(false)
   }, [tab])
@@ -102,11 +103,19 @@ export default function MeterShell({ tab, onTab, assetId, onSelectAsset, openFol
     track('meter_asset', { from })
   }
 
+  // The chart and fullscreen are Board-only: a takeover screen (Folders,
+  // News, Trade) keeps the 'board' key scope, so C and F must ignore it or
+  // they leave state behind that springs open on the way back.
   function openChart() {
-    if (!assetId) return
+    if (!assetId || tab !== 'home') return
     setChartOpen(true)
     track('meter_chart_open')
   }
+
+  const drillIn = useMemo(
+    () => ({ onExit: () => setChartOpen(false), onSheet: setSheet, onShortcuts: () => setShortcutsOpen(true) }),
+    [],
+  )
 
   useMeterShortcuts({
     scope: chartOpen ? 'chart' : 'board',
@@ -116,7 +125,9 @@ export default function MeterShell({ tab, onTab, assetId, onSelectAsset, openFol
     onWatch: (id) => toggleWatchlist(id),
     onAlert: (id) => setAlertFor(id),
     onChart: openChart,
-    onFullscreen: () => setFullscreen((f) => !f),
+    onFullscreen: () => {
+      if (tab === 'home') setFullscreen((f) => !f)
+    },
     onExitFullscreen: () => {
       if (!fullscreen) return false
       setFullscreen(false)
@@ -131,14 +142,19 @@ export default function MeterShell({ tab, onTab, assetId, onSelectAsset, openFol
     onIndicators: () => chartRef.current?.focusIndicators?.(),
   })
 
+  // Board and Watching both land on the Board. With the chart drill-in open
+  // the tab is already 'home', so App's switchTab is a no-op and the
+  // close-on-tab-change effect above never fires: close the chart here.
   function onMastheadTab(id) {
     if (id === 'watching') {
       setLens('watching')
+      setChartOpen(false)
       onTab('home')
       return
     }
     if (id === 'home') {
       if (effectiveLens === 'watching') setLens('all')
+      setChartOpen(false)
       onTab('home')
       return
     }
@@ -194,7 +210,7 @@ export default function MeterShell({ tab, onTab, assetId, onSelectAsset, openFol
           onScrub={() => {}}
           searchRef={searchRef}
           actionsRef={chartRef}
-          drillIn={{ onExit: () => setChartOpen(false), onSheet: setSheet, onShortcuts: () => setShortcutsOpen(true) }}
+          drillIn={drillIn}
         />
       </main>
     )
@@ -237,8 +253,9 @@ export default function MeterShell({ tab, onTab, assetId, onSelectAsset, openFol
           drill-in's gap header opens through drillIn.onSheet renders here. */}
       {chartOpen && asset && sheet === 'folder' && <AddToFolderSheet asset={asset} onClose={() => setSheet(null)} />}
       {chartOpen && asset && sheet === 'share' && <ShareSheet asset={asset} onClose={() => setSheet(null)} />}
-      {chartOpen && asset && sheet === 'alert' && <SetAlertSheet asset={asset} onClose={() => setSheet(null)} />}
-      {alertAsset && <SetAlertSheet asset={alertAsset} onClose={() => setAlertFor(null)} />}
+      {chartOpen && asset?.underlying && sheet === 'alert' && <SetAlertSheet asset={asset} onClose={() => setSheet(null)} />}
+      {/* Alerts need a share leg to compare against, as ChartWorkspace's openAlert gates. */}
+      {alertAsset?.underlying && <SetAlertSheet asset={alertAsset} onClose={() => setAlertFor(null)} />}
     </div>
   )
 }
