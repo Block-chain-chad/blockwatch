@@ -20,6 +20,10 @@ import ChartToolbar from './ChartToolbar'
 import IntervalPrompt from './IntervalPrompt'
 import IndicatorDialog from './IndicatorDialog'
 import DetailTabs from './DetailTabs'
+import { useFolders } from '../../state/FoldersContext'
+import { timeframesFor } from '../../lib/candleSeries'
+import GapHeader from './GapHeader'
+import ChartFootStrip from './ChartFootStrip'
 
 /*
  * The center of the desktop (spec §6.9): the chart toolbar, the Gap chart
@@ -79,7 +83,7 @@ function formatIndicator(value) {
   return value.toFixed(4)
 }
 
-export default function ChartWorkspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef }) {
+export default function ChartWorkspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef, drillIn = null }) {
   if (!assetId) {
     return (
       <div className="flex h-full items-center justify-center px-6">
@@ -96,6 +100,7 @@ export default function ChartWorkspace({ assetId, onSelectAsset, onScrub, search
       onScrub={onScrub}
       searchRef={searchRef}
       actionsRef={actionsRef}
+      drillIn={drillIn}
     />
   )
 }
@@ -111,7 +116,7 @@ function whenLabel(time, intraday) {
   )
 }
 
-function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef }) {
+function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef, drillIn }) {
   const [saved, setSaved] = useLocalState('bw.desktop.chart.v1', DEFAULT_CHART_SETTINGS)
   const settings = useMemo(() => normalizeChartSettings(saved), [saved])
   const { mode, range, side, timeframe, indicators, log } = settings
@@ -128,7 +133,8 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef }) {
   const [indicatorsOpen, setIndicatorsOpen] = useState(false)
   const [now, setNow] = useState(() => Date.now())
   const chartRef = useRef(null)
-  const { stocksAt } = usePrices()
+  const { stocksAt, lastFetchAt } = usePrices()
+  const { watchlistIds, toggleWatchlist } = useFolders()
 
   const {
     asset,
@@ -174,7 +180,7 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef }) {
   // while there is a bar to count from. The stock leg is delayed; a countdown
   // there would lie.
   const lastBar = candleData?.candles?.length ? candleData.candles[candleData.candles.length - 1] : null
-  const countdownOn = mode === 'candles' && side === 'token' && lastBar != null
+  const countdownOn = !drillIn && mode === 'candles' && side === 'token' && lastBar != null
 
   /*
    * One legend row per active indicator, with its reading at the bar under
@@ -339,55 +345,96 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef }) {
     </span>
   )
 
-  return (
-    <div className="flex min-h-full flex-col">
-      <ChartToolbar
-        asset={asset}
-        settings={settings}
-        onMode={setMode}
-        onRange={(r) => {
-          onScrub(null)
-          setScrubT(null)
-          patch({ range: r })
-        }}
-        onSide={setSide}
-        onTimeframe={(id) => patch({ timeframe: id })}
-        onIndicators={(next) => patch({ indicators: next })}
-        onOpenIndicators={() => setIndicatorsOpen(true)}
-        onLog={() => patch({ log: !log })}
-        auto={auto}
-        onAuto={() => {
-          chartRef.current?.setAuto()
-          setAuto(true)
-        }}
-        onLatest={() => chartRef.current?.scrollToLatest()}
-        onReset={() => {
-          chartRef.current?.reset()
-          setAuto(true)
-        }}
-      />
+  const footStrip = drillIn ? (
+    <ChartFootStrip
+      mode={mode}
+      onMode={setMode}
+      range={range}
+      onRange={(r) => {
+        onScrub(null)
+        setScrubT(null)
+        patch({ range: r })
+      }}
+      side={side}
+      onSide={setSide}
+      timeframe={timeframe}
+      onTimeframe={(id) => patch({ timeframe: id })}
+      offeredTimeframes={timeframesFor(side)}
+      log={log}
+      onLog={() => patch({ log: !log })}
+      indicatorCount={mode === 'candles' ? indicators.length : 0}
+      onOpenIndicators={() => setIndicatorsOpen(true)}
+      onShortcuts={drillIn.onShortcuts}
+      hasStock={Boolean(asset.underlying)}
+      ticker={asset.ticker}
+      underlying={asset.underlying}
+    />
+  ) : null
 
-      <div className="px-6 pb-10">
+  return (
+    <div className={drillIn ? 'flex h-full min-h-0 flex-col' : 'flex min-h-full flex-col'}>
+      {drillIn ? (
+        <GapHeader
+          asset={asset}
+          session={session}
+          stocksAt={stocksAt}
+          lastFetchAt={lastFetchAt}
+          onExit={drillIn.onExit}
+          onSheet={drillIn.onSheet}
+          inWatchlist={watchlistIds.includes(asset.id)}
+          onToggleWatch={() => toggleWatchlist(asset.id)}
+        />
+      ) : (
+        <ChartToolbar
+          asset={asset}
+          settings={settings}
+          onMode={setMode}
+          onRange={(r) => {
+            onScrub(null)
+            setScrubT(null)
+            patch({ range: r })
+          }}
+          onSide={setSide}
+          onTimeframe={(id) => patch({ timeframe: id })}
+          onIndicators={(next) => patch({ indicators: next })}
+          onOpenIndicators={() => setIndicatorsOpen(true)}
+          onLog={() => patch({ log: !log })}
+          auto={auto}
+          onAuto={() => {
+            chartRef.current?.setAuto()
+            setAuto(true)
+          }}
+          onLatest={() => chartRef.current?.scrollToLatest()}
+          onReset={() => {
+            chartRef.current?.reset()
+            setAuto(true)
+          }}
+        />
+      )}
+
+      <div className={drillIn ? 'min-h-0 flex-1 overflow-y-auto px-6 pb-4' : 'px-6 pb-10'}>
         {mode === 'gap' && (
           <div className="relative mt-3">
             {/* The legend, Gap mode: the title row over the chart's own
                 readout row (the readout is DualLineChart's, kept as is so
                 the Gap chart stays the phone's), then one provenance line
                 per leg (A23). */}
-            <div className="mb-1 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-2">
-              {tickerButton}
-              {intervalButton}
-              {asset.underlying && (
-                <span className="t-caption text-zinc-500">vs {asset.underlying}</span>
-              )}
-              <span className="t-caption text-zinc-500">{tokenStatus}</span>
-              {asset.underlying && (
-                <span className="t-caption flex items-center gap-1 text-zinc-500">
-                  {stockDelayed && DelayBadge}
-                  {stockStatus}
-                </span>
-              )}
-            </div>
+            {!drillIn && (
+              <div className="mb-1 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-2">
+                {tickerButton}
+                {intervalButton}
+                {asset.underlying && (
+                  <span className="t-caption text-zinc-500">vs {asset.underlying}</span>
+                )}
+                <span className="t-caption text-zinc-500">{tokenStatus}</span>
+                {asset.underlying && (
+                  <span className="t-caption flex items-center gap-1 text-zinc-500">
+                    {stockDelayed && DelayBadge}
+                    {stockStatus}
+                  </span>
+                )}
+              </div>
+            )}
             <div className="flex flex-col" style={{ height: GAP_HEIGHT }}>
               <DualLineChart
                 fill
@@ -472,51 +519,57 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef }) {
                 values row — O H L C, the change, the volume, the time, and
                 on the token side the countdown to bar close (A13). */}
             <div className="pointer-events-none absolute left-4 top-4 z-10 max-w-[calc(100%-4rem)] rounded-md bg-zinc-950/50 px-2 py-1">
-              <div className="pointer-events-auto flex flex-wrap items-baseline gap-x-2">
-                {tickerButton}
-                {intervalButton}
-                <span className="t-caption text-zinc-500">
-                  {side === 'stock' ? 'NASDAQ' : tokenVenue}
-                </span>
-                <span className="t-caption flex items-center gap-1 text-zinc-500">
-                  {side === 'stock' && stockDelayed && DelayBadge}
-                  {side === 'stock' ? stockStatus : tokenStatus}
-                </span>
-              </div>
-              <div className="num t-caption flex flex-wrap items-baseline gap-x-2 text-zinc-500">
-                {shownBar ? (
-                  <>
-                    <span>
-                      O <span className="text-zinc-300">{formatPrice(shownBar.open)}</span>
-                    </span>
-                    <span>
-                      H <span className="text-zinc-300">{formatPrice(shownBar.high)}</span>
-                    </span>
-                    <span>
-                      L <span className="text-zinc-300">{formatPrice(shownBar.low)}</span>
-                    </span>
-                    <span>
-                      C <span className={closeColor}>{formatPrice(shownBar.close)}</span>
-                    </span>
-                    {change && (
-                      <span className={changeColor(change.delta)}>
-                        Δ {formatPrice(Math.abs(change.delta))} ({formatPct(change.pct)})
-                      </span>
-                    )}
-                    {Number.isFinite(shownBar.volume) && (
+              {!drillIn && (
+                <div className="pointer-events-auto flex flex-wrap items-baseline gap-x-2">
+                  {tickerButton}
+                  {intervalButton}
+                  <span className="t-caption text-zinc-500">
+                    {side === 'stock' ? 'NASDAQ' : tokenVenue}
+                  </span>
+                  <span className="t-caption flex items-center gap-1 text-zinc-500">
+                    {side === 'stock' && stockDelayed && DelayBadge}
+                    {side === 'stock' ? stockStatus : tokenStatus}
+                  </span>
+                </div>
+              )}
+              {/* On the drill-in the O H L C row appears only under the
+                  crosshair; the gap header above the canvas is the reading. */}
+              {(!drillIn || hoverBar) && (
+                <div className="num t-caption flex flex-wrap items-baseline gap-x-2 text-zinc-500">
+                  {shownBar ? (
+                    <>
                       <span>
-                        Vol <span className="text-zinc-300">{formatCompact(shownBar.volume)}</span>
+                        O <span className="text-zinc-300">{formatPrice(shownBar.open)}</span>
                       </span>
-                    )}
-                    <span className="text-zinc-600">{whenLabel(shownBar.time, isIntraday(timeframe))}</span>
-                    {countdown && !hoverBar && (
-                      <span className="text-zinc-500">closes in {countdown}</span>
-                    )}
-                  </>
-                ) : (
-                  <span>—</span>
-                )}
-              </div>
+                      <span>
+                        H <span className="text-zinc-300">{formatPrice(shownBar.high)}</span>
+                      </span>
+                      <span>
+                        L <span className="text-zinc-300">{formatPrice(shownBar.low)}</span>
+                      </span>
+                      <span>
+                        C <span className={closeColor}>{formatPrice(shownBar.close)}</span>
+                      </span>
+                      {change && (
+                        <span className={changeColor(change.delta)}>
+                          Δ {formatPrice(Math.abs(change.delta))} ({formatPct(change.pct)})
+                        </span>
+                      )}
+                      {Number.isFinite(shownBar.volume) && (
+                        <span>
+                          Vol <span className="text-zinc-300">{formatCompact(shownBar.volume)}</span>
+                        </span>
+                      )}
+                      <span className="text-zinc-600">{whenLabel(shownBar.time, isIntraday(timeframe))}</span>
+                      {countdown && !hoverBar && (
+                        <span className="text-zinc-500">closes in {countdown}</span>
+                      )}
+                    </>
+                  ) : (
+                    <span>—</span>
+                  )}
+                </div>
+              )}
 
               {/* One row per indicator, under the price line it is drawn
                   over. The swatch is the line's own colour (same palette,
@@ -595,17 +648,21 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef }) {
           </div>
         )}
 
-        <DetailTabs
-          asset={asset}
-          info={info}
-          spread={spread}
-          siblings={siblings}
-          hasTokenStats={hasTokenStats}
-          hasStockStats={hasStockStats}
-          bothSides={bothSides}
-          onSelectAsset={onSelectAsset}
-        />
+        {!drillIn && (
+          <DetailTabs
+            asset={asset}
+            info={info}
+            spread={spread}
+            siblings={siblings}
+            hasTokenStats={hasTokenStats}
+            hasStockStats={hasStockStats}
+            bothSides={bothSides}
+            onSelectAsset={onSelectAsset}
+          />
+        )}
       </div>
+
+      {footStrip}
 
       {alertOpen && <SetAlertSheet asset={asset} onClose={() => setAlertOpen(false)} />}
 
