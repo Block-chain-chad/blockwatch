@@ -236,7 +236,10 @@ export default function MeterShell({ tab, onTab, assetId, onSelectAsset, openFol
   }
 
   return (
-    <div className="grid h-dvh w-full overflow-hidden" style={{ gridTemplateRows: fullscreen ? '0px 1fr' : '56px 1fr' }}>
+    <div
+      className="grid h-dvh w-full overflow-hidden"
+      style={{ gridTemplateColumns: 'minmax(0, 1fr)', gridTemplateRows: fullscreen ? '0px 1fr' : '56px 1fr' }}
+    >
       <div hidden={fullscreen}>
         <Masthead active={mastheadActive} onTab={onMastheadTab} searchRef={searchRef} onSelectAsset={(id) => select(id, { from: 'search' })} onOpenProfile={onOpenProfile} />
       </div>

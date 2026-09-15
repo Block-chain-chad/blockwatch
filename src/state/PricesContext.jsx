@@ -87,11 +87,18 @@ export function PricesProvider({ children }) {
     return set
   }
 
-  function subscribedTickers() {
+  // `recentFirst` walks the most recently subscribed screen's ids before
+  // older ones (same ordering tickFast already gives mints), so a capped
+  // fetch favors what's on screen now over a stale background subscription.
+  function subscribedTickers({ recentFirst = false } = {}) {
+    const lists = [...subsRef.current.values()]
+    if (recentFirst) lists.reverse()
     const set = new Set()
-    for (const id of subscribedIds()) {
-      const t = BY_ID[id]?.underlying
-      if (t) set.add(t)
+    for (const ids of lists) {
+      for (const id of ids) {
+        const t = BY_ID[id]?.underlying
+        if (t) set.add(t)
+      }
     }
     return [...set]
   }
@@ -185,10 +192,18 @@ export function PricesProvider({ children }) {
         !isUsMarketOpen() &&
         stockFetchRef.current &&
         Date.now() - stockFetchRef.current < CLOSED_MARKET_REFRESH_MS
-      if (closedAndFresh && !force) return
+      const all = subscribedTickers()
+      if (closedAndFresh && !force) {
+        // Shut market, fresh closes on hand: nothing to refresh, but a wide
+        // subscription (the desktop Board asks for up to 150 underlyings) can
+        // still hold tickers that have never been quoted. Those need one
+        // fetch each, on the same per-cycle cap, or they stay blank all night.
+        const missing = all.filter((t) => !quotesRef.current[t]).slice(0, STOCK_QUOTE_CAP)
+        if (missing.length > 0) await fetchStocks(missing)
+        return
+      }
       // Cap quotes per cycle (a 100-asset folder must not fire 100 Finnhub
       // calls a minute); overflow rotates through on subsequent cycles.
-      const all = subscribedTickers()
       let list = all
       if (all.length > STOCK_QUOTE_CAP) {
         const off = quoteRotorRef.current % all.length
@@ -304,7 +319,7 @@ export function PricesProvider({ children }) {
       const missingIds = [...subscribedIds()].filter((id) => !pricesRef.current[id])
       // Same per-burst cap as the cycle: a giant folder's first open fills
       // the rest via rotation instead of one 100-call burst.
-      const missingTickers = subscribedTickers()
+      const missingTickers = subscribedTickers({ recentFirst: true })
         .filter((t) => !quotesRef.current[t])
         .slice(0, STOCK_QUOTE_CAP)
       await Promise.allSettled([

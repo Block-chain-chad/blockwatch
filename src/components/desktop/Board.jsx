@@ -24,10 +24,10 @@ import PriceText from '../PriceText'
  * tick lines up. Rows past the viewport are not rendered (lib/board.js's
  * visibleWindow); order is frozen once every company is in.
  *
- * Column grid, 880 px wide at 1440: company 252 · share 128 · gap 240 ·
- * wrappers 108 · cheapest 80 · chevron 24, inside 24 px gutters.
+ * Column grid: company flexes (min 160px) · share 120 · gap 224 · wrappers
+ * 104 · cheapest 80 · chevron 24, inside 24 px gutters.
  */
-const GRID = '252px 128px 240px 108px 80px 24px'
+const GRID = 'minmax(160px, 1fr) 120px 224px 104px 80px 24px'
 const CHIP = 't-label flex h-7 shrink-0 items-center rounded-md px-2.5 transition-colors'
 const CHIP_ON = 'bg-zinc-800 text-zinc-100'
 const CHIP_OFF = 'text-zinc-500 hover:text-zinc-300'
@@ -251,15 +251,12 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }
                   <div className="t-caption text-zinc-500">{shareAgeWord(session)}</div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <GapBar pct={c.lead} thin={c.muted} width={160} height={6} tone="accent" />
+                  <GapBar pct={c.lead} thin={c.muted} width={144} height={6} tone="accent" />
                   <span className={`num t-label w-14 text-right ${c.muted ? 'text-zinc-500' : 'text-zinc-100'}`}>
                     {formatPct(c.lead)}
                   </span>
                 </div>
-                <div className="num t-caption text-zinc-400">
-                  {c.wrappers.length}
-                  {c.spreadBp != null ? ` · ${c.spreadBp} bp apart` : ' · 1 issuer'}
-                </div>
+                <div className="num t-caption text-zinc-400">{wrappersCell(c)}</div>
                 <div>
                   {c.cheapestAsset && (
                     <span className="t-caption rounded-md border px-2 py-0.5 text-zinc-300" style={{ borderColor: 'var(--border-default)' }}>
@@ -312,7 +309,7 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <GapBar pct={w.gap} thin={w.muted} width={160} height={6} tone="accent" />
+                <GapBar pct={w.gap} thin={w.muted} width={144} height={6} tone="accent" />
                 <span className={`num t-label w-14 text-right ${w.muted ? 'text-zinc-500' : 'text-zinc-100'}`}>
                   {formatPct(w.gap)}
                 </span>
@@ -337,6 +334,16 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }
       </div>
     </section>
   )
+}
+
+/* The Wrappers cell's copy: one wrapper never claims a spread; several
+   wrappers with only one credible leg can't claim "apart" either — the
+   second (muted) wrapper isn't a real comparison point. */
+function wrappersCell(company) {
+  const n = company.wrappers.length
+  if (n <= 1) return '1 issuer'
+  if (company.spreadBp != null) return `${n} · ${company.spreadBp} bp apart`
+  return `${n} · 1 credible`
 }
 
 /* The share leg's age in one word, by session: outside regular hours the

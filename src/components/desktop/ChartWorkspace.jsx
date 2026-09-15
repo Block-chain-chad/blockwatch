@@ -63,6 +63,11 @@ class CandlesBoundary extends Component {
 
 const GAP_HEIGHT = 'clamp(240px, 38vh, 420px)'
 const CANDLES_HEIGHT = 'clamp(280px, 42vh, 480px)'
+// The drill-in's chart column is h-full (GapHeader + foot strip above/below
+// it, no toolbar/legend competing for the row), so it should fill the
+// column instead of the phone's viewport-fraction clamps above.
+const DRILL_GAP_HEIGHT = 'clamp(320px, calc(100dvh - 420px), 720px)'
+const DRILL_CANDLES_HEIGHT = 'clamp(320px, calc(100dvh - 400px), 720px)'
 const CANDLES_SKELETON = <div className="mx-3 mt-3 animate-pulse rounded-2xl bg-zinc-900" style={{ height: CANDLES_HEIGHT }} />
 
 /* CandleChart's line palette as classes — the legend swatch has to be the
@@ -437,7 +442,7 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef, dri
                 )}
               </div>
             )}
-            <div className="flex flex-col" style={{ height: GAP_HEIGHT }}>
+            <div className="flex flex-col" style={{ height: drillIn ? DRILL_GAP_HEIGHT : GAP_HEIGHT }}>
               <DualLineChart
                 fill
                 token={chart.token}
@@ -630,7 +635,7 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef, dri
                     fontSize: 12,
                     magnet: true,
                     hideReadout: true,
-                    height: CANDLES_HEIGHT,
+                    height: drillIn ? DRILL_CANDLES_HEIGHT : CANDLES_HEIGHT,
                     rsiHeight: 96,
                     resetKey: `${asset.id}:${side}:${timeframe}`,
                     onCrosshair,
