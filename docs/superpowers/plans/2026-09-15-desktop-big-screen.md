@@ -707,7 +707,7 @@ export function widestGapLabel(session) {
 - [ ] **Step 4: Run the tests to verify they pass**
 
 Run: `npx vitest run src/lib/sessionCopy.test.js`
-Expected: PASS, 12 tests.
+Expected: PASS, 13 tests.
 
 - [ ] **Step 5: The masthead**
 
@@ -734,7 +734,7 @@ Line 65:
 - [ ] **Step 6: Lint, tests, render check**
 
 Run: `npx oxlint` then `npx vitest run`
-Expected: baseline warnings only; 431 passed.
+Expected: baseline warnings only; 429 passed.
 
 In the preview at 1440×900: `read_page` lists a button whose text starts "Widest gap right now · " during regular hours (09:30–16:00 ET on a weekday) or "Widest gap · " otherwise, followed by a ticker and a signed percent. If no asset clears the 0.15 % floor the pill is absent; that is correct, not a failure.
 
@@ -974,7 +974,7 @@ Expected: PASS (pageTitle's existing tests plus 2 new; alertNotify 11).
 - [ ] **Step 6: Lint and the whole suite**
 
 Run: `npx oxlint` then `npx vitest run`
-Expected: baseline warnings only; 444 passed.
+Expected: baseline warnings only; 442 passed.
 
 - [ ] **Step 7: Commit**
 
@@ -1145,7 +1145,7 @@ Expected: `screens/AssetDetail.jsx`, `desktop/AssetNumbers.jsx`, `desktop/ChartW
 - [ ] **Step 5: Lint, tests, and a live check of the ask**
 
 Run: `npx oxlint` then `npx vitest run`
-Expected: baseline warnings only; 444 passed.
+Expected: baseline warnings only; 442 passed.
 
 In the preview at 1440×900 with an asset that has an underlying selected, click the Readout's bell (aria-label "Set alert" or "Alert at …"). Via `javascript_tool`: `Notification.permission` is `'default'` in a fresh pane, so `read_page` shows the paragraph "Get a system notification when this fires, while OnStock is open in a tab?" and a "Turn on" button above "Set drift alert"; switch to "Price target": the same offer sits above "Set price alert". Click "Set drift alert": the sheet closes without waiting on any prompt (the alert saves regardless). Then `localStorage.setItem('bw.meter.notify.v1', JSON.stringify('declined'))`, reopen the sheet: the offer is gone. Remove the key afterwards. `read_console_messages` with `onlyErrors`: nothing new. The Browser pane cannot grant OS permission, so posting is covered by the pure tests, not live.
 
@@ -1185,7 +1185,7 @@ Expected: `[["−2%",0],["−1%",14.6],["−0.5%",25],["0",50],["+0.5%",75],["+1
 - [ ] **Step 4: 2560 and 3440.** At 3440×1440: the root's left edge is 440 and its width 2560; the area outside it is the page colour with no border (`getComputedStyle(document.body).backgroundColor` equals the root's parent's; no element's right edge exceeds 3000); the masthead's `header` width is 2560. Take one screenshot.
 - [ ] **Step 5: The alert ask.** Repeat Task 7 step 5 at 1920. Also open the drill-in (`c`) and click the gap header's bell: the same offer appears in the sheet the shell renders.
 - [ ] **Step 6: The phone.** `resize_window` to the `mobile` preset (375×812) and reload. `read_page`: the phone Home renders (TabBar, session sentence, no masthead, no Board). Open an asset, tap its bell: the alert sheet shows "Drift vs …" and "Price target" tabs and NO "Turn on" button. Via `javascript_tool`: `localStorage.getItem('bw.meter.notify.v1')` is `null` (the phone never touched the key). Then the reasoning check: `git diff feat/desktop-meter --stat -- src` lists only `components/desktop/Board.jsx`, `components/desktop/Masthead.jsx`, `components/desktop/MeterShell.jsx`, `components/desktop/Readout.jsx`, `components/desktop/RuleTicks.jsx`, `hooks/useAlertNotifications.js`, `hooks/useWindowWidth.js`, `lib/alertNotify.js` (+ test), `lib/bigScreen.js` (+ test), `lib/pageTitle.js` (+ test), `lib/sessionCopy.js` (+ test), `overlays/SetAlertSheet.jsx`. Of these the phone renders `sessionCopy.js` (default argument path, unchanged output), `pageTitle.js` (phones never call it; `meterTitle` output unchanged by its tests) and `SetAlertSheet.jsx` (Task 7 step 4's hunk review). Everything else is desktop-only or pure.
-- [ ] **Step 7: The gates.** `npx oxlint` (18 warnings, 0 errors), `npx vitest run` (444 passed), `npm run build` (succeeds; note the bundle size line for the PR).
+- [ ] **Step 7: The gates.** `npx oxlint` (18 warnings, 0 errors), `npx vitest run` (442 passed), `npm run build` (succeeds; note the bundle size line for the PR).
 - [ ] **Step 8: Fix and commit** whatever the checks found, one commit:
 
 ```bash
