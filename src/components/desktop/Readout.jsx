@@ -14,6 +14,8 @@ import {
 import { tokenLegLine, shareLegLine } from '../../lib/provenance'
 import { STOCK_QUOTE_SOURCE } from '../../services/stocks'
 import { GapBar } from '../shared'
+import { BIG_SCREEN_BASE } from '../../lib/bigScreen'
+import RuleTicks from './RuleTicks'
 import { ShareIcon, PlusIcon, BellIcon, StarIcon, ChevronRight } from '../Icons'
 import PremiumChart from '../PremiumChart'
 import TradeButton from '../asset/TradeButton'
@@ -37,7 +39,7 @@ const ICON_BTN = 'flex h-9 w-9 items-center justify-center rounded-lg transition
 const PILL = 't-label flex h-[26px] items-center rounded-md px-2.5 transition-colors'
 const RANGES = ['1D', '1W', '1M', '1Y']
 
-export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, onSheet }) {
+export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, onSheet, big = BIG_SCREEN_BASE }) {
   const [size, setSize] = useLocalState('bw.meter.size.v1', 1000)
   const [range, setRange] = useLocalState('bw.meter.range.v1', '1W')
   const [chartRetry, setChartRetry] = useState(0)
@@ -126,11 +128,18 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
           )}
         </div>
         <GapBar pct={gap} thin={thin} width="100%" height={10} tone="accent" />
-        <div className="num flex justify-between text-[11px] text-zinc-500">
-          <span>−2%</span>
-          <span>0</span>
-          <span>+2%</span>
-        </div>
+        {big.readoutTicks ? (
+          <RuleTicks width="100%" />
+        ) : (
+          <div className="num flex justify-between text-[11px] text-zinc-500">
+            <span>−2%</span>
+            <span>0</span>
+            <span>+2%</span>
+          </div>
+        )}
+        {/* The percentile sits under the number it describes (spec 2026-09-15
+            §3.2), not three sections down under the history pane. */}
+        {percentileLine && <p className="t-caption text-zinc-500">{percentileLine}</p>}
         <div className="num t-label flex flex-col gap-1 text-zinc-300">
           <div>{tokenLegLine({ price: asset.tokenPrice, ageSeconds: tokenAgeSeconds, source: asset.mint ? 'Jupiter and CoinGecko' : 'CoinGecko' })}</div>
           {asset.underlying && (
@@ -167,7 +176,7 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
       </div>
 
       <div className="flex flex-col gap-1.5 border-t pt-3" style={{ borderColor: 'var(--border-subtle)' }}>
-        <div className="flex flex-col" style={{ height: 164 }}>
+        <div className="flex flex-col" style={{ height: big.history }}>
           {chart.loading ? (
             <div className="h-full animate-pulse rounded-xl bg-zinc-900" />
           ) : chart.error ? (
@@ -195,7 +204,6 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
             </button>
           ))}
         </div>
-        {percentileLine && <p className="t-caption text-zinc-500">{percentileLine}</p>}
       </div>
 
       <button
