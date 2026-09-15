@@ -9,6 +9,7 @@
 
 import { premiumPct, isThinlyTraded } from './prices'
 import { isPlausiblePct } from './format'
+import { isStockDelayed } from './provenance'
 
 /** Past this the number is a stale print, not a mispricing (Screener's rule). */
 export const MAX_CREDIBLE_GAP = 25
@@ -116,4 +117,121 @@ export function groupCompanies(
     if (a.muted && b.muted) return Math.abs(b.wrappers[0].gap) - Math.abs(a.wrappers[0].gap)
     return cmp(a, b)
   })
+}
+
+/**
+ * Finnhub's shared 60/min cannot quote 459 underlyings. The Board asks for
+ * a bounded set, in this order: the watchlist, every wrapper of every
+ * company with more than one wrapper (the issuer spread is the Board's
+ * reason to exist), then single-wrapper companies by static volume. The
+ * cap counts distinct UNDERLYINGS, because that is what a quote costs;
+ * every wrapper of a chosen company comes along.
+ */
+export const CANDIDATE_CAP = 150
+
+export function boundCandidates(staticAssets, { watchlistIds = [], cap = CANDIDATE_CAP } = {}) {
+  const byUnder = new Map()
+  for (const a of staticAssets ?? []) {
+    if (!a.underlying) continue
+    if (!byUnder.has(a.underlying)) byUnder.set(a.underlying, [])
+    byUnder.get(a.underlying).push(a)
+  }
+  const chosen = new Set()
+  const ids = []
+  const take = (underlying) => {
+    if (chosen.has(underlying) || chosen.size >= cap) return
+    chosen.add(underlying)
+    for (const a of byUnder.get(underlying) ?? []) ids.push(a.id)
+  }
+  const byId = new Map((staticAssets ?? []).map((a) => [a.id, a]))
+  for (const id of watchlistIds) {
+    const a = byId.get(id)
+    if (a?.underlying) take(a.underlying)
+  }
+  for (const [u, list] of byUnder) if (list.length > 1) take(u)
+  const rest = [...byUnder.entries()]
+    .filter(([u]) => !chosen.has(u))
+    .sort(([, a], [, b]) => (b[0].vol ?? 0) - (a[0].vol ?? 0))
+  for (const [u] of rest) take(u)
+  return ids
+}
+
+/**
+ * Sort order is frozen once every company has arrived: the 50-quote rotor
+ * refreshes rows in place and must never reorder the Board under the
+ * reader. While companies are still arriving (a key not in `prevKeys`) the
+ * fresh order stands, so the first paint is never a junk order.
+ */
+export function freezeOrder(prevKeys, companies) {
+  const fresh = { companies, keys: companies.map((c) => c.key) }
+  if (!prevKeys || prevKeys.length === 0) return fresh
+  const byKey = new Map(companies.map((c) => [c.key, c]))
+  if (companies.some((c) => !prevKeys.includes(c.key))) return fresh
+  const kept = prevKeys.filter((k) => byKey.has(k))
+  return { companies: kept.map((k) => byKey.get(k)), keys: kept }
+}
+
+export const COMPANY_ROW_H = 56
+export const WRAPPER_ROW_H = 40
+
+/** The Board's rows in order: each company, and under the expanded one its wrappers. */
+export function flattenRows(companies, expandedKey) {
+  const out = []
+  for (const company of companies) {
+    out.push({ type: 'company', key: company.key, height: COMPANY_ROW_H, company })
+    if (company.key !== expandedKey) continue
+    for (const wrapper of company.wrappers) {
+      out.push({
+        type: 'wrapper',
+        key: `${company.key}/${wrapper.asset.id}`,
+        height: WRAPPER_ROW_H,
+        company,
+        wrapper,
+      })
+    }
+  }
+  return out
+}
+
+/**
+ * Which rows to render for a scroll position: the first index at or above
+ * the viewport top, the index past the viewport bottom, each padded by
+ * `overscan` rows, plus the spacer heights that keep the scrollbar honest.
+ */
+export function visibleWindow(heights, scrollTop, viewportHeight, overscan = 6) {
+  const n = heights.length
+  if (n === 0) return { start: 0, end: 0, top: 0, bottom: 0 }
+  let y = 0
+  let start = 0
+  while (start < n && y + heights[start] <= scrollTop) {
+    y += heights[start]
+    start++
+  }
+  let end = start
+  let seen = y
+  while (end < n && seen < scrollTop + viewportHeight) {
+    seen += heights[end]
+    end++
+  }
+  start = Math.max(0, start - overscan)
+  end = Math.min(n, end + overscan)
+  let top = 0
+  for (let i = 0; i < start; i++) top += heights[i]
+  let bottom = 0
+  for (let i = end; i < n; i++) bottom += heights[i]
+  return { start, end, top, bottom }
+}
+
+/** The control strip's honesty count: how many companies, and what the share leg is right now. */
+export function headerLine({ count, session, stockAgeSeconds }) {
+  const noun = count === 1 ? 'company' : 'companies'
+  const head = `${count} ${noun}`
+  if (session === 'regular') {
+    return isStockDelayed(session, stockAgeSeconds)
+      ? `${head} · share leg stale, refreshing`
+      : `${head} · share leg live`
+  }
+  if (session === 'post') return `${head} · share legs at 4pm close, after hours`
+  if (session === 'pre') return `${head} · share legs at last close, pre-market`
+  return `${head} · share legs at last close`
 }

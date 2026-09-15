@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { groupCompanies, BOARD_SORTS, BOARD_LENSES, MAX_CREDIBLE_GAP } from './board'
+import {
+  groupCompanies, BOARD_SORTS, BOARD_LENSES, MAX_CREDIBLE_GAP,
+  boundCandidates, CANDIDATE_CAP, freezeOrder, flattenRows, visibleWindow, headerLine,
+  COMPANY_ROW_H, WRAPPER_ROW_H,
+} from './board'
 
 const A = (over) => ({
   id: over.id,
@@ -102,5 +106,113 @@ describe('groupCompanies', () => {
 
   it('keys each row by its underlying so order can be frozen', () => {
     expect(groupCompanies(ALL).map((r) => r.key)).toEqual(['TSLA', 'SPY', 'HOOD', 'NVDA', 'WMT'])
+  })
+})
+
+const S = (id, underlying, vol, extra = {}) => ({ id, ticker: id.toUpperCase(), underlying, vol, ...extra })
+
+describe('boundCandidates', () => {
+  const universe = [
+    S('a1', 'A', 10), S('a2', 'A', 5),         // two wrappers of A
+    S('b1', 'B', 1_000),                      // one wrapper, big volume
+    S('c1', 'C', 1), S('c2', 'C', 1),         // two wrappers of C
+    S('d1', 'D', 500),
+    S('nav', null, 9_999),                    // no underlying: never a candidate
+  ]
+
+  it('takes the watchlist first, then every wrapper of multi-wrapper companies, then by volume', () => {
+    const ids = boundCandidates(universe, { watchlistIds: ['d1'], cap: 10 })
+    expect(ids.slice(0, 1)).toEqual(['d1'])
+    expect(ids).toEqual(expect.arrayContaining(['a1', 'a2', 'c1', 'c2', 'b1']))
+    expect(ids).not.toContain('nav')
+    expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  it('caps by distinct underlying and keeps every wrapper of a chosen company', () => {
+    const ids = boundCandidates(universe, { watchlistIds: [], cap: 2 })
+    const unders = new Set(ids.map((id) => universe.find((a) => a.id === id).underlying))
+    expect(unders.size).toBe(2)
+    expect(unders.has('A')).toBe(true)
+    expect(unders.has('C')).toBe(true)
+    expect(ids).toEqual(expect.arrayContaining(['a1', 'a2', 'c1', 'c2']))
+    expect(CANDIDATE_CAP).toBe(150)
+  })
+})
+
+describe('freezeOrder', () => {
+  const rows = (keys) => keys.map((key) => ({ key }))
+
+  it('keeps the previous order when the same companies come back in a new order', () => {
+    const r = freezeOrder(['NVDA', 'TSLA', 'SPY'], rows(['TSLA', 'SPY', 'NVDA']))
+    expect(r.companies.map((c) => c.key)).toEqual(['NVDA', 'TSLA', 'SPY'])
+    expect(r.keys).toEqual(['NVDA', 'TSLA', 'SPY'])
+  })
+
+  it('drops companies that are gone', () => {
+    const r = freezeOrder(['NVDA', 'TSLA', 'SPY'], rows(['SPY', 'NVDA']))
+    expect(r.companies.map((c) => c.key)).toEqual(['NVDA', 'SPY'])
+    expect(r.keys).toEqual(['NVDA', 'SPY'])
+  })
+
+  it('re-sorts freely while new companies are still arriving', () => {
+    const r = freezeOrder(['NVDA'], rows(['TSLA', 'NVDA']))
+    expect(r.companies.map((c) => c.key)).toEqual(['TSLA', 'NVDA'])
+    expect(r.keys).toEqual(['TSLA', 'NVDA'])
+  })
+
+  it('takes the fresh order with no previous keys', () => {
+    const r = freezeOrder([], rows(['B', 'A']))
+    expect(r.keys).toEqual(['B', 'A'])
+  })
+})
+
+describe('flattenRows / visibleWindow', () => {
+  const company = (key, n) => ({
+    key,
+    wrappers: Array.from({ length: n }, (_, i) => ({ asset: { id: `${key}${i}` } })),
+  })
+
+  it('flattens companies and expands one', () => {
+    const rows = flattenRows([company('A', 2), company('B', 1)], 'A')
+    expect(rows.map((r) => r.type)).toEqual(['company', 'wrapper', 'wrapper', 'company'])
+    expect(rows.map((r) => r.key)).toEqual(['A', 'A/A0', 'A/A1', 'B'])
+    expect(rows.map((r) => r.height)).toEqual([COMPANY_ROW_H, WRAPPER_ROW_H, WRAPPER_ROW_H, COMPANY_ROW_H])
+    expect(rows[1].wrapper.asset.id).toBe('A0')
+    expect(rows[1].company.key).toBe('A')
+  })
+
+  it('windows rows to the viewport with overscan and spacer heights', () => {
+    const heights = Array(100).fill(56)
+    const w = visibleWindow(heights, 560, 280, 2)
+    expect(w.start).toBe(8)
+    expect(w.end).toBe(17)
+    expect(w.top).toBe(8 * 56)
+    expect(w.bottom).toBe((100 - 17) * 56)
+  })
+
+  it('never windows past the ends', () => {
+    const heights = [56, 40, 40, 56]
+    expect(visibleWindow(heights, 0, 1000, 6)).toEqual({ start: 0, end: 4, top: 0, bottom: 0 })
+    expect(visibleWindow([], 0, 100, 6)).toEqual({ start: 0, end: 0, top: 0, bottom: 0 })
+  })
+})
+
+describe('headerLine', () => {
+  it('says the share leg state in the session\'s words', () => {
+    expect(headerLine({ count: 459, session: 'closed', stockAgeSeconds: 9000 })).toBe(
+      '459 companies · share legs at last close'
+    )
+    expect(headerLine({ count: 12, session: 'regular', stockAgeSeconds: 12 })).toBe(
+      '12 companies · share leg live'
+    )
+    expect(headerLine({ count: 12, session: 'regular', stockAgeSeconds: 900 })).toBe(
+      '12 companies · share leg stale, refreshing'
+    )
+    expect(headerLine({ count: 3, session: 'post', stockAgeSeconds: 12 })).toBe(
+      '3 companies · share legs at 4pm close, after hours'
+    )
+    expect(headerLine({ count: 1, session: 'pre', stockAgeSeconds: 12 })).toBe(
+      '1 company · share legs at last close, pre-market'
+    )
   })
 })
