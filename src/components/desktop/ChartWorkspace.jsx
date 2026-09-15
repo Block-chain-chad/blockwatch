@@ -161,9 +161,11 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef, dri
   }, [assetId, range, mode, side, timeframe])
 
   // The tab title is the quote — or, in Gap mode, the gap (A21).
+  // The Meter's drill-in leaves the title to its shell, so both writes are
+  // gated on `drillIn`; with it null they behave exactly as before.
   const gapPct = asset ? premiumPct(asset) : null
   useEffect(() => {
-    if (!asset) return
+    if (!asset || drillIn) return
     document.title = chartTitle({
       ticker: asset.ticker,
       price: asset.tokenPrice,
@@ -171,10 +173,10 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef, dri
       mode,
       gapPct,
     })
-  }, [asset?.ticker, asset?.tokenPrice, asset?.dayChange, mode, gapPct]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [asset?.ticker, asset?.tokenPrice, asset?.dayChange, mode, gapPct, drillIn]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => {
-    document.title = DEFAULT_TITLE
-  }, [])
+    if (!drillIn) document.title = DEFAULT_TITLE
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Countdown to bar close (A13): token side only, ticking once a second
   // while there is a bar to count from. The stock leg is delayed; a countdown
@@ -287,6 +289,14 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef, dri
     patch({ mode: next })
   }
 
+  // A new range invalidates the pointer position first (the shell's gap
+  // panel follows it); shared by the toolbar and the foot strip.
+  const onRange = (r) => {
+    onScrub(null)
+    setScrubT(null)
+    patch({ range: r })
+  }
+
   function setSide(next) {
     if (next === side) return
     // The stock side offers fewer bar lengths; land on the nearest it has.
@@ -350,11 +360,7 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef, dri
       mode={mode}
       onMode={setMode}
       range={range}
-      onRange={(r) => {
-        onScrub(null)
-        setScrubT(null)
-        patch({ range: r })
-      }}
+      onRange={onRange}
       side={side}
       onSide={setSide}
       timeframe={timeframe}
@@ -362,7 +368,7 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef, dri
       offeredTimeframes={timeframesFor(side)}
       log={log}
       onLog={() => patch({ log: !log })}
-      indicatorCount={mode === 'candles' ? indicators.length : 0}
+      indicatorCount={indicators.length}
       onOpenIndicators={() => setIndicatorsOpen(true)}
       onShortcuts={drillIn.onShortcuts}
       hasStock={Boolean(asset.underlying)}
@@ -389,11 +395,7 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef, dri
           asset={asset}
           settings={settings}
           onMode={setMode}
-          onRange={(r) => {
-            onScrub(null)
-            setScrubT(null)
-            patch({ range: r })
-          }}
+          onRange={onRange}
           onSide={setSide}
           onTimeframe={(id) => patch({ timeframe: id })}
           onIndicators={(next) => patch({ indicators: next })}

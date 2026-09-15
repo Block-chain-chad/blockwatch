@@ -31,7 +31,7 @@ export default function Masthead({ active, onTab, searchRef, onSelectAsset, onOp
       style={{ borderColor: 'var(--border-default)' }}
     >
       <Wordmark />
-      <nav aria-label="Sections" className="ml-3 flex items-center gap-5">
+      <nav aria-label="Sections" className="ml-3 flex shrink-0 items-center gap-5">
         {WORDS.map((w) => {
           const on = active === w.id
           return (
@@ -50,11 +50,15 @@ export default function Masthead({ active, onTab, searchRef, onSelectAsset, onOp
           )
         })}
       </nav>
-      <div className="flex-1" />
       <SymbolSearch ref={searchRef} onSelectAsset={onSelectAsset} />
-      <div className="flex items-center gap-2 whitespace-nowrap">
+      {/* The session sentence is the flexible child: it takes the slack
+          between the search and the actions and truncates below ~1400 px
+          (the full sentence is in the title). */}
+      <div className="flex min-w-0 flex-1 items-center gap-2">
         <span className="size-1.5 shrink-0 rounded-full" style={{ background: SESSION_DOT[session] }} />
-        <span className="t-label font-normal text-zinc-400">{SESSION_NOTE[session]}</span>
+        <span className="t-label min-w-0 truncate font-normal text-zinc-400" title={SESSION_NOTE[session]}>
+          {SESSION_NOTE[session]}
+        </span>
       </div>
       {top && (
         <button type="button" onClick={() => onSelectAsset(top.asset.id)} className="t-caption shrink-0 whitespace-nowrap">
@@ -67,12 +71,12 @@ export default function Masthead({ active, onTab, searchRef, onSelectAsset, onOp
         type="button"
         onClick={() => onTab('news')}
         aria-label={unread ? 'News, unread' : 'News'}
-        className="relative flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-200"
+        className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-200"
       >
         <BellIcon size={18} />
         {unread && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-accent" />}
       </button>
-      <AvatarButton onClick={onOpenProfile} />
+      <AvatarButton onClick={onOpenProfile} className="shrink-0" />
     </header>
   )
 }
