@@ -10,6 +10,7 @@ import DetailsSection from '../asset/DetailsSection'
 import AssetNews from '../asset/AssetNews'
 import TradesOn from '../asset/TradesOn'
 import AlsoTokenizedBy from '../asset/AlsoTokenizedBy'
+import LearnCards from '../LearnCards'
 
 /*
  * The tabs under the chart (spec A16, §6.9): the symbol page's long tail in
@@ -19,13 +20,21 @@ import AlsoTokenizedBy from '../asset/AlsoTokenizedBy'
  * asset does. The two disclosures render open with a plain heading here;
  * the phone keeps its buttons because it passes onToggle.
  */
-const TABS = [
+const CHART_TABS = [
   { id: 'statistics', label: 'Statistics' },
   { id: 'news', label: 'News' },
   { id: 'trades', label: 'Trades on' },
   { id: 'also', label: 'Also tokenized by' },
 ]
-const TAB_IDS = TABS.map((t) => t.id)
+/* The Meter retires "Also tokenized by" (the Board's wrapper sub-rows are
+   that comparison) and adds Learn, the question cards, where a reader who
+   just met the word "gap" can look it up without leaving the Readout. */
+const METER_TABS = [
+  { id: 'statistics', label: 'Statistics' },
+  { id: 'news', label: 'News' },
+  { id: 'trades', label: 'Trades on' },
+  { id: 'learn', label: 'Learn' },
+]
 
 export default function DetailTabs({
   asset,
@@ -36,7 +45,10 @@ export default function DetailTabs({
   hasStockStats,
   bothSides,
   onSelectAsset,
+  variant = 'chart',
 }) {
+  const TABS = variant === 'meter' ? METER_TABS : CHART_TABS
+  const TAB_IDS = TABS.map((t) => t.id)
   const [saved, setTab] = useLocalState('bw.desktop.tab.v1', 'statistics')
   const tab = TAB_IDS.includes(saved) ? saved : 'statistics'
   const listRef = useRef(null)
@@ -147,6 +159,11 @@ export default function DetailTabs({
                 : `Only ${asset.issuer} offers ${asset.ticker} today.`}
             </p>
           ))}
+        {tab === 'learn' && (
+          <div className="-mx-0">
+            <LearnCards />
+          </div>
+        )}
       </div>
     </div>
   )

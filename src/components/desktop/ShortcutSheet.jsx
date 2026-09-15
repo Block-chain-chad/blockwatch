@@ -8,14 +8,16 @@ import { KeyChip } from './Tooltip'
  * lib/desktopKeys.js so the sheet, the tooltips and the key map cannot
  * disagree; the modifier reads ⌘ on a Mac.
  */
-export default function ShortcutSheet({ onClose }) {
-  const rows = shortcutRows(isMacPlatform())
+export default function ShortcutSheet({
+  onClose,
+  rows = shortcutRows(isMacPlatform()),
+  intro = 'Anywhere on the desktop, outside a text field. Any letter starts a search.',
+  footer = null,
+}) {
   return (
     <Sheet onClose={onClose} pad={5}>
       <SheetTitle className="t-title text-zinc-100">Keyboard shortcuts</SheetTitle>
-      <p className="t-caption mt-1 text-zinc-500">
-        Anywhere on the desktop, outside a text field. Any letter starts a search.
-      </p>
+      <p className="t-caption mt-1 text-zinc-500">{intro}</p>
       <dl className="mt-4 divide-y divide-zinc-900">
         {rows.map((r) => (
           <div key={r.action} className="flex items-center justify-between gap-4 py-2">
@@ -28,6 +30,7 @@ export default function ShortcutSheet({ onClose }) {
           </div>
         ))}
       </dl>
+      {footer}
     </Sheet>
   )
 }
