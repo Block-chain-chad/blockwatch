@@ -1,5 +1,6 @@
 // src/components/desktop/GapHeader.jsx
 import { track } from '../../services/analytics'
+import { useNow } from '../../hooks/useNow'
 import { premiumPct, isThinlyTraded } from '../../lib/prices'
 import { formatPct, formatPrice, EM_DASH } from '../../lib/format'
 import { tokenLegLine, shareLegLine } from '../../lib/provenance'
@@ -20,11 +21,15 @@ import { ChevronLeft, StarIcon, BellIcon, PlusIcon, ShareIcon } from '../Icons'
 const ICON_BTN = 'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-zinc-900'
 
 export default function GapHeader({ asset, session, stocksAt, lastFetchAt, onExit, onSheet, inWatchlist, onToggleWatch }) {
+  const now = useNow() // both legs' ages tick once a second
   const gap = premiumPct(asset)
   const thin = isThinlyTraded(asset)
   const diff = asset.tokenPrice != null && asset.stockPrice != null ? asset.tokenPrice - asset.stockPrice : null
-  const tokenAge = lastFetchAt ? (Date.now() - lastFetchAt) / 1000 : null
-  const stockAge = stocksAt ? (Date.now() - stocksAt) / 1000 : null
+  const tokenAge = lastFetchAt ? (now - lastFetchAt) / 1000 : null
+  // The share leg's age is THIS quote's (stockQuote.asOf); stocksAt is the
+  // last batch and only stands in when the quote carries no timestamp.
+  const stockAt = asset.stockQuote?.asOf ?? stocksAt
+  const stockAge = stockAt ? (now - stockAt) / 1000 : null
   const tokenLine = tokenLegLine({
     price: asset.tokenPrice,
     ageSeconds: tokenAge,

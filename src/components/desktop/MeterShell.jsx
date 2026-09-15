@@ -201,37 +201,51 @@ export default function MeterShell({ tab, onTab, assetId, onSelectAsset, openFol
         <div className="mx-auto max-w-[640px]">{screen}</div>
       </main>
     )
-  } else if (chartOpen && assetId) {
-    body = (
-      <main className="min-h-0">
-        <ChartWorkspace
-          assetId={assetId}
-          onSelectAsset={(id) => select(id, { from: 'chart' })}
-          onScrub={() => {}}
-          searchRef={searchRef}
-          actionsRef={chartRef}
-          drillIn={drillIn}
-        />
-      </main>
-    )
   } else {
+    // The Board+Readout grid stays MOUNTED while the chart drill-in is open,
+    // only hidden ([hidden] is display:none under Tailwind's preflight), so
+    // Esc returns with the Board's focus, expansion and scroll intact and
+    // the Readout does not refetch. Exactly one <main> is visible at a time.
+    const chartShown = chartOpen && Boolean(assetId)
     body = (
-      <div className="grid min-h-0" style={{ gridTemplateColumns: 'minmax(0, 1fr) min(560px, 39vw)' }}>
-        <main className="min-h-0 min-w-0">
-          <Board selectedId={assetId} onSelect={select} actionsRef={boardRef} lens={effectiveLens} onLens={setLens} />
-        </main>
-        <aside className="min-h-0 min-w-0 overflow-y-auto border-l" style={{ borderColor: 'var(--border-default)' }}>
-          {/* The Readout mounts only with an asset: its hooks would otherwise
-              fetch a chart for coins/null. The empty state lives here. */}
-          {assetId ? (
-            <Readout assetId={assetId} onSelectAsset={(id) => select(id, { from: 'readout' })} onOpenChart={openChart} sheet={sheet} onSheet={setSheet} />
-          ) : (
-            <div className="flex h-full items-center justify-center px-6">
-              <p className="t-body text-center text-zinc-400">Pick a company on the Board, or search for a ticker.</p>
-            </div>
-          )}
-        </aside>
-      </div>
+      <>
+        <div hidden={chartShown} className="grid min-h-0" style={{ gridTemplateColumns: 'minmax(0, 1fr) min(560px, 39vw)' }}>
+          <main className="min-h-0 min-w-0">
+            <Board selectedId={assetId} onSelect={select} actionsRef={boardRef} lens={effectiveLens} onLens={setLens} />
+          </main>
+          <aside className="min-h-0 min-w-0 overflow-y-auto border-l" style={{ borderColor: 'var(--border-default)' }}>
+            {/* The Readout mounts only with an asset: its hooks would otherwise
+                fetch a chart for coins/null. The empty state lives here. While
+                the chart is shown the Readout gets no sheet: a sheet inside
+                the hidden grid would be invisible, so the shell renders it. */}
+            {assetId ? (
+              <Readout
+                assetId={assetId}
+                onSelectAsset={(id) => select(id, { from: 'readout' })}
+                onOpenChart={openChart}
+                sheet={chartShown ? null : sheet}
+                onSheet={setSheet}
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center px-6">
+                <p className="t-body text-center text-zinc-400">Pick a company on the Board, or search for a ticker.</p>
+              </div>
+            )}
+          </aside>
+        </div>
+        {chartShown && (
+          <main className="min-h-0">
+            <ChartWorkspace
+              assetId={assetId}
+              onSelectAsset={(id) => select(id, { from: 'chart' })}
+              onScrub={() => {}}
+              searchRef={searchRef}
+              actionsRef={chartRef}
+              drillIn={drillIn}
+            />
+          </main>
+        )}
+      </>
     )
   }
 
@@ -252,8 +266,9 @@ export default function MeterShell({ tab, onTab, assetId, onSelectAsset, openFol
           footer={switchFooter}
         />
       )}
-      {/* With the chart open the Readout is unmounted, so a sheet the
-          drill-in's gap header opens through drillIn.onSheet renders here. */}
+      {/* With the chart open the Readout is hidden (and handed no sheet), so
+          a sheet the drill-in's gap header opens through drillIn.onSheet
+          renders here. */}
       {chartOpen && asset && sheet === 'folder' && <AddToFolderSheet asset={asset} onClose={() => setSheet(null)} />}
       {chartOpen && asset && sheet === 'share' && <ShareSheet asset={asset} onClose={() => setSheet(null)} />}
       {chartOpen && asset?.underlying && sheet === 'alert' && <SetAlertSheet asset={asset} onClose={() => setSheet(null)} />}

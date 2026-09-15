@@ -5,6 +5,7 @@ import { useFolders } from '../../state/FoldersContext'
 import { useAlerts } from '../../state/AlertsContext'
 import { useAssetWorkspace, alertLabelFor } from '../../hooks/useAssetWorkspace'
 import { useLocalState } from '../../hooks/useLocalState'
+import { useNow } from '../../hooks/useNow'
 import { premiumPct, isThinlyTraded } from '../../lib/prices'
 import { formatPct, formatPrice, EM_DASH } from '../../lib/format'
 import {
@@ -40,6 +41,7 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
   const [size, setSize] = useLocalState('bw.meter.size.v1', 1000)
   const [range, setRange] = useLocalState('bw.meter.range.v1', '1W')
   const [chartRetry, setChartRetry] = useState(0)
+  const now = useNow() // both legs' ages tick once a second
   const { session, stocksAt, lastFetchAt } = usePrices()
   const { folders, watchlistIds, toggleWatchlist } = useFolders()
   const { rules } = useAlerts()
@@ -59,8 +61,11 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
   // the percentile must not be computed from stale data mid-fetch.
   const pct = chart.loading ? null : gapPercentile(chart.premium, gap)
   const percentileLine = percentileCaption(range, pct)
-  const tokenAgeSeconds = lastFetchAt ? (Date.now() - lastFetchAt) / 1000 : null
-  const stockAgeSeconds = stocksAt ? (Date.now() - stocksAt) / 1000 : null
+  const tokenAgeSeconds = lastFetchAt ? (now - lastFetchAt) / 1000 : null
+  // The share leg's age is THIS quote's (stockQuote.asOf), not the last
+  // batch's: a capped, rotating quote set leaves rows at different ages.
+  const stockAt = asset.stockQuote?.asOf ?? stocksAt
+  const stockAgeSeconds = stockAt ? (now - stockAt) / 1000 : null
   const inWatchlist = watchlistIds.includes(asset.id)
   const memberCount = folders.filter((f) => f.assetIds.includes(asset.id)).length
   const alertLabel = alertLabelFor(rules[asset.id])
@@ -172,7 +177,9 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
           ) : chart.premium.length >= 2 ? (
             <PremiumChart fill premium={chart.premium} tone="accent" />
           ) : (
-            <p className="t-caption text-zinc-500">No stored history yet.</p>
+            <p className="t-caption text-zinc-500">
+              {asset.underlying ? 'No stored history yet.' : 'No share to compare against, so no gap history.'}
+            </p>
           )}
         </div>
         <div className="flex items-center gap-3">

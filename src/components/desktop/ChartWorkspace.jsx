@@ -501,10 +501,12 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef, dri
               </p>
             )}
             {/* The gap-history pane, its rule following the Gap chart's
-                pointer (A11). 96px of chart under its own header. */}
+                pointer (A11). 96px of chart under its own header. On the
+                Meter's drill-in the gap is never green or red; Phase 1
+                (drillIn null) keeps the component's 'direction' default. */}
             {!chart.loading && !chart.error && chart.premium.length >= 2 && (
               <div className="flex flex-col" style={{ height: 132 }}>
-                <PremiumChart fill premium={chart.premium} scrubT={scrubT} />
+                <PremiumChart fill premium={chart.premium} scrubT={scrubT} tone={drillIn ? 'accent' : 'direction'} />
               </div>
             )}
             {prompt && (

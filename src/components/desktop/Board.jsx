@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { usePrices, useAssetSubscription } from '../../state/PricesContext'
 import { useFolders } from '../../state/FoldersContext'
 import { useLocalState } from '../../hooks/useLocalState'
+import { useNow } from '../../hooks/useNow'
 import { track } from '../../services/analytics'
 import { ASSETS } from '../../data/universe'
 import {
@@ -44,7 +45,9 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }
   const [focusKey, setFocusKey] = useState(null)
   const [scrollTop, setScrollTop] = useState(0)
   const [viewportH, setViewportH] = useState(800)
+  const now = useNow() // ages tick once a second, not only on a price re-render
   const scrollRef = useRef(null)
+  const scrollTopRef = useRef(0)
   const orderRef = useRef({ sig: '', keys: [] })
   const rowsRef = useRef([])
 
@@ -77,7 +80,13 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }
   useLayoutEffect(() => {
     const el = scrollRef.current
     if (!el) return undefined
-    const measure = () => setViewportH(el.clientHeight)
+    const measure = () => {
+      setViewportH(el.clientHeight)
+      // MeterShell hides the Board (display:none) behind the chart drill-in
+      // rather than unmounting it. Browsers may drop a hidden scroller's
+      // position, so on re-show put back the last one the reader had.
+      if (el.clientHeight > 0 && el.scrollTop === 0 && scrollTopRef.current > 0) el.scrollTop = scrollTopRef.current
+    }
     measure()
     const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure)
     ro?.observe(el)
@@ -148,7 +157,8 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }
     }
   })
 
-  const stockAge = stocksAt ? (Date.now() - stocksAt) / 1000 : null
+  const stockAge = stocksAt ? (now - stocksAt) / 1000 : null
+  const tokenAge = lastFetchAt ? (now - lastFetchAt) / 1000 : null
   const activeSort = BOARD_SORTS.find((s) => s.id === sort) ?? BOARD_SORTS[0]
 
   return (
@@ -204,14 +214,21 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }
 
       <div
         ref={scrollRef}
-        onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+        onScroll={(e) => {
+          // A hidden scroller reports 0; that is not a position to remember.
+          if (e.currentTarget.clientHeight === 0) return
+          scrollTopRef.current = e.currentTarget.scrollTop
+          setScrollTop(e.currentTarget.scrollTop)
+        }}
         className="min-h-0 flex-1 overflow-y-auto"
       >
         {rows.length === 0 && (
           <p className="t-body px-6 py-12 text-center text-zinc-400">
-            {lens === 'watching'
-              ? 'Nothing on your Watching list yet — switch to All and press W on any row to add it.'
-              : 'No gaps to rank yet — prices are still loading.'}
+            {lens !== 'watching'
+              ? 'No gaps to rank yet — prices are still loading.'
+              : watchlistIds.length > 0
+                ? 'Your Watching list is loading its share prices.'
+                : 'Nothing on your Watching list yet — switch to All and press W on any row to add it.'}
           </p>
         )}
         <div style={{ height: win.top }} aria-hidden="true" />
@@ -226,6 +243,7 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }
                 key={row.key}
                 role="button"
                 tabIndex={-1}
+                data-board-row=""
                 aria-expanded={open}
                 onClick={() => {
                   setFocusKey(row.key)
@@ -248,7 +266,7 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }
                   <div className="num t-label text-zinc-100">
                     <PriceText value={c.logoAsset.stockPrice} />
                   </div>
-                  <div className="t-caption text-zinc-500">{shareAgeWord(session)}</div>
+                  <div className="t-caption text-zinc-500">{shareAgeWord(session, c.logoAsset.stockQuote?.asOf, now)}</div>
                 </div>
                 <div className="flex items-center gap-3">
                   <GapBar pct={c.lead} thin={c.muted} width={144} height={6} tone="accent" />
@@ -280,6 +298,7 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }
               key={row.key}
               role="button"
               tabIndex={-1}
+              data-board-row=""
               onClick={() => {
                 setFocusKey(row.key)
                 selectRow(row, 'board')
@@ -305,7 +324,7 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }
                   <PriceText value={a.tokenPrice} />
                 </span>
                 <span className="num t-caption text-zinc-500">
-                  {ageWords(lastFetchAt ? (Date.now() - lastFetchAt) / 1000 : null)}
+                  {ageWords(tokenAge)}
                 </span>
               </div>
               <div className="flex items-center gap-3">
@@ -319,7 +338,7 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }
               </div>
               <div>
                 {w.cheapest ? (
-                  <span className="t-caption rounded-md border px-2 py-0.5 text-accent" style={{ borderColor: 'rgb(45 212 191 / 0.4)' }}>
+                  <span className="t-caption rounded-md border px-2 py-0.5 text-accent" style={{ borderColor: 'color-mix(in oklab, var(--color-accent) 40%, transparent)' }}>
                     cheapest
                   </span>
                 ) : (
@@ -346,10 +365,12 @@ function wrappersCell(company) {
   return `${n} · 1 credible`
 }
 
-/* The share leg's age in one word, by session: outside regular hours the
+/* The share leg's age, per row: in regular hours the age of THIS row's quote
+   (each merged asset carries stockQuote.asOf), since a capped, rotating
+   quote set means rows are not all the same age; outside regular hours the
    quote is a close, and the row says which. */
-function shareAgeWord(session) {
-  if (session === 'regular') return 'live'
+function shareAgeWord(session, asOf, now) {
+  if (session === 'regular') return Number.isFinite(asOf) ? ageWords((now - asOf) / 1000) : 'no quote yet'
   if (session === 'post') return '4pm close'
   if (session === 'pre') return 'last close · pre-market'
   return 'last close'

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { classifyMeterKey, keyContext, isMacPlatform } from '../lib/meterKeys'
+import { classifyMeterKey, keyContext, isControl, isMacPlatform } from '../lib/meterKeys'
 
 /*
  * The Meter's keyboard map, mounted once by MeterShell as its only window
@@ -26,7 +26,12 @@ export function useMeterShortcuts(opts) {
     function onKeyDown(e) {
       if (e.defaultPrevented || e.isComposing) return
       const o = optsRef.current ?? {}
-      const action = classifyMeterKey(e, { mac, scope: o.scope ?? 'board', ...keyContext(e.target) })
+      const action = classifyMeterKey(e, {
+        mac,
+        scope: o.scope ?? 'board',
+        control: isControl(e.target),
+        ...keyContext(e.target),
+      })
       if (!action) return
       const board = o.boardRef?.current
       switch (action.type) {

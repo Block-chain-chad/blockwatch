@@ -16,10 +16,13 @@ export const RANGE_WORDS = Object.freeze({
   '1Y': 'Past year',
 })
 
+// The premium series is sampled at the token series' points, which come
+// from CoinGecko market_chart: five-minute data for 1 day, HOURLY for 2 to
+// 90 days, daily above 90 days. So 1W and 1M are hourly readings, 1Y daily.
 const RANGE_GRAIN = Object.freeze({
   '1D': 'five-minute readings today',
-  '1W': 'half-hour readings this week',
-  '1M': 'daily close-to-close readings this month',
+  '1W': 'hourly readings this week',
+  '1M': 'hourly readings this month',
   '1Y': 'daily close-to-close readings this year',
 })
 
@@ -39,9 +42,10 @@ export function gapDollars(gapPct, size) {
  * "On $1,000 of NVIDIA, NVDAx costs $0.92 more than the shares right now."
  * Inside the parity band the tokens cost the same. When the market is thin
  * or the gap is outside ±MAX_CREDIBLE_GAP the sentence refuses to price it.
+ * Without a gap at all (a NAV asset with no underlying share) it says so.
  */
 export function readingSentence({ ticker, companyName, gapPct, size, thin = false, volume24h = null }) {
-  if (!Number.isFinite(gapPct)) return `No share price for ${ticker} yet.`
+  if (!Number.isFinite(gapPct)) return `${ticker} has no share to compare against.`
   if (thin) {
     const traded = Number.isFinite(volume24h) ? `only ${formatCompact(volume24h)} traded today` : 'almost nothing traded today'
     return `The gap on ${ticker} reads ${formatPct(gapPct)} but ${traded}; treat it as noise.`
@@ -71,7 +75,7 @@ export function gapPercentile(premium, currentPct) {
   return Math.round((below / premium.length) * 100)
 }
 
-/** "Wider than 71% of its half-hour readings this week." Names the grain; never a bare year. */
+/** "Wider than 71% of its hourly readings this week." Names the grain; never a bare year. */
 export function percentileCaption(range, pct) {
   if (!Number.isFinite(pct)) return ''
   const grain = RANGE_GRAIN[range] ?? RANGE_GRAIN['1W']

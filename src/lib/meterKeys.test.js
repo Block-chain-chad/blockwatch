@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { classifyMeterKey, meterShortcutRows } from './meterKeys'
+import { classifyMeterKey, meterShortcutRows, isControl } from './meterKeys'
 
 const press = (key, mods = {}) => ({ key, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...mods })
 
@@ -50,6 +50,20 @@ describe('classifyMeterKey — the Board', () => {
     for (const k of ['Tab', 'Home', 'PageDown', '.', ';']) expect(classifyMeterKey(press(k))).toBeNull()
   })
 
+  it('leaves Enter and the arrows to a focused control, but keeps the single keys', () => {
+    const on = { control: true }
+    expect(classifyMeterKey(press('Enter'), on)).toBeNull()
+    expect(classifyMeterKey(press('ArrowDown'), on)).toBeNull()
+    expect(classifyMeterKey(press('ArrowUp'), on)).toBeNull()
+    expect(classifyMeterKey(press('ArrowRight'), on)).toBeNull()
+    expect(classifyMeterKey(press('ArrowLeft'), on)).toBeNull()
+    expect(classifyMeterKey(press('w'), on)).toEqual({ type: 'watch' })
+    expect(classifyMeterKey(press('c'), on)).toEqual({ type: 'chart' })
+    expect(classifyMeterKey(press('?', { shiftKey: true }), on)).toEqual({ type: 'shortcuts' })
+    expect(classifyMeterKey(press('Escape'), on)).toEqual({ type: 'escape' })
+    expect(classifyMeterKey(press('k', { ctrlKey: true }), on)).toEqual({ type: 'focusSearch' })
+  })
+
   it('reports Esc outside a modal; inside a field only Esc; inside a modal nothing', () => {
     expect(classifyMeterKey(press('Escape'))).toEqual({ type: 'escape' })
     expect(classifyMeterKey(press('w'), { typing: true })).toBeNull()
@@ -57,6 +71,35 @@ describe('classifyMeterKey — the Board', () => {
     expect(classifyMeterKey(press('k', { ctrlKey: true }), { typing: true })).toBeNull()
     expect(classifyMeterKey(press('Escape'), { inModal: true })).toBeNull()
     expect(classifyMeterKey(press('w'), { inModal: true })).toBeNull()
+  })
+})
+
+describe('isControl', () => {
+  it('is a button, link or summary by tag, or by a control role', () => {
+    expect(isControl({ tagName: 'BUTTON' })).toBe(true)
+    expect(isControl({ tagName: 'a' })).toBe(true)
+    expect(isControl({ tagName: 'SUMMARY' })).toBe(true)
+    expect(isControl({ tagName: 'DIV', getAttribute: () => 'button' })).toBe(true)
+    for (const role of ['option', 'tab', 'menuitem', 'link']) {
+      expect(isControl({ tagName: 'DIV', getAttribute: () => role })).toBe(true)
+    }
+    expect(isControl({ tagName: 'DIV', getAttribute: () => null })).toBe(false)
+    expect(isControl({ tagName: 'DIV', getAttribute: () => 'listbox' })).toBe(false)
+    expect(isControl({ tagName: 'INPUT' })).toBe(false)
+    expect(isControl(null)).toBe(false)
+    expect(isControl(undefined)).toBe(false)
+  })
+
+  it("excepts the Board's own rows, which carry data-board-row", () => {
+    const row = {
+      tagName: 'DIV',
+      dataset: { boardRow: '' },
+      getAttribute: (n) => (n === 'role' ? 'button' : null),
+      hasAttribute: (n) => n === 'data-board-row',
+    }
+    expect(isControl(row)).toBe(false)
+    const plain = { tagName: 'DIV', getAttribute: () => 'button', hasAttribute: () => false }
+    expect(isControl(plain)).toBe(true)
   })
 })
 

@@ -25,7 +25,29 @@ export { keyContext, isMacPlatform }
 const BOARD_SINGLE = { w: 'watch', a: 'alert', c: 'chart', f: 'fullscreen' }
 const CHART_SINGLE = { i: 'indicators', f: 'fullscreen' }
 
-export function classifyMeterKey(event, { mac = false, typing = false, inModal = false, scope = 'board' } = {}) {
+const CONTROL_TAGS = new Set(['BUTTON', 'A', 'SUMMARY'])
+const CONTROL_ROLES = new Set(['button', 'option', 'tab', 'menuitem', 'link'])
+
+/**
+ * Whether focus sits on a control that owns Enter and the arrows itself — a
+ * button, link, summary, or anything with a button/option/tab/menuitem/link
+ * role — so Tab → Enter on a chip, pill or tab activates it instead of
+ * selecting a Board row. The Board's own rows are role="button" too, but
+ * they carry data-board-row and keep the row keys.
+ */
+export function isControl(target) {
+  if (!target || typeof target !== 'object') return false
+  if (target.hasAttribute?.('data-board-row')) return false
+  const tag = String(target.tagName ?? '').toUpperCase()
+  if (CONTROL_TAGS.has(tag)) return true
+  const role = target.getAttribute?.('role')
+  return typeof role === 'string' && CONTROL_ROLES.has(role)
+}
+
+export function classifyMeterKey(
+  event,
+  { mac = false, typing = false, inModal = false, control = false, scope = 'board' } = {}
+) {
   const key = event?.key ?? ''
   if (inModal) return null
   if (key === 'Escape') return { type: 'escape' }
@@ -44,11 +66,13 @@ export function classifyMeterKey(event, { mac = false, typing = false, inModal =
     return type ? { type } : null
   }
 
-  if (key === 'ArrowDown') return { type: 'step', delta: 1 }
-  if (key === 'ArrowUp') return { type: 'step', delta: -1 }
-  if (key === 'ArrowRight') return { type: 'expand', open: true }
-  if (key === 'ArrowLeft') return { type: 'expand', open: false }
-  if (key === 'Enter') return { type: 'select' }
+  // On a control the row keys are the control's own (Enter activates it,
+  // the arrows move a listbox or tab list); only the single keys fire.
+  if (key === 'ArrowDown') return control ? null : { type: 'step', delta: 1 }
+  if (key === 'ArrowUp') return control ? null : { type: 'step', delta: -1 }
+  if (key === 'ArrowRight') return control ? null : { type: 'expand', open: true }
+  if (key === 'ArrowLeft') return control ? null : { type: 'expand', open: false }
+  if (key === 'Enter') return control ? null : { type: 'select' }
   const type = BOARD_SINGLE[key.toLowerCase()]
   return type ? { type } : null
 }

@@ -49,8 +49,8 @@ describe('readingSentence', () => {
     )
   })
 
-  it('says when there is no share price', () => {
-    expect(readingSentence({ ...base, gapPct: null })).toBe('No share price for NVDAx yet.')
+  it('says when there is no share to compare against', () => {
+    expect(readingSentence({ ...base, gapPct: null })).toBe('NVDAx has no share to compare against.')
   })
 })
 
@@ -82,10 +82,12 @@ describe('gapPercentile / percentileCaption', () => {
   })
 
   it('captions with the range\'s granularity, never a bare "of the past year"', () => {
-    expect(percentileCaption('1W', 71)).toBe('Wider than 71% of its half-hour readings this week.')
-    expect(percentileCaption('1W', 29)).toBe('Narrower than 71% of its half-hour readings this week.')
+    // CoinGecko market_chart grain: five-minute for 1 day, hourly for 2 to
+    // 90 days, daily above — so 1W and 1M are hourly, 1Y daily.
+    expect(percentileCaption('1W', 71)).toBe('Wider than 71% of its hourly readings this week.')
+    expect(percentileCaption('1W', 29)).toBe('Narrower than 71% of its hourly readings this week.')
     expect(percentileCaption('1D', 50)).toBe('Wider than 50% of its five-minute readings today.')
-    expect(percentileCaption('1M', 82)).toBe('Wider than 82% of its daily close-to-close readings this month.')
+    expect(percentileCaption('1M', 82)).toBe('Wider than 82% of its hourly readings this month.')
     expect(percentileCaption('1Y', 82)).toBe('Wider than 82% of its daily close-to-close readings this year.')
     expect(percentileCaption('1W', null)).toBe('')
     expect(RANGE_WORDS['1D']).toBe('Past day')

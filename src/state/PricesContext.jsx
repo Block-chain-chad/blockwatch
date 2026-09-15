@@ -80,6 +80,10 @@ export function PricesProvider({ children }) {
   const tabIdRef = useRef(Math.random().toString(36).slice(2))
   const lastRefreshRef = useRef(0)
   const quoteRotorRef = useRef(0)
+  // Closed-market fill of never-quoted tickers: ticker -> ms it was last
+  // tried, so a ticker that fails to quote (Finnhub c:0, a 429) is not
+  // retried every minute all night.
+  const closedTriedRef = useRef(new Map())
 
   function subscribedIds() {
     const set = new Set()
@@ -198,8 +202,21 @@ export function PricesProvider({ children }) {
         // subscription (the desktop Board asks for up to 150 underlyings) can
         // still hold tickers that have never been quoted. Those need one
         // fetch each, on the same per-cycle cap, or they stay blank all night.
-        const missing = all.filter((t) => !quotesRef.current[t]).slice(0, STOCK_QUOTE_CAP)
-        if (missing.length > 0) await fetchStocks(missing)
+        // Two guards: (a) it only runs when the subscription is wider than
+        // one burst covers — phone screens subscribe a handful of tickers the
+        // first top-up already quoted, so their closed-market path stays at
+        // zero calls; (b) a ticker that fails to quote never enters quotesRef,
+        // so each is tried at most once per CLOSED_MARKET_REFRESH_MS instead
+        // of every minute.
+        if (all.length > STOCK_QUOTE_CAP) {
+          const now = Date.now()
+          const tried = closedTriedRef.current
+          const missing = all
+            .filter((t) => !quotesRef.current[t] && now - (tried.get(t) ?? -Infinity) >= CLOSED_MARKET_REFRESH_MS)
+            .slice(0, STOCK_QUOTE_CAP)
+          for (const t of missing) tried.set(t, now)
+          if (missing.length > 0) await fetchStocks(missing)
+        }
         return
       }
       // Cap quotes per cycle (a 100-asset folder must not fire 100 Finnhub
