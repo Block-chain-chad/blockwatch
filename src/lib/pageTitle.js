@@ -68,11 +68,21 @@ export function screenTitle(tab) {
   return name ? `${name} — OnStock` : DEFAULT_TITLE
 }
 
-/** The Meter's tab title: the wrapper and its gap, then the product. No triangle. */
-export function meterTitle({ ticker, gapPct } = {}) {
-  if (!ticker) return boardTitle()
+/**
+ * The Meter's headline for a wrapper: 'NVDAx +1.42% gap', or the ticker
+ * alone without a gap; null without a ticker. The tab title and a system
+ * notification's title (lib/alertNotify) are both built from it.
+ */
+export function meterHeadline({ ticker, gapPct } = {}) {
+  if (!ticker) return null
   const pct = signedPct(gapPct)
-  return pct == null ? `${ticker} · OnStock` : `${ticker} ${pct} gap · OnStock`
+  return pct == null ? ticker : `${ticker} ${pct} gap`
+}
+
+/** The Meter's tab title: the headline, then the product. No triangle. */
+export function meterTitle({ ticker, gapPct } = {}) {
+  const head = meterHeadline({ ticker, gapPct })
+  return head == null ? boardTitle() : `${head} · OnStock`
 }
 
 export function boardTitle() {

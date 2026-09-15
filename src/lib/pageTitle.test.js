@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { chartTitle, screenTitle, signedPct, titlePrice, DEFAULT_TITLE, meterTitle, boardTitle } from './pageTitle'
+import { chartTitle, screenTitle, signedPct, titlePrice, DEFAULT_TITLE, meterTitle, meterHeadline, boardTitle } from './pageTitle'
 
 const UP = '▲'
 const DOWN = '▼'
@@ -98,5 +98,21 @@ describe('meterTitle / boardTitle', () => {
     expect(meterTitle({ ticker: 'TBILL', gapPct: null })).toBe('TBILL · OnStock')
     expect(meterTitle({})).toBe(boardTitle())
     expect(boardTitle()).toBe('Board · OnStock')
+  })
+})
+
+describe('meterHeadline', () => {
+  it('is the wrapper and its gap, without the product', () => {
+    expect(meterHeadline({ ticker: 'NVDAx', gapPct: 1.42 })).toBe('NVDAx +1.42% gap')
+    expect(meterHeadline({ ticker: 'NVDAx', gapPct: -0.31 })).toBe('NVDAx −0.31% gap')
+    expect(meterHeadline({ ticker: 'NVDAx', gapPct: 0 })).toBe('NVDAx 0% gap')
+    expect(meterHeadline({ ticker: 'NVDAx' })).toBe('NVDAx')
+    expect(meterHeadline({})).toBeNull()
+  })
+
+  it('is what meterTitle says before the product', () => {
+    expect(meterTitle({ ticker: 'NVDAx', gapPct: 1.42 })).toBe('NVDAx +1.42% gap · OnStock')
+    expect(meterTitle({ ticker: 'NVDAx' })).toBe('NVDAx · OnStock')
+    expect(meterTitle({})).toBe('Board · OnStock')
   })
 })
