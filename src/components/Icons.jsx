@@ -218,3 +218,48 @@ export const EyeOffIcon = (p) => (
     <path d="M9.6 6.6A9.4 9.4 0 0 1 12 6c5 0 8.5 6 8.5 6a15.7 15.7 0 0 1-2.7 3.3M7.2 7.9A15 15 0 0 0 3.5 12s3.5 6 8.5 6a8.9 8.9 0 0 0 3.4-.7" />
   </Base>
 )
+
+// The desktop chart toolbar's four view controls (spec §6.9, A9/A12), for
+// the widths where their labels drop (under 1280px). Same 24px stroke grid
+// as everything above.
+export const FitIcon = (p) => (
+  <Base {...p}>
+    <path d="M4 9V4h5" />
+    <path d="M20 9V4h-5" />
+    <path d="M4 15v5h5" />
+    <path d="M20 15v5h-5" />
+    <path d="M9 12h6" />
+  </Base>
+)
+
+export const SkipEndIcon = (p) => (
+  <Base {...p}>
+    <path d="M5 5l10 7-10 7z" />
+    <path d="M19 5v14" />
+  </Base>
+)
+
+export const ResetIcon = (p) => (
+  <Base {...p}>
+    <path d="M4 12a8 8 0 1 0 2.3-5.6" />
+    <path d="M4 4v5h5" />
+  </Base>
+)
+
+export const LogIcon = (p) => (
+  <Base {...p}>
+    <path d="M4 20V4" />
+    <path d="M4 20h16" />
+    <path d="M6 18c2-8 6-11 13-12" />
+  </Base>
+)
+
+/* Indicators: an oscillating line over a flat one — a study drawn across a
+   series, which is what every entry in the catalogue is. Deliberately not
+   LogIcon's single rising curve, which already means the log scale. */
+export const IndicatorsIcon = (p) => (
+  <Base {...p}>
+    <path d="M3 12h3l3-6 3 12 3-8 3 4h2" />
+    <path d="M3 19h18" opacity="0.45" />
+  </Base>
+)

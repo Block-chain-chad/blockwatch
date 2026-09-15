@@ -14,7 +14,6 @@
 // as 0 — a zero would plot a line along the floor.
 
 import { TIMEFRAMES, DEFAULT_TIMEFRAME_ID, candleSeconds, timeframeById } from './candles'
-import { sma, ema, rsi } from './indicators'
 
 const isBar = (c) =>
   c != null &&
@@ -80,28 +79,12 @@ export function toLineData(times, values) {
   return out
 }
 
-/** The indicator set the chart offers. Periods are the usual defaults. */
-export const INDICATORS = Object.freeze([
-  Object.freeze({ id: 'sma20', label: 'SMA 20', kind: 'overlay' }),
-  Object.freeze({ id: 'ema50', label: 'EMA 50', kind: 'overlay' }),
-  Object.freeze({ id: 'rsi14', label: 'RSI 14', kind: 'pane' }),
-])
-
-/**
- * Every indicator as line data over one clean series. Computed together so
- * the closes are extracted once; the chart shows or hides each by toggle.
- * On a series too short for an indicator the line is simply empty.
+/*
+ * The fixed three-indicator set that used to live here (INDICATORS and
+ * indicatorLines) is now lib/indicatorCatalog.js, which the chart searches
+ * and computes from. This file keeps only the shape conversions, which is
+ * all a chart needed from it.
  */
-export function indicatorLines(candles) {
-  const clean = cleanCandles(candles)
-  const times = clean.map((c) => c.time)
-  const closes = clean.map((c) => c.close)
-  return {
-    sma20: toLineData(times, sma(closes, 20)),
-    ema50: toLineData(times, ema(closes, 50)),
-    rsi14: toLineData(times, rsi(closes, 14)),
-  }
-}
 
 // --- Which timeframes each side can offer -----------------------------------
 

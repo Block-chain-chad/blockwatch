@@ -80,6 +80,10 @@ export function PricesProvider({ children }) {
   const tabIdRef = useRef(Math.random().toString(36).slice(2))
   const lastRefreshRef = useRef(0)
   const quoteRotorRef = useRef(0)
+  // Closed-market fill of never-quoted tickers: ticker -> ms it was last
+  // tried, so a ticker that fails to quote (Finnhub c:0, a 429) is not
+  // retried every minute all night.
+  const closedTriedRef = useRef(new Map())
 
   function subscribedIds() {
     const set = new Set()
@@ -87,11 +91,18 @@ export function PricesProvider({ children }) {
     return set
   }
 
-  function subscribedTickers() {
+  // `recentFirst` walks the most recently subscribed screen's ids before
+  // older ones (same ordering tickFast already gives mints), so a capped
+  // fetch favors what's on screen now over a stale background subscription.
+  function subscribedTickers({ recentFirst = false } = {}) {
+    const lists = [...subsRef.current.values()]
+    if (recentFirst) lists.reverse()
     const set = new Set()
-    for (const id of subscribedIds()) {
-      const t = BY_ID[id]?.underlying
-      if (t) set.add(t)
+    for (const ids of lists) {
+      for (const id of ids) {
+        const t = BY_ID[id]?.underlying
+        if (t) set.add(t)
+      }
     }
     return [...set]
   }
@@ -185,10 +196,31 @@ export function PricesProvider({ children }) {
         !isUsMarketOpen() &&
         stockFetchRef.current &&
         Date.now() - stockFetchRef.current < CLOSED_MARKET_REFRESH_MS
-      if (closedAndFresh && !force) return
+      const all = subscribedTickers()
+      if (closedAndFresh && !force) {
+        // Shut market, fresh closes on hand: nothing to refresh, but a wide
+        // subscription (the desktop Board asks for up to 150 underlyings) can
+        // still hold tickers that have never been quoted. Those need one
+        // fetch each, on the same per-cycle cap, or they stay blank all night.
+        // Two guards: (a) it only runs when the subscription is wider than
+        // one burst covers — phone screens subscribe a handful of tickers the
+        // first top-up already quoted, so their closed-market path stays at
+        // zero calls; (b) a ticker that fails to quote never enters quotesRef,
+        // so each is tried at most once per CLOSED_MARKET_REFRESH_MS instead
+        // of every minute.
+        if (all.length > STOCK_QUOTE_CAP) {
+          const now = Date.now()
+          const tried = closedTriedRef.current
+          const missing = all
+            .filter((t) => !quotesRef.current[t] && now - (tried.get(t) ?? -Infinity) >= CLOSED_MARKET_REFRESH_MS)
+            .slice(0, STOCK_QUOTE_CAP)
+          for (const t of missing) tried.set(t, now)
+          if (missing.length > 0) await fetchStocks(missing)
+        }
+        return
+      }
       // Cap quotes per cycle (a 100-asset folder must not fire 100 Finnhub
       // calls a minute); overflow rotates through on subsequent cycles.
-      const all = subscribedTickers()
       let list = all
       if (all.length > STOCK_QUOTE_CAP) {
         const off = quoteRotorRef.current % all.length
@@ -304,7 +336,7 @@ export function PricesProvider({ children }) {
       const missingIds = [...subscribedIds()].filter((id) => !pricesRef.current[id])
       // Same per-burst cap as the cycle: a giant folder's first open fills
       // the rest via rotation instead of one 100-call burst.
-      const missingTickers = subscribedTickers()
+      const missingTickers = subscribedTickers({ recentFirst: true })
         .filter((t) => !quotesRef.current[t])
         .slice(0, STOCK_QUOTE_CAP)
       await Promise.allSettled([

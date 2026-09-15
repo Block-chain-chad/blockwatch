@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import CandleChart from './CandleChart'
 import { Chip } from './shared'
 import { useCandles } from '../hooks/useCandles'
 import { DEFAULT_TIMEFRAME_ID } from '../lib/candles'
-import { INDICATORS, timeframesFor, coerceTimeframe, isIntraday, networkName } from '../lib/candleSeries'
+import { timeframesFor, coerceTimeframe, isIntraday, networkName } from '../lib/candleSeries'
+import { QUICK_KEYS, describeKey } from '../lib/indicatorCatalog'
 
 /*
  * The Candles mode of the asset chart: one side of the gap at a time, drawn
@@ -16,23 +17,75 @@ import { INDICATORS, timeframesFor, coerceTimeframe, isIntraday, networkName } f
  * mode and coming back starts fresh, which is also what unmounting the chart
  * does anyway.
  *
+ * Controlled mode, for the desktop toolbar, which owns the same three
+ * settings so they follow the user across assets: pass `side`, `timeframe`,
+ * `indicators` with their `onSide` / `onTimeframe` / `onIndicators`, set
+ * `hideControls` to drop the chip rows (the toolbar draws them), and
+ * `chartProps` to reach the chart (fontSize, magnet, onCrosshair, resetKey,
+ * ref), and `onData` to learn what was fetched (the desktop legend needs
+ * the latest bar and the pool's network; null when there is nothing to
+ * draw). Each setting falls back to local state on its own when its prop is
+ * omitted; with all of them omitted this is exactly the phone panel.
+ *
  * `asset` is the STATIC universe record (id, ticker, mint, issuer,
  * underlying, chain) — stable across price ticks, so the fetch hook can key
  * on it directly.
  */
 
-const INDICATOR_SWATCH = { sma20: 'bg-accent', ema50: 'bg-zinc-300', rsi14: 'bg-zinc-400' }
+/* Matches CandleChart's palette, cycled by position in the active list. */
+const SWATCHES = ['bg-accent', 'bg-zinc-300', 'bg-zinc-400']
+/* One frozen empty list so the uncontrolled default keeps a stable identity. */
+const EMPTY_KEYS = Object.freeze([])
 
-export default function CandlesPanel({ asset }) {
-  const [side, setSide] = useState('token')
-  const [timeframe, setTimeframe] = useState(DEFAULT_TIMEFRAME_ID)
-  const [indicators, setIndicators] = useState({ sma20: false, ema50: false, rsi14: false })
+export default function CandlesPanel({
+  asset,
+  side: sideProp,
+  timeframe: timeframeProp,
+  indicators: indicatorsProp,
+  onSide,
+  onTimeframe,
+  onIndicators,
+  hideControls = false,
+  chartProps,
+  onData,
+}) {
+  const [ownSide, setOwnSide] = useState('token')
+  const [ownTimeframe, setOwnTimeframe] = useState(DEFAULT_TIMEFRAME_ID)
+  const [ownIndicators, setOwnIndicators] = useState(EMPTY_KEYS)
+  const side = sideProp ?? ownSide
+  const timeframe = timeframeProp ?? ownTimeframe
+  const indicators = indicatorsProp ?? ownIndicators
   const candles = useCandles(asset, side, timeframe)
 
+  // Tell the caller what arrived, once per fetch. The latest callback is
+  // read through a ref so an inline function does not re-fire the effect.
+  const onDataRef = useRef(onData)
+  useEffect(() => {
+    onDataRef.current = onData
+  })
+  useEffect(() => {
+    onDataRef.current?.(candles.loading ? null : (candles.data ?? null))
+  }, [candles.loading, candles.data])
+
   function switchSide(next) {
-    setSide(next)
+    if (onSide) onSide(next)
+    else setOwnSide(next)
     // The stock side offers fewer bar lengths; land on the nearest it has.
-    setTimeframe((t) => coerceTimeframe(t, next))
+    if (onTimeframe) onTimeframe(coerceTimeframe(timeframe, next))
+    else setOwnTimeframe((t) => coerceTimeframe(t, next))
+  }
+
+  function pickTimeframe(id) {
+    if (onTimeframe) onTimeframe(id)
+    else setOwnTimeframe(id)
+  }
+
+  function toggleIndicator(key) {
+    const next = indicators.includes(key)
+      ? indicators.filter((k) => k !== key)
+      : [...indicators, key]
+    if (onIndicators) onIndicators(next)
+    else setOwnIndicators(next)
   }
 
   const network = candles.data ? networkName(candles.data.network) : null
@@ -51,26 +104,30 @@ export default function CandlesPanel({ asset }) {
       {/* Which side of the gap. Token is the default because the token is
           what this screen is about; the share is offered only when there is
           one. */}
-      <div className="flex gap-2 px-2">
-        <Chip active={side === 'token'} onClick={() => switchSide('token')}>
-          {asset.ticker} token
-        </Chip>
-        {asset.underlying && (
-          <Chip active={side === 'stock'} onClick={() => switchSide('stock')}>
-            {asset.underlying} stock
+      {!hideControls && (
+        <div className="flex gap-2 px-2">
+          <Chip active={side === 'token'} onClick={() => switchSide('token')}>
+            {asset.ticker} token
           </Chip>
-        )}
-      </div>
+          {asset.underlying && (
+            <Chip active={side === 'stock'} onClick={() => switchSide('stock')}>
+              {asset.underlying} stock
+            </Chip>
+          )}
+        </div>
+      )}
 
       {/* Bar length. The token side gets every bucket GeckoTerminal serves;
           the stock side only what /api/history can answer. */}
-      <div className="mt-2 flex gap-2 overflow-x-auto px-2 pb-1 [scrollbar-width:none]">
-        {timeframesFor(side).map((t) => (
-          <Chip key={t.id} active={timeframe === t.id} onClick={() => setTimeframe(t.id)}>
-            {t.label}
-          </Chip>
-        ))}
-      </div>
+      {!hideControls && (
+        <div className="mt-2 flex gap-2 overflow-x-auto px-2 pb-1 [scrollbar-width:none]">
+          {timeframesFor(side).map((t) => (
+            <Chip key={t.id} active={timeframe === t.id} onClick={() => pickTimeframe(t.id)}>
+              {t.label}
+            </Chip>
+          ))}
+        </div>
+      )}
 
       <div className="mt-3 px-1">
         {candles.loading ? (
@@ -80,23 +137,31 @@ export default function CandlesPanel({ asset }) {
             candles={candles.data.candles}
             intraday={isIntraday(timeframe)}
             indicators={indicators}
+            {...chartProps}
           />
         ) : null}
       </div>
 
-      {/* Indicators. Overlays share the price scale; RSI opens a pane of its
-          own under the bars. Only offered when there is a chart to draw them
-          on. */}
-      {candles.data && (
+      {/* Indicators. Overlays share the price scale; the oscillators open a
+          pane of their own under the bars. Only offered when there is a
+          chart to draw them on.
+
+          The phone keeps its three one-tap chips rather than the desktop's
+          searchable catalogue: eleven entries and a search field do not fit
+          a 390px column, and these three are what the row has always
+          offered. QUICK_KEYS is that set; the chip's swatch takes its colour
+          from the indicator's position on the chart, not from the chip's
+          position here, so a chip and its line always agree. */}
+      {!hideControls && candles.data && (
         <div className="mt-2 flex gap-2 overflow-x-auto px-2 pb-1 [scrollbar-width:none]">
-          {INDICATORS.map((d) => (
+          {QUICK_KEYS.map((key) => (
             <Chip
-              key={d.id}
-              active={indicators[d.id]}
-              swatch={INDICATOR_SWATCH[d.id]}
-              onClick={() => setIndicators((v) => ({ ...v, [d.id]: !v[d.id] }))}
+              key={key}
+              active={indicators.includes(key)}
+              swatch={SWATCHES[Math.max(0, indicators.indexOf(key)) % SWATCHES.length]}
+              onClick={() => toggleIndicator(key)}
             >
-              {d.label}
+              {describeKey(key)}
             </Chip>
           ))}
         </div>

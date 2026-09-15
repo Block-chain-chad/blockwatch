@@ -4,6 +4,7 @@ import { SearchIcon, ChevronRight } from './Icons'
 import PriceText from './PriceText'
 import AssetLogo from './AssetLogo'
 import { formatPrice, formatPct, changeColor, EM_DASH } from '../lib/format'
+import { delayTooltip } from '../lib/provenance'
 import { WEB_BASE } from '../services/apiBase'
 
 export { formatPrice, formatPct, changeColor }
@@ -75,18 +76,23 @@ export function PremiumValue({ asset, size = 'row' }) {
  * The exact figure is always printed beside it, so the bar is for ranking and
  * the number is for magnitude.
  */
-export function GapBar({ pct, thin = false, width = 104, scale = 2 }) {
+export function GapBar({ pct, thin = false, width = 104, scale = 2, tone = 'direction', height = 4 }) {
   const missing = pct == null || !Number.isFinite(pct)
   const muted = thin || (!missing && Math.abs(pct) < PARITY_BAND)
   const w = missing ? 0 : Math.min(Math.sqrt(Math.abs(pct) / scale), 1) * 50
   const left = missing ? 50 : pct >= 0 ? 50 : 50 - w
+  // The Meter's rule carries direction by which side of the tick the fill
+  // sits on and by the sign character beside it; the fill is the accent.
+  // The phone keeps gain/loss (tone 'direction', the default).
+  const fill =
+    tone === 'accent' ? 'var(--color-accent)' : pct >= 0 ? 'var(--color-gain)' : 'var(--color-loss)'
   return (
     <span
       data-gapbar=""
       className="relative inline-block shrink-0 rounded-[2px]"
       style={{
         width,
-        height: 4,
+        height,
         background: missing ? 'rgb(255 255 255 / 0.04)' : 'rgb(255 255 255 / 0.06)',
       }}
       aria-hidden="true"
@@ -108,7 +114,7 @@ export function GapBar({ pct, thin = false, width = 104, scale = 2 }) {
             bottom: 0,
             // Inside the parity band or on a thin market the gap is noise, so
             // the bar is hollow rather than filled — present, not asserted.
-            background: muted ? 'transparent' : pct >= 0 ? 'var(--color-gain)' : 'var(--color-loss)',
+            background: muted ? 'transparent' : fill,
             boxShadow: muted ? 'inset 0 0 0 1px var(--color-zinc-600)' : undefined,
           }}
         />
@@ -177,7 +183,17 @@ export function Sparkline({ points, width = 56, height = 14 }) {
  * The per-row "STOCK"/"TOKEN" labels are gone — eight rows were reprinting
  * their own column headers sixteen times. Headers belong at the top, once.
  */
-export function AssetRow({ asset, onOpen, spark, marketOpen = true, barWidth = 88 }) {
+/* `delayed` (desktop only; every phone call site omits it) puts TradingView's
+   yellow D beside the stock price while the share quote is not live — the
+   same badge the chart legend shows on the stock leg. */
+export function AssetRow({
+  asset,
+  onOpen,
+  spark,
+  marketOpen = true,
+  barWidth = 88,
+  delayed = false,
+}) {
   const thin = isThinlyTraded(asset)
   const { value } = usePremium(asset)
   return (
@@ -211,6 +227,14 @@ export function AssetRow({ asset, onOpen, spark, marketOpen = true, barWidth = 8
           <PriceText value={asset.tokenPrice} />
           <span className="mx-1 text-zinc-600">/</span>
           {asset.underlying ? <PriceText value={asset.stockPrice} /> : EM_DASH}
+          {delayed && asset.underlying && (
+            <span
+              className="ml-1 text-[10px] font-bold leading-none text-amber-400"
+              title={delayTooltip()}
+            >
+              D
+            </span>
+          )}
         </div>
       </div>
     </button>

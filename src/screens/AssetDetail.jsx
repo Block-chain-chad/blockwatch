@@ -1,57 +1,36 @@
 import { Component, Suspense, lazy, useEffect, useState } from 'react'
-import { useAsset, usePrices, useAssetSubscription } from '../state/PricesContext'
-import { getTokenSpread } from '../services/jupiter'
 import { track } from '../services/analytics'
 import { recordView } from '../lib/recentViews'
-import { ASSETS } from '../data/universe'
-import { useFolders } from '../state/FoldersContext'
-import { useAlerts } from '../state/AlertsContext'
 import AddToFolderSheet from '../overlays/AddToFolderSheet'
 import SwapSheet from '../overlays/SwapSheet'
-import { useWallet } from '../state/WalletContext'
 import SetAlertSheet from '../overlays/SetAlertSheet'
 import ShareSheet from '../overlays/ShareSheet'
 import DualLineChart from '../components/DualLineChart'
 import PremiumChart from '../components/PremiumChart'
-import { useChartData, CHART_RANGES } from '../hooks/useChartData'
-import { useStockInfo } from '../hooks/useStockInfo'
+import { CHART_RANGES } from '../hooks/useChartData'
+import { useAssetWorkspace } from '../hooks/useAssetWorkspace'
 import { useMediaQuery } from '../hooks/useMediaQuery'
-import { formatCompact, timeAgo, EM_DASH } from '../lib/format'
-import { isThinlyTraded, premiumPct } from '../lib/prices'
-import { ChevronLeft, ChevronDown, ShareIcon, PlusIcon, BellIcon, StarIcon } from '../components/Icons'
-import { formatPrice, formatPct, GapBar, changeColor, Chip } from '../components/shared'
-import PriceText from '../components/PriceText'
+import WatchlistPane from '../components/WatchlistPane'
+import { formatCompact } from '../lib/format'
+import { isThinlyTraded } from '../lib/prices'
+import { ChevronLeft, ShareIcon, PlusIcon, BellIcon, StarIcon } from '../components/Icons'
+import { formatPrice, formatPct, Chip } from '../components/shared'
 import UpdatedAgo from '../components/UpdatedAgo'
 import AssetLogo from '../components/AssetLogo'
-import WatchlistPane from '../components/WatchlistPane'
+import GapPanel from '../components/asset/GapPanel'
+import TradeButton from '../components/asset/TradeButton'
+import TradesOn from '../components/asset/TradesOn'
+import AlsoTokenizedBy from '../components/asset/AlsoTokenizedBy'
+import StatsSection from '../components/asset/StatsSection'
+import KeyStatistics from '../components/asset/KeyStatistics'
+import AboutSection from '../components/asset/AboutSection'
+import AnalystRatings from '../components/asset/AnalystRatings'
+import EarningsSection from '../components/asset/EarningsSection'
+import AssetNews from '../components/asset/AssetNews'
+import DetailsSection from '../components/asset/DetailsSection'
 
 const RANGES = Object.keys(CHART_RANGES)
 const RANGE_WORDS = { '1D': 'today', '1W': 'past week', '1M': 'past month', '3M': 'past 3 months', '1Y': 'past year' }
-
-/* One row of the Key statistics disclosure; hides itself when the value is missing. */
-function StatRow({ label, value }) {
-  if (value == null) return null
-  return (
-    <div className="flex justify-between">
-      <dt className="text-zinc-500">{label}</dt>
-      <dd className="tabular-nums text-zinc-300">{value}</dd>
-    </div>
-  )
-}
-
-/* One row of the side-by-side comparison grid: label, stock cell, token cell. */
-function CompareRow({ label, stock, token }) {
-  return (
-    <>
-      <div className="text-zinc-500">{label}</div>
-      <div className="text-right text-[13px] leading-tight tabular-nums text-zinc-300">{stock ?? '—'}</div>
-      <div className="text-right text-[13px] leading-tight tabular-nums text-zinc-300">{token ?? '—'}</div>
-    </>
-  )
-}
-
-const compactNum = (n) =>
-  Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(n)
 
 /* The Candles mode, loaded the first time someone taps it. It brings the
    TradingView charting library with it, which is why it is not in the main
@@ -83,7 +62,16 @@ class CandlesBoundary extends Component {
 
 const CANDLES_SKELETON = <div className="mx-3 mt-3 h-[204px] animate-pulse rounded-2xl bg-zinc-900" />
 
+/* The phone asset screen: a full-screen overlay above the tab bar. The
+   desktop has its own shell (components/desktop) and never mounts this in a
+   browser at >= 1024px. The lg: dock below (the docked WatchlistPane, the
+   flex root and the two scroll wrappers) is kept exactly as release/onstock
+   has it: under 1024px every one of those classes is inert, so the phone
+   DOM stays byte-identical to the base, and inside the native shell at iPad
+   widths — where the desktop gate is off — the screen behaves exactly as
+   today. */
 export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
+  const desktop = useMediaQuery('(min-width: 64rem)')
   const [range, setRange] = useState('1D')
   // Scrubbing the chart drives the headline price (Robinhood-style); null =
   // live. Cleared on range switch and on pointer release (chart emits null).
@@ -94,7 +82,6 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
   const [alertOpen, setAlertOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [swapOpen, setSwapOpen] = useState(false)
-  const wallet = useWallet()
   const [chartRetry, setChartRetry] = useState(0)
   const [visibleLines, setVisibleLines] = useState({ token: true, stock: true })
   // Chart mode. Gap is the app's thesis and the default; Candles is one side
@@ -109,72 +96,32 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
       return next.token || next.stock ? next : v
     })
   }
-  const asset = useAsset(assetId)
-  const { marketOpen, session, assets, lastFetchAt } = usePrices()
 
-  // This asset + its cross-issuer siblings (same underlying) need live token
-  // prices and the underlying's quote — long-tail assets aren't polled
-  // otherwise. Sibling ids come from the static universe so the list is
-  // stable regardless of what data has arrived.
-  const staticAsset = ASSETS.find((a) => a.id === assetId)
-  const subIds = staticAsset?.underlying
-    ? ASSETS.filter((a) => a.underlying === staticAsset.underlying).map((a) => a.id)
-    : [assetId]
-  useAssetSubscription(`detail:${assetId}`, subIds)
+  const {
+    asset,
+    staticAsset,
+    marketOpen,
+    session,
+    lastFetchAt,
+    chart,
+    info,
+    spread,
+    siblings,
+    memberCount,
+    alertLabel,
+    inWatchlist,
+    toggleWatchlist,
+    hasTokenStats,
+    hasStockStats,
+    bothSides,
+  } = useAssetWorkspace(assetId, range, chartRetry)
 
   // Feed the search overlay's "Recently viewed" shelf.
   useEffect(() => {
     recordView(assetId)
   }, [assetId])
 
-  // Live buy/sell readout from the DEX — what a ~$200 trade would actually
-  // execute at in each direction. Solana-minted assets only.
-  const [spread, setSpread] = useState(null)
-  useEffect(() => {
-    setSpread(null)
-    const mint = ASSETS.find((a) => a.id === assetId)?.mint
-    if (!mint) return
-    let cancelled = false
-    getTokenSpread(mint).then((s) => {
-      if (!cancelled) setSpread(s)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [assetId])
-
-  const { folders, watchlistIds, toggleWatchlist } = useFolders()
-  const { rules } = useAlerts()
-  const chart = useChartData(asset ?? { id: assetId }, range, chartRetry)
-  const info = useStockInfo(asset?.underlying)
-  // `hidden lg:block` on the aside only hides the watchlist pane; it would
-  // still mount and subscribe every watchlist ticker on phones and in the
-  // iOS shell. Gate the pane itself on Tailwind's lg (64rem) instead.
-  const desktop = useMediaQuery('(min-width: 64rem)')
   if (!asset) return null
-  const memberCount = folders.filter((f) => f.assetIds.includes(asset.id)).length
-  const alertRule = rules[asset.id]
-  const alertLabel = !alertRule
-    ? 'Set alert'
-    : alertRule.drift && alertRule.price
-      ? '2 alerts set'
-      : alertRule.drift
-        ? `Alert at ±${alertRule.drift.threshold}%`
-        : `Alert at ${formatPrice(alertRule.price.target)}`
-  const inWatchlist = watchlistIds.includes(asset.id)
-  // Same underlying, different issuer — the cross-issuer comparison.
-  const siblings = asset.underlying
-    ? assets.filter((a) => a.underlying === asset.underlying && a.id !== asset.id)
-    : []
-
-  // Key statistics has a token group and a stock group; either can be absent
-  // (token-only products have no stock side, fresh assets may lack data).
-  const ts = asset.tokenStats
-  const hasTokenStats = ts != null && (ts.high24h != null || ts.ath != null || ts.supply != null)
-  const hasStockStats = asset.underlying && (asset.stockQuote || info.metrics)
-  // Both sides present → the shared figures render as a side-by-side grid
-  // (the app's whole thesis in table form); leftovers list underneath.
-  const bothSides = hasTokenStats && hasStockStats
 
   // z sits ABOVE the search overlay (40): opening an asset from search keeps
   // search mounted underneath, so Back returns to the typed query.
@@ -192,7 +139,13 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
         className="hidden lg:block lg:w-[28rem] lg:shrink-0 lg:overflow-y-auto lg:border-r"
         style={{ borderColor: 'var(--border-subtle)' }}
       >
-        {desktop && <WatchlistPane currentId={asset.id} onOpen={(a) => onSwitchAsset(a.id)} />}
+        {desktop && (
+          <WatchlistPane
+            currentId={asset.id}
+            onOpen={(a) => onSwitchAsset(a.id)}
+            onRemove={(a) => toggleWatchlist(a.id)}
+          />
+        )}
       </aside>
       {/* On desktop this pane is the scroll container, so the sticky header
           below keeps pinning to it. Under lg: it is an inert wrapper. */}
@@ -240,101 +193,15 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
           </div>
         </div>
 
-        {/*
-          The gap leads. It used to be a small pill in the corner while the
-          token price took the 3xl slot — but the token price alone is a fact
-          any tracker has. The distance between the two legs is the only number
-          this app computes, so it gets the display step, stated as a
-          percentage AND in money (a percentage is abstract; $0.78 is not).
-
-          Bordered, not filled: the two legs sit inside without becoming a card
-          within a card.
-        */}
-        {(() => {
-          const gap = premiumPct(asset)
-          const tokenNow = scrub?.price ?? asset.tokenPrice
-          const diff =
-            tokenNow != null && asset.stockPrice != null ? tokenNow - asset.stockPrice : null
-          const thin = isThinlyTraded(asset)
-
-          // Per-leg freshness. The two sides of this comparison have different
-          // ages: the token trades continuously while the share can be hours
-          // stale and shut. One global "updated 5m ago" would hide exactly the
-          // caveat that makes the gap readable.
-          const tokenAge = lastFetchAt ? timeAgo(lastFetchAt) : '—'
-          // In pre/post the share is trading and this quote is not following
-          // it, so "at last close" alone would understate how stale it is.
-          const STALE_LABEL = {
-            pre: 'at last close · pre-market',
-            post: 'at 4pm close · after hours',
-            closed: 'at last close',
-          }
-          const stockAge = !asset.underlying
-            ? null
-            : marketOpen
-              ? lastFetchAt
-                ? `${timeAgo(lastFetchAt)} · live`
-                : '—'
-              : (STALE_LABEL[session] ?? 'at last close')
-
-          return (
-            <div
-              className="mt-4 rounded-lg border"
-              style={{ borderColor: 'var(--border-default)' }}
-            >
-              <div className="px-4 pt-3.5">
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="t-micro text-zinc-500">
-                    {asset.underlying ? `Gap vs ${asset.underlying}` : 'NAV-based'}
-                  </span>
-                  {diff != null && (
-                    <span className="t-caption text-right text-zinc-500">
-                      {formatPrice(Math.abs(diff))}{' '}
-                      {diff >= 0 ? 'above the share' : 'below the share'}
-                    </span>
-                  )}
-                </div>
-                <div className="mt-1.5 flex items-center justify-between gap-3">
-                  <span
-                    className={`num t-display ${thin ? 'text-zinc-500' : changeColor(gap)}`}
-                  >
-                    {gap != null ? formatPct(gap) : EM_DASH}
-                  </span>
-                  {/* Capped, not full-bleed. Stretched across the panel the
-                      track read as a progress meter — a long empty left half
-                      looks unfilled rather than "below zero". At row width it
-                      reads as what it is: a deviation from centre. */}
-                  <GapBar pct={gap} thin={thin} width={120} />
-                </div>
-              </div>
-
-              <div
-                className="mt-3.5 grid grid-cols-2 border-t"
-                style={{ borderColor: 'var(--border-subtle)' }}
-              >
-                <div className="px-4 py-3">
-                  <div className="t-caption text-zinc-500">{asset.ticker} token</div>
-                  <div className="num t-title mt-0.5 text-zinc-100">
-                    {scrub ? formatPrice(scrub.price) : <PriceText value={asset.tokenPrice} />}
-                  </div>
-                  <div className="t-caption mt-0.5 text-zinc-500">{tokenAge}</div>
-                </div>
-                {asset.underlying && (
-                  <div
-                    className="border-l px-4 py-3"
-                    style={{ borderColor: 'var(--border-subtle)' }}
-                  >
-                    <div className="t-caption text-zinc-500">{asset.underlying} share</div>
-                    <div className="num t-title mt-0.5 text-zinc-100">
-                      {asset.stockPrice != null ? formatPrice(asset.stockPrice) : EM_DASH}
-                    </div>
-                    <div className="t-caption mt-0.5 text-zinc-500">{stockAge}</div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )
-        })()}
+        {/* The gap leads: the bordered block with the gap %, its bar, and the
+            two legs with their own ages. */}
+        <GapPanel
+          asset={asset}
+          scrub={scrub}
+          session={session}
+          marketOpen={marketOpen}
+          lastFetchAt={lastFetchAt}
+        />
 
         {/* How the token itself moved over the selected zoom — or, while
             scrubbing, from the period start to the finger. Secondary to the
@@ -535,397 +402,34 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
         )}
       </div>
 
-      {/* The trading ladder in one block: wallet connected → in-app swap
-          (rung two); otherwise route out to Jupiter (rung one). */}
-      {asset.mint && (
-        <div className="px-4 pt-3">
-          {/* Connecting a wallet is a decision the user made, so an in-app
-              swap keeps the filled accent. Routing OUT to Jupiter does not:
-              it was a full-width saturated block, unambiguously the loudest
-              object on a screen whose job is comparing two prices — shouting
-              an outbound link over the number the page exists to show. It is
-              a bordered button now: same size, same position, still obvious,
-              no longer the first thing your eye lands on. */}
-          {wallet.publicKey ? (
-            <button
-              onClick={() => setSwapOpen(true)}
-              className="t-label flex w-full items-center justify-center gap-2 rounded-lg bg-accent py-3 font-semibold text-zinc-950 transition-colors active:bg-accent-dim"
-            >
-              Swap {asset.ticker}
-            </button>
-          ) : (
-            <a
-              href={`https://jup.ag/swap/USDC-${asset.mint}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => track('trade_out', { ticker: asset.ticker, venue: 'jupiter' })}
-              className="t-label flex items-center justify-center gap-2 rounded-lg py-3 font-medium text-zinc-100 transition-colors active:bg-zinc-900"
-              style={{ boxShadow: 'inset 0 0 0 1px var(--border-strong)' }}
-            >
-              Trade {asset.ticker} on Jupiter ↗
-            </a>
-          )}
-          <p className="mt-1.5 text-center text-[11px] leading-relaxed text-zinc-400">
-            {wallet.publicKey
-              ? 'Swaps run from your own wallet — OnStock never holds funds.'
-              : 'Opens Jupiter, an external venue — you swap from your own wallet. Availability depends on your region. Not investment advice.'}
-          </p>
-        </div>
-      )}
+      {/* The swap sheet stays in this screen's tail with the other sheets, so
+          the button only asks to open it. */}
+      <TradeButton asset={asset} onSwap={() => setSwapOpen(true)} />
 
-      <div className="px-4 pt-6">
-        <h3 className="text-sm font-semibold text-zinc-300">Trades on</h3>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {asset.venues.map((v) => (
-            <span key={v} className="rounded-full bg-zinc-900 px-3 py-1.5 text-xs text-zinc-400">
-              {v}
-            </span>
-          ))}
-          {asset.chain && (
-            <span className="rounded-full bg-zinc-900 px-3 py-1.5 text-xs text-zinc-400">
-              {asset.chain}
-            </span>
-          )}
-        </div>
-      </div>
+      <TradesOn asset={asset} />
 
-      {siblings.length > 0 && (
-        <div className="px-4 pt-6">
-          <h3 className="text-sm font-semibold text-zinc-300">Also tokenized by</h3>
-          <div className="mt-1 divide-y divide-zinc-900 rounded-2xl bg-zinc-900/60">
-            {siblings.map((s) => {
-              const diff =
-                s.tokenPrice != null && asset.tokenPrice != null
-                  ? ((s.tokenPrice - asset.tokenPrice) / asset.tokenPrice) * 100
-                  : null
-              return (
-                <button
-                  key={s.id}
-                  onClick={() => onSwitchAsset(s.id)}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors active:bg-zinc-900"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[15px] font-semibold">{s.ticker}</div>
-                    <div className="truncate text-xs text-zinc-500">
-                      {s.issuer}
-                      {s.chain ? ` · ${s.chain}` : ''}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-medium">
-                      <PriceText value={s.tokenPrice} />
-                    </div>
-                    {diff != null && (
-                      <div className="text-xs tabular-nums text-zinc-500">
-                        {formatPct(diff)} vs this one
-                      </div>
-                    )}
-                  </div>
-                  <ChevronDown size={16} className="-rotate-90 text-zinc-600" />
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      )}
+      <AlsoTokenizedBy asset={asset} siblings={siblings} onSwitchAsset={onSwitchAsset} />
 
-      {(asset.volume24h != null || asset.marketCap != null || info.profile) && (
-        <div className="px-4 pt-6">
-          <h3 className="text-sm font-semibold text-zinc-300">Stats</h3>
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            {asset.volume24h != null && (
-              <div className="rounded-xl bg-zinc-900/60 p-3">
-                <div className="text-[11px] text-zinc-500">Token volume (24h)</div>
-                <div className="mt-0.5 text-sm font-medium tabular-nums">{formatCompact(asset.volume24h)}</div>
-              </div>
-            )}
-            {asset.marketCap != null && (
-              <div className="rounded-xl bg-zinc-900/60 p-3">
-                <div className="text-[11px] text-zinc-500">Token market cap</div>
-                <div className="mt-0.5 text-sm font-medium tabular-nums">{formatCompact(asset.marketCap)}</div>
-              </div>
-            )}
-            {info.profile?.marketCapitalization > 0 && (
-              <div className="rounded-xl bg-zinc-900/60 p-3">
-                <div className="text-[11px] text-zinc-500">{asset.underlying} market cap</div>
-                <div className="mt-0.5 text-sm font-medium tabular-nums">
-                  {formatCompact(info.profile.marketCapitalization * 1e6)}
-                </div>
-              </div>
-            )}
-            {info.profile?.finnhubIndustry && (
-              <div className="rounded-xl bg-zinc-900/60 p-3">
-                <div className="text-[11px] text-zinc-500">Industry</div>
-                <div className="mt-0.5 truncate text-sm font-medium">{info.profile.finnhubIndustry}</div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      <StatsSection asset={asset} info={info} />
 
-      {(hasTokenStats || hasStockStats) && (
-        <div className="px-4 pt-6">
-          <div className="rounded-2xl bg-zinc-900/60">
-            <button
-              onClick={() => setStatsOpen((o) => !o)}
-              className="flex w-full items-center justify-between px-4 py-3.5 text-sm font-medium text-zinc-300"
-            >
-              Key statistics
-              <ChevronDown
-                size={18}
-                className={`text-zinc-500 transition-transform ${statsOpen ? 'rotate-180' : ''}`}
-              />
-            </button>
-            {statsOpen && (
-              <div className="px-4 pb-4 text-sm">
-                {bothSides && (
-                  <div className="grid grid-cols-[1.1fr_1fr_1fr] items-center gap-x-3 gap-y-2.5 pb-1">
-                    <div />
-                    <div className="text-right text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
-                      {asset.underlying} stock
-                    </div>
-                    <div className="text-right text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
-                      {asset.ticker} token
-                    </div>
-                    <CompareRow
-                      label="Price"
-                      stock={asset.stockPrice != null ? formatPrice(asset.stockPrice) : null}
-                      token={asset.tokenPrice != null ? formatPrice(asset.tokenPrice) : null}
-                    />
-                    <CompareRow
-                      label="Range (1d)"
-                      stock={
-                        asset.stockQuote?.dayLow != null && asset.stockQuote?.dayHigh != null ? (
-                          <>
-                            {formatPrice(asset.stockQuote.dayLow)}
-                            <br />– {formatPrice(asset.stockQuote.dayHigh)}
-                          </>
-                        ) : null
-                      }
-                      token={
-                        ts.low24h != null && ts.high24h != null ? (
-                          <>
-                            {formatPrice(ts.low24h)}
-                            <br />– {formatPrice(ts.high24h)}
-                          </>
-                        ) : null
-                      }
-                    />
-                    <CompareRow
-                      label="Market cap"
-                      stock={
-                        info.profile?.marketCapitalization > 0
-                          ? formatCompact(info.profile.marketCapitalization * 1e6)
-                          : null
-                      }
-                      token={asset.marketCap != null ? formatCompact(asset.marketCap) : null}
-                    />
-                    <CompareRow
-                      label="Volume"
-                      stock={
-                        info.metrics?.avgVolume10d != null
-                          ? `${compactNum(info.metrics.avgVolume10d)} sh`
-                          : null
-                      }
-                      token={asset.volume24h != null ? formatCompact(asset.volume24h) : null}
-                    />
-                  </div>
-                )}
+      <KeyStatistics
+        asset={asset}
+        info={info}
+        spread={spread}
+        hasTokenStats={hasTokenStats}
+        hasStockStats={hasStockStats}
+        bothSides={bothSides}
+        open={statsOpen}
+        onToggle={() => setStatsOpen((o) => !o)}
+      />
 
-                <dl className={`space-y-2.5 ${bothSides ? 'pt-2' : ''}`}>
-                  {hasTokenStats && (
-                    <>
-                      <div className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
-                        {asset.ticker} token
-                      </div>
-                      {!bothSides && (
-                        <StatRow
-                          label="24h range"
-                          value={
-                            ts.low24h != null && ts.high24h != null
-                              ? `${formatPrice(ts.low24h)} – ${formatPrice(ts.high24h)}`
-                              : null
-                          }
-                        />
-                      )}
-                      <StatRow
-                        label="All-time high"
-                        value={
-                          ts.ath != null
-                            ? `${formatPrice(ts.ath)}${ts.athChangePct != null ? ` (${ts.athChangePct.toFixed(1)}%)` : ''}`
-                            : null
-                        }
-                      />
-                      <StatRow
-                        label="Circulating supply"
-                        value={ts.supply != null ? `${compactNum(ts.supply)} tokens` : null}
-                      />
-                      <StatRow
-                        label="Bid/ask spread"
-                        value={
-                          spread ? `${spread.spreadPct.toFixed(1)}% (~$${spread.refUsd} trade)` : null
-                        }
-                      />
-                    </>
-                  )}
-                  {hasStockStats && (
-                    <div className={`text-[11px] font-semibold uppercase tracking-wide text-zinc-500 ${hasTokenStats ? 'pt-2' : ''}`}>
-                      {asset.underlying} stock
-                    </div>
-                  )}
-                  <StatRow
-                    label="Previous close"
-                    value={asset.stockQuote?.prevClose != null ? formatPrice(asset.stockQuote.prevClose) : null}
-                  />
-                  <StatRow
-                    label="Open"
-                    value={asset.stockQuote?.open != null ? formatPrice(asset.stockQuote.open) : null}
-                  />
-                  {!bothSides && (
-                    <StatRow
-                      label="Day range"
-                      value={
-                        asset.stockQuote?.dayLow != null && asset.stockQuote?.dayHigh != null
-                          ? `${formatPrice(asset.stockQuote.dayLow)} – ${formatPrice(asset.stockQuote.dayHigh)}`
-                          : null
-                      }
-                    />
-                  )}
-                  <StatRow
-                    label="52-week range"
-                    value={
-                      info.metrics?.low52 != null && info.metrics?.high52 != null
-                        ? `${formatPrice(info.metrics.low52)} – ${formatPrice(info.metrics.high52)}`
-                        : null
-                    }
-                  />
-                  <StatRow label="P/E ratio (TTM)" value={info.metrics?.pe != null ? info.metrics.pe.toFixed(1) : null} />
-                  <StatRow label="EPS (TTM)" value={info.metrics?.eps != null ? formatPrice(info.metrics.eps) : null} />
-                  <StatRow
-                    label="Dividend yield"
-                    value={info.metrics?.divYield != null ? `${info.metrics.divYield.toFixed(2)}%` : null}
-                  />
-                  <StatRow label="Beta" value={info.metrics?.beta != null ? info.metrics.beta.toFixed(2) : null} />
-                  {!bothSides && (
-                    <StatRow
-                      label="Avg volume (10d)"
-                      value={info.metrics?.avgVolume10d != null ? `${compactNum(info.metrics.avgVolume10d)} shares` : null}
-                    />
-                  )}
-                  {hasStockStats && (
-                    <p className="pt-1 text-[11px] leading-relaxed text-zinc-500">
-                      Stock figures describe {asset.underlying}, the share this token tracks.
-                    </p>
-                  )}
-                </dl>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      <AboutSection asset={asset} info={info} />
 
-      {info.profile && (
-        <div className="px-4 pt-6">
-          <h3 className="text-sm font-semibold text-zinc-300">About {asset.underlying}</h3>
-          <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-            {info.profile.name}
-            {info.profile.finnhubIndustry && ` operates in ${info.profile.finnhubIndustry}`}
-            {info.profile.exchange && `, listed on ${info.profile.exchange}`}
-            {info.profile.ipo && ` and publicly traded since ${info.profile.ipo.slice(0, 4)}`}.{' '}
-            {asset.ticker} is a token that tracks its share price
-            {asset.chain ? ` on ${asset.chain}` : ''}.
-          </p>
-        </div>
-      )}
+      <AnalystRatings info={info} />
 
-      {info.recs && (() => {
-        const buy = (info.recs.strongBuy ?? 0) + (info.recs.buy ?? 0)
-        const hold = info.recs.hold ?? 0
-        const sell = (info.recs.sell ?? 0) + (info.recs.strongSell ?? 0)
-        const total = buy + hold + sell
-        if (total === 0) return null
-        const pct = (n) => Math.round((n / total) * 100)
-        return (
-          <div className="px-4 pt-6">
-            <h3 className="text-sm font-semibold text-zinc-300">Analyst ratings</h3>
-            <div className="mt-2.5 flex h-2 overflow-hidden rounded-full bg-zinc-900">
-              <div className="bg-gain/80" style={{ width: `${(buy / total) * 100}%` }} />
-              <div className="bg-zinc-600" style={{ width: `${(hold / total) * 100}%` }} />
-              <div className="bg-loss/80" style={{ width: `${(sell / total) * 100}%` }} />
-            </div>
-            <div className="mt-2 flex gap-4 text-xs text-zinc-400">
-              <span>
-                <span className="font-semibold text-gain tabular-nums">{pct(buy)}%</span> Buy
-              </span>
-              <span>
-                <span className="font-semibold text-zinc-300 tabular-nums">{pct(hold)}%</span> Hold
-              </span>
-              <span>
-                <span className="font-semibold text-loss tabular-nums">{pct(sell)}%</span> Sell
-              </span>
-              <span className="ml-auto text-zinc-500">{total} analysts</span>
-            </div>
-          </div>
-        )
-      })()}
+      <EarningsSection asset={asset} info={info} />
 
-      {info.earnings?.length > 0 && (
-        <div className="px-4 pt-6">
-          <h3 className="text-sm font-semibold text-zinc-300">Earnings</h3>
-          <div className="mt-1 divide-y divide-zinc-900 rounded-2xl bg-zinc-900/60 px-4">
-            {info.earnings.map((q) => {
-              const beat = q.estimate != null ? q.actual >= q.estimate : null
-              const label = new Date(q.period).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-              return (
-                <div key={q.period} className="flex items-center gap-3 py-3">
-                  <span
-                    className={`h-2 w-2 shrink-0 rounded-full ${
-                      beat == null ? 'bg-zinc-600' : beat ? 'bg-gain' : 'bg-loss'
-                    }`}
-                  />
-                  <span className="w-20 text-sm text-zinc-300">{label}</span>
-                  <span className="flex-1 text-right text-sm tabular-nums text-zinc-100">
-                    EPS {q.actual.toFixed(2)}
-                  </span>
-                  <span className="w-24 text-right text-xs tabular-nums text-zinc-500">
-                    {q.estimate != null ? `est ${q.estimate.toFixed(2)}` : '—'}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-          <p className="mt-1.5 px-1 text-[11px] text-zinc-500">
-            Quarterly results for {asset.underlying}, the stock this token tracks.
-          </p>
-        </div>
-      )}
-
-      {info.news?.length > 0 && (
-        <div className="px-4 pt-6">
-          <h3 className="text-sm font-semibold text-zinc-300">Latest {asset.underlying} news</h3>
-          <div className="mt-1 divide-y divide-zinc-900 rounded-2xl bg-zinc-900/60 px-4">
-            {info.news.map((n) => (
-              <a
-                key={n.id}
-                href={n.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block py-3 transition-opacity active:opacity-60"
-              >
-                <div className="line-clamp-2 text-[13px] font-medium leading-snug text-zinc-100">
-                  {n.headline}
-                </div>
-                <div className="mt-1 text-[11px] text-zinc-500">
-                  {n.source} · {timeAgo(n.at)}
-                </div>
-              </a>
-            ))}
-          </div>
-          <p className="mt-1.5 px-1 text-[11px] text-zinc-500">
-            Coverage of {asset.underlying}, the stock this token tracks. Links open the source.
-          </p>
-        </div>
-      )}
+      <AssetNews asset={asset} info={info} />
 
       {info.loading && asset.underlying && (
         <div className="px-4 pt-6">
@@ -933,46 +437,11 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
         </div>
       )}
 
-      <div className="px-4 pt-6">
-        <div className="rounded-2xl bg-zinc-900/60">
-          <button
-            onClick={() => setDetailsOpen((o) => !o)}
-            className="flex w-full items-center justify-between px-4 py-3.5 text-sm font-medium text-zinc-300"
-          >
-            Details
-            <ChevronDown
-              size={18}
-              className={`text-zinc-500 transition-transform ${detailsOpen ? 'rotate-180' : ''}`}
-            />
-          </button>
-          {detailsOpen && (
-            <dl className="space-y-2.5 px-4 pb-4 text-sm">
-              <div className="flex justify-between">
-                <dt className="text-zinc-500">Issuer</dt>
-                <dd className="text-zinc-300">{asset.issuer}</dd>
-              </div>
-              {asset.chain && (
-                <div className="flex justify-between">
-                  <dt className="text-zinc-500">Chain</dt>
-                  <dd className="text-zinc-300">{asset.chain}</dd>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <dt className="text-zinc-500">Underlying</dt>
-                <dd className="text-zinc-300">{asset.underlying ?? 'NAV-based'}</dd>
-              </div>
-              {asset.marketCap != null && (
-                <div className="flex justify-between">
-                  <dt className="text-zinc-500">Token market cap</dt>
-                  <dd className="tabular-nums text-zinc-300">
-                    ${asset.marketCap.toLocaleString('en-US')}
-                  </dd>
-                </div>
-              )}
-            </dl>
-          )}
-        </div>
-      </div>
+      <DetailsSection
+        asset={asset}
+        open={detailsOpen}
+        onToggle={() => setDetailsOpen((o) => !o)}
+      />
 
       <UpdatedAgo className="pt-4 text-center" />
       </div>

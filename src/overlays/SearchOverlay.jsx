@@ -7,37 +7,10 @@ import { fetchNewListings } from '../services/coingecko'
 import { ASSET_IDS } from '../data/universe'
 import { formatPrice, formatPct, changeColor } from '../lib/format'
 import { isThinlyTraded } from '../lib/prices'
+import { rankAssets, popularPick } from '../lib/search'
 import { getRecentViews } from '../lib/recentViews'
 import { SearchIcon, PlusIcon, CheckCircleIcon, CloseIcon } from '../components/Icons'
 import AssetLogo from '../components/AssetLogo'
-
-// Ranked matching: exact ticker beats prefix beats substring, and ticker
-// matches beat name matches — in a 700-asset universe "MU" must surface the
-// MU tokens, not everything containing those letters. Ties keep universe
-// order (volume), so liquid versions rise.
-function searchScore(a, q) {
-  const ticker = a.ticker.toLowerCase()
-  const und = a.underlying?.toLowerCase() ?? ''
-  const name = a.name.toLowerCase()
-  if (ticker === q || und === q) return 5
-  if (ticker.startsWith(q) || und.startsWith(q)) return 4
-  if (name.startsWith(q)) return 3
-  if (ticker.includes(q) || und.includes(q)) return 2
-  if (name.includes(q)) return 1
-  return 0
-}
-
-// Popular shortcuts pick one version per underlying: prefer a liquid xStocks
-// listing (the branding shown all over the app), then any liquid version,
-// then whatever exists.
-function popularPick(assets, underlying) {
-  const candidates = assets.filter((a) => a.underlying === underlying)
-  return (
-    candidates.find((a) => a.issuer === 'xStocks' && !isThinlyTraded(a)) ??
-    candidates.find((a) => !isThinlyTraded(a)) ??
-    candidates[0]
-  )
-}
 
 /*
  * Search over the tokenized-asset universe (Home shows only your watchlist;
@@ -133,14 +106,10 @@ export default function SearchOverlay({ onClose, onOpenAsset, pickerFolderId = n
     }
   }, [pickerFolderId])
 
+  // Ranking lives in lib/search.js (shared with the desktop symbol search);
+  // null rather than [] for a blank query keeps the empty-state branch below.
   const q = query.trim().toLowerCase()
-  const results = q
-    ? assets
-        .map((a) => [searchScore(a, q), a])
-        .filter(([score]) => score > 0)
-        .sort((x, y) => y[0] - x[0])
-        .map(([, a]) => a)
-    : null
+  const results = q ? rankAssets(assets, q) : null
 
   // Empty state: what this device looked at recently, above the Popular list.
   const recent = q

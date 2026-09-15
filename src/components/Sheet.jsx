@@ -44,11 +44,16 @@ function focusables(root) {
   return Array.from(root.querySelectorAll(FOCUSABLE_SELECTOR))
 }
 
+/* Panel width at lg, where a sheet becomes a centred dialog. Phones keep the
+   full-width sheet at every size; only the desktop dialog widens. */
+const SIZE = { md: 'lg:max-w-md', lg: 'lg:max-w-2xl' }
+
 export default function Sheet({
   onClose,
   label,
   closeLabel = 'Close',
   pad = 4,
+  size = 'md',
   className = 'z-50',
   children,
 }) {
@@ -136,15 +141,26 @@ export default function Sheet({
         aria-modal="true"
         aria-label={label}
         aria-labelledby={label ? undefined : titleId}
-        className={`fixed inset-0 mx-auto flex max-w-md items-end ${className}`}
+        className={`fixed inset-0 mx-auto flex max-w-md items-end lg:max-w-none lg:items-center lg:justify-center ${className}`}
       >
+        {/* The root must span the whole window at lg: the scrim and the
+            click-to-close live on it, and a phone-width root would leave the
+            chart, toolbar and watchlist beside a 448px strip clickable under
+            an open dialog — the focus trap only catches the keyboard. The
+            panel below keeps its own lg:max-w-md. */}
         <button aria-label={closeLabel} onClick={onClose} className="absolute inset-0 overlay-in bg-black/60" />
+        {/* At lg the same panel is a centred dialog: rounded on every corner,
+            no handle, and it fades in place instead of rising — a phone-width
+            sheet rising in the middle of a 1440px window reads as broken.
+            `sheet-in-center` is a plain class scoped to lg in index.css (an
+            unlayered rule, so it can override `.sheet-in`, which a Tailwind
+            `lg:` variant inside the utilities layer could not). */}
         <div
           ref={panelRef}
           tabIndex={-1}
-          className={`relative sheet-in w-full rounded-t-3xl bg-zinc-950 outline-none ring-1 ring-zinc-800/70 ${PAD[pad].panel}`}
+          className={`relative sheet-in sheet-in-center w-full rounded-t-3xl bg-zinc-950 outline-none ring-1 ring-zinc-800/70 lg:rounded-2xl ${SIZE[size] ?? SIZE.md} ${PAD[pad].panel}`}
         >
-          <div className={`mx-auto h-1 w-10 rounded-full bg-zinc-800 ${PAD[pad].handle}`} />
+          <div className={`mx-auto h-1 w-10 rounded-full bg-zinc-800 lg:hidden ${PAD[pad].handle}`} />
           {children}
         </div>
       </div>

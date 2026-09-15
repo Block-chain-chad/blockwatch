@@ -1,13 +1,9 @@
-import { HomeIcon, FolderIcon, NewsIcon, TradeIcon, TrendIcon } from './Icons'
 import { useAlerts } from '../state/AlertsContext'
+import { TABS } from '../lib/tabs'
 
-const TABS = [
-  { id: 'home', label: 'Home', Icon: HomeIcon },
-  { id: 'screener', label: 'Gaps', Icon: TrendIcon },
-  { id: 'folders', label: 'Folders', Icon: FolderIcon },
-  { id: 'news', label: 'News', Icon: NewsIcon },
-  { id: 'trade', label: 'Trade', Icon: TradeIcon, soon: true },
-]
+// The five destinations live in lib/tabs.js and are re-exported here so the
+// desktop nav rail can import them from the bar it mirrors.
+export { TABS }
 
 export default function TabBar({ tab, onChange }) {
   const { unread } = useAlerts()
