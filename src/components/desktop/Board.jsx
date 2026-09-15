@@ -34,16 +34,19 @@ const CHIP_OFF = 'text-zinc-500 hover:text-zinc-300'
 const chipStyle = (on) => (on ? { boxShadow: 'inset 0 0 0 1px var(--border-strong)' } : undefined)
 
 export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }) {
-  const { assets, session, stocksAt } = usePrices()
+  const { assets, session, stocksAt, lastFetchAt } = usePrices()
   const { watchlistIds } = useFolders()
   const [sort, setSort] = useLocalState('bw.meter.sort.v1', 'widest')
   const [credibleOnly, setCredibleOnly] = useLocalState('bw.meter.credible.v1', true)
   const [expandedKey, setExpandedKey] = useState(null)
-  const [focus, setFocus] = useState(0)
+  // Tracked by row key, not index: index-based focus lands on the wrong row
+  // whenever expanding/collapsing a company shifts everything below it.
+  const [focusKey, setFocusKey] = useState(null)
   const [scrollTop, setScrollTop] = useState(0)
   const [viewportH, setViewportH] = useState(800)
   const scrollRef = useRef(null)
   const orderRef = useRef({ sig: '', keys: [] })
+  const rowsRef = useRef([])
 
   // The bounded quote set (spec §3.4 #1): the watchlist, every multi-wrapper
   // company, then by static volume, at most 150 underlyings. Static so the
@@ -65,6 +68,9 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }
   }, [assets, lens, sort, credibleOnly, watchlistIds])
 
   const rows = useMemo(() => flattenRows(companies, expandedKey), [companies, expandedKey])
+  // Latest rows for effects that must not re-run on every price tick (rows
+  // is a fresh array each refresh, since freezeOrder/flattenRows rebuild it).
+  rowsRef.current = rows
   const heights = useMemo(() => rows.map((r) => r.height), [rows])
   const win = visibleWindow(heights, scrollTop, viewportH)
 
@@ -78,16 +84,22 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }
     return () => ro?.disconnect()
   }, [])
 
-  // Keep the focused row inside the viewport when the keys move it.
+  // Keep the focused row inside the viewport when the keys move it. Deps are
+  // [focusKey] only — reading `rows` via a ref means a price-tick re-render
+  // (rows is rebuilt every ~2.5 s while subscribed mints refresh) never
+  // re-runs this and snaps the reader's manual scroll back to the focus.
   useEffect(() => {
     const el = scrollRef.current
-    if (!el || rows.length === 0) return
+    if (!el || focusKey == null) return
+    const currentRows = rowsRef.current
+    const idx = currentRows.findIndex((r) => r.key === focusKey)
+    if (idx === -1) return
     let y = 0
-    for (let i = 0; i < focus && i < rows.length; i++) y += rows[i].height
-    const h = rows[Math.min(focus, rows.length - 1)].height
+    for (let i = 0; i < idx; i++) y += currentRows[i].height
+    const h = currentRows[idx].height
     if (y < el.scrollTop) el.scrollTop = y
     else if (y + h > el.scrollTop + el.clientHeight) el.scrollTop = y + h - el.clientHeight
-  }, [focus, rows])
+  }, [focusKey])
 
   const rowAssetId = (row) => (row.type === 'wrapper' ? row.wrapper.asset.id : row.company.leadAsset?.id ?? null)
 
@@ -96,23 +108,40 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }
     if (id) onSelect(id, { from })
   }
 
-  // What the key map can do to the Board (hooks/useMeterShortcuts).
+  // What the key map can do to the Board (hooks/useMeterShortcuts). Focus is
+  // resolved from focusKey to an index fresh each call, so it survives rows
+  // being rebuilt by an expand/collapse between one key press and the next.
   useEffect(() => {
     actionsRef.current = {
-      step: (delta) => setFocus((f) => Math.max(0, Math.min(rows.length - 1, f + delta))),
+      step: (delta) => {
+        const idx = rows.findIndex((r) => r.key === focusKey)
+        const next =
+          idx === -1
+            ? delta > 0
+              ? 0
+              : rows.length - 1
+            : Math.max(0, Math.min(rows.length - 1, idx + delta))
+        const row = rows[next]
+        if (row) setFocusKey(row.key)
+      },
       expand: (open) => {
-        const row = rows[focus]
+        const idx = rows.findIndex((r) => r.key === focusKey)
+        const row = rows[idx]
         if (!row) return
         setExpandedKey(open ? row.company.key : null)
         if (!open && row.type === 'wrapper') {
-          setFocus(rows.findIndex((r) => r.type === 'company' && r.key === row.company.key))
+          setFocusKey(row.company.key)
         }
       },
       select: () => {
-        const row = rows[focus]
+        const idx = rows.findIndex((r) => r.key === focusKey)
+        const row = rows[idx]
         if (row) selectRow(row, 'keys')
       },
-      focusedId: () => (rows[focus] ? rowAssetId(rows[focus]) : selectedId),
+      focusedId: () => {
+        const idx = rows.findIndex((r) => r.key === focusKey)
+        return rows[idx] ? rowAssetId(rows[idx]) : selectedId
+      },
     }
     return () => {
       actionsRef.current = null
@@ -181,14 +210,13 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }
         {rows.length === 0 && (
           <p className="t-body px-6 py-12 text-center text-zinc-400">
             {lens === 'watching'
-              ? 'Nothing on your Watching list yet — press W on any row to add it.'
+              ? 'Nothing on your Watching list yet — switch to All and press W on any row to add it.'
               : 'No gaps to rank yet — prices are still loading.'}
           </p>
         )}
         <div style={{ height: win.top }} aria-hidden="true" />
-        {rows.slice(win.start, win.end).map((row, i) => {
-          const index = win.start + i
-          const focused = index === focus
+        {rows.slice(win.start, win.end).map((row) => {
+          const focused = row.key === focusKey
           if (row.type === 'company') {
             const c = row.company
             const open = c.key === expandedKey
@@ -198,8 +226,9 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }
                 key={row.key}
                 role="button"
                 tabIndex={-1}
+                aria-expanded={open}
                 onClick={() => {
-                  setFocus(index)
+                  setFocusKey(row.key)
                   setExpandedKey(open ? null : c.key)
                   selectRow(row, 'board')
                 }}
@@ -255,7 +284,7 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }
               role="button"
               tabIndex={-1}
               onClick={() => {
-                setFocus(index)
+                setFocusKey(row.key)
                 selectRow(row, 'board')
               }}
               className={`hover-row grid h-10 cursor-pointer items-center border-b px-6 ${
@@ -278,7 +307,9 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens }
                 <span className="num t-label text-zinc-100">
                   <PriceText value={a.tokenPrice} />
                 </span>
-                <span className="num t-caption text-zinc-500">{tokenAge(a)}</span>
+                <span className="num t-caption text-zinc-500">
+                  {ageWords(lastFetchAt ? (Date.now() - lastFetchAt) / 1000 : null)}
+                </span>
               </div>
               <div className="flex items-center gap-3">
                 <GapBar pct={w.gap} thin={w.muted} width={160} height={6} tone="accent" />
@@ -315,13 +346,6 @@ function shareAgeWord(session) {
   if (session === 'post') return '4pm close'
   if (session === 'pre') return 'last close · pre-market'
   return 'last close'
-}
-
-/* Token prices carry no per-asset timestamp yet; the fast layer refreshes
-   subscribed mints every 2.5 s and the poll every minute, so the honest word
-   is the poll's cadence. Plan D adds a per-asset stamp. */
-function tokenAge(asset) {
-  return asset.mint ? ageWords(3) : ageWords(45)
 }
 
 function SortMenu({ value, onPick }) {
