@@ -22,11 +22,13 @@ import WelcomeSheet from './overlays/WelcomeSheet'
 import { useMediaQuery } from './hooks/useMediaQuery'
 import { useLocalState } from './hooks/useLocalState'
 import { isNativeApp } from './lib/platform'
+import { resolveDesktopHome, DESKTOP_HOME_KEY } from './lib/desktopHome'
 
 /* The desktop shell is its own chunk: it mounts only at 1024px and up in a
    browser, so a phone never downloads it and the main bundle stays the size
    it was before the desktop existed. */
 const DesktopShell = lazy(() => import('./components/desktop/DesktopShell'))
+const MeterShell = lazy(() => import('./components/desktop/MeterShell'))
 
 /* When the user arrives via a password-recovery email link, prompt for the new password. */
 function RecoveryGate() {
@@ -54,6 +56,23 @@ export default function App() {
   // in a browser only. Inside the Capacitor WebView every width is the phone
   // tree — an iPad in landscape keeps today's behaviour (§7 Q2).
   const desktop = useMediaQuery('(min-width: 64rem)') && !isNativeApp()
+  // Which desktop home (spec §4, Plan A): the Meter or the Phase 1 chart-first
+  // shell, until the owner picks. `?home=chart` switches and is remembered.
+  const [desktopHome] = useState(() => {
+    let saved = null
+    try {
+      saved = JSON.parse(window.localStorage.getItem(DESKTOP_HOME_KEY))
+    } catch {
+      // unset or unreadable; the default stands
+    }
+    const home = resolveDesktopHome({ search: window.location.search, saved })
+    try {
+      window.localStorage.setItem(DESKTOP_HOME_KEY, JSON.stringify(home))
+    } catch {
+      // storage unavailable; this open still resolves
+    }
+    return home
+  })
   // What the desktop's right column lists: 'watchlist' or a folder id.
   const [listSource, setListSource] = useLocalState('bw.desktop.list.v1', 'watchlist')
 
@@ -124,20 +143,35 @@ export default function App() {
         >
           {desktop ? (
             <Suspense fallback={null}>
-              <DesktopShell
-                tab={tab}
-                onTab={switchTab}
-                assetId={openAssetId}
-                onSelectAsset={(id) => {
-                  setOpenAssetId(id)
-                  setTab('home')
-                }}
-                listSource={listSource}
-                onListSource={setListSource}
-                openFolderId={openFolderId}
-                onOpenFolder={setOpenFolderId}
-                onOpenProfile={openProfile}
-              />
+              {desktopHome === 'meter' ? (
+                <MeterShell
+                  tab={tab}
+                  onTab={switchTab}
+                  assetId={openAssetId}
+                  onSelectAsset={(id) => {
+                    setOpenAssetId(id)
+                    setTab('home')
+                  }}
+                  openFolderId={openFolderId}
+                  onOpenFolder={setOpenFolderId}
+                  onOpenProfile={openProfile}
+                />
+              ) : (
+                <DesktopShell
+                  tab={tab}
+                  onTab={switchTab}
+                  assetId={openAssetId}
+                  onSelectAsset={(id) => {
+                    setOpenAssetId(id)
+                    setTab('home')
+                  }}
+                  listSource={listSource}
+                  onListSource={setListSource}
+                  openFolderId={openFolderId}
+                  onOpenFolder={setOpenFolderId}
+                  onOpenProfile={openProfile}
+                />
+              )}
             </Suspense>
           ) : (
             <>
