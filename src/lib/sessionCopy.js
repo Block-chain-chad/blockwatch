@@ -35,19 +35,24 @@ export const SESSION_SHORT = {
 }
 
 /**
- * The "Widest gap" candidate for a shut market, or null. Same rule as Home's
- * session line: liquid tokens only, a gap of at least 0.15% so parity noise
- * never wins, and a sanity band — no real tokenized stock drifts 20%
- * overnight, so bigger gaps are stale prints on illiquid tokens. In pre/post
- * the band tightens to 5%, because a third source of big numbers appears:
- * the stock itself moving while our quote sits at the close. We cannot tell
- * that apart from a genuine premium, and naming a "widest gap" is a claim.
+ * The "Widest gap" candidate, or null. Same rule as Home's session line:
+ * liquid tokens only, a gap of at least 0.15% so parity noise never wins,
+ * and a sanity band — no real tokenized stock drifts 20% overnight, so
+ * bigger gaps are stale prints on illiquid tokens. In pre/post the band
+ * tightens to 5%, because a third source of big numbers appears: the stock
+ * itself moving while our quote sits at the close. We cannot tell that
+ * apart from a genuine premium, and naming a "widest gap" is a claim.
  *
- * Returns { asset, p } (p = the gap in %) or null; null during regular hours,
- * when every gap is a real spread and none of them is a story.
+ * Regular hours are null by default: on the phone Home every open-market
+ * gap is a real spread and the pill was a story for the shut market. The
+ * desktop masthead wants the opposite (spec 2026-09-15 §3.1) — during the
+ * open session the number is most trustworthy, so it passes
+ * `includeRegular: true` and gets the widest gap inside the 5% band.
+ *
+ * Returns { asset, p } (p = the gap in %) or null.
  */
-export function widestCredibleGap(assets, session) {
-  if (session === 'regular') return null
+export function widestCredibleGap(assets, session, { includeRegular = false } = {}) {
+  if (session === 'regular' && !includeRegular) return null
   const bound = session === 'closed' ? 20 : 5
   const candidates = (assets ?? [])
     .filter((a) => !isThinlyTraded(a))
@@ -56,4 +61,9 @@ export function widestCredibleGap(assets, session) {
   return candidates.length
     ? candidates.reduce((m, x) => (Math.abs(x.p) > Math.abs(m.p) ? x : m))
     : null
+}
+
+/** The masthead pill's label: in the open session it says the number is live. */
+export function widestGapLabel(session) {
+  return session === 'regular' ? 'Widest gap right now' : 'Widest gap'
 }

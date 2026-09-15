@@ -1,7 +1,7 @@
 // src/components/desktop/Masthead.jsx
 import { usePrices } from '../../state/PricesContext'
 import { useAlerts } from '../../state/AlertsContext'
-import { SESSION_DOT, SESSION_NOTE, widestCredibleGap } from '../../lib/sessionCopy'
+import { SESSION_DOT, SESSION_NOTE, widestCredibleGap, widestGapLabel } from '../../lib/sessionCopy'
 import { formatPct } from '../../lib/format'
 import { AvatarButton, Wordmark } from '../Header'
 import { BellIcon } from '../Icons'
@@ -11,7 +11,8 @@ import SymbolSearch from './SymbolSearch'
  * The masthead (spec §3.2 region A), 56 px: the wordmark, five words with
  * an underline on the active one, the search field with its Ctrl K hint,
  * the session sentence as visible prose (not a tooltip), the widest
- * credible gap while the market is shut, the bell, the avatar.
+ * credible gap, named during the open session too (spec 2026-09-15 §3.1),
+ * the bell, the avatar.
  */
 const WORDS = [
   { id: 'home', label: 'Board' },
@@ -24,7 +25,7 @@ const WORDS = [
 export default function Masthead({ active, onTab, searchRef, onSelectAsset, onOpenProfile }) {
   const { assets, session } = usePrices()
   const { unread } = useAlerts()
-  const top = widestCredibleGap(assets, session)
+  const top = widestCredibleGap(assets, session, { includeRegular: true })
   return (
     <header
       className="flex h-14 shrink-0 items-center gap-5 border-b px-6"
@@ -62,7 +63,7 @@ export default function Masthead({ active, onTab, searchRef, onSelectAsset, onOp
       </div>
       {top && (
         <button type="button" onClick={() => onSelectAsset(top.asset.id)} className="t-caption shrink-0 whitespace-nowrap">
-          <span className="text-zinc-500">Widest gap </span>
+          <span className="text-zinc-500">{widestGapLabel(session)} · </span>
           <span className="font-medium text-zinc-300">{top.asset.ticker}</span>{' '}
           <span className="num font-medium text-zinc-100">{formatPct(top.p)}</span>
         </button>

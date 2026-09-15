@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { SESSION_DOT, SESSION_NOTE, SESSION_SHORT, widestCredibleGap } from './sessionCopy'
+import { SESSION_DOT, SESSION_NOTE, SESSION_SHORT, widestCredibleGap, widestGapLabel } from './sessionCopy'
 import { THIN_VOLUME_USD } from './prices'
 
 const SESSIONS = ['regular', 'pre', 'post', 'closed']
@@ -44,8 +44,32 @@ const liquid = (id, tokenPrice, stockPrice, over = {}) => ({
 })
 
 describe('widestCredibleGap', () => {
-  it('is null during regular hours, whatever the gaps', () => {
+  it('is null during regular hours by default, whatever the gaps', () => {
     expect(widestCredibleGap([liquid('ax', 110, 100)], 'regular')).toBeNull()
+    expect(widestCredibleGap([liquid('ax', 101, 100)], 'regular', {})).toBeNull()
+    expect(widestCredibleGap([liquid('ax', 101, 100)], 'regular', { includeRegular: false })).toBeNull()
+  })
+
+  it('names the widest gap in regular hours when asked, inside the pre/post 5% band', () => {
+    const assets = [liquid('ax', 101, 100), liquid('bx', 96, 100), liquid('cx', 110, 100)]
+    const top = widestCredibleGap(assets, 'regular', { includeRegular: true })
+    expect(top.asset.id).toBe('bx')
+    expect(top.p).toBeCloseTo(-4)
+    expect(widestCredibleGap([liquid('cx', 110, 100)], 'regular', { includeRegular: true })).toBeNull()
+  })
+
+  it('keeps the floor and the thin-market exclusion in regular hours', () => {
+    const thin = liquid('ax', 104, 100, { volume24h: THIN_VOLUME_USD / 2 })
+    expect(widestCredibleGap([liquid('bx', 100.1, 100)], 'regular', { includeRegular: true })).toBeNull()
+    expect(widestCredibleGap([thin], 'regular', { includeRegular: true })).toBeNull()
+    expect(widestCredibleGap([thin, liquid('cx', 100.2, 100)], 'regular', { includeRegular: true })?.asset.id).toBe('cx')
+  })
+
+  it('leaves the shut-market sessions exactly as before with the option on', () => {
+    const wide = liquid('ax', 110, 100)
+    const huge = liquid('bx', 130, 100)
+    expect(widestCredibleGap([wide, huge], 'closed', { includeRegular: true })?.asset.id).toBe('ax')
+    expect(widestCredibleGap([wide, huge], 'pre', { includeRegular: true })).toBeNull()
   })
 
   it('picks the biggest absolute gap inside the band', () => {
@@ -75,5 +99,12 @@ describe('widestCredibleGap', () => {
     expect(widestCredibleGap([thin, noStock], 'closed')).toBeNull()
     expect(widestCredibleGap([], 'closed')).toBeNull()
     expect(widestCredibleGap(undefined, 'closed')).toBeNull()
+  })
+})
+
+describe('widestGapLabel', () => {
+  it('says the number is live only in regular hours', () => {
+    expect(widestGapLabel('regular')).toBe('Widest gap right now')
+    for (const s of ['pre', 'post', 'closed']) expect(widestGapLabel(s)).toBe('Widest gap')
   })
 })
