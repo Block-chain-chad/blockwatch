@@ -61,14 +61,26 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
   const companyName = asset.underlying ? asset.name : asset.ticker
   const sentence = readingSentence({ ticker: asset.ticker, companyName, gapPct: gap, size, thin, volume24h: asset.volume24h })
   const trip = roundTrip({ gapPct: gap, spreadPct: spread?.spreadPct ?? null, size })
-  const pct = gapPercentile(chart.premium, gap)
+  // useChartData keeps the previous range's series while a new one loads, so
+  // the percentile must not be computed from stale data mid-fetch.
+  const pct = chart.loading ? null : gapPercentile(chart.premium, gap)
+  const percentileLine = percentileCaption(range, pct)
   const tokenAgeSeconds = lastFetchAt ? (Date.now() - lastFetchAt) / 1000 : null
   const stockAgeSeconds = stocksAt ? (Date.now() - stocksAt) / 1000 : null
   const inWatchlist = watchlistIds.includes(asset.id)
   const memberCount = folders.filter((f) => f.assetIds.includes(asset.id)).length
   const alertLabel = alertLabelFor(rules[asset.id])
   const folderLabel = memberCount > 0 ? `In ${memberCount} folder${memberCount === 1 ? '' : 's'}` : 'Add to folder'
-  const wrappers = [asset, ...siblings]
+  const wrappers = [asset, ...siblings].sort((a, b) => a.ticker.localeCompare(b.ticker))
+  // trip is null whenever the gap or the spread isn't a finite number yet;
+  // these have to be told apart so the copy never gets stuck on "Measuring…"
+  // for a wrapper that will never resolve (no mint, or a spread fetch that
+  // already failed).
+  const tripCopy = !asset.mint
+    ? 'No DEX quote for this wrapper.'
+    : gap == null
+      ? 'No share price to price a round trip yet.'
+      : 'No DEX quote right now.'
 
   return (
     <section aria-label={`${asset.ticker} readout`} className="flex flex-col gap-3 px-6 pb-8 pt-5">
@@ -121,7 +133,7 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
           <span>+2%</span>
         </div>
         <div className="num t-label flex flex-col gap-1 text-zinc-300">
-          <div>{tokenLegLine({ price: asset.tokenPrice, ageSeconds: tokenAgeSeconds, source: asset.mint ? 'Jupiter' : 'CoinGecko' })}</div>
+          <div>{tokenLegLine({ price: asset.tokenPrice, ageSeconds: tokenAgeSeconds, source: asset.mint ? 'Jupiter and CoinGecko' : 'CoinGecko' })}</div>
           {asset.underlying && (
             <div>{shareLegLine({ price: asset.stockPrice, session, ageSeconds: stockAgeSeconds, source: STOCK_QUOTE_SOURCE })}</div>
           )}
@@ -146,18 +158,16 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
               Round trip on <span className="num">{formatSize(size)}</span>: gap{' '}
               <span className="num">{formatPrice(trip.gapUsd)}</span> + DEX spread{' '}
               <span className="num">{formatPrice(trip.spreadUsd)}</span> ={' '}
-              <span className="num text-zinc-300">{formatPrice(trip.total)}</span> · spread measured on a $200 trade
+              <span className="num text-zinc-300">{formatPrice(trip.total)}</span> · spread measured on a{' '}
+              {formatPrice(spread.refUsd)} trade
             </>
-          ) : asset.mint ? (
-            'Measuring the DEX spread…'
           ) : (
-            'No DEX quote for this wrapper.'
+            tripCopy
           )}
         </div>
       </div>
 
       <div className="flex flex-col gap-1.5 border-t pt-3" style={{ borderColor: 'var(--border-subtle)' }}>
-        <span className="t-micro text-zinc-500">Gap history</span>
         <div className="flex flex-col" style={{ height: 164 }}>
           {chart.loading ? (
             <div className="h-full animate-pulse rounded-xl bg-zinc-900" />
@@ -166,7 +176,7 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
               The history could not load. Try again.
             </button>
           ) : chart.premium.length >= 2 ? (
-            <PremiumChart fill premium={chart.premium} />
+            <PremiumChart fill premium={chart.premium} tone="accent" />
           ) : (
             <p className="t-caption text-zinc-500">No stored history yet.</p>
           )}
@@ -184,7 +194,7 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
             </button>
           ))}
         </div>
-        <p className="t-caption text-zinc-500">{percentileCaption(range, pct)}</p>
+        {percentileLine && <p className="t-caption text-zinc-500">{percentileLine}</p>}
       </div>
 
       <button
@@ -202,6 +212,7 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
 
       <div className="flex items-center gap-1 pt-1">
         <button
+          type="button"
           onClick={() => toggleWatchlist(asset.id)}
           aria-label={inWatchlist ? 'Remove from Watching' : 'Add to Watching'}
           title={inWatchlist ? 'Remove from Watching' : 'Add to Watching'}
@@ -210,21 +221,23 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
           <StarIcon size={18} filled={inWatchlist} />
         </button>
         {asset.underlying && (
-          <button onClick={() => onSheet('alert')} aria-label={alertLabel} title={alertLabel} className={`${ICON_BTN} text-zinc-300`}>
+          <button type="button" onClick={() => onSheet('alert')} aria-label={alertLabel} title={alertLabel} className={`${ICON_BTN} text-zinc-300`}>
             <BellIcon size={18} />
           </button>
         )}
-        <button onClick={() => onSheet('folder')} aria-label={folderLabel} title={folderLabel} className={`${ICON_BTN} text-zinc-300`}>
+        <button type="button" onClick={() => onSheet('folder')} aria-label={folderLabel} title={folderLabel} className={`${ICON_BTN} text-zinc-300`}>
           <PlusIcon size={18} />
         </button>
-        <button onClick={() => onSheet('share')} aria-label="Share" title="Share" className={`${ICON_BTN} text-zinc-300`}>
+        <button type="button" onClick={() => onSheet('share')} aria-label="Share" title="Share" className={`${ICON_BTN} text-zinc-300`}>
           <ShareIcon size={18} />
         </button>
         <div className="flex-1" />
       </div>
-      <div className="-mx-4">
-        <TradeButton asset={asset} />
-      </div>
+      {asset.mint && (
+        <div className="-mx-4">
+          <TradeButton asset={asset} />
+        </div>
+      )}
 
       <DetailTabs
         variant="meter"
@@ -239,7 +252,7 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
       />
 
       {sheet === 'folder' && <AddToFolderSheet asset={asset} onClose={() => onSheet(null)} />}
-      {sheet === 'alert' && <SetAlertSheet asset={asset} onClose={() => onSheet(null)} />}
+      {sheet === 'alert' && asset.underlying && <SetAlertSheet asset={asset} onClose={() => onSheet(null)} />}
       {sheet === 'share' && <ShareSheet asset={asset} onClose={() => onSheet(null)} />}
     </section>
   )

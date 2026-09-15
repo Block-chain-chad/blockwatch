@@ -23,8 +23,11 @@ const MIN_SPAN = 0.3
  *   scrubT — a time (ms) to mark with a vertical rule, so a hover on the Gap
  *            chart above shows on this pane at the same moment; nothing is
  *            drawn when it falls outside the series
+ *   tone   — 'direction' (default, byte-identical to the phone: green above
+ *            zero, red below) or 'accent' for the Meter, where the gap is
+ *            never red or green — both halves draw in the accent color.
  */
-export default function PremiumChart({ premium, fill = false, scrubT = null }) {
+export default function PremiumChart({ premium, fill = false, scrubT = null, tone = 'direction' }) {
   const uid = useId()
   const [size, measureRef] = useFillSize(fill)
   if (premium.length < 2) return null
@@ -91,7 +94,7 @@ export default function PremiumChart({ premium, fill = false, scrubT = null }) {
       <path
         d={path}
         fill="none"
-        className="stroke-gain"
+        className={tone === 'accent' ? 'stroke-accent' : 'stroke-gain'}
         strokeWidth="1.6"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -100,7 +103,7 @@ export default function PremiumChart({ premium, fill = false, scrubT = null }) {
       <path
         d={path}
         fill="none"
-        className="stroke-loss"
+        className={tone === 'accent' ? 'stroke-accent' : 'stroke-loss'}
         strokeWidth="1.6"
         strokeLinecap="round"
         strokeLinejoin="round"
