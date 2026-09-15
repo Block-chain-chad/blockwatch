@@ -35,7 +35,7 @@ export default function GapHeader({ asset, session, stocksAt, lastFetchAt, onExi
     : null
   return (
     <div
-      className="flex h-14 shrink-0 items-center gap-4 whitespace-nowrap border-b px-6"
+      className="flex h-14 shrink-0 items-center gap-4 border-b px-6"
       style={{ borderColor: 'var(--border-subtle)' }}
     >
       <button type="button" onClick={onExit} className="t-caption flex shrink-0 items-center gap-1 text-zinc-500 hover:text-zinc-300">
@@ -62,9 +62,9 @@ export default function GapHeader({ asset, session, stocksAt, lastFetchAt, onExi
         <GapBar pct={gap} thin={thin} width={160} height={8} tone="accent" />
       </span>
       <div className="num t-label flex min-w-0 flex-1 items-center gap-3.5 overflow-hidden text-zinc-300">
-        <span className="truncate" title={tokenLine}>{tokenLine}</span>
+        <span className="min-w-0 truncate" title={tokenLine}>{tokenLine}</span>
         {shareLine && (
-          <span className="truncate" title={shareLine}>{shareLine}</span>
+          <span className="min-w-0 truncate" title={shareLine}>{shareLine}</span>
         )}
       </div>
       <button type="button" onClick={onToggleWatch} aria-label={inWatchlist ? 'Remove from Watching' : 'Add to Watching'} className={`${ICON_BTN} ${inWatchlist ? 'text-accent' : 'text-zinc-300'}`}>
