@@ -25,6 +25,9 @@ export const STOCK_POLL_MS = 60_000
 // When the market is closed, prices don't move — refetch at most this often.
 export const CLOSED_MARKET_REFRESH_MS = 30 * 60_000
 
+/** Which provider the live share quote comes from, for the Readout's leg line. */
+export const STOCK_QUOTE_SOURCE = IS_PROD || FINNHUB_KEY ? 'Finnhub' : 'Yahoo Finance'
+
 async function fetchFinnhub(ticker) {
   const res = await fetch(
     `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(ticker)}&token=${FINNHUB_KEY}`

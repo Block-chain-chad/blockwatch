@@ -4,6 +4,8 @@
 // looking at, how old is it, where did it come from" in the legend, not a
 // footer. Pure; the desktop legend and the watchlist rows read it.
 
+import { formatPrice, EM_DASH } from './format'
+
 /** Yahoo's regular-session quote lags the tape by this much. */
 export const STOCK_DELAY_MINUTES = 15
 
@@ -56,4 +58,40 @@ export function legendStatus(leg, session, ageSeconds, { venue } = {}) {
 /** delayTooltip(15) → 'Quotes are delayed by 15 min' */
 export function delayTooltip(minutes = STOCK_DELAY_MINUTES) {
   return `Quotes are delayed by ${minutes} min`
+}
+
+/** '7 s ago' / '2 m ago' / '3 h ago'; 'no price yet' without an age. */
+export function ageWords(seconds) {
+  if (!Number.isFinite(seconds)) return 'no price yet'
+  const s = Math.max(0, Math.round(seconds))
+  if (s < 60) return `${s} s ago`
+  const m = Math.round(s / 60)
+  if (m < 60) return `${m} m ago`
+  return `${Math.round(m / 60)} h ago`
+}
+
+/** 'Token $218.49 · 7 s ago · via Jupiter' */
+export function tokenLegLine({ price, ageSeconds, source }) {
+  const p = Number.isFinite(price) ? formatPrice(price) : EM_DASH
+  return `Token ${p} · ${ageWords(ageSeconds)} · via ${source}`
+}
+
+/**
+ * 'Share $218.29 · at last close · Finnhub' (closed)
+ * 'Share $218.29 · 12 s ago · live · Finnhub' (regular, fresh)
+ * 'Share $218.29 · 15 m ago · stale · Finnhub' (regular, old)
+ * 'Share $218.29 · at 4pm close · after hours · Finnhub' (post)
+ * 'Share $218.29 · at last close · pre-market · Finnhub' (pre)
+ */
+export function shareLegLine({ price, session, ageSeconds, source }) {
+  const p = Number.isFinite(price) ? formatPrice(price) : EM_DASH
+  let state
+  if (session === 'regular') {
+    state = isStockDelayed(session, ageSeconds)
+      ? `${ageWords(ageSeconds)} · stale`
+      : `${ageWords(ageSeconds)} · live`
+  } else if (session === 'post') state = 'at 4pm close · after hours'
+  else if (session === 'pre') state = 'at last close · pre-market'
+  else state = 'at last close'
+  return `Share ${p} · ${state} · ${source}`
 }
