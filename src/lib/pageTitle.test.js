@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { chartTitle, screenTitle, signedPct, titlePrice, DEFAULT_TITLE } from './pageTitle'
+import { chartTitle, screenTitle, signedPct, titlePrice, DEFAULT_TITLE, meterTitle, boardTitle } from './pageTitle'
 
 const UP = '▲'
 const DOWN = '▼'
@@ -87,5 +87,16 @@ describe('screenTitle', () => {
   it('falls back to the default for home or an unknown tab', () => {
     expect(screenTitle('home')).toBe(DEFAULT_TITLE)
     expect(screenTitle(undefined)).toBe(DEFAULT_TITLE)
+  })
+})
+
+describe('meterTitle / boardTitle', () => {
+  it('names the wrapper and its gap with the product, no triangle', () => {
+    expect(meterTitle({ ticker: 'NVDAx', gapPct: 0.09 })).toBe('NVDAx +0.09% gap · OnStock')
+    expect(meterTitle({ ticker: 'NVDAx', gapPct: -2.14 })).toBe(`NVDAx ${MINUS}2.14% gap · OnStock`)
+    expect(meterTitle({ ticker: 'NVDAx', gapPct: 0.09 })).not.toContain(UP)
+    expect(meterTitle({ ticker: 'TBILL', gapPct: null })).toBe('TBILL · OnStock')
+    expect(meterTitle({})).toBe(boardTitle())
+    expect(boardTitle()).toBe('Board · OnStock')
   })
 })

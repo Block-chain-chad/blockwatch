@@ -67,3 +67,14 @@ export function screenTitle(tab) {
   const name = SCREEN_NAMES[tab]
   return name ? `${name} — OnStock` : DEFAULT_TITLE
 }
+
+/** The Meter's tab title: the wrapper and its gap, then the product. No triangle. */
+export function meterTitle({ ticker, gapPct } = {}) {
+  if (!ticker) return boardTitle()
+  const pct = signedPct(gapPct)
+  return pct == null ? `${ticker} · OnStock` : `${ticker} ${pct} gap · OnStock`
+}
+
+export function boardTitle() {
+  return 'Board · OnStock'
+}
