@@ -15,6 +15,12 @@ import { alertNotification, unseenEvents, shouldPost } from '../lib/alertNotify'
  * Events already stored when the shell mounts are not replayed: the cursor
  * starts at the newest of them. No service worker, no push: this fires
  * only while a tab is open.
+ *
+ * There is deliberately no freshness check here. A drift event only exists if
+ * lib/alertRules.js let it be born (the regular session, against a share quote
+ * the app would print as live), and AlertsContext is the only thing that
+ * makes one — so every event reaching this hook is already one we stand
+ * behind. Gating twice would only let the two rules disagree.
  */
 export function useAlertNotifications() {
   const { events } = useAlerts()

@@ -3,20 +3,20 @@ import { usePrices, useAssetSubscription } from './PricesContext'
 import { useAuth } from './AuthContext'
 import { supabase } from '../services/supabase'
 import { premiumPct } from '../lib/prices'
+import { canAlertOnGap, driftStep } from '../lib/alertRules'
 
 const STORAGE_KEY = 'bw.alerts.v1'
 const MAX_EVENTS = 50
 const SYNC_DEBOUNCE_MS = 800
-// Anti-spam for drift alerts under fast (2.5s) evaluation: re-arm only when
-// the gap falls clearly back inside the band, and rate-limit repeat fires.
-const REARM_RATIO = 0.8
-const DRIFT_COOLDOWN_MS = 10 * 60_000
 
 // A rule can hold two independent alert types per asset:
 //   drift: { threshold }         — |premium| crosses ±threshold%; re-arms when
-//                                  the gap comes back inside the band.
+//                                  the gap comes back inside the band. Only
+//                                  evaluated while lib/alertRules.js says the
+//                                  share leg can be trusted.
 //   price: { target, direction } — token price crosses the target; one-shot,
-//                                  removes itself after firing.
+//                                  removes itself after firing. Ungated: the
+//                                  token trades 24/7 on a live feed.
 function migrateRules(raw) {
   const out = {}
   for (const [id, r] of Object.entries(raw ?? {})) {
@@ -80,11 +80,11 @@ const AlertsContext = createContext(null)
 /**
  * Price alerts. Drift rules are a state machine per asset ('inside'/'outside'
  * the band) so a lingering gap alerts once, not on every poll; a rule created
- * while already outside fires on the next evaluation. Price-target rules are
- * one-shot: fire and self-remove.
+ * while already outside fires on the next evaluation the gate allows.
+ * Price-target rules are one-shot: fire and self-remove.
  */
 export function AlertsProvider({ children }) {
-  const { assets } = usePrices()
+  const { assets, session } = usePrices()
   const { user, ready } = useAuth()
   const [store, setStore] = useState(load)
 
@@ -171,6 +171,9 @@ export function AlertsProvider({ children }) {
     const newEvents = []
     const stateDelta = {}
     const firedPriceIds = []
+    // One instant for the whole pass, so the gate, the cooldown and the events
+    // it produces cannot disagree about when this evaluation happened.
+    const now = Date.now()
 
     for (const assetId of ruleIds) {
       const asset = assets.find((a) => a.id === assetId)
@@ -178,43 +181,35 @@ export function AlertsProvider({ children }) {
       const rule = s.rules[assetId]
 
       if (rule.drift) {
-        const p = premiumPct(asset)
-        if (p != null) {
-          // With the fast layer, evaluation runs ~every 2.5s — a premium
-          // hovering exactly at the threshold would flip inside/outside each
-          // tick and flood the feed. Two guards:
-          //  - hysteresis: re-arm only once the gap falls clearly back inside
-          //    (80% of threshold), so hover can't oscillate the state machine
-          //  - cooldown: at most one drift event per asset per 10 minutes
-          const outside = Math.abs(p) >= rule.drift.threshold
-          const backInside = Math.abs(p) < rule.drift.threshold * REARM_RATIO
-          const prev = s.states[assetId] ?? 'inside'
-          let next = outside ? 'outside' : backInside ? 'inside' : prev
-          if (outside && prev === 'inside') {
-            const last = driftFiredRef.current[assetId] ?? 0
-            if (Date.now() - last > DRIFT_COOLDOWN_MS) {
-              driftFiredRef.current[assetId] = Date.now()
-              newEvents.push({
-                id: `${assetId}-d-${Date.now()}`,
-                kind: 'alert',
-                type: 'drift',
-                assetId,
-                ticker: asset.ticker,
-                underlying: asset.underlying,
-                premium: p,
-                threshold: rule.drift.threshold,
-                at: Date.now(),
-              })
-            } else {
-              // Cooldown suppressed the fire: HOLD 'inside' so this crossing
-              // re-attempts once the cooldown expires. Advancing to 'outside'
-              // here would consume a genuine excursion silently — dropped,
-              // not rate-limited.
-              next = prev
-            }
-          }
-          if (next !== prev) stateDelta[assetId] = next
+        // A drift rule reads the token against the share, so it may only
+        // speak while the share leg is one the app would print as live
+        // (lib/alertRules.js). Outside that window driftStep is a no-op: it
+        // does not fire, and it does not move the state machine either.
+        const premium = premiumPct(asset)
+        const prev = s.states[assetId] ?? 'inside'
+        const { state, fire } = driftStep({
+          premium,
+          threshold: rule.drift.threshold,
+          state: prev,
+          lastFiredAt: driftFiredRef.current[assetId] ?? 0,
+          now,
+          allowed: canAlertOnGap({ quote: asset.stockQuote, session, now }),
+        })
+        if (fire) {
+          driftFiredRef.current[assetId] = now
+          newEvents.push({
+            id: `${assetId}-d-${now}`,
+            kind: 'alert',
+            type: 'drift',
+            assetId,
+            ticker: asset.ticker,
+            underlying: asset.underlying,
+            premium,
+            threshold: rule.drift.threshold,
+            at: now,
+          })
         }
+        if (state !== prev) stateDelta[assetId] = state
       }
 
       if (rule.price && asset.tokenPrice != null) {
@@ -222,7 +217,7 @@ export function AlertsProvider({ children }) {
         const crossed = direction === 'above' ? asset.tokenPrice >= target : asset.tokenPrice <= target
         if (crossed) {
           newEvents.push({
-            id: `${assetId}-p-${Date.now()}`,
+            id: `${assetId}-p-${now}`,
             kind: 'alert',
             type: 'price',
             assetId,
@@ -230,7 +225,7 @@ export function AlertsProvider({ children }) {
             target,
             direction,
             price: asset.tokenPrice,
-            at: Date.now(),
+            at: now,
           })
           firedPriceIds.push(assetId)
         }
@@ -264,7 +259,11 @@ export function AlertsProvider({ children }) {
       if (events.length > MAX_EVENTS) events.length = MAX_EVENTS
       return { ...prev, rules, states, events }
     })
-  }, [assets, store.rules])
+    // `session` is in the list so the pass re-runs the moment the market
+    // opens. It re-runs on a quote that is still yesterday's close, which the
+    // gate rejects — the burst the gate exists to prevent needs an evaluation
+    // of a stale reading, and this is not one.
+  }, [assets, store.rules, session])
 
   function setDriftAlert(assetId, threshold) {
     // Fresh rule, fresh cooldown — a re-created or re-thresholded alert must
@@ -272,7 +271,10 @@ export function AlertsProvider({ children }) {
     delete driftFiredRef.current[assetId]
     setStore((prev) => {
       const states = { ...prev.states }
-      delete states[assetId] // reset to 'inside' so an already-drifted asset fires right away
+      // Reset to 'inside' so an already-drifted asset fires at the next
+      // evaluation the gate allows — which, for an alert set after the close,
+      // is the first live quote of the next session rather than this instant.
+      delete states[assetId]
       const rule = { ...prev.rules[assetId], drift: { threshold } }
       return { ...prev, rules: { ...prev.rules, [assetId]: rule }, states }
     })
