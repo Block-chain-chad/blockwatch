@@ -289,9 +289,14 @@ describe('the sheet sizes on the live ratio, and falls back to the pin', () => {
       otherAmountThreshold: '39800000',
       priceImpactPct: '0.001',
     })
+    // 15, INSIDE the twenty-times cap. A larger value is refused by the cap
+    // whatever the hatch does, so it would pass this test with the buy-side
+    // guard removed — which is exactly what happened: flipping the sheet back
+    // to allowProvenUpdate: true left all 983 tests green while a proven 15x
+    // printed "You receive 6 TSLAx" for a 0.4 quote, Confirm enabled.
     fetchLiveRatio.mockResolvedValue({
       multiplier: '1',
-      nextMultiplier: '1000',
+      nextMultiplier: '15',
       nextMultiplierAt: new Date(Date.parse(VERIFIED_AT) + 60_000).toISOString(),
     })
     await act(async () => {
@@ -303,9 +308,40 @@ describe('the sheet sizes on the live ratio, and falls back to the pin', () => {
       setValue.call(input, '100')
       input.dispatchEvent(new window.Event('input', { bubbles: true }))
     })
-    expect(container.textContent).not.toContain('400 TSLAx')
-    expect(container.textContent).not.toContain('398 TSLAx')
+    expect(container.textContent).not.toContain('6 TSLAx')
     expect(container.textContent).toContain("we won't size a trade we can't state the size of")
+    // And nothing signable is on screen: a promised output we will not state
+    // must not sit next to a live button.
+    const confirm = [...container.querySelectorAll('button')].find((b) =>
+      b.textContent.includes('Swap into')
+    )
+    expect(confirm?.disabled ?? true).toBe(true)
+  })
+
+  it('refuses an absurd ratio on a SELL too, where the cap is the only guard', async () => {
+    // The sell side opens the hatch, so here the twenty-times cap is what
+    // stands between a feed reporting 1000 and a real trade.
+    vi.setSystemTime(new Date('2026-09-20T12:00:00.000Z'))
+    fetchLiveRatio.mockResolvedValue({
+      multiplier: '1',
+      nextMultiplier: '1000',
+      nextMultiplierAt: new Date(Date.parse(VERIFIED_AT) + 60_000).toISOString(),
+    })
+    await sell(TSLA, '1')
+    expect(getSwapQuote).not.toHaveBeenCalled()
+  })
+
+  it('opens the hatch for a SELL at a ratio the cap allows', async () => {
+    // The mirror of the buy case above: the same proven 15x that a buy
+    // refuses is exactly what a sell needs, because there it divides the size.
+    vi.setSystemTime(new Date('2026-09-20T12:00:00.000Z'))
+    fetchLiveRatio.mockResolvedValue({
+      multiplier: '1',
+      nextMultiplier: '15',
+      nextMultiplierAt: new Date(Date.parse(VERIFIED_AT) + 60_000).toISOString(),
+    })
+    await sell(TSLA, '1')
+    expect(lastQuotedAmount()).toBe('6666666') // 10^8 / 15, truncated
   })
 
   it('still displays a BUY under a ratio inside the band', async () => {
