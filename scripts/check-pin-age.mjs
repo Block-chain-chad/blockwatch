@@ -12,7 +12,7 @@
 // down, and it reported a routine maintenance task as a broken test. It is now
 // its own named step — "Pin freshness" in .github/workflows/ci.yml, and again
 // in repin-mints.yml after the re-pin — so CI says "the pin is stale" rather
-// than "973 tests and one of them is about a calendar".
+// than failing the whole suite over a calendar.
 //
 //   npm run check:pin
 //

@@ -66,12 +66,15 @@ export function envEnabled(value, whenUnset) {
 /* The build-time fallback per flag, used whenever PostHog has not given an
    answer for it.
 
-   The two differ on purpose, because the two risks are not the same shape.
-   The in-app swap is a real-money path OnStock builds itself, so it ships OFF
-   and stays off until something affirmatively turns it on. The link-out is a
-   hyperlink to a public website; killing it on every dropped request would
-   gut the Trade screen for an outage, so it ships ON and only a deliberate
-   "false" — from PostHog or from the build — takes it down.
+   They differ on purpose, because the risks are not the same shape. The
+   in-app swap is a real-money path OnStock builds itself, so it ships OFF and
+   stays off until something affirmatively turns it on. The issuer ratio line
+   is one sentence of text, but it describes what a tokenized security
+   represents and no lawyer has read it, so it ships OFF for the same reason a
+   draft disclosure does. The link-out is a hyperlink to a public website;
+   killing it on every dropped request would gut the Trade screen for an
+   outage, so it ships ON and only a deliberate "false" — from PostHog or from
+   the build — takes it down.
 
    Leave VITE_SWAP_ENABLED blank for the kill switch to be absolute. Setting
    it to "true" makes ON the fallback, which means a session that cannot reach

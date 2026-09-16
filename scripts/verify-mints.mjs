@@ -241,7 +241,9 @@ async function main() {
   )
   const byRatio = (a, b) => Number(effectiveMultiplier(b)) - Number(effectiveMultiplier(a))
   for (const m of scaled.sort(byRatio).slice(0, 8)) {
-    console.log(`  ${m.ticker}: 1 token = ${effectiveMultiplier(m)} shares`)
+    // Same wording as the asset screen, so the maintainer console and the
+    // user-facing sentence cannot drift into describing the ratio two ways.
+    console.log(`  ${m.ticker}: 1 token tracks ${effectiveMultiplier(m)} shares`)
   }
   if (rejected.length > 0) {
     console.log(`Rejected ${rejected.length} (no in-app swap for these):`)
