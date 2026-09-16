@@ -5,6 +5,7 @@ import { formatPct, formatPrice } from '../lib/format'
 import Sheet, { SheetTitle } from '../components/Sheet'
 import { useLocalState } from '../hooks/useLocalState'
 import { NOTIFY_KEY, NOTIFY_OFFER_COPY, notifyOfferVisible } from '../lib/alertNotify'
+import { driftWindowNote } from '../lib/alertRules'
 
 const THRESHOLDS = [0.5, 1, 2, 5]
 
@@ -64,6 +65,14 @@ export default function SetAlertSheet({ asset, onClose, notify = false }) {
                 Right now it's at <span className="tabular-nums text-zinc-300">{formatPct(p)}</span>.
               </>
             )}
+          </p>
+          {/*
+            A gated alert that stays silent is indistinguishable from a broken
+            one, so the sheet says the rule up front rather than leaving
+            someone to wonder why an 8pm gap never reached them.
+          */}
+          <p className="mt-2 px-1 text-xs leading-relaxed text-zinc-500">
+            {driftWindowNote(asset.underlying)}
           </p>
           {isThinlyTraded(asset) && (
             <p className="mt-2 px-1 text-xs text-zinc-500">
