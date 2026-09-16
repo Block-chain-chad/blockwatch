@@ -34,9 +34,10 @@ export default function AboutSheet({ onClose }) {
         </p>
         <div className="rounded-xl bg-zinc-900 p-3.5">
           <p className="text-xs leading-relaxed text-zinc-500">
-            Token market data by CoinGecko; stock quotes and company data by Finnhub. Prices
-            are informational only and may be delayed. OnStock is a tracker — it does not
-            hold funds, execute trades, or give investment advice.
+            Token market data by CoinGecko; stock quotes and company data by Finnhub; share
+            price history by Yahoo Finance. Prices are informational only and may be delayed.
+            OnStock is a tracker — it does not hold funds, execute trades, or give investment
+            advice.
           </p>
         </div>
         <p className="text-center text-[11px] text-zinc-500">OnStock v0.1 · MVP preview</p>

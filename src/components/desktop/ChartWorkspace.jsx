@@ -6,7 +6,8 @@ import { useAssetWorkspace } from '../../hooks/useAssetWorkspace'
 import { useLocalState } from '../../hooks/useLocalState'
 import { DEFAULT_CHART_SETTINGS, normalizeChartSettings, secondsToBarClose, formatCountdown, legendChange } from '../../lib/chartSettings'
 import { chartTitle, DEFAULT_TITLE } from '../../lib/pageTitle'
-import { legendStatus, delayTooltip, isStockDelayed } from '../../lib/provenance'
+import { legendStatus, delayTooltip, isStockDelayed, chartHistoryCredit } from '../../lib/provenance'
+import { STOCK_QUOTE_SOURCE } from '../../services/stocks'
 import { premiumPct } from '../../lib/prices'
 import { candleSeconds } from '../../lib/candles'
 import { coerceTimeframe, isIntraday, networkName, timeframeLabel, cleanCandles } from '../../lib/candleSeries'
@@ -328,7 +329,13 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef, dri
   const stockDelayed = isStockDelayed(session, stockAge)
   const tokenVenue = networkName(candleData?.network) ?? asset.chain ?? 'DEX'
   const tokenStatus = legendStatus('token', session, null, { venue: tokenVenue })
-  const stockStatus = legendStatus('stock', session, stockAge)
+  // Two sources on the stock side, named for what each one provides. This line
+  // reports the age of the share QUOTE, which is Finnhub's in production and
+  // Yahoo's only in the keyless dev fallback — hence STOCK_QUOTE_SOURCE rather
+  // than a literal. The bars and lines under it are Yahoo's chart history
+  // whatever the quote says, so they get their own credit below.
+  const stockStatus = legendStatus('stock', session, stockAge, { source: STOCK_QUOTE_SOURCE })
+  const stockHistory = chartHistoryCredit()
   const shownBar = hoverBar ?? lastBar
   const change = legendChange(candleData?.candles, shownBar)
   const barDir = shownBar ? shownBar.close - shownBar.open : null
@@ -438,10 +445,15 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef, dri
                 )}
                 <span className="t-caption text-zinc-500">{tokenStatus}</span>
                 {asset.underlying && (
-                  <span className="t-caption flex items-center gap-1 text-zinc-500">
-                    {stockDelayed && DelayBadge}
-                    {stockStatus}
-                  </span>
+                  <>
+                    <span className="t-caption flex items-center gap-1 text-zinc-500">
+                      {stockDelayed && DelayBadge}
+                      {stockStatus}
+                    </span>
+                    {/* The share LINE on this chart is Yahoo's history, not
+                        the quote the segment above dates. Both named. */}
+                    <span className="t-caption text-zinc-600">{stockHistory}</span>
+                  </>
                 )}
               </div>
             )}
@@ -542,6 +554,13 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef, dri
                     {side === 'stock' && stockDelayed && DelayBadge}
                     {side === 'stock' ? stockStatus : tokenStatus}
                   </span>
+                  {/* On the stock side the BARS are Yahoo's chart history,
+                      while the segment before them dates the Finnhub quote.
+                      The token side needs no second credit: its bars and its
+                      status line are both GeckoTerminal's. */}
+                  {side === 'stock' && (
+                    <span className="t-caption text-zinc-600">{stockHistory}</span>
+                  )}
                 </div>
               )}
               {/* On the drill-in the O H L C row appears only under the
