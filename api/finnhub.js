@@ -6,7 +6,9 @@
 // Three gates stand between a stranger and Finnhub's shared 60/min free tier:
 // the query allowlist (./_params.js), the symbol allowlist (./_symbols.js),
 // and the buckets below (./_rateLimit.js, best-effort and per-instance — read
-// that file before trusting the numbers).
+// that file before trusting the numbers). The last of those is sized to the
+// quota itself, so it is the one that decides how much of Finnhub's minute
+// this instance can ever spend.
 //
 // CORS: the native app calls this from capacitor://localhost, so allowed
 // origins are echoed back (see api/_cors.js). Same-origin web calls are
@@ -35,19 +37,36 @@ const ALLOWED_PARAMS = new Set(['kind', 'symbol', 'c'])
 
 // Per-caller ceiling. A cold Board load asks for up to CANDIDATE_CAP (150)
 // underlyings at once and a detail screen adds five more calls, so 240 with a
-// 4/s refill is several times the busiest honest minute and still a hard stop
-// on a script. Only CACHE MISSES ever reach here: a request Vercel's edge can
-// answer never runs this function, which is exactly the traffic we want to
-// leave alone.
+// 4/s refill is several times the busiest honest minute. Only CACHE MISSES
+// ever reach here: a request Vercel's edge can answer never runs this
+// function, which is exactly the traffic we want to leave alone.
+//
+// This is a fair-use gate, NOT the quota's defence. It is keyed on a header a
+// caller controls, and 240/min from one address is four times Finnhub's whole
+// minute — the breaker below is what actually stops that.
 const perClient = createRateLimiter({ capacity: 240, refillPerSecond: 4 })
 
-// Circuit breaker on the whole instance, spent only on calls that actually go
-// upstream. The per-caller bucket above is keyed on a header, and any per-IP
-// scheme is only as good as that key; this one cannot be split by forging
-// anything. Sized at ten times Finnhub's entire 60/min free tier so it never
-// touches real traffic — it exists to stop one instance being turned into an
-// unbounded relay, not to ration the quota.
-const perInstance = createRateLimiter({ capacity: 600, refillPerSecond: 10, maxKeys: 1 })
+// THE QUOTA'S CEILING. Spent only on calls that actually go upstream, and
+// keyed on a constant, so unlike the bucket above it cannot be split by
+// forging or rotating anything.
+//
+// Sized at Finnhub's real free tier: 60 calls burst, refilling at 1/second.
+// It used to sit at 600/min — ten times the entire quota — which left the
+// per-caller bucket as the only thing in the way of one address spending
+// everybody's minute four times over.
+//
+// Honest about what this is worth: the bucket is per INSTANCE (see
+// ./_rateLimit.js), so Vercel running several instances means several
+// 60/minute budgets. It is a floor on the damage, not a global quota. What it
+// does guarantee is that no single instance can be turned into an unbounded
+// relay onto a 60/minute upstream.
+//
+// The cost, stated plainly: on a genuinely COLD edge cache a 150-symbol Board
+// load produces 150 misses, and everything past the first 60 now gets a 429
+// from us. It used to get a 429 from Finnhub instead, having already spent
+// the quota for every other user — so this is the same wall, reached more
+// cheaply and without taking prices down for everyone else.
+const perInstance = createRateLimiter({ capacity: 60, refillPerSecond: 1, maxKeys: 1 })
 
 // Exported for the tests, which need a known-empty bucket per case.
 export const limiters = { perClient, perInstance }

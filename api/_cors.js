@@ -149,6 +149,21 @@ function setCorsMethodHeaders(res) {
  * the same fixed APP_LANE_ORIGIN, so it is safe to share, and sharing is the
  * point — it keeps N native devices riding one cached upstream call instead of
  * one call each against Finnhub's 60/min free tier.
+ *
+ * WHY `private` STAYS, even though these are public read-only quotes. The
+ * bodies hold nothing origin-specific, so in principle a shared cache could
+ * store one entry and serve it to every allowed origin, keyed by `Vary:
+ * Origin`. That would be a free efficiency win IF the edge honours Vary
+ * exactly. If it does not, an entry stamped
+ * `Access-Control-Allow-Origin: https://blockwatch.app` can be handed to a
+ * `capacitor://localhost` request, the WebView refuses to expose it, and the
+ * native app breaks intermittently in a way that only shows up under cache
+ * timing — the precise failure the app lane above exists to make impossible.
+ * That trade is not worth taking blind, and it no longer buys protection
+ * either: since api/finnhub.js sized its instance breaker to Finnhub's real
+ * minute, the quota is bounded whether or not the edge is caching. So the
+ * safe, honest policy stays, and going public is a measured change for
+ * another day rather than a side effect of this one.
  */
 export function setCacheControl(res, sharedValue, originScoped) {
   const value = originScoped ? `private, ${sharedValue.replace('s-maxage=', 'max-age=')}` : sharedValue

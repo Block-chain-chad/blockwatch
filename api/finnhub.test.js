@@ -110,33 +110,56 @@ describe('api/finnhub — the symbol allowlist', () => {
   })
 })
 
+/*
+ * The instance breaker is a SEPARATE gate, and since it is sized to Finnhub's
+ * whole minute (60) it now fires long before the per-caller bucket's 240. The
+ * cases in this block are about the per-caller bucket on its own, so they keep
+ * the breaker out of the way; it has a block of its own below.
+ */
+async function callAlone(query, headers) {
+  limiters.perInstance.reset()
+  return call(query, headers)
+}
+
 describe('api/finnhub — per-caller rate limit', () => {
-  it('lets a whole cold Board load through', async () => {
-    // CANDIDATE_CAP is 150 underlyings; a real user must never see a 429.
+  it('does not itself refuse a whole cold Board load', async () => {
+    // CANDIDATE_CAP is 150 underlyings, and the per-caller bucket is not what
+    // stops them. The instance breaker is, at 60 — see the block below for
+    // why that is the honest ceiling rather than a regression.
     for (let i = 0; i < 150; i += 1) {
-      expect((await call({ kind: 'quote', symbol: 'AAPL' }, from('5.5.5.5'))).statusCode).toBe(200)
+      expect((await callAlone({ kind: 'quote', symbol: 'AAPL' }, from('5.5.5.5'))).statusCode).toBe(
+        200
+      )
     }
   })
 
   it('stops a caller that keeps going, without reaching upstream', async () => {
-    for (let i = 0; i < 240; i += 1) await call({ kind: 'quote', symbol: 'AAPL' }, from('6.6.6.6'))
+    for (let i = 0; i < 240; i += 1) {
+      await callAlone({ kind: 'quote', symbol: 'AAPL' }, from('6.6.6.6'))
+    }
     const calls = fetchMock.mock.calls.length
-    const res = await call({ kind: 'quote', symbol: 'AAPL' }, from('6.6.6.6'))
+    const res = await callAlone({ kind: 'quote', symbol: 'AAPL' }, from('6.6.6.6'))
     expect(res.statusCode).toBe(429)
     expect(res.body).toEqual({ error: 'too many requests' })
     expect(fetchMock.mock.calls.length).toBe(calls)
   })
 
   it('never lets the CDN cache one caller rejection for everyone', async () => {
-    for (let i = 0; i < 240; i += 1) await call({ kind: 'quote', symbol: 'AAPL' }, from('7.7.7.7'))
-    const res = await call({ kind: 'quote', symbol: 'AAPL' }, from('7.7.7.7'))
+    for (let i = 0; i < 240; i += 1) {
+      await callAlone({ kind: 'quote', symbol: 'AAPL' }, from('7.7.7.7'))
+    }
+    const res = await callAlone({ kind: 'quote', symbol: 'AAPL' }, from('7.7.7.7'))
     expect(res.headers['Cache-Control']).toBe('no-store')
     expect(Number(res.headers['Retry-After'])).toBeGreaterThan(0)
   })
 
   it('does not punish a second visitor for the first one', async () => {
-    for (let i = 0; i < 241; i += 1) await call({ kind: 'quote', symbol: 'AAPL' }, from('8.8.8.8'))
-    expect((await call({ kind: 'quote', symbol: 'AAPL' }, from('9.9.9.9'))).statusCode).toBe(200)
+    for (let i = 0; i < 241; i += 1) {
+      await callAlone({ kind: 'quote', symbol: 'AAPL' }, from('8.8.8.8'))
+    }
+    expect((await callAlone({ kind: 'quote', symbol: 'AAPL' }, from('9.9.9.9'))).statusCode).toBe(
+      200
+    )
   })
 
   it('charges junk requests too, so a bad-symbol loop is not free', async () => {
@@ -155,23 +178,50 @@ describe('api/finnhub — per-caller rate limit', () => {
 })
 
 describe('api/finnhub — instance circuit breaker', () => {
-  it('caps total upstream calls even when the caller key keeps changing', async () => {
+  it("spends Finnhub's minute and not a call more, whoever is asking", async () => {
     // The per-caller bucket is keyed on a header. This one is not, so forging
     // or rotating that header cannot buy more upstream calls.
-    for (let i = 0; i < 600; i += 1) {
-      await call({ kind: 'quote', symbol: 'AAPL' }, from(`10.0.${Math.floor(i / 250)}.${i % 250}`))
+    for (let i = 0; i < 60; i += 1) {
+      expect((await call({ kind: 'quote', symbol: 'AAPL' }, from(`10.0.0.${i}`))).statusCode).toBe(
+        200
+      )
     }
-    expect(fetchMock.mock.calls.length).toBe(600)
+    expect(fetchMock.mock.calls.length).toBe(60)
     const res = await call({ kind: 'quote', symbol: 'AAPL' }, from('10.1.1.1'))
     expect(res.statusCode).toBe(429)
-    expect(fetchMock.mock.calls.length).toBe(600)
+    expect(res.headers['Cache-Control']).toBe('no-store')
+    expect(fetchMock.mock.calls.length).toBe(60)
+  })
+
+  it('stops one address spending four times the whole quota', async () => {
+    // The hole this closes: the breaker used to sit at 600/min, ten times
+    // Finnhub's entire free tier, so the only thing between one caller and the
+    // upstream was the per-caller bucket's 240 — four minutes' worth of quota
+    // per minute, from a single address.
+    for (let i = 0; i < 240; i += 1) {
+      await call({ kind: 'quote', symbol: 'AAPL' }, from('10.2.2.2'))
+    }
+    expect(fetchMock.mock.calls.length).toBe(60)
+  })
+
+  it('refills at the rate the quota really allows, not ten times it', () => {
+    // Straight at the bucket, because a sustained rate cannot be read off a
+    // burst. Capacity 60, one token a second.
+    const t0 = Date.now()
+    for (let i = 0; i < 60; i += 1) expect(limiters.perInstance.take('all', t0).ok).toBe(true)
+    expect(limiters.perInstance.take('all', t0).ok).toBe(false)
+    const halfMinuteLater = t0 + 30_000
+    for (let i = 0; i < 30; i += 1) {
+      expect(limiters.perInstance.take('all', halfMinuteLater).ok).toBe(true)
+    }
+    expect(limiters.perInstance.take('all', halfMinuteLater).ok).toBe(false)
   })
 
   it('is spent only on calls that really go upstream', async () => {
     // Rejected symbols must not eat the shared budget, or a junk flood from
     // one caller would 429 everybody else.
-    for (let i = 0; i < 600; i += 1) {
-      await call({ kind: 'quote', symbol: 'ZZZZ' }, from(`11.0.${Math.floor(i / 250)}.${i % 250}`))
+    for (let i = 0; i < 200; i += 1) {
+      await call({ kind: 'quote', symbol: 'ZZZZ' }, from(`11.0.${Math.floor(i / 100)}.${i % 100}`))
     }
     expect((await call({ kind: 'quote', symbol: 'AAPL' }, from('11.9.9.9'))).statusCode).toBe(200)
   })
