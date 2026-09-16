@@ -122,7 +122,9 @@ export default function SwapSheet({ asset, onClose }) {
     let alive = true
     fetchLiveRatio(mint).then(
       (r) => alive && setLiveRatio(r),
-      () => alive && setLiveRatio(null) // unreachable: fall back to the pin
+      // A non-ok response, a network failure or the timeout. All of them mean
+      // the same thing here: no live answer, so the pin stands.
+      () => alive && setLiveRatio(null)
     )
     return () => {
       alive = false
@@ -154,9 +156,15 @@ export default function SwapSheet({ asset, onClose }) {
   // uiToRaw returns null on a ratio it cannot parse. That null flows straight
   // through to "no amount", so an unreadable ratio stops the trade instead of
   // quietly defaulting to 1 — defaulting to 1 IS the bug.
+  // A refused ratio stops BOTH sides, not just the sell. Buying is sized in
+  // USDC, so the amount would be right — but the whole promise of the trade is
+  // "you receive N tokens", and N is quoted in the unit the wallet displays,
+  // which is exactly what a refused ratio means we cannot compute. Leaving
+  // that as a dash beside a live Confirm button is an unpriced trade with a
+  // working button.
   const typed = Number(amount)
   const amountRaw =
-    decimals == null || !(typed > 0) || !Number.isFinite(typed)
+    decimals == null || multiplier == null || !(typed > 0) || !Number.isFinite(typed)
       ? null
       : side === 'buy'
         ? toRaw(amount, USDC_DECIMALS)
@@ -174,13 +182,19 @@ export default function SwapSheet({ asset, onClose }) {
     if (amountRaw == null) {
       // Usually there is simply nothing typed yet, and silence is right. But
       // a positive amount with no raw size means the ratio was refused — we
-      // cannot say how many tokens this sells, so we will not sell any. That
-      // has to be said: an unexplained dash beside a live Confirm button
-      // reads as a glitch worth retrying, and this one is not.
+      // cannot say how many shares one token stands for, so we will not size
+      // a trade in it. That has to be said: an unexplained dash beside a live
+      // Confirm button reads as a glitch worth retrying.
+      //
+      // The copy promises nothing this screen cannot deliver. It does not say
+      // "try again shortly", because the ratio is re-read only when the sheet
+      // reopens and re-verifying the pin is a manual step — so waiting here
+      // changes nothing. It does say the holding is unaffected and can still
+      // be sold from the wallet, because the failure is ours, not theirs.
       setQuoting(false)
       if (typed > 0 && Number.isFinite(typed) && decimals != null) {
         setMessage(
-          `We can't confirm how many shares one ${asset.ticker} currently represents, so we won't size a trade in it. Try again shortly.`
+          `${asset.ticker}'s issuer has changed how many shares one token represents, and we haven't re-checked it. We won't size a trade we can't state the size of. Your tokens are unaffected and can still be swapped from your wallet.`
         )
       }
       return

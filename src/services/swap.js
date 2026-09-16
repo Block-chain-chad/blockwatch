@@ -298,7 +298,11 @@ async function submit({ quote, provider, intent, publicKey, key, inputMint, outp
     inputMint,
     outputMint,
     amountRaw: intent.amountRaw,
-    // What the user typed, and the ratio that turned it into amountRaw above.
+    // What the user typed, and the issuer ratio in force for this trade. On a
+    // SELL the ratio is what turned the typed figure into amountRaw; on a BUY
+    // the input is USDC and the ratio applies to the output side instead, as
+    // the number of tokens the user is told they receive. Recorded either way,
+    // because it is what makes the record answerable.
     // Without these the record is unreadable after the fact: amountRaw is the
     // typed figure divided by a number the issuer moves on its own schedule,
     // so "did this sell what they asked for" cannot be answered from the trail

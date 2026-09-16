@@ -204,11 +204,35 @@ describe('the sheet sizes on the live ratio, and falls back to the pin', () => {
     expect(getSwapQuote).not.toHaveBeenCalled()
   })
 
+  it('refuses a BUY too, where the received amount is the thing we cannot state', async () => {
+    // Buying is sized in USDC, so the amount would be right — but the trade's
+    // whole promise is "you receive N tokens", and N is quoted in the unit a
+    // refused ratio means we cannot compute. A dash beside a live Confirm
+    // button is an unpriced trade with a working button.
+    fetchLiveRatio.mockResolvedValue({ multiplier: '100' })
+    await act(async () => {
+      root.render(<SwapSheet asset={NFLX} onClose={() => {}} />)
+    })
+    const input = container.querySelector('input[type="number"]')
+    const setValue = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+    await act(async () => {
+      setValue.call(input, '100')
+      input.dispatchEvent(new window.Event('input', { bubbles: true }))
+    })
+    expect(getSwapQuote).not.toHaveBeenCalled()
+    expect(container.textContent).toContain("We won't size a trade we can't state the size of")
+  })
+
   it('says why, instead of leaving an unexplained dash', async () => {
     fetchLiveRatio.mockResolvedValue({ multiplier: '100' })
     await sell(NFLX, '1')
-    expect(container.textContent).toContain("we won't size a trade in it")
+    expect(container.textContent).toContain("We won't size a trade we can't state the size of")
     expect(container.textContent).toContain('NFLXx')
+    // No promise the screen cannot keep: the ratio is re-read only on reopen
+    // and re-verifying the pin is manual, so "try again shortly" would be a
+    // lie. It does say the holding is unaffected, because it is.
+    expect(container.textContent).not.toContain('Try again shortly')
+    expect(container.textContent).toContain('Your tokens are unaffected')
   })
 
   it('stays silent when nothing has been typed yet', async () => {
@@ -216,6 +240,6 @@ describe('the sheet sizes on the live ratio, and falls back to the pin', () => {
     await act(async () => {
       root.render(<SwapSheet asset={NFLX} onClose={() => {}} />)
     })
-    expect(container.textContent).not.toContain("we won't size a trade in it")
+    expect(container.textContent).not.toContain("We won't size a trade")
   })
 })
