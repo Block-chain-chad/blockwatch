@@ -174,6 +174,14 @@ async function readLiveRatio(mint) {
     // pin forever and nobody learns the shape changed. Counted so it surfaces.
     // No mint, no wallet, no amount — the event says a shape changed, nothing
     // about who was looking at it.
+    //
+    // ANALYTICS CATALOGUE. services/analytics.js keeps the list of events this
+    // app emits, grouped. This one belongs under Money:
+    //
+    //   ratio_unreadable  { source }  services/jupiter.js
+    //
+    // Add it there when this branch lands; it is recorded here so the event
+    // and its description cannot drift apart in the meantime.
     track('ratio_unreadable', { source: 'jupiter_price_v3' })
     return null
   }
