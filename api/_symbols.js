@@ -2,9 +2,11 @@
 // Regenerate with: node scripts/build-symbols.mjs
 //
 // Every stock symbol the app can display: the distinct non-null "underlying"
-// values in src/data/universe.json. api/finnhub.js forwards nothing else.
+// values in src/data/universe.json. api/finnhub.js and api/news.js forward
+// nothing else, and api/history.js forwards nothing but the Yahoo spelling of
+// an entry here.
 //
-// Why this list exists. The proxy used to accept any 1-10 character symbol,
+// Why this list exists. The proxies used to accept any 1-10 character symbol,
 // and every distinct symbol is a distinct edge-cache key, so a script walking
 // ?symbol=AAAA..ZZZZ turned one shared cached response into unlimited upstream
 // calls against Finnhub's shared 60/min free tier. A drained quota blanks the
@@ -80,4 +82,22 @@ export const ALLOWED_SYMBOLS = new Set([
 /** True when this is a symbol the app itself would ask for. */
 export function isAllowedSymbol(symbol) {
   return typeof symbol === 'string' && ALLOWED_SYMBOLS.has(symbol)
+}
+
+// Yahoo spells a class share with a dash where Finnhub uses a dot: BRK-B, not
+// BRK.B. src/services/stocks.js and src/services/candles.js both rewrite the
+// symbol with .replace('.', '-') before calling /api/history, so that exact
+// transform — first dot only, same as the client — is the one mirrored here.
+// No symbol in the universe carries two dots, so the two spellings agree
+// today; mirroring the client rather than guessing keeps them agreeing if one
+// ever does.
+//
+// api/_symbols.test.js asserts the mapping stays one-to-one. If two symbols
+// ever collapsed onto the same Yahoo spelling, one of them would be silently
+// unreachable through /api/history and its chart would go blank.
+export const ALLOWED_YAHOO_SYMBOLS = new Set([...ALLOWED_SYMBOLS].map((s) => s.replace('.', '-')))
+
+/** True when this is the Yahoo spelling of a symbol the app would ask for. */
+export function isAllowedYahooSymbol(symbol) {
+  return typeof symbol === 'string' && ALLOWED_YAHOO_SYMBOLS.has(symbol)
 }
