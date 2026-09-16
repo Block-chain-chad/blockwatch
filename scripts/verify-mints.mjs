@@ -90,7 +90,11 @@ export function readMultiplier(account) {
   const ext = account?.data?.parsed?.info?.extensions?.find(
     (e) => e.extension === 'scaledUiAmountConfig'
   )
+  // No extension at all is a plain Token-2022 mint that the issuer never
+  // scaled. One token is one share, the client's default is right, and there
+  // is nothing to pin. This is the ONLY silent case.
   if (!ext?.state) return null
+
   const { multiplier, newMultiplier, newMultiplierEffectiveTimestamp: ts } = ext.state
   const plain = (v) => {
     // The chain reports these as f64. Pin a plain decimal string so the
@@ -100,13 +104,33 @@ export function readMultiplier(account) {
     const s = String(v).trim()
     return /^\d+(?:\.\d+)?$/.test(s) ? s : null
   }
+
+  // Past here every failure THROWS, which stops the run and leaves the
+  // previous file alone. The alternative was worse than useless: an extension
+  // we could not read used to produce an entry with no ratio, which the client
+  // reads as 1.0 — so a shape change in the RPC's output would have silently
+  // pinned NFLXx as one token per share and oversold every holder tenfold.
+  // All 66 scaled mints take their ratio from newMultiplier, so that is not a
+  // hypothetical corner.
   const current = plain(multiplier)
-  if (current == null) return null
+  if (current == null) {
+    throw new Error(`scaledUiAmountConfig multiplier is unreadable: ${JSON.stringify(multiplier)}`)
+  }
+  if (newMultiplier == null) return { multiplier: current }
+
   const next = plain(newMultiplier)
-  const at = Number.isFinite(ts) && ts > 0 ? new Date(ts * 1000).toISOString() : null
-  return next != null && at != null
-    ? { multiplier: current, nextMultiplier: next, nextMultiplierAt: at }
-    : { multiplier: current }
+  if (next == null) {
+    throw new Error(`scaledUiAmountConfig newMultiplier is unreadable: ${JSON.stringify(newMultiplier)}`)
+  }
+  if (!Number.isFinite(ts)) {
+    throw new Error(`scaledUiAmountConfig effective timestamp is unreadable: ${JSON.stringify(ts)}`)
+  }
+  // A timestamp at or before the epoch means the scheduled value is already in
+  // force and there is no future change to record — so it becomes the standing
+  // ratio rather than being pinned with a 1970 date nobody can act on.
+  if (ts <= 0) return { multiplier: next }
+
+  return { multiplier: current, nextMultiplier: next, nextMultiplierAt: new Date(ts * 1000).toISOString() }
 }
 
 function hostOf(uri) {
