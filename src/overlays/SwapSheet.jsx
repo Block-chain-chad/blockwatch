@@ -9,7 +9,7 @@ import {
   USDC_DECIMALS,
   SLIPPAGE_BPS,
 } from '../services/swap'
-import { verifiedToken } from '../data/verifiedMints'
+import { verifiedToken, VERIFIED_AT } from '../data/verifiedMints'
 import { effectiveMultiplier, reconcileRatio } from '../lib/multiplier'
 import { fetchLiveRatio } from '../services/jupiter'
 import { useFlag, SWAP_FLAG, SWAP_PAUSED_LINE } from '../services/featureFlags'
@@ -110,8 +110,9 @@ export default function SwapSheet({ asset, onClose }) {
   // The pin is issuer-verified but only knows changes scheduled before
   // verify-mints last ran, and the issuer schedules them continuously — so
   // this also asks Jupiter what the chain says now, and reconcileRatio decides
-  // between them. A disagreement past MAX_RATIO_DRIFT yields null, which
-  // stops the sell rather than sizing it on a ratio we cannot confirm.
+  // between them: within drift it takes the live value, past drift it takes it
+  // only when the live config proves it is the pin's own ratio moved forward,
+  // and otherwise yields null and stops the trade.
   //
   // `undefined` means the live read has not answered yet. Until it does the
   // pin stands: it is the verified value, just possibly a step behind.
@@ -131,7 +132,9 @@ export default function SwapSheet({ asset, onClose }) {
     }
   }, [mint])
   const multiplier =
-    liveRatio === undefined ? effectiveMultiplier(token) : reconcileRatio(token, liveRatio)
+    liveRatio === undefined
+      ? effectiveMultiplier(token)
+      : reconcileRatio(token, liveRatio, { verifiedAt: VERIFIED_AT })
 
   // What the user asked for, in the input mint's smallest units — the single
   // definition, used to quote AND to state the intent at confirm time. Scaled

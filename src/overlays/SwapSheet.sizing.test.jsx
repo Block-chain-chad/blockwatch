@@ -204,6 +204,30 @@ describe('the sheet sizes on the live ratio, and falls back to the pin', () => {
     expect(getSwapQuote).not.toHaveBeenCalled()
   })
 
+  it('sizes on a split the pin never saw, when the live config proves it', async () => {
+    // The case the live read exists for. TSLAx is pinned at 1; pretend the
+    // issuer has just split it 10-for-1 and the pin has not caught up. The
+    // live config carries the pin's own standing value rolled forward plus a
+    // schedule dated after verification ran, which is what makes it provable.
+    vi.setSystemTime(new Date('2026-09-20T12:00:00.000Z'))
+    fetchLiveRatio.mockResolvedValue({
+      multiplier: '1',
+      nextMultiplier: '10',
+      nextMultiplierAt: '2026-09-18T23:55:00.000Z',
+    })
+    await sell(TSLA, '1')
+    // Sized at the new ratio, not refused and not sized at the stale pin —
+    // which would have sold ten times what the user typed.
+    expect(lastQuotedAmount()).toBe('10000000')
+    expect(lastQuotedAmount()).not.toBe('100000000')
+  })
+
+  it('still refuses a large jump with nothing tying it to the pin', async () => {
+    fetchLiveRatio.mockResolvedValue({ multiplier: '100' })
+    await sell(NFLX, '1')
+    expect(getSwapQuote).not.toHaveBeenCalled()
+  })
+
   it('refuses a BUY too, where the received amount is the thing we cannot state', async () => {
     // Buying is sized in USDC, so the amount would be right — but the trade's
     // whole promise is "you receive N tokens", and N is quoted in the unit a

@@ -102,15 +102,59 @@ export function pendingMultiplier(pinned, now = Date.now()) {
 }
 
 /**
- * How far a live ratio may sit from the pinned one before we stop guessing.
+ * How far a live ratio may sit from the pinned one before it needs to show its
+ * working.
  *
- * Accruing mints ratchet by a fraction of a percent per step — CRMx moved
- * 0.1229% in one — so honest drift between two verification runs is small.
- * Anything past this is not drift: it is a split the pin has not seen, or a
- * feed saying something the issuer did not. Both mean we do not know the
- * ratio, and not knowing has to stop a sell rather than pick a side.
+ * This is the band inside which a difference needs no provenance at all.
+ * Accruals ratchet by well under a percent in a typical step — CRMx moved
+ * 0.1229% — but the largest single step in the pinned history is OPENx at
+ * 2.0816%, so a tighter band would refuse a legitimate dividend. Five percent
+ * clears every accrual on record with room, and sits far below the smallest
+ * split (CRWDx, 4x).
+ *
+ * Past this band the live value is not rejected outright: it can still be
+ * accepted by proving it is a post-pin update. See reconcileRatio.
  */
-export const MAX_RATIO_DRIFT = 0.02
+export const MAX_RATIO_DRIFT = 0.05
+
+/** Two ratios equal as fractions, so "1" and "1.0" are the same number. */
+function sameRatio(a, b) {
+  return a != null && b != null && a.num * b.den === b.num * a.den
+}
+
+/**
+ * Whether `live` is provably the pin's own ratio moved forward, rather than an
+ * unrelated or fabricated one.
+ *
+ * Token-2022's update path rolls the previously effective value into
+ * `multiplier` before writing a new schedule. So a genuine post-pin update
+ * carries a standing value the pin ALREADY knew, plus a schedule dated after
+ * the pin was taken. CRMx is exactly this shape: its live standing value is
+ * the pin's own nextMultiplier, and its schedule is stamped half an hour after
+ * verification ran.
+ *
+ * All three conditions have to hold. A feed inventing a ratio cannot satisfy
+ * the first without knowing what we pinned, and a stale config from some other
+ * mint cannot satisfy the third.
+ */
+function provablyAfterPin(pinned, live, verifiedAt) {
+  const from = toRational(live?.multiplier)
+  if (from == null) return false
+  // (a) the value it moved FROM is one the pin recorded.
+  if (
+    !sameRatio(from, toRational(pinned.multiplier)) &&
+    !sameRatio(from, toRational(pinned.nextMultiplier))
+  ) {
+    return false
+  }
+  // (b) it carries a real schedule.
+  if (toRational(live.nextMultiplier) == null) return false
+  const at = Date.parse(live.nextMultiplierAt ?? '')
+  if (!Number.isFinite(at)) return false
+  // (c) scheduled after we last looked, which is what makes it news.
+  const pinnedAt = Date.parse(verifiedAt ?? '')
+  return Number.isFinite(pinnedAt) && at > pinnedAt
+}
 
 /**
  * The ratio to size a trade with, given the pin and whatever the live feed
@@ -121,27 +165,39 @@ export const MAX_RATIO_DRIFT = 0.02
  *
  *   no live read        -> the pin. It is verified, and a feed being down is
  *                          not a reason to distrust it.
- *   live agrees         -> the live value, which is the fresher of two
+ *   live within drift   -> the live value, which is the fresher of two
  *                          answers that say the same thing.
- *   live disagrees      -> null. A 10x gap here is a split the pin missed, in
- *                          which case sizing on the pin oversells tenfold; or
- *                          a feed that is wrong, in which case sizing on it
- *                          does the same. Refusing costs a trade. Guessing
- *                          costs the trade AND the money.
+ *   live far off, but
+ *   provably the pin
+ *   moved forward       -> the live value. This is the case the live read
+ *                          exists for. A split is a large jump BY DEFINITION
+ *                          — NFLXx went 1 to 10 — so a rule that refused
+ *                          every large jump would refuse exactly the event
+ *                          most worth catching, and would do it by taking
+ *                          that name's sell path offline until someone
+ *                          re-pinned it by hand. See provablyAfterPin.
+ *   anything else       -> null. A large jump with no provenance is a feed
+ *                          saying something we cannot tie back to the issuer,
+ *                          and sizing a sell on it is how a holder sells ten
+ *                          times what they meant to.
+ *
+ * `verifiedAt` is when the pin was taken (data/verifiedMints' checkedAt). It
+ * is passed in rather than imported so this module stays pure.
  *
  * `pinned` may be null for an asset the issuer never scaled, in which case
  * there is nothing to reconcile and 1 stands.
  */
-export function reconcileRatio(pinned, live, now = Date.now()) {
+export function reconcileRatio(pinned, live, { now = Date.now(), verifiedAt } = {}) {
   if (!pinned) return DEFAULT_MULTIPLIER
   const pin = effectiveMultiplier(pinned, now)
-  if (!live) return toRational(pin) ? pin : null
-  const fresh = effectiveMultiplier(live, now)
   const a = toRational(pin)
-  const b = toRational(fresh)
+  if (!live) return a ? pin : null
+  const b = toRational(effectiveMultiplier(live, now))
   if (a == null || b == null) return null
+  const fresh = effectiveMultiplier(live, now)
   const drift = Math.abs(Number(b.num) / Number(b.den) / (Number(a.num) / Number(a.den)) - 1)
-  return drift <= MAX_RATIO_DRIFT ? fresh : null
+  if (drift <= MAX_RATIO_DRIFT) return fresh
+  return provablyAfterPin(pinned, live, verifiedAt) ? fresh : null
 }
 
 /**

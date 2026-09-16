@@ -340,45 +340,50 @@ describe('reconcileRatio — pin versus live', () => {
     nextMultiplierAt: '2026-09-17T00:30:00.000Z',
   }
   const AFTER = Date.parse('2026-09-17T01:00:00.000Z')
+  const PINNED_AT = '2026-09-16T20:17:19.852Z'
 
   it('falls back to the pin when the live read is unavailable', () => {
-    expect(reconcileRatio(CRM_PIN, null, NOW)).toBe('1.0054716788543585')
+    expect(reconcileRatio(CRM_PIN, null, { now: NOW })).toBe('1.0054716788543585')
   })
 
   it('prefers the live value once a scheduled change the pin never saw takes effect', () => {
     // This is the whole point: at 01:00 the pin still says 1.00547 and the
     // chain says 1.00671.
     expect(effectiveMultiplier(CRM_PIN, AFTER)).toBe('1.0054716788543585')
-    expect(reconcileRatio(CRM_PIN, CRM_LIVE, AFTER)).toBe('1.0067077500492987')
+    expect(reconcileRatio(CRM_PIN, CRM_LIVE, { now: AFTER, verifiedAt: PINNED_AT })).toBe('1.0067077500492987')
   })
 
   it('agrees with the pin before that change takes effect', () => {
-    expect(reconcileRatio(CRM_PIN, CRM_LIVE, NOW)).toBe('1.0054716788543585')
+    expect(reconcileRatio(CRM_PIN, CRM_LIVE, { now: NOW, verifiedAt: PINNED_AT })).toBe('1.0054716788543585')
   })
 
-  it('refuses when the two disagree by more than accrual ever could', () => {
+  it('refuses a large jump it cannot tie back to the pin', () => {
     // A split the pin has not seen, or a feed saying something the issuer did
     // not. Either way the ratio is unknown, and an unknown ratio must stop a
     // sell rather than size it tenfold.
-    expect(reconcileRatio({ multiplier: '1' }, { multiplier: '10' }, NOW)).toBeNull()
-    expect(reconcileRatio({ multiplier: '10' }, { multiplier: '1' }, NOW)).toBeNull()
+    expect(reconcileRatio({ multiplier: '1' }, { multiplier: '10' }, { now: NOW, verifiedAt: PINNED_AT })).toBeNull()
+    expect(reconcileRatio({ multiplier: '10' }, { multiplier: '1' }, { now: NOW, verifiedAt: PINNED_AT })).toBeNull()
   })
 
-  it('accepts drift right up to the bound and refuses past it', () => {
-    expect(reconcileRatio({ multiplier: '1' }, { multiplier: '1.019' }, NOW)).toBe('1.019')
-    expect(reconcileRatio({ multiplier: '1' }, { multiplier: '1.021' }, NOW)).toBeNull()
-    expect(MAX_RATIO_DRIFT).toBe(0.02)
+  it('accepts an accrual-sized difference without asking for provenance', () => {
+    // OPENx's real history has a single accrual step of 2.0816%, so a band
+    // tighter than that would refuse a legitimate dividend.
+    expect(reconcileRatio({ multiplier: '1' }, { multiplier: '1.0208' }, { now: NOW })).toBe('1.0208')
+    expect(reconcileRatio({ multiplier: '1' }, { multiplier: '1.049' }, { now: NOW })).toBe('1.049')
+    // Past the band, and with nothing tying it to the pin.
+    expect(reconcileRatio({ multiplier: '1' }, { multiplier: '1.06' }, { now: NOW })).toBeNull()
+    expect(MAX_RATIO_DRIFT).toBe(0.05)
   })
 
   it('refuses an unreadable value from either side', () => {
-    expect(reconcileRatio({ multiplier: 'bad' }, { multiplier: '1' }, NOW)).toBeNull()
-    expect(reconcileRatio({ multiplier: '1' }, { multiplier: 'bad' }, NOW)).toBeNull()
-    expect(reconcileRatio({ multiplier: 'bad' }, null, NOW)).toBeNull()
+    expect(reconcileRatio({ multiplier: 'bad' }, { multiplier: '1' }, { now: NOW })).toBeNull()
+    expect(reconcileRatio({ multiplier: '1' }, { multiplier: 'bad' }, { now: NOW })).toBeNull()
+    expect(reconcileRatio({ multiplier: 'bad' }, null, { now: NOW })).toBeNull()
   })
 
   it('leaves an unpinned asset at 1, since there is nothing to reconcile', () => {
-    expect(reconcileRatio(null, null, NOW)).toBe('1')
-    expect(reconcileRatio(null, { multiplier: '10' }, NOW)).toBe('1')
+    expect(reconcileRatio(null, null, { now: NOW })).toBe('1')
+    expect(reconcileRatio(null, { multiplier: '10' }, { now: NOW })).toBe('1')
   })
 })
 
@@ -404,5 +409,72 @@ describe('ratioFor', () => {
   it('REFUSES for a Solana mint that carries no pin', () => {
     // Not the same silence: this is a token we simply have not verified.
     expect(ratioFor(null, 'SomeUnverifiedMintAddress1111111111111111111', NOW)).toBeNull()
+  })
+})
+
+/*
+ * A split the pin has not seen.
+ *
+ * This is the case the live read exists for, and the first version of the
+ * drift rule refused it — a split is a large jump BY DEFINITION, so refusing
+ * every large jump refused exactly the event most worth catching, and took
+ * that name's sell path offline until someone re-pinned it by hand. The pinned
+ * history is full of them: NFLXx and PPLTx 1 to 10, PALLx 1 to 5, CRWDx 1 to 4.
+ *
+ * Token-2022 rolls the previously effective value into `multiplier` before
+ * writing a new schedule, so a genuine post-pin update carries a standing
+ * value the pin already knew plus a schedule dated after verification ran.
+ * That is provable, and nothing else is accepted.
+ */
+describe('reconcileRatio accepts a provable post-pin split', () => {
+  const PINNED_AT = '2026-09-16T20:17:19.852Z'
+  const AFTER_SPLIT = Date.parse('2026-09-18T12:00:00.000Z')
+
+  it('takes a 10x jump when the live config proves it followed the pin', () => {
+    const pin = { multiplier: '1' }
+    const live = {
+      multiplier: '1', // the value the pin recorded — rolled forward by the chain
+      nextMultiplier: '10',
+      nextMultiplierAt: '2026-09-17T23:55:00.000Z', // after the pin was taken
+    }
+    expect(reconcileRatio(pin, live, { now: AFTER_SPLIT, verifiedAt: PINNED_AT })).toBe('10')
+  })
+
+  it('accepts when the live standing value matches the pin\'s SCHEDULED value', () => {
+    // The ordinary shape once a pinned schedule has fired: CRMx exactly.
+    const pin = { multiplier: '1', nextMultiplier: '2', nextMultiplierAt: '2026-09-01T00:00:00.000Z' }
+    const live = { multiplier: '2', nextMultiplier: '20', nextMultiplierAt: '2026-09-17T00:00:00.000Z' }
+    expect(reconcileRatio(pin, live, { now: AFTER_SPLIT, verifiedAt: PINNED_AT })).toBe('20')
+  })
+
+  it('compares as fractions, so "1" and "1.0000" are the same starting point', () => {
+    const pin = { multiplier: '1' }
+    const live = { multiplier: '1.0000', nextMultiplier: '10', nextMultiplierAt: '2026-09-17T23:55:00.000Z' }
+    expect(reconcileRatio(pin, live, { now: AFTER_SPLIT, verifiedAt: PINNED_AT })).toBe('10')
+  })
+
+  it('refuses when the value it moved FROM is not one the pin ever recorded', () => {
+    // An old-old value: this config is not the pin moved forward.
+    const pin = { multiplier: '2', nextMultiplier: '3', nextMultiplierAt: '2026-09-01T00:00:00.000Z' }
+    const live = { multiplier: '1', nextMultiplier: '10', nextMultiplierAt: '2026-09-17T23:55:00.000Z' }
+    expect(reconcileRatio(pin, live, { now: AFTER_SPLIT, verifiedAt: PINNED_AT })).toBeNull()
+  })
+
+  it('refuses a schedule dated BEFORE the pin, which is another mint\'s config', () => {
+    const pin = { multiplier: '1' }
+    const live = { multiplier: '1', nextMultiplier: '10', nextMultiplierAt: '2026-05-01T00:00:00.000Z' }
+    expect(reconcileRatio(pin, live, { now: AFTER_SPLIT, verifiedAt: PINNED_AT })).toBeNull()
+  })
+
+  it('refuses a bare large value with no schedule to prove anything', () => {
+    expect(
+      reconcileRatio({ multiplier: '1' }, { multiplier: '10' }, { now: AFTER_SPLIT, verifiedAt: PINNED_AT })
+    ).toBeNull()
+  })
+
+  it('refuses when no verifiedAt is supplied, since (c) cannot be checked', () => {
+    const pin = { multiplier: '1' }
+    const live = { multiplier: '1', nextMultiplier: '10', nextMultiplierAt: '2026-09-17T23:55:00.000Z' }
+    expect(reconcileRatio(pin, live, { now: AFTER_SPLIT })).toBeNull()
   })
 })
