@@ -15,6 +15,12 @@ import {
 const USDC = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
 const MINT = 'XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN'
 
+// The three programs that used to be on the top-level allowlist. They are the
+// building blocks of a wallet drainer, so each one has a test of its own.
+const SPL_TOKEN_PROGRAM = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
+const TOKEN_2022_PROGRAM = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'
+const SYSTEM_PROGRAM = '11111111111111111111111111111111'
+
 // Shaped on a real lite-api.jup.ag quote: $10 of USDC into GOOGLx at 50 bps.
 const quote = (over = {}) => ({
   inputMint: USDC,
@@ -166,6 +172,43 @@ describe('checkBuiltTransaction', () => {
       compiledInstructions: [{ programIdIndex: 1 }],
     })
     expect(checkBuiltTransaction({ build, tx: evil, publicKey: 'WALLET' }).ok).toBe(false)
+  })
+
+  it('refuses the drain shape: transfers riding along with a real swap', () => {
+    // Everything the rest of this check asks for is satisfied — one signature,
+    // this wallet pays, and there IS a Jupiter instruction in it. The two
+    // instructions in front of the swap move the user's tokens and their SOL
+    // to whoever built the transaction. A real Jupiter swap never calls the
+    // token or system programs at the TOP level; it calls them from inside.
+    const drain = tx({
+      staticAccountKeys: [
+        key('WALLET'),
+        key(SPL_TOKEN_PROGRAM),
+        key(SYSTEM_PROGRAM),
+        key(JUPITER_PROGRAM),
+      ],
+      compiledInstructions: [
+        { programIdIndex: 1 }, // SPL token transfer — the user's tokens leave
+        { programIdIndex: 2 }, // system transfer — the user's SOL leaves
+        { programIdIndex: 3 }, // the swap, so it still reads as a trade
+      ],
+    })
+    const verdict = checkBuiltTransaction({ build, tx: drain, publicKey: 'WALLET' })
+    expect(verdict.ok).toBe(false)
+    expect(verdict.reason).toMatch(/unexpected program/)
+  })
+
+  it('refuses each of the withdrawn programs on its own', () => {
+    for (const program of [SPL_TOKEN_PROGRAM, TOKEN_2022_PROGRAM, SYSTEM_PROGRAM]) {
+      const withExtra = tx({
+        staticAccountKeys: [key('WALLET'), key(JUPITER_PROGRAM), key(program)],
+        compiledInstructions: [{ programIdIndex: 1 }, { programIdIndex: 2 }],
+      })
+      expect(
+        checkBuiltTransaction({ build, tx: withExtra, publicKey: 'WALLET' }).ok,
+        program
+      ).toBe(false)
+    }
   })
 
   it('refuses a transaction with no swap in it', () => {

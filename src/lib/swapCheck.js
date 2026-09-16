@@ -21,19 +21,28 @@
 // Every failure is a refusal to sign, which is always safe: nothing has been
 // sent at that point.
 
-// Programs a Jupiter swap is allowed to invoke at the top level. Observed
-// across buy and sell routes: compute budget (fee/limit), associated token
-// (create the destination account), the SPL token programs (xStocks are
-// Token-2022), the system program, and the aggregator itself. Anything else
-// carrying this user's signature is not a swap, so we refuse it.
+// Programs a Jupiter swap is allowed to invoke AT THE TOP LEVEL. Checked
+// against real lite-api.jup.ag transactions, both directions, one hop and
+// two: compute budget (fee and unit limit), associated token (create the
+// destination account), and the aggregator itself. That is the whole list.
+//
+// The SPL token programs and the system program are NOT on it, and their
+// absence is the point. A swap does move tokens, but it moves them from
+// INSIDE Jupiter — as inner instructions the aggregator issues under its own
+// authority. A token transfer or a SOL transfer sitting at the top level,
+// carrying the user's signature, is not something a swap needs and is exactly
+// the shape a drainer takes: move the user's balance out, then add one
+// Jupiter instruction so the transaction still looks like a trade. With those
+// programs allowed, that transaction passed every other check here.
+//
+// If a route ever legitimately needs one of them at the top level — wrapping
+// native SOL would — it gets added deliberately, with the reason written
+// down, never because a response turned up asking for it.
 export const JUPITER_PROGRAM = 'JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4'
 export const ALLOWED_PROGRAMS = new Set([
   JUPITER_PROGRAM,
   'ComputeBudget111111111111111111111111111111',
   'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
-  'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
-  'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb',
-  '11111111111111111111111111111111',
 ])
 
 const ok = { ok: true }
