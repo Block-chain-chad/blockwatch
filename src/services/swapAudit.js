@@ -43,7 +43,22 @@ const MAX_RECORDS = 200
  * sails straight past the repeat guard. Keyed on what they typed, it does not.
  */
 export function swapKey({ wallet, side, mint, amountRaw, typedAmount }) {
-  return `${wallet}:${side}:${mint}:${typedAmount ?? amountRaw}`
+  return `${wallet}:${side}:${mint}:${normalizeTyped(typedAmount) ?? amountRaw}`
+}
+
+/**
+ * One number, one spelling. "1", "1.0" and "01" are the same trade, and a
+ * user who retypes after a lost swap will not reproduce their keystrokes
+ * character for character — a differently spelled retype walking past the
+ * unresolved guard is exactly the double spend the guard exists to stop.
+ *
+ * Only for the KEY. The audit record keeps the raw string the user typed,
+ * because that is what they saw.
+ */
+function normalizeTyped(typedAmount) {
+  if (typedAmount == null) return null
+  const n = Number(String(typedAmount).trim())
+  return Number.isFinite(n) && n > 0 ? String(n) : String(typedAmount)
 }
 
 function read() {

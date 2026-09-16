@@ -113,3 +113,37 @@ describe('swapKey identifies the trade the user asked for', () => {
     expect(swapKey({ ...base, amountRaw: '99455809' })).toBe('W:sell:M:99455809')
   })
 })
+
+/*
+ * One number, one key. A user retyping after a lost swap does not reproduce
+ * their keystrokes character for character, and a differently spelled retype
+ * that walks past the unresolved guard is the double spend the guard exists
+ * to stop.
+ */
+describe('swapKey normalises how the amount was spelled', () => {
+  const base = { wallet: 'W', side: 'sell', mint: 'M' }
+  const key = (typedAmount) => swapKey({ ...base, amountRaw: '10000000', typedAmount })
+
+  it('gives one key for "1", "1.0" and "01"', () => {
+    expect(new Set([key('1'), key('1.0'), key('01')]).size).toBe(1)
+  })
+
+  it('also folds whitespace and trailing zeros', () => {
+    expect(key(' 1 ')).toBe(key('1'))
+    expect(key('1.500')).toBe(key('1.5'))
+  })
+
+  it('accepts a number as readily as a string', () => {
+    expect(key(1)).toBe(key('1'))
+  })
+
+  it('still separates genuinely different amounts', () => {
+    expect(key('1')).not.toBe(key('10'))
+    expect(key('1.5')).not.toBe(key('1.05'))
+  })
+
+  it('keeps an unparseable amount as typed rather than collapsing it', () => {
+    expect(key('abc')).not.toBe(key('1'))
+    expect(key('abc')).toBe(key('abc'))
+  })
+})
