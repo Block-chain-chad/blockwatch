@@ -2,6 +2,8 @@ import { timeAgo, EM_DASH } from '../../lib/format'
 import { isThinlyTraded, premiumPct } from '../../lib/prices'
 import { formatPrice, formatPct, GapBar, changeColor } from '../shared'
 import { shareFreshness } from '../../lib/provenance'
+import { multiplierLine } from '../../lib/multiplier'
+import { verifiedToken } from '../../data/verifiedMints'
 import PriceText from '../PriceText'
 
 /*
@@ -40,6 +42,13 @@ export default function GapPanel({ asset, scrub, session, lastFetchAt }) {
   // is never the fetch time: the quote carries its own.
   const tokenAge = lastFetchAt ? timeAgo(lastFetchAt) : EM_DASH
   const share = shareFreshness({ quote: asset.stockQuote, session })
+
+  // The issuer's share-per-token ratio, in words, or null at 1:1. A pending
+  // change is deliberately NOT shown: it is the issuer's routine dividend
+  // accrual, it moves the ratio by a fraction of a percent, and announcing a
+  // date beside a trade affordance reads as a reason to act before it. The
+  // line switches to the new ratio by itself the moment it takes effect.
+  const ratioLine = multiplierLine(verifiedToken(asset))
 
   return (
     <div
@@ -110,6 +119,21 @@ export default function GapPanel({ asset, scrub, session, lastFetchAt }) {
           </div>
         )}
       </div>
+
+      {/* The issuer's ratio, but only when it is not 1:1 and so actually
+          changes what a token is. "1 token = 10 shares since a split on
+          16 Nov 2025" is the fact that makes the two legs above comparable;
+          without it a reader who knows NFLX split has no way to tell whether
+          this screen knows. Silent for the 37 mints still at 1.0, because
+          "1 token = 1 share" is the thing everyone already assumes. */}
+      {ratioLine && (
+        <div
+          className="border-t px-4 py-2.5"
+          style={{ borderColor: 'var(--border-subtle)' }}
+        >
+          <p className="t-caption text-zinc-500">{ratioLine}</p>
+        </div>
+      )}
     </div>
   )
 }

@@ -83,3 +83,62 @@ describe('GapPanel share leg', () => {
     expect(html).not.toContain('share')
   })
 })
+
+/*
+ * The issuer's share-per-token ratio.
+ *
+ * 66 of the 103 pinned mints are not 1:1, and six are 2x or more, so "one
+ * token is one share" is false for most of the universe. Where it is false
+ * the panel has to say so, because the two legs it prints are only
+ * comparable once the reader knows the ratio. Where it is true it says
+ * nothing, since that is what everyone already assumes.
+ *
+ * Real ids from data/verifiedMints.json on purpose — a regeneration that
+ * dropped the ratios fails here too.
+ */
+describe('GapPanel issuer ratio line', () => {
+  const withId = (id, ticker, underlying) =>
+    renderToStaticMarkup(
+      <GapPanel
+        asset={{
+          id,
+          ticker,
+          underlying,
+          tokenPrice: 76.98,
+          stockPrice: 76.41,
+          stockQuote: traded(12),
+          volume24h: 2_000_000,
+        }}
+        scrub={null}
+        session="regular"
+        lastFetchAt={NOW}
+      />
+    )
+
+  it('states the ratio and its date for a token that has split', () => {
+    const html = withId('netflix-xstock', 'NFLXx', 'NFLX')
+    expect(html).toContain('1 token = 10 shares')
+    expect(html).toContain('since a split on 16 Nov 2025')
+  })
+
+  it('states a fractional ratio from a dividend', () => {
+    const html = withId('coca-cola-xstock', 'KOx', 'KO')
+    expect(html).toMatch(/1 token = 1\.0\d+ shares since a dividend on/)
+  })
+
+  it('says nothing at all when one token really is one share', () => {
+    const html = withId('tesla-xstock', 'TSLAx', 'TSLA')
+    expect(html).not.toContain('1 token =')
+  })
+
+  it('says nothing for an asset with no pinned ratio, such as an Ondo wrapper', () => {
+    const html = withId('nvidia-ondo-tokenized-stock', 'NVDAon', 'NVDA')
+    expect(html).not.toContain('1 token =')
+  })
+
+  it('still renders the gap itself alongside the ratio', () => {
+    const html = withId('netflix-xstock', 'NFLXx', 'NFLX')
+    expect(html).toContain('Gap vs NFLX')
+    expect(html).toContain('NFLXx token')
+  })
+})
