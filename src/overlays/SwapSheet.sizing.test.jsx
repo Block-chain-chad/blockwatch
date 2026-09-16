@@ -57,6 +57,7 @@ vi.mock('../state/WalletContext', () => ({
 const { default: SwapSheet } = await import('./SwapSheet')
 const { applyFlags, SWAP_FLAG } = await import('../services/featureFlags')
 const { BY_ID } = await import('../data/universe')
+const { VERIFIED_AT } = await import('../data/verifiedMints')
 
 const NFLX = BY_ID['netflix-xstock']
 const AZN = BY_ID['astrazeneca-xstock']
@@ -230,6 +231,22 @@ describe('the sheet sizes on the live ratio, and falls back to the pin', () => {
     // which would have sold ten times what the user typed.
     expect(lastQuotedAmount()).toBe('10000000')
     expect(lastQuotedAmount()).not.toBe('100000000')
+  })
+
+  it('refuses a provable config that points the ratio DOWN', async () => {
+    // The hatch that lets a missed split through checks shape, not value, and
+    // TSLAx is one of the 48 pins sitting at exactly 1 — so a feed reporting
+    // the true standing value clears its first condition for free. Downward
+    // that is a multiplier on the amount sold: at 0.1 a typed 1 becomes
+    // 1000000000 raw, ten times what was asked for.
+    vi.setSystemTime(new Date('2026-09-20T12:00:00.000Z'))
+    fetchLiveRatio.mockResolvedValue({
+      multiplier: '1',
+      nextMultiplier: '0.1',
+      nextMultiplierAt: new Date(Date.parse(VERIFIED_AT) + 60_000).toISOString(),
+    })
+    await sell(TSLA, '1')
+    expect(getSwapQuote).not.toHaveBeenCalled()
   })
 
   it('still refuses a large jump with nothing tying it to the pin', async () => {

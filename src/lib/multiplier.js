@@ -117,9 +117,33 @@ export function pendingMultiplier(pinned, now = Date.now()) {
  */
 export const MAX_RATIO_DRIFT = 0.05
 
+/**
+ * How far below the pin a ratio may sit before it needs a fresh verification,
+ * as a fraction of the pin. Two percent.
+ *
+ * The asymmetry is not fussiness, it is what the instrument does. Splits and
+ * dividend accrual only ever move a ratio UP, and those are the changes that
+ * arrive constantly. A ratio moving DOWN means a reverse split or something
+ * rarer still, and the cost of being wrong is not symmetric either: a ratio
+ * read too high undersells, a ratio read too low OVERSELLS in proportion, so
+ * a fabricated 0.0001 sells ten thousand times what was typed. A rare event
+ * should cost a re-run of scripts/verify-mints.mjs, not an unverified sell.
+ */
+export const RATIO_DROP_FLOOR = '0.98'
+
 /** Two ratios equal as fractions, so "1" and "1.0" are the same number. */
 function sameRatio(a, b) {
   return a != null && b != null && a.num * b.den === b.num * a.den
+}
+
+/**
+ * Whether `live` is at least `floor` times `pin`, in exact integer math.
+ *
+ *   live/pin >= floor.num/floor.den
+ *     <=> live.num * pin.den * floor.den >= floor.num * live.den * pin.num
+ */
+function notBelow(live, pin, floor) {
+  return live.num * pin.den * floor.den >= floor.num * live.den * pin.num
 }
 
 /**
@@ -204,7 +228,21 @@ export function reconcileRatio(pinned, live, { mint, now = Date.now(), verifiedA
   const fresh = effectiveMultiplier(live, now)
   const drift = Math.abs(Number(b.num) / Number(b.den) / (Number(a.num) / Number(a.den)) - 1)
   if (drift <= MAX_RATIO_DRIFT) return fresh
-  return provablyAfterPin(pinned, live, verifiedAt) ? fresh : null
+  if (!provablyAfterPin(pinned, live, verifiedAt)) return null
+  // Provenance establishes that this config FOLLOWS the pin. It says nothing
+  // about the value, and the value is what sizes the trade.
+  //
+  // 48 of the 103 pins have a multiplier of exactly 1, so condition (a) is
+  // met by any feed reporting the true standing value — which leaves a
+  // nextMultiplier field and a post-pin date as the only things standing
+  // between a fabricated ratio and a sell. Pointed downward that is a
+  // multiplier on the amount sold: a live nextMultiplier of 0.1 against a pin
+  // of 1 sizes a typed 1 as ten, and 0.0001 as ten thousand.
+  //
+  // So a provable update is still refused if it moves the ratio down past the
+  // floor. Up is unbounded on purpose: that is a split, which is the whole
+  // reason this hatch exists.
+  return notBelow(b, a, toRational(RATIO_DROP_FLOOR)) ? fresh : null
 }
 
 /**

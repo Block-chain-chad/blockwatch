@@ -497,3 +497,59 @@ describe('reconcileRatio accepts a provable post-pin split', () => {
     expect(reconcileRatio(pin, live, { now: AFTER_SPLIT })).toBeNull()
   })
 })
+
+/*
+ * The hatch only opens upward.
+ *
+ * provablyAfterPin checks the SHAPE of a live config, not its value. 48 of the
+ * 103 pins have a multiplier of exactly 1, so its first condition is met by
+ * any feed reporting the true standing value; a nextMultiplier field and a
+ * post-pin date were then the only things between a fabricated ratio and a
+ * real sell. Pointed downward that is a multiplier on the amount sold, because
+ * raw size is the typed amount DIVIDED by the ratio.
+ *
+ * Splits and accrual only move a ratio up. Down means a reverse split or
+ * something rarer, and that should cost a re-run of verify-mints.
+ */
+describe('reconcileRatio refuses a provable update that moves the ratio down', () => {
+  const PINNED_AT = '2026-09-16T20:57:21.973Z'
+  const AFTER = '2026-09-16T20:58:21.973Z' // one minute past the pin
+  const NOW_LATER = Date.parse('2026-09-20T12:00:00.000Z')
+  const pin = { multiplier: '1' } // TSLAx's real pin
+  const opts = { now: NOW_LATER, verifiedAt: PINNED_AT }
+
+  it('refuses the reproduction: a tenth, which would sell ten times the amount typed', () => {
+    const live = { multiplier: '1', nextMultiplier: '0.1', nextMultiplierAt: AFTER }
+    expect(reconcileRatio(pin, live, opts)).toBeNull()
+  })
+
+  it('refuses a ten-thousandfold version of the same trick', () => {
+    const live = { multiplier: '1', nextMultiplier: '0.0001', nextMultiplierAt: AFTER }
+    expect(reconcileRatio(pin, live, opts)).toBeNull()
+  })
+
+  it('still accepts a split, which is what the hatch is for', () => {
+    const live = { multiplier: '1', nextMultiplier: '10', nextMultiplierAt: AFTER }
+    expect(reconcileRatio(pin, live, opts)).toBe('10')
+  })
+
+  it('accepts a live value equal to the pin', () => {
+    const live = { multiplier: '1', nextMultiplier: '1', nextMultiplierAt: AFTER }
+    expect(reconcileRatio(pin, live, opts)).toBe('1')
+  })
+
+  it('refuses any provable drop past the floor', () => {
+    // Values near the pin are the drift band's business, not this hatch's;
+    // these are well outside it and reach the provenance path.
+    for (const down of ['0.9', '0.5', '0.25']) {
+      const live = { multiplier: '1', nextMultiplier: down, nextMultiplierAt: AFTER }
+      expect(reconcileRatio(pin, live, opts), `accepted ${down}`).toBeNull()
+    }
+  })
+
+  it('measures the drop against the PIN, not against one', () => {
+    const highPin = { multiplier: '4' }
+    const halved = { multiplier: '4', nextMultiplier: '2', nextMultiplierAt: AFTER }
+    expect(reconcileRatio(highPin, halved, opts)).toBeNull()
+  })
+})
