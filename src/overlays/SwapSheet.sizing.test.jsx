@@ -52,6 +52,7 @@ import { createRoot } from 'react-dom/client'
 
 const getSwapQuote = vi.fn()
 const fetchLiveRatio = vi.fn()
+const track = vi.fn()
 
 vi.mock('../services/swap', async (importOriginal) => ({
   ...(await importOriginal()),
@@ -63,6 +64,11 @@ vi.mock('../services/swap', async (importOriginal) => ({
 vi.mock('../services/jupiter', async (importOriginal) => ({
   ...(await importOriginal()),
   fetchLiveRatio: (...args) => fetchLiveRatio(...args),
+}))
+
+vi.mock('../services/analytics', async (importOriginal) => ({
+  ...(await importOriginal()),
+  track: (...args) => track(...args),
 }))
 
 vi.mock('../state/WalletContext', () => ({
@@ -112,6 +118,7 @@ beforeEach(() => {
   applyFlags({ [SWAP_FLAG]: true })
   getSwapQuote.mockReset()
   fetchLiveRatio.mockReset()
+  track.mockReset()
   // Default: the live read finds nothing to say, so the pin stands. Tests
   // about the live path override this.
   fetchLiveRatio.mockResolvedValue(null)
@@ -447,5 +454,43 @@ describe('the real pinned file', () => {
       expect(toRational(effectiveMultiplier(m)), `${m.ticker} has an unreadable ratio`).not.toBeNull()
       expect(m.decimals).toBe(8)
     }
+  })
+})
+
+/*
+ * Refusals are counted. They are usually correct, which is why silence about
+ * them is the dangerous state: a feed shape change would refuse more than half
+ * the pinned catalogue on both sides and look, from outside, like nothing.
+ */
+describe('the sheet counts a refused ratio', () => {
+  it('reports the reason once, not once per render', async () => {
+    vi.setSystemTime(new Date('2026-09-20T12:00:00.000Z'))
+    fetchLiveRatio.mockResolvedValue({
+      multiplier: '1',
+      nextMultiplier: '15',
+      nextMultiplierAt: new Date(Date.parse(VERIFIED_AT) + 60_000).toISOString(),
+    })
+    await sell(TSLA, '1')
+    const refusals = track.mock.calls.filter(([event]) => event === 'ratio_refused')
+    expect(refusals).toHaveLength(1)
+    expect(refusals[0][1]).toEqual({ reason: 'hatch_closed' })
+  })
+
+  it('carries no mint, wallet or amount', async () => {
+    vi.setSystemTime(new Date('2026-09-20T12:00:00.000Z'))
+    fetchLiveRatio.mockResolvedValue({ multiplier: '0.5' })
+    await sell(TSLA, '1')
+    const refusal = track.mock.calls.find(([event]) => event === 'ratio_refused')
+    expect(refusal[1]).toEqual({ reason: 'below_floor' })
+    const payload = JSON.stringify(refusal[1])
+    expect(payload).not.toContain(TSLA.mint)
+    expect(payload).not.toContain('TSLA')
+    expect(payload).not.toContain('1')
+  })
+
+  it('says nothing at all when the ratio is accepted', async () => {
+    fetchLiveRatio.mockResolvedValue({ multiplier: '1.02' })
+    await sell(TSLA, '1')
+    expect(track.mock.calls.filter(([e]) => e === 'ratio_refused')).toHaveLength(0)
   })
 })

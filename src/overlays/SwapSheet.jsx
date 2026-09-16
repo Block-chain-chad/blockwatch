@@ -12,6 +12,7 @@ import {
 import { verifiedToken, VERIFIED_AT } from '../data/verifiedMints'
 import { effectiveMultiplier, reconcileRatio } from '../lib/multiplier'
 import { fetchLiveRatio } from '../services/jupiter'
+import { track } from '../services/analytics'
 import { useFlag, SWAP_FLAG, SWAP_PAUSED_LINE } from '../services/featureFlags'
 import Sheet, { SheetTitle } from '../components/Sheet'
 
@@ -142,6 +143,12 @@ export default function SwapSheet({ asset, onClose }) {
       alive = false
     }
   }, [mint])
+  // Why a refusal happened, recorded during render and reported from an
+  // effect. Refusing is usually CORRECT, which is exactly why it has to be
+  // counted: if the feed's shape changed so that every payload reported a
+  // superseded value, more than half the pinned catalogue would refuse on both
+  // sides and, from outside, look like nothing happening at all.
+  let refusal = null
   const multiplier =
     liveRatio === undefined
       ? effectiveMultiplier(token)
@@ -149,7 +156,17 @@ export default function SwapSheet({ asset, onClose }) {
           mint,
           verifiedAt: VERIFIED_AT,
           allowProvenUpdate: side === 'sell',
+          onRefuse: (reason) => {
+            refusal = reason
+          },
         })
+
+  // Keyed on the reason and the mint, so one refusal is one event rather than
+  // one per render. The payload is the reason and nothing else: no mint, no
+  // wallet, no amount. See REFUSAL_REASONS.
+  useEffect(() => {
+    if (refusal) track('ratio_refused', { reason: refusal })
+  }, [refusal, mint])
 
   // What the user asked for, in the input mint's smallest units — the single
   // definition, used to quote AND to state the intent at confirm time. Scaled

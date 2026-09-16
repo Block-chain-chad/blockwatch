@@ -151,6 +151,27 @@ export const RATIO_DROP_FLOOR = '0.999'
  */
 export const MAX_PROVEN_RISE = '20'
 
+/**
+ * Why reconcileRatio refused, for counting. A small closed set: these are
+ * telemetry labels, never shown to a user and never carrying anything about
+ * one.
+ *
+ * Refusing is usually correct, which is exactly why it has to be counted. If
+ * Jupiter stopped sending newMultiplier, every payload would report the
+ * superseded standing value; 65 of the pinned mints have a schedule that has
+ * already fired and 53 of those sit below the downward floor, so half the
+ * catalogue would refuse on both sides and look, from outside, like nothing
+ * happening.
+ */
+export const REFUSAL_REASONS = Object.freeze([
+  'unpinned', // a Solana mint we have never verified
+  'unreadable', // a value on one side or the other that will not parse
+  'below_floor', // live sits further below the pin than jitter explains
+  'over_cap', // a rise larger than any real split
+  'hatch_closed', // above the band, and this caller will not take provenance
+  'unproven', // above the band, and the config cannot be tied to the pin
+])
+
 /** Two ratios equal as fractions, so "1" and "1.0" are the same number. */
 function sameRatio(a, b) {
   return a != null && b != null && a.num * b.den === b.num * a.den
@@ -258,24 +279,35 @@ function provablyAfterPin(pinned, live, verifiedAt) {
  * With no pin it defers to ratioFor, which draws the line between "the issuer
  * never scaled this" and "we have not checked this one" — an unpinned Solana
  * mint refuses here exactly as it does everywhere else.
+ *
+ * `onRefuse` is called with a REFUSAL_REASONS value on every path that returns
+ * null. It is a callback rather than a track() call so this module stays pure
+ * and testable: the caller owns the sink, and decides how often to report.
  */
 export function reconcileRatio(
   pinned,
   live,
-  { mint, now = Date.now(), verifiedAt, allowProvenUpdate = false } = {}
+  { mint, now = Date.now(), verifiedAt, allowProvenUpdate = false, onRefuse } = {}
 ) {
-  if (!pinned) return ratioFor(null, mint, now)
+  const refuse = (reason) => {
+    onRefuse?.(reason)
+    return null
+  }
+  if (!pinned) {
+    const fallback = ratioFor(null, mint, now)
+    return fallback ?? refuse('unpinned')
+  }
   const pin = effectiveMultiplier(pinned, now)
   const a = toRational(pin)
-  if (!live) return a ? pin : null
+  if (!live) return a ? pin : refuse('unreadable')
   // A live payload that is truthy but carries no readable multiplier is not an
   // answer. Read it explicitly rather than letting effectiveMultiplier's
   // default turn `{}` or `true` into 1.0 — which, against a pin near 1.0,
   // sits inside the drift band and would size a real sell on a ratio nobody
   // ever reported.
-  if (toRational(live.multiplier) == null) return null
+  if (toRational(live.multiplier) == null) return refuse('unreadable')
   const b = toRational(effectiveMultiplier(live, now))
-  if (a == null || b == null) return null
+  if (a == null || b == null) return refuse('unreadable')
   const fresh = effectiveMultiplier(live, now)
 
   // BELOW the pin: refuse past the floor, whatever the provenance says.
@@ -293,16 +325,16 @@ export function reconcileRatio(
   // OPENx's upward accrual step and nothing downward ever needed it; applied
   // symmetrically it accepted a live 0.951 against a pin of 1 with no
   // provenance at all, which sells 105.15 when 100 is typed.
-  if (!notBelow(b, a, toRational(RATIO_DROP_FLOOR))) return null
+  if (!notBelow(b, a, toRational(RATIO_DROP_FLOOR))) return refuse('below_floor')
 
   // AT OR ABOVE the pin: inside the band it needs no provenance.
   if (notAbove(b, a, toRational(RATIO_RISE_CEILING))) return fresh
 
   // Past the band it must prove it followed the pin, the caller must have
   // asked for that to be enough, and it must still be a believable size.
-  if (!allowProvenUpdate) return null
-  if (!notAbove(b, a, toRational(MAX_PROVEN_RISE))) return null
-  return provablyAfterPin(pinned, live, verifiedAt) ? fresh : null
+  if (allowProvenUpdate !== true) return refuse('hatch_closed')
+  if (!notAbove(b, a, toRational(MAX_PROVEN_RISE))) return refuse('over_cap')
+  return provablyAfterPin(pinned, live, verifiedAt) ? fresh : refuse('unproven')
 }
 
 /**

@@ -179,6 +179,7 @@ async function readLiveRatio(mint) {
     // app emits, grouped. This one belongs under Money:
     //
     //   ratio_unreadable  { source }  services/jupiter.js
+    //   ratio_refused     { reason }  overlays/SwapSheet.jsx
     //
     // Add it there when this branch lands; it is recorded here so the event
     // and its description cannot drift apart in the meantime.

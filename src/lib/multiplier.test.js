@@ -3,6 +3,7 @@ import {
   DEFAULT_MULTIPLIER,
   RATIO_RISE_CEILING,
   MAX_PROVEN_RISE,
+  REFUSAL_REASONS,
   RATIO_DROP_FLOOR,
   reconcileRatio,
   ratioFor,
@@ -675,5 +676,112 @@ describe('the proven-update hatch is opt-in and bounded', () => {
     // A buy must keep working normally; only the hatch is withheld from it.
     expect(reconcileRatio(pin, { multiplier: '1.03' }, base)).toBe('1.03')
     expect(reconcileRatio(pin, { multiplier: '1.03' }, { ...base, allowProvenUpdate: true })).toBe('1.03')
+  })
+})
+
+/*
+ * Every refusal names itself.
+ *
+ * Refusing is usually correct, which is why it has to be counted. If Jupiter
+ * stopped sending newMultiplier, every payload would report the superseded
+ * standing value: 65 pinned mints have a schedule that has already fired and
+ * 53 of those sit below the downward floor, so more than half the catalogue
+ * would refuse on both sides and look, from outside, like nothing happening.
+ */
+describe('reconcileRatio reports why it refused', () => {
+  const PINNED_AT = '2026-09-16T20:57:21.973Z'
+  const AFTER = '2026-09-16T20:58:21.973Z'
+  const LATER = Date.parse('2026-09-20T12:00:00.000Z')
+  const pin = { multiplier: '1' }
+
+  /** Runs one case and returns the reasons reported. */
+  const reasons = (pinned, live, over = {}) => {
+    const seen = []
+    reconcileRatio(pinned, live, {
+      now: LATER,
+      verifiedAt: PINNED_AT,
+      onRefuse: (r) => seen.push(r),
+      ...over,
+    })
+    return seen
+  }
+
+  it('names an unverified Solana mint', () => {
+    expect(reasons(null, null, { mint: 'UnverifiedMint1111111111111111111111111111' })).toEqual([
+      'unpinned',
+    ])
+  })
+
+  it('names an unreadable value on either side', () => {
+    expect(reasons({ multiplier: 'bad' }, null)).toEqual(['unreadable'])
+    expect(reasons(pin, { multiplier: 'bad' })).toEqual(['unreadable'])
+    expect(reasons(pin, {})).toEqual(['unreadable'])
+  })
+
+  it('names a drop past the floor', () => {
+    expect(reasons(pin, { multiplier: '0.9' })).toEqual(['below_floor'])
+  })
+
+  it('names a rise the caller would not take on provenance', () => {
+    const live = { multiplier: '1', nextMultiplier: '10', nextMultiplierAt: AFTER }
+    expect(reasons(pin, live)).toEqual(['hatch_closed'])
+  })
+
+  it('names a rise past the cap', () => {
+    const live = { multiplier: '1', nextMultiplier: '1000', nextMultiplierAt: AFTER }
+    expect(reasons(pin, live, { allowProvenUpdate: true })).toEqual(['over_cap'])
+  })
+
+  it('names a rise that cannot be tied back to the pin', () => {
+    const live = { multiplier: '7', nextMultiplier: '10', nextMultiplierAt: AFTER }
+    expect(reasons(pin, live, { allowProvenUpdate: true })).toEqual(['unproven'])
+  })
+
+  it('reports exactly once per call, and nothing when it accepts', () => {
+    expect(reasons(pin, { multiplier: '0.9' })).toHaveLength(1)
+    expect(reasons(pin, { multiplier: '1.02' })).toEqual([])
+    expect(reasons(pin, null)).toEqual([])
+  })
+
+  it('only ever reports a reason from the fixed set', () => {
+    const cases = [
+      [null, null, { mint: 'M' }],
+      [{ multiplier: 'bad' }, null, {}],
+      [pin, { multiplier: '0.9' }, {}],
+      [pin, { multiplier: '1', nextMultiplier: '10', nextMultiplierAt: AFTER }, {}],
+      [pin, { multiplier: '1', nextMultiplier: '1000', nextMultiplierAt: AFTER }, { allowProvenUpdate: true }],
+      [pin, { multiplier: '7', nextMultiplier: '10', nextMultiplierAt: AFTER }, { allowProvenUpdate: true }],
+    ]
+    for (const [p, l, o] of cases) {
+      for (const r of reasons(p, l, o)) expect(REFUSAL_REASONS).toContain(r)
+    }
+  })
+
+  it('works without a callback at all', () => {
+    expect(() => reconcileRatio(pin, { multiplier: '0.9' }, { now: LATER })).not.toThrow()
+  })
+})
+
+/*
+ * The hatch is a boolean, not a truthy value. `side === 'sell'` evaluates to a
+ * boolean today, but a caller passing the side string itself — or any other
+ * truthy thing — must not quietly open the one guard standing between a proven
+ * feed value and a buy-side display.
+ */
+describe('the hatch opts in on true and nothing else', () => {
+  const PINNED_AT = '2026-09-16T20:57:21.973Z'
+  const AFTER = '2026-09-16T20:58:21.973Z'
+  const opts = { now: Date.parse('2026-09-20T12:00:00.000Z'), verifiedAt: PINNED_AT }
+  const pin = { multiplier: '1' }
+  const live = { multiplier: '1', nextMultiplier: '10', nextMultiplierAt: AFTER }
+
+  it('stays closed for every truthy value that is not true', () => {
+    for (const v of ['sell', 'no', 1, {}, [], 'true']) {
+      expect(reconcileRatio(pin, live, { ...opts, allowProvenUpdate: v }), `opened on ${JSON.stringify(v)}`).toBeNull()
+    }
+  })
+
+  it('opens only on the boolean', () => {
+    expect(reconcileRatio(pin, live, { ...opts, allowProvenUpdate: true })).toBe('10')
   })
 })
