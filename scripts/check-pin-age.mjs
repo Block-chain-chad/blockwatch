@@ -9,9 +9,10 @@
 //
 // This lived as an assertion inside the unit suite, which was the wrong place
 // for it twice over: it turned every test run red on a date nobody had written
-// down, and it reported a routine maintenance task as a broken test. Here it
-// is its own named step, so CI says "the pin is stale" rather than "942 tests
-// and one of them is about a calendar".
+// down, and it reported a routine maintenance task as a broken test. It is now
+// its own named step — "Pin freshness" in .github/workflows/ci.yml, and again
+// in repin-mints.yml after the re-pin — so CI says "the pin is stale" rather
+// than "973 tests and one of them is about a calendar".
 //
 //   npm run check:pin
 //

@@ -346,8 +346,9 @@ describe('the pinned ratios are real and fresh', () => {
   // The pin's AGE is deliberately not asserted here. It used to be, and it
   // turned the whole unit suite red on a date nobody had written down while
   // reporting a routine re-pin as a broken test. It lives in
-  // scripts/check-pin-age.mjs now, run by `npm run check:pin` as its own CI
-  // step, with its rule tested in scripts/check-pin-age.test.js.
+  // scripts/check-pin-age.mjs, run by `npm run check:pin` as the "Pin
+  // freshness" step in ci.yml and again in repin-mints.yml, with its rule
+  // tested in scripts/check-pin-age.test.js.
 })
 
 /*

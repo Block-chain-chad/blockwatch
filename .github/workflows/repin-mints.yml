@@ -61,6 +61,12 @@ jobs:
       - name: Read the ratios off Solana mainnet
         run: node scripts/verify-mints.mjs
 
+      # After the re-pin, so a run that was throttled or failed in a way that
+      # left the file untouched is reported as the stale pin it is, instead of
+      # completing quietly and opening no pull request.
+      - name: Pin freshness
+        run: npm run check:pin
+
       - name: Reconcile the price feeds against the chain
         # Informational: a flag here means a feed's unit looks wrong for an
         # asset, which is worth a human reading but is not a reason to abandon
