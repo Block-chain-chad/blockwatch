@@ -570,6 +570,30 @@ describe('executeSwap', () => {
     expect(trail[0].key).toBe(trail[1].key)
   })
 
+  it('records the ratio and the typed figure, so the record is answerable later', async () => {
+    // amountRaw is the typed figure divided by the issuer's ratio, and that
+    // ratio moves on the issuer's own schedule. Reading it back a week later
+    // gives whatever it is then, not what this trade used — so both the
+    // number the user typed and the exact ratio applied go on the record.
+    const p = provider({ signAndSendTransaction: vi.fn(async () => ({ signature: 'SIG' })) })
+    await executeSwap({
+      quote: QUOTE,
+      provider: p,
+      intent: { ...INTENT, typedAmount: '1', multiplier: '10' },
+    })
+    expect(readSwapAudit()[0]).toMatchObject({
+      amountRaw: '10000000',
+      typedAmount: '1',
+      multiplier: '10',
+    })
+  })
+
+  it('records nulls rather than inventing a ratio when the caller states none', async () => {
+    const p = provider({ signAndSendTransaction: vi.fn(async () => ({ signature: 'SIG' })) })
+    await executeSwap({ quote: QUOTE, provider: p, intent: INTENT })
+    expect(readSwapAudit()[0]).toMatchObject({ typedAmount: null, multiplier: null })
+  })
+
   it("records an ambiguous outcome as 'unknown', never as a failure", async () => {
     const p = provider({
       signAndSendTransaction: vi.fn(async () => {

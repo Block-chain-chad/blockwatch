@@ -293,7 +293,19 @@ export default function SwapSheet({ asset, onClose }) {
         // What the user asked for, scaled from what they typed — NOT read
         // back off the quote. Stating it independently is what lets the
         // service check one against the other.
-        intent: { side, mint, amountRaw, ticker: asset.ticker },
+        // `typedAmount` and `multiplier` are carried for the audit record,
+        // not for sizing: amountRaw is already the only figure that sizes
+        // anything. They are what makes the record answerable later — the
+        // ratio moves on the issuer's schedule, so reading it back afterwards
+        // gives a different number than the one this trade used.
+        intent: {
+          side,
+          mint,
+          amountRaw,
+          ticker: asset.ticker,
+          typedAmount: amount,
+          multiplier,
+        },
       })
       setSig(signature)
       setStatus('done')

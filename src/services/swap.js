@@ -298,6 +298,15 @@ async function submit({ quote, provider, intent, publicKey, key, inputMint, outp
     inputMint,
     outputMint,
     amountRaw: intent.amountRaw,
+    // What the user typed, and the ratio that turned it into amountRaw above.
+    // Without these the record is unreadable after the fact: amountRaw is the
+    // typed figure divided by a number the issuer moves on its own schedule,
+    // so "did this sell what they asked for" cannot be answered from the trail
+    // alone — and reconstructing the ratio later gives whatever it is THEN,
+    // not what it was at signing. Both are captured verbatim: the ratio as the
+    // exact decimal string used, the amount as the exact string typed.
+    typedAmount: intent.typedAmount ?? null,
+    multiplier: intent.multiplier ?? null,
     quotedOutRaw: quote.outAmount,
     minOutRaw: quote.otherAmountThreshold,
     slippageBps: SLIPPAGE_BPS,
