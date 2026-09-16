@@ -13,9 +13,11 @@
 // the 405/403 gates below (see api/_cors.js).
 //
 // ABUSE: this endpoint makes us send mail to an address a stranger chose, so
-// it is rate limited per caller AND per address (see api/_rateLimit.js — the
-// limits are best-effort and per-instance; read that file before quoting the
-// numbers to anyone).
+// it is rate limited per caller, per address, AND on how much mail this
+// instance will send in total (see api/_rateLimit.js — the limits are
+// best-effort and per-instance; read that file before quoting the numbers to
+// anyone). The first two are keyed on things the caller picks and can be
+// dodged by rotating both; the third cannot.
 
 import { applyCors, handlePreflight, isNativeOrigin } from './_cors.js'
 import {
@@ -41,8 +43,25 @@ const perClient = createRateLimiter({ capacity: 5, refillPerSecond: 5 / 3600 })
 // re-join mails nothing, and this keeps the attempts from reaching Supabase.
 const perEmail = createRateLimiter({ capacity: 3, refillPerSecond: 3 / 3600 })
 
+// The ceiling on SENDS for this whole instance, and the only one of the three
+// that a caller cannot split. The two above are keyed on things the caller
+// chooses — a header and an address — so rotating both buys an unbounded
+// number of welcome emails to an unbounded number of strangers: 200 rotating
+// callers with 200 rotating addresses sent 200 emails and were refused
+// nothing. This one is keyed on a constant.
+//
+// 60 burst, refilling at one a minute. A pre-launch waitlist does not see 60
+// genuine first-time joins in a burst, let alone one every minute forever, so
+// it should never touch real traffic. Per instance like everything else in
+// ./_rateLimit.js, so it is a floor on how much mail one instance can be made
+// to send, not a global cap — read that file before quoting the number.
+//
+// Spent at the moment an email is about to go out, never on an attempt: a
+// re-join mails nothing, and must not eat the budget of someone who would.
+const perInstanceSend = createRateLimiter({ capacity: 60, refillPerSecond: 1 / 60, maxKeys: 1 })
+
 // Exported for the tests, which need a known-empty bucket per case.
-export const limiters = { perClient, perEmail }
+export const limiters = { perClient, perEmail, perInstanceSend }
 
 const welcomeHtml = (siteUrl, siteHost, position) => `
 <div style="font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;color:#18181b">
@@ -191,35 +210,51 @@ export default async function handler(req, res) {
     // Deliberately not logging the address — emails stay out of Vercel logs.
     console.warn('RESEND_API_KEY not set; welcome email skipped')
   } else if (isNew) {
-    // Link back to wherever this deployment actually serves from — the
-    // *.vercel.app URL during the gated beta, blockwatch.app automatically
-    // once the custom domain is connected. Vercel routes requests by Host,
-    // so this header is always one of the project's own domains.
-    const siteHost = req.headers.host || 'blockwatch.app'
-    const siteUrl = `https://${siteHost}`
-    try {
-      const sendRes = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${resendKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: 'OnStock <contact@blockwatch.app>',
-          to: [email],
-          subject: "You're on the OnStock waitlist",
-          html: welcomeHtml(siteUrl, siteHost, position),
-        }),
-      })
-      if (!sendRes.ok) {
-        // Status only — Resend error bodies can echo the recipient address,
-        // and addresses don't belong in function logs.
-        console.error('welcome email rejected:', sendRes.status)
+    // The instance ceiling, spent here and nowhere else, because this is the
+    // one line where mail actually leaves.
+    //
+    // Running out does NOT fail the join. The address is already saved by
+    // this point, and telling someone their signup failed when it did not is
+    // a worse outcome than a missing welcome email — so the response below is
+    // unchanged and only the mail is dropped. Loudly: a silent stop to every
+    // welcome email is exactly the kind of thing nobody notices.
+    const budget = perInstanceSend.take('all')
+    if (!budget.ok) {
+      console.error(
+        'welcome-email ceiling reached on this instance; this welcome was not sent. Seconds until the next one:',
+        budget.retryAfter
+      )
+    } else {
+      // Link back to wherever this deployment actually serves from — the
+      // *.vercel.app URL during the gated beta, blockwatch.app automatically
+      // once the custom domain is connected. Vercel routes requests by Host,
+      // so this header is always one of the project's own domains.
+      const siteHost = req.headers.host || 'blockwatch.app'
+      const siteUrl = `https://${siteHost}`
+      try {
+        const sendRes = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${resendKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: 'OnStock <contact@blockwatch.app>',
+            to: [email],
+            subject: "You're on the OnStock waitlist",
+            html: welcomeHtml(siteUrl, siteHost, position),
+          }),
+        })
+        if (!sendRes.ok) {
+          // Status only — Resend error bodies can echo the recipient address,
+          // and addresses don't belong in function logs.
+          console.error('welcome email rejected:', sendRes.status)
+        }
+      } catch (err) {
+        // The join succeeded, that's what matters — but leave a trace in the
+        // function logs so send failures are debuggable instead of invisible.
+        console.error('welcome email failed:', err)
       }
-    } catch (err) {
-      // The join succeeded, that's what matters — but leave a trace in the
-      // function logs so send failures are debuggable instead of invisible.
-      console.error('welcome email failed:', err)
     }
   }
   // isNew === false → nothing sent and nothing logged: a log line here would

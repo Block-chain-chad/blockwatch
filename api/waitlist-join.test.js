@@ -57,6 +57,7 @@ let joinPayload
 beforeEach(() => {
   limiters.perClient.reset()
   limiters.perEmail.reset()
+  limiters.perInstanceSend.reset()
   process.env.VITE_SUPABASE_URL = 'https://project.supabase.co'
   process.env.VITE_SUPABASE_ANON_KEY = 'anon-key'
   process.env.RESEND_API_KEY = 'resend-key'
@@ -188,6 +189,40 @@ describe('api/waitlist-join — per-address rate limit', () => {
   it('leaves other addresses alone', async () => {
     for (let i = 0; i < 4; i += 1) await post('one@example.com', from(`9.2.2.${i}`))
     expect((await post('two@example.com', from('9.2.9.9'))).statusCode).toBe(200)
+  })
+})
+
+describe('api/waitlist-join — whole-instance send ceiling', () => {
+  it('stops a rotating flood mailing an unbounded number of strangers', async () => {
+    // Both of the other buckets are keyed on something the caller picks, so a
+    // fresh source address and a fresh victim address together dodge both.
+    // Driven this way the endpoint sent 200 welcome emails and refused none.
+    for (let i = 0; i < 200; i += 1) {
+      await post(`victim${i}@example.com`, from(`50.0.${Math.floor(i / 100)}.${i % 100}`))
+    }
+    expect(sends()).toHaveLength(60)
+  })
+
+  it('still saves the join once the ceiling is spent', async () => {
+    // The address is already in Supabase by then. Dropping the welcome is the
+    // right failure; telling someone their signup failed is not.
+    for (let i = 0; i < 60; i += 1) await post(`early${i}@example.com`, from(`51.0.0.${i}`))
+    const res = await post('late@example.com', from('51.1.1.1'))
+    expect(res.statusCode).toBe(200)
+    expect(res.body).toEqual({ position: 7 })
+    expect(joins()).toHaveLength(61)
+    expect(sends()).toHaveLength(60)
+  })
+
+  it('is spent only on mail that really goes out', async () => {
+    // A re-join mails nothing, so it must not eat the budget of someone whose
+    // welcome would actually be sent.
+    joinPayload = { position: 7, is_new: false }
+    for (let i = 0; i < 100; i += 1) await post(`rejoin${i}@example.com`, from(`52.0.0.${i}`))
+    expect(sends()).toHaveLength(0)
+    joinPayload = { position: 7, is_new: true }
+    await post('first-timer@example.com', from('52.9.9.9'))
+    expect(sends()).toHaveLength(1)
   })
 })
 
