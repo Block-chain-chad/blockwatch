@@ -15,7 +15,7 @@ import {
   candlesPerShare,
   multiplierLine,
 } from './multiplier'
-import { VERIFIED_MINTS, VERIFIED_AT } from '../data/verifiedMints'
+import { VERIFIED_MINTS } from '../data/verifiedMints'
 
 /*
  * These conversions decide how many tokens a sell transaction carries. A user
@@ -259,34 +259,70 @@ describe('candlesPerShare — pool candles become comparable to the share', () =
   })
 })
 
-describe('multiplierLine — the one honest sentence on the asset screen', () => {
-  it('says nothing at all when one token is one share', () => {
-    expect(multiplierLine(TSLA, NOW)).toBeNull()
-    expect(multiplierLine(null, NOW)).toBeNull()
+describe('multiplierLine — what the issuer says a token tracks', () => {
+  it('says nothing at all when one token tracks one share', () => {
+    expect(multiplierLine(TSLA, { underlying: 'TSLA', now: NOW })).toBeNull()
+    expect(multiplierLine(null, { underlying: 'TSLA', now: NOW })).toBeNull()
   })
 
-  it('calls a whole-number ratio a split and dates it', () => {
-    expect(multiplierLine(NFLX, NOW)).toBe('1 token = 10 shares since a split on 16 Nov 2025')
+  it('states the ratio against the underlying and dates the issuer change', () => {
+    expect(multiplierLine(NFLX, { underlying: 'NFLX', now: NOW })).toBe(
+      'Issuer ratio: 1 token tracks the value of 10 NFLX shares. ' +
+        'Backed last changed this ratio on 16 Nov 2025.'
+    )
   })
 
-  it('calls a fractional ratio above one a dividend', () => {
+  it('names no corporate action, because we do not have one', () => {
+    // The old version inferred a cause from the number's shape and was already
+    // wrong on this repo's own data: TQQQx at 2.008976 rendered "a dividend",
+    // while the issuer documents a 4-for-1 SPLIT moving a ratio from 1.008 to
+    // 4.032 — fractional. Sub-one ratios have several causes too.
+    for (const pinned of [NFLX, TQQQ, AZN]) {
+      const line = multiplierLine(pinned, { underlying: 'X', now: NOW })
+      expect(line).not.toMatch(/split|dividend|reverse/i)
+    }
+  })
+
+  it('does not claim a token IS shares, only that it tracks their value', () => {
+    const line = multiplierLine(NFLX, { underlying: 'NFLX', now: NOW })
+    expect(line).toContain('tracks the value of')
+    expect(line).not.toContain('1 token = ')
+  })
+
+  it('uses the same sentence for a ratio below one', () => {
+    expect(multiplierLine(AZN, { underlying: 'AZN', now: NOW })).toBe(
+      'Issuer ratio: 1 token tracks the value of 0.5111 AZN shares. ' +
+        'Backed last changed this ratio on 7 Aug 2026.'
+    )
+  })
+
+  it('FLOORS to four places rather than rounding up', () => {
     const ko = {
       multiplier: '1.0183317967386898',
       nextMultiplier: '1.0225601246249238',
       nextMultiplierAt: '2026-09-15T00:30:00.000Z',
     }
-    expect(multiplierLine(ko, NOW)).toBe('1 token = 1.0226 shares since a dividend on 15 Sep 2026')
+    // toFixed(4) gives 1.0226, which overstates what the token tracks.
+    expect(multiplierLine(ko, { underlying: 'KO', now: NOW })).toContain('1.0225 KO shares')
+    expect(multiplierLine(ko, { underlying: 'KO', now: NOW })).not.toContain('1.0226')
   })
 
-  it('calls a ratio below one a reverse split, which is what makes one', () => {
-    expect(multiplierLine(AZN, NOW)).toBe(
-      '1 token = 0.5111 shares since a reverse split on 7 Aug 2026'
+  it('shows more places rather than flooring a real ratio to a parity claim', () => {
+    const barely = { multiplier: '1.000002' }
+    expect(multiplierLine(barely, { underlying: 'X', now: NOW })).toContain(
+      'tracks the value of 1.000002 X shares'
     )
   })
 
-  it('quotes the standing ratio while a change is still pending', () => {
+  it('omits the date sentence while a change is still pending', () => {
     const soon = { multiplier: '2', nextMultiplier: '4', nextMultiplierAt: '2026-10-01T00:30:00.000Z' }
-    expect(multiplierLine(soon, NOW)).toBe('1 token = 2 shares')
+    expect(multiplierLine(soon, { underlying: 'X', now: NOW })).toBe(
+      'Issuer ratio: 1 token tracks the value of 2 X shares.'
+    )
+  })
+
+  it('still reads sensibly with no underlying ticker to hand', () => {
+    expect(multiplierLine(NFLX, { now: NOW })).toContain('tracks the value of 10 shares')
   })
 })
 

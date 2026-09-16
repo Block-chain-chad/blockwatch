@@ -4,6 +4,7 @@ import { formatPrice, formatPct, GapBar, changeColor } from '../shared'
 import { shareFreshness } from '../../lib/provenance'
 import { multiplierLine } from '../../lib/multiplier'
 import { verifiedToken } from '../../data/verifiedMints'
+import { useFlag, SWAP_FLAG } from '../../services/featureFlags'
 import PriceText from '../PriceText'
 
 /*
@@ -48,7 +49,17 @@ export default function GapPanel({ asset, scrub, session, lastFetchAt }) {
   // accrual, it moves the ratio by a fraction of a percent, and announcing a
   // date beside a trade affordance reads as a reason to act before it. The
   // line switches to the new ratio by itself the moment it takes effect.
-  const ratioLine = multiplierLine(verifiedToken(asset))
+  //
+  // GATED, and NOT because it is swap functionality — this panel renders for
+  // every visitor on the asset screen and the desktop readout, with no flag of
+  // its own. The sentence describes what a tokenized security represents, and
+  // the Compliance Reviewer has asked that a lawyer rule on the noun before it
+  // ships. Reusing the swap flag borrows a switch that already fails closed;
+  // it is the conservative choice and Terra can lift it independently.
+  const ratioAllowed = useFlag(SWAP_FLAG)
+  const ratioLine = ratioAllowed
+    ? multiplierLine(verifiedToken(asset), { underlying: asset.underlying })
+    : null
 
   return (
     <div

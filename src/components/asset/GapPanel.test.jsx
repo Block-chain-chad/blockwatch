@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 // GapPanel reaches components/shared, which pulls in AssetLogo → the stock
@@ -10,6 +10,7 @@ vi.hoisted(() => {
 })
 
 const { default: GapPanel } = await import('./GapPanel')
+const { applyFlags, SWAP_FLAG } = await import('../../services/featureFlags')
 
 /*
  * The panel that carries the gap number, rendered without a browser (the
@@ -87,16 +88,22 @@ describe('GapPanel share leg', () => {
 /*
  * The issuer's share-per-token ratio.
  *
- * 66 of the 103 pinned mints are not 1:1, and six are 2x or more, so "one
- * token is one share" is false for most of the universe. Where it is false
- * the panel has to say so, because the two legs it prints are only
- * comparable once the reader knows the ratio. Where it is true it says
- * nothing, since that is what everyone already assumes.
+ * 66 of the 103 pinned mints are not 1:1, so "one token is one share" is false
+ * for most of the universe, and the two legs this panel prints are only
+ * comparable once the reader knows the ratio.
+ *
+ * The sentence is the Compliance Reviewer's, and it is gated: this panel
+ * renders for every visitor from AssetDetail and the desktop readout with no
+ * flag of its own, and the wording describes what a tokenized security
+ * represents. It rides the swap flag until a lawyer rules on the noun.
  *
  * Real ids from data/verifiedMints.json on purpose — a regeneration that
  * dropped the ratios fails here too.
  */
 describe('GapPanel issuer ratio line', () => {
+  beforeEach(() => applyFlags({ [SWAP_FLAG]: true }))
+  afterEach(() => applyFlags(null))
+
   const withId = (id, ticker, underlying) =>
     renderToStaticMarkup(
       <GapPanel
@@ -115,30 +122,66 @@ describe('GapPanel issuer ratio line', () => {
       />
     )
 
-  it('states the ratio and its date for a token that has split', () => {
+  it('states what a split-ratio token tracks, and when Backed changed it', () => {
     const html = withId('netflix-xstock', 'NFLXx', 'NFLX')
-    expect(html).toContain('1 token = 10 shares')
-    expect(html).toContain('since a split on 16 Nov 2025')
+    expect(html).toContain('Issuer ratio: 1 token tracks the value of 10 NFLX shares.')
+    expect(html).toContain('Backed last changed this ratio on 16 Nov 2025.')
   })
 
-  it('states a fractional ratio from a dividend', () => {
+  it('states a fractional ratio the same way, naming no corporate action', () => {
     const html = withId('coca-cola-xstock', 'KOx', 'KO')
-    expect(html).toMatch(/1 token = 1\.0\d+ shares since a dividend on/)
+    expect(html).toMatch(/1 token tracks the value of 1\.0\d+ KO shares/)
+    expect(html).not.toMatch(/split|dividend/i)
   })
 
-  it('says nothing at all when one token really is one share', () => {
-    const html = withId('tesla-xstock', 'TSLAx', 'TSLA')
-    expect(html).not.toContain('1 token =')
+  it('never claims the token IS shares', () => {
+    expect(withId('netflix-xstock', 'NFLXx', 'NFLX')).not.toContain('1 token = ')
+  })
+
+  it('says nothing at all when one token tracks one share', () => {
+    expect(withId('tesla-xstock', 'TSLAx', 'TSLA')).not.toContain('Issuer ratio')
   })
 
   it('says nothing for an asset with no pinned ratio, such as an Ondo wrapper', () => {
-    const html = withId('nvidia-ondo-tokenized-stock', 'NVDAon', 'NVDA')
-    expect(html).not.toContain('1 token =')
+    expect(withId('nvidia-ondo-tokenized-stock', 'NVDAon', 'NVDA')).not.toContain('Issuer ratio')
   })
 
   it('still renders the gap itself alongside the ratio', () => {
     const html = withId('netflix-xstock', 'NFLXx', 'NFLX')
     expect(html).toContain('Gap vs NFLX')
     expect(html).toContain('NFLXx token')
+  })
+})
+
+describe('GapPanel issuer ratio line is gated', () => {
+  const render = () =>
+    renderToStaticMarkup(
+      <GapPanel
+        asset={{
+          id: 'netflix-xstock',
+          ticker: 'NFLXx',
+          underlying: 'NFLX',
+          tokenPrice: 76.98,
+          stockPrice: 76.41,
+          stockQuote: traded(12),
+          volume24h: 2_000_000,
+        }}
+        scrub={null}
+        session="regular"
+        lastFetchAt={NOW}
+      />
+    )
+
+  it('is absent with the flag off', () => {
+    applyFlags({ [SWAP_FLAG]: false })
+    expect(render()).not.toContain('Issuer ratio')
+  })
+
+  it('is absent when no flag has answered, so it fails closed', () => {
+    applyFlags(null)
+    const html = render()
+    expect(html).not.toContain('Issuer ratio')
+    // The rest of the panel is unaffected by the gate.
+    expect(html).toContain('Gap vs NFLX')
   })
 })

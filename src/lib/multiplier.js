@@ -402,19 +402,47 @@ function utcDate(ms) {
  * accrues into the ratio. Never says which way the gap moves, and never
  * advises — it states the issuer's own fact and the date it changed.
  */
-export function multiplierLine(pinned, now = Date.now()) {
-  const m = effectiveMultiplier(pinned, now)
-  const r = toRational(m)
+export function multiplierLine(pinned, { underlying, now = Date.now() } = {}) {
+  const r = toRational(effectiveMultiplier(pinned, now))
   if (r == null || r.num === r.den) return null
-  const ratio = Number(r.num) / Number(r.den)
-  const whole = r.num % r.den === 0n
-  const shares = whole ? String(ratio) : ratio.toFixed(4).replace(/0+$/, '').replace(/\.$/, '')
-  // What produces each shape. A whole-number ratio above one is a split; a
-  // ratio below one is a reverse split, which is a different corporate action
-  // and reads as a mistake if you call it a split. Everything else is
-  // dividend accrual, which is what moves a ratio by fractions of a percent.
-  const cause = ratio < 1 ? 'a reverse split' : whole ? 'a split' : 'a dividend'
+
+  // Floor, never round. Everything else in this module truncates, and toFixed
+  // rounded UP — printing 1.0226 for a ratio of 1.02256, which overstates what
+  // a token tracks. Four places unless flooring would land on exactly "1",
+  // which would be a parity claim about a ratio that is not parity; then show
+  // whatever it takes to say something true.
+  let shares = floorTo(r, 4)
+  for (let places = 5; shares === '1' && places <= 12; places += 1) shares = floorTo(r, places)
+  if (shares === '1') return null
+
+  // NO CAUSE. The previous version inferred one from the number's shape —
+  // whole means a split, fractional means a dividend, below one means a
+  // reverse split — and it was already wrong on this repo's own data: TQQQx
+  // sits at 2.008976 and rendered "since a dividend", while the issuer's own
+  // documentation shows a 4-for-1 split moving a ratio from 1.008 to 4.032,
+  // which is fractional. Sub-one ratios have several causes too, spin-offs and
+  // demergers among them. We do not have the corporate action, so we do not
+  // name one.
+  //
+  // "tracks the value of", not "=". An equivalence is a claim about what the
+  // holder owns, and Backed's own legal overview denies it.
+  const ticker = underlying ? `${underlying} ` : ''
+  const line = `Issuer ratio: 1 token tracks the value of ${shares} ${ticker}shares.`
+
+  // The DATE is the on-chain activation time, which is when Backed changed the
+  // ratio — not when the corporate action happened. It is usually 00:30 UTC
+  // the day after the ex-date, so calling it the event's date would be wrong.
   const at = pinned?.nextMultiplierAt ? Date.parse(pinned.nextMultiplierAt) : null
-  const when = Number.isFinite(at) && now >= at ? ` since ${cause} on ${utcDate(at)}` : ''
-  return `1 token = ${shares} ${shares === '1' ? 'share' : 'shares'}${when}`
+  if (!Number.isFinite(at) || now < at) return line
+  return `${line} Backed last changed this ratio on ${utcDate(at)}.`
 }
+
+/** A ratio floored to `places` decimals, as a trimmed decimal string. */
+function floorTo(r, places) {
+  const scaled = (r.num * 10n ** BigInt(places)) / r.den
+  const digits = scaled.toString().padStart(places + 1, '0')
+  const intPart = digits.slice(0, digits.length - places)
+  const fracPart = digits.slice(digits.length - places).replace(/0+$/, '')
+  return fracPart ? `${intPart}.${fracPart}` : intPart
+}
+
