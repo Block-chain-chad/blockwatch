@@ -1,8 +1,22 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["react", "oxc"],
+  // Browser globals everywhere by default. no-undef is what catches an
+  // identifier that is used but never imported or defined — the failure mode
+  // JSX hides, because an undefined name inside markup is invisible to the
+  // production build and only throws when a user renders that component.
+  "env": { "browser": true, "es2024": true },
   "rules": {
     "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
+    "react/only-export-components": ["warn", { "allowConstantExport": true }],
+    "no-undef": "error"
+  },
+  "overrides": [
+    {
+      // Serverless functions, build scripts, the Vite config and the vitest
+      // suite run under Node, so process and Buffer are real there.
+      "files": ["api/**", "scripts/**", "vite.config.js", "**/*.test.js", "**/*.test.jsx"],
+      "env": { "browser": true, "node": true, "es2024": true }
+    }
+  ]
 }
