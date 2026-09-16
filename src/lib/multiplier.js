@@ -436,13 +436,14 @@ function utcDate(ms) {
  * The one line an asset screen shows when the ratio is not 1:1, or null when
  * it is 1.0 and there is nothing to say.
  *
- *   "1 token = 10 shares since a split on 16 Nov 2025"
- *   "1 token = 1.0877 shares since a dividend on 1 Jul 2026"
+ *   "Issuer ratio: 1 token tracks the value of 10 NFLX shares. Backed last
+ *    changed this ratio on 16 Nov 2025."
  *
- * Whole-number ratios are called splits and fractional ones dividends, which
- * is what produces them: a split multiplies the share count, a dividend
- * accrues into the ratio. Never says which way the gap moves, and never
- * advises — it states the issuer's own fact and the date it changed.
+ * Compliance-reviewed wording. It names no corporate action, claims no
+ * equivalence between a token and shares, and attributes the date to Backed's
+ * on-chain change rather than to the event behind it. Never says which way the
+ * gap moves, and never advises. Do not paraphrase it without sending the new
+ * version back for review.
  */
 export function multiplierLine(pinned, { underlying, now = Date.now() } = {}) {
   const r = toRational(effectiveMultiplier(pinned, now))

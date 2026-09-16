@@ -132,11 +132,12 @@ export default function GapPanel({ asset, scrub, session, lastFetchAt }) {
       </div>
 
       {/* The issuer's ratio, but only when it is not 1:1 and so actually
-          changes what a token is. "1 token = 10 shares since a split on
-          16 Nov 2025" is the fact that makes the two legs above comparable;
+          changes what the two legs above are comparing. "Issuer ratio: 1 token
+          tracks the value of 10 NFLX shares." is what makes them comparable;
           without it a reader who knows NFLX split has no way to tell whether
-          this screen knows. Silent for the 37 mints still at 1.0, because
-          "1 token = 1 share" is the thing everyone already assumes. */}
+          this screen knows. Silent for the 37 mints still at 1.0, where there
+          is nothing to say. Wording is compliance-reviewed: see
+          lib/multiplier.js's multiplierLine before changing a word of it. */}
       {ratioLine && (
         <div
           className="border-t px-4 py-2.5"
