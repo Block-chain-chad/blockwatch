@@ -8,8 +8,15 @@
 //    Yahoo doesn't send CORS headers. Production replaces this with the edge
 //    proxy (later step) or a Finnhub key.
 //
-// Returned shape per ticker: { price, prevClose, asOf } — asOf is ms epoch of
-// the quote (when markets are closed this is the last close).
+// Returned shape per ticker: { price, basis, prevClose, asOf }.
+//  - asOf is the ms epoch the PROVIDER stamped on the quote, or null. Never
+//    the time we fetched it: our own proxy serves quotes up to ~13 minutes old
+//    (api/finnhub.js caches 180s with a 600s stale-while-revalidate window),
+//    so fetch time would understate a quote's age by exactly the amount that
+//    matters. A quote we cannot date is shown as undated, never as "now".
+//  - basis is 'trade' when the provider gave a traded price, 'prevClose' when
+//    the only number it had was yesterday's close. Falling back to the close
+//    is fine; presenting it as today's price is not, so the caller is told.
 
 // API_CACHE_SUFFIX is '' on web (URLs unchanged) and '&c=app' on native, which
 // puts native requests in their own edge-cache lane — see apiBase.js.
@@ -19,7 +26,9 @@ const FINNHUB_KEY = import.meta.env.VITE_FINNHUB_API_KEY
 // In production every stock call goes through our own /api serverless proxy
 // (key server-side, responses CDN-cached). Dev talks to providers directly.
 const IS_PROD = import.meta.env.PROD
-const CACHE_KEY = 'bw.stockCache.v1'
+// v2: quotes gained `basis` and an honest `asOf` (null rather than fetch
+// time). v1 rows would claim a freshness they never had, so they are dropped.
+const CACHE_KEY = 'bw.stockCache.v2'
 
 export const STOCK_POLL_MS = 60_000
 // When the market is closed, prices don't move — refetch at most this often.
@@ -28,22 +37,36 @@ export const CLOSED_MARKET_REFRESH_MS = 30 * 60_000
 /** Which provider the live share quote comes from, for the Readout's leg line. */
 export const STOCK_QUOTE_SOURCE = IS_PROD || FINNHUB_KEY ? 'Finnhub' : 'Yahoo Finance'
 
+/**
+ * Finnhub's /quote payload → our quote shape. Shared by the direct dev call
+ * and the production proxy, which return the same body.
+ *
+ * `c` is the current price and `t` its unix second. When `c` is missing we
+ * still show `pc` so the board is not blank, but the quote says so: basis
+ * 'prevClose', and no timestamp is invented for it.
+ */
+function fromFinnhub(q) {
+  const traded = q.c || null
+  const prevClose = q.pc ?? null
+  const price = traded ?? prevClose
+  if (!price) throw new Error('empty quote')
+  return {
+    price,
+    basis: traded ? 'trade' : 'prevClose',
+    prevClose,
+    open: q.o || null,
+    dayHigh: q.h || null,
+    dayLow: q.l || null,
+    asOf: traded && q.t ? q.t * 1000 : null,
+  }
+}
+
 async function fetchFinnhub(ticker) {
   const res = await fetch(
     `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(ticker)}&token=${FINNHUB_KEY}`
   )
   if (!res.ok) throw new Error(`Finnhub ${res.status}`)
-  const q = await res.json()
-  const price = q.c || q.pc
-  if (!price) throw new Error('Finnhub: empty quote')
-  return {
-    price,
-    prevClose: q.pc ?? null,
-    open: q.o || null,
-    dayHigh: q.h || null,
-    dayLow: q.l || null,
-    asOf: (q.t || 0) * 1000 || Date.now(),
-  }
+  return fromFinnhub(await res.json())
 }
 
 async function fetchYahooDev(ticker) {
@@ -55,11 +78,12 @@ async function fetchYahooDev(ticker) {
   if (!meta?.regularMarketPrice) throw new Error('Yahoo: empty quote')
   return {
     price: meta.regularMarketPrice,
+    basis: 'trade',
     prevClose: meta.chartPreviousClose ?? null,
     open: null, // not in Yahoo's chart meta — dev-only fallback, rows cope
     dayHigh: meta.regularMarketDayHigh ?? null,
     dayLow: meta.regularMarketDayLow ?? null,
-    asOf: (meta.regularMarketTime || 0) * 1000 || Date.now(),
+    asOf: meta.regularMarketTime ? meta.regularMarketTime * 1000 : null,
   }
 }
 
@@ -68,17 +92,7 @@ async function fetchApiQuote(ticker) {
     `${API_BASE}/api/finnhub?kind=quote&symbol=${encodeURIComponent(ticker)}${API_CACHE_SUFFIX}`
   )
   if (!res.ok) throw new Error(`quote ${res.status}`)
-  const q = await res.json()
-  const price = q.c || q.pc
-  if (!price) throw new Error('empty quote')
-  return {
-    price,
-    prevClose: q.pc ?? null,
-    open: q.o || null,
-    dayHigh: q.h || null,
-    dayLow: q.l || null,
-    asOf: (q.t || 0) * 1000 || Date.now(),
-  }
+  return fromFinnhub(await res.json())
 }
 
 const fetchQuote = IS_PROD ? fetchApiQuote : FINNHUB_KEY ? fetchFinnhub : fetchYahooDev
@@ -86,7 +100,7 @@ const fetchQuote = IS_PROD ? fetchApiQuote : FINNHUB_KEY ? fetchFinnhub : fetchY
 /**
  * Fetch many tickers with limited concurrency. Individual failures are
  * tolerated (missing from the result) so one bad symbol can't blank the board.
- * Returns { [ticker]: { price, prevClose, asOf } }.
+ * Returns { [ticker]: { price, basis, prevClose, asOf } }.
  */
 export async function getStockPrices(tickers, concurrency = 5) {
   const out = {}

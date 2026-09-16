@@ -8,9 +8,9 @@ import { track } from '../../services/analytics'
 import { ASSETS } from '../../data/universe'
 import {
   BOARD_LENSES, BOARD_SORTS, groupCompanies, boundCandidates, freezeOrder, flattenRows,
-  visibleWindow, headerLine,
+  visibleWindow, headerLine, oldestQuoteAge,
 } from '../../lib/board'
-import { ageWords } from '../../lib/provenance'
+import { shareFreshness } from '../../lib/provenance'
 import { formatPct, formatPrice } from '../../lib/format'
 import { GapBar } from '../shared'
 import { BIG_SCREEN_BASE } from '../../lib/bigScreen'
@@ -39,7 +39,7 @@ const CHIP_OFF = 'text-zinc-500 hover:text-zinc-300'
 const chipStyle = (on) => (on ? { boxShadow: 'inset 0 0 0 1px var(--border-strong)' } : undefined)
 
 export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, big = BIG_SCREEN_BASE }) {
-  const { assets, session, stocksAt, lastFetchAt } = usePrices()
+  const { assets, session, lastFetchAt } = usePrices()
   const { watchlistIds } = useFolders()
   const [sort, setSort] = useLocalState('bw.meter.sort.v1', 'widest')
   const [credibleOnly, setCredibleOnly] = useLocalState('bw.meter.credible.v1', true)
@@ -161,7 +161,11 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, 
     }
   })
 
-  const stockAge = stocksAt ? (now - stocksAt) / 1000 : null
+  // The strip claims "share leg live" for the whole board, so it has to speak
+  // for the OLDEST quote on it, not for the batch fetch time: a rotating,
+  // capped quote set leaves symbols at very different ages, and an undated
+  // quote (null) makes the claim unprovable rather than true.
+  const stockAge = oldestQuoteAge(companies, now)
   const tokenAge = lastFetchAt ? (now - lastFetchAt) / 1000 : null
   const activeSort = BOARD_SORTS.find((s) => s.id === sort) ?? BOARD_SORTS[0]
   const grid = gridFor(big.gapColumn)
@@ -278,7 +282,7 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, 
                   <div className="num t-label text-zinc-100">
                     <PriceText value={c.logoAsset.stockPrice} />
                   </div>
-                  <div className="t-caption text-zinc-500">{shareAgeWord(session, c.logoAsset.stockQuote?.asOf, now)}</div>
+                  <div className="t-caption text-zinc-500">{shareFreshness({ quote: c.logoAsset.stockQuote, session, now }).words}</div>
                 </div>
                 <div className="flex items-center gap-3">
                   <GapBar pct={c.lead} thin={c.muted} width={big.rule} height={6} tone="accent" />
@@ -375,17 +379,6 @@ function wrappersCell(company) {
   if (n <= 1) return '1 issuer'
   if (company.spreadBp != null) return `${n} · ${company.spreadBp} bp apart`
   return `${n} · 1 credible`
-}
-
-/* The share leg's age, per row: in regular hours the age of THIS row's quote
-   (each merged asset carries stockQuote.asOf), since a capped, rotating
-   quote set means rows are not all the same age; outside regular hours the
-   quote is a close, and the row says which. */
-function shareAgeWord(session, asOf, now) {
-  if (session === 'regular') return Number.isFinite(asOf) ? ageWords((now - asOf) / 1000) : 'no quote yet'
-  if (session === 'post') return '4pm close'
-  if (session === 'pre') return 'last close · pre-market'
-  return 'last close'
 }
 
 function SortMenu({ value, onPick }) {

@@ -44,7 +44,7 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
   const [range, setRange] = useLocalState('bw.meter.range.v1', '1W')
   const [chartRetry, setChartRetry] = useState(0)
   const now = useNow() // both legs' ages tick once a second
-  const { session, stocksAt, lastFetchAt } = usePrices()
+  const { session, lastFetchAt } = usePrices()
   const { folders, watchlistIds, toggleWatchlist } = useFolders()
   const { rules } = useAlerts()
   const { asset, chart, info, spread, siblings, hasTokenStats, hasStockStats, bothSides } =
@@ -64,10 +64,6 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
   const pct = chart.loading ? null : gapPercentile(chart.premium, gap)
   const percentileLine = percentileCaption(range, pct)
   const tokenAgeSeconds = lastFetchAt ? (now - lastFetchAt) / 1000 : null
-  // The share leg's age is THIS quote's (stockQuote.asOf), not the last
-  // batch's: a capped, rotating quote set leaves rows at different ages.
-  const stockAt = asset.stockQuote?.asOf ?? stocksAt
-  const stockAgeSeconds = stockAt ? (now - stockAt) / 1000 : null
   const inWatchlist = watchlistIds.includes(asset.id)
   const memberCount = folders.filter((f) => f.assetIds.includes(asset.id)).length
   const alertLabel = alertLabelFor(rules[asset.id])
@@ -143,7 +139,7 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
         <div className="num t-label flex flex-col gap-1 text-zinc-300">
           <div>{tokenLegLine({ price: asset.tokenPrice, ageSeconds: tokenAgeSeconds, source: asset.mint ? 'Jupiter and CoinGecko' : 'CoinGecko' })}</div>
           {asset.underlying && (
-            <div>{shareLegLine({ price: asset.stockPrice, session, ageSeconds: stockAgeSeconds, source: STOCK_QUOTE_SOURCE })}</div>
+            <div>{shareLegLine({ price: asset.stockPrice, quote: asset.stockQuote, session, now, source: STOCK_QUOTE_SOURCE })}</div>
           )}
         </div>
       </div>

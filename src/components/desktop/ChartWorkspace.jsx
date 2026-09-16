@@ -138,7 +138,7 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef, dri
   const [indicatorsOpen, setIndicatorsOpen] = useState(false)
   const [now, setNow] = useState(() => Date.now())
   const chartRef = useRef(null)
-  const { stocksAt, lastFetchAt } = usePrices()
+  const { lastFetchAt } = usePrices()
   const { watchlistIds, toggleWatchlist } = useFolders()
 
   const {
@@ -320,7 +320,11 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef, dri
   }
 
   // --- The legend's words ------------------------------------------------
-  const stockAge = stocksAt ? (Date.now() - stocksAt) / 1000 : null
+  // This asset's own quote timestamp, not the batch fetch time: a capped,
+  // rotating quote set leaves symbols at very different ages, and an undated
+  // quote must read as unknown rather than as fresh.
+  const quotedAt = asset.stockQuote?.asOf ?? null
+  const stockAge = quotedAt ? (Date.now() - quotedAt) / 1000 : null
   const stockDelayed = isStockDelayed(session, stockAge)
   const tokenVenue = networkName(candleData?.network) ?? asset.chain ?? 'DEX'
   const tokenStatus = legendStatus('token', session, null, { venue: tokenVenue })
@@ -388,7 +392,6 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef, dri
         <GapHeader
           asset={asset}
           session={session}
-          stocksAt={stocksAt}
           lastFetchAt={lastFetchAt}
           onExit={drillIn.onExit}
           onSheet={drillIn.onSheet}

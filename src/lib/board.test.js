@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   groupCompanies, BOARD_SORTS, BOARD_LENSES, MAX_CREDIBLE_GAP,
   boundCandidates, CANDIDATE_CAP, freezeOrder, flattenRows, visibleWindow, headerLine,
+  oldestQuoteAge,
   COMPANY_ROW_H, WRAPPER_ROW_H,
 } from './board'
 
@@ -208,11 +209,30 @@ describe('headerLine', () => {
     expect(headerLine({ count: 12, session: 'regular', stockAgeSeconds: 900 })).toBe(
       '12 companies · share leg stale, refreshing'
     )
+    // Not "4pm close": the calendar knows about the 1pm days, so the strip
+    // names the close without timing it.
     expect(headerLine({ count: 3, session: 'post', stockAgeSeconds: 12 })).toBe(
-      '3 companies · share legs at 4pm close, after hours'
+      '3 companies · share legs at today’s close, after hours'
     )
     expect(headerLine({ count: 1, session: 'pre', stockAgeSeconds: 12 })).toBe(
       '1 company · share legs at last close, pre-market'
     )
+  })
+})
+
+describe('oldestQuoteAge', () => {
+  const now = 1_000_000_000_000
+  const co = (asOf) => ({ logoAsset: { stockQuote: asOf == null ? null : { asOf } } })
+
+  it('reports the worst row on the board, not the best', () => {
+    expect(oldestQuoteAge([co(now - 5_000), co(now - 300_000), co(now - 60_000)], now)).toBe(300)
+  })
+
+  it('refuses to answer at all when any row has no dated quote', () => {
+    // One undated quote makes 'the share leg is live' unprovable, and the
+    // strip must not claim it on the strength of the other rows.
+    expect(oldestQuoteAge([co(now - 5_000), co(null)], now)).toBe(null)
+    expect(oldestQuoteAge([{ logoAsset: null }], now)).toBe(null)
+    expect(oldestQuoteAge([], now)).toBe(null)
   })
 })

@@ -1,7 +1,7 @@
 import { timeAgo, EM_DASH } from '../../lib/format'
 import { isThinlyTraded, premiumPct } from '../../lib/prices'
 import { formatPrice, formatPct, GapBar, changeColor } from '../shared'
-import { delayTooltip } from '../../lib/provenance'
+import { shareFreshness } from '../../lib/provenance'
 import PriceText from '../PriceText'
 
 /*
@@ -18,17 +18,12 @@ import PriceText from '../PriceText'
   the token leg shows the price under the finger and the gap money line
   follows it.
 
-  `delayed` (desktop only; the phone screen omits it) puts the legend's
-  yellow D beside the share price while the quote is not live (spec A23).
+  The share leg carries a freshness badge whenever its quote is not a
+  live print — delayed, a close, or undated. Both the badge and the age
+  under it come from lib/provenance's one verdict, computed from THIS
+  quote's own timestamp, so the panel can never call a stale price live.
 */
-export default function GapPanel({
-  asset,
-  scrub,
-  session,
-  marketOpen,
-  lastFetchAt,
-  delayed = false,
-}) {
+export default function GapPanel({ asset, scrub, session, lastFetchAt }) {
   const gap = premiumPct(asset)
   const tokenNow = scrub?.price ?? asset.tokenPrice
   const diff =
@@ -39,21 +34,12 @@ export default function GapPanel({
   // ages: the token trades continuously while the share can be hours
   // stale and shut. One global "updated 5m ago" would hide exactly the
   // caveat that makes the gap readable.
-  const tokenAge = lastFetchAt ? timeAgo(lastFetchAt) : '—'
-  // In pre/post the share is trading and this quote is not following
-  // it, so "at last close" alone would understate how stale it is.
-  const STALE_LABEL = {
-    pre: 'at last close · pre-market',
-    post: 'at 4pm close · after hours',
-    closed: 'at last close',
-  }
-  const stockAge = !asset.underlying
-    ? null
-    : marketOpen
-      ? lastFetchAt
-        ? `${timeAgo(lastFetchAt)} · live`
-        : '—'
-      : (STALE_LABEL[session] ?? 'at last close')
+  //
+  // The token leg's age is the feed's fetch time, which is the best we
+  // have — neither CoinGecko nor Jupiter stamps a print. The share leg's
+  // is never the fetch time: the quote carries its own.
+  const tokenAge = lastFetchAt ? timeAgo(lastFetchAt) : EM_DASH
+  const share = shareFreshness({ quote: asset.stockQuote, session })
 
   return (
     <div
@@ -105,16 +91,22 @@ export default function GapPanel({
             <div className="t-caption text-zinc-500">{asset.underlying} share</div>
             <div className="num t-title mt-0.5 text-zinc-100">
               {asset.stockPrice != null ? formatPrice(asset.stockPrice) : EM_DASH}
-              {delayed && (
+              {share.badge && (
                 <span
-                  className="ml-1.5 align-middle text-[10px] font-bold leading-none text-amber-400"
-                  title={delayTooltip()}
+                  className={`ml-1.5 inline-block rounded px-1 align-middle text-[9px] font-semibold uppercase leading-[14px] tracking-wide ${
+                    share.badge.tone === 'warn'
+                      ? 'bg-amber-400/15 text-amber-400'
+                      : 'bg-zinc-700/40 text-zinc-400'
+                  }`}
+                  title={share.title}
                 >
-                  D
+                  {share.badge.text}
                 </span>
               )}
             </div>
-            <div className="t-caption mt-0.5 text-zinc-500">{stockAge}</div>
+            <div className="t-caption mt-0.5 text-zinc-500" title={share.title}>
+              {share.words}
+            </div>
           </div>
         )}
       </div>

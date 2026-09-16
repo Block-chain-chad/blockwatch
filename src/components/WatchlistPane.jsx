@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { usePrices, useAssetSubscription } from '../state/PricesContext'
 import { useFolders } from '../state/FoldersContext'
 import { useSparklines } from '../hooks/useSparklines'
-import { isStockDelayed } from '../lib/provenance'
+import { shareFreshness } from '../lib/provenance'
 import { AssetRow } from './shared'
 import { TrashIcon } from './Icons'
 
@@ -44,14 +44,16 @@ export default function WatchlistPane({
   onRemove,
   removeLabel = 'Remove from watchlist',
 }) {
-  const { assets, marketOpen, session, stocksAt } = usePrices()
+  const { assets, marketOpen, session } = usePrices()
   const { watchlistIds } = useFolders()
   const ids = assetIds ?? watchlistIds
   useAssetSubscription(subscriptionKey, ids)
   const sparks = useSparklines(ids)
   const watched = assets.filter((a) => ids.includes(a.id))
-  const stockAge = stocksAt ? (Date.now() - stocksAt) / 1000 : null
-  const stockDelayed = showDelayed && isStockDelayed(session, stockAge)
+  // Per row, from that row's own quote timestamp: the quote set is capped
+  // and rotates, so one batch age for every row would mark fresh symbols
+  // stale and stale ones fresh.
+  const isDelayed = (a) => showDelayed && shareFreshness({ quote: a.stockQuote, session }).state !== 'live'
 
   // App keys <AssetDetail> by asset id, so every sidebar click remounts this
   // pane inside a fresh <aside> whose scrollTop is back at 0. Bring the row
@@ -97,7 +99,7 @@ export default function WatchlistPane({
             spark={sparks[a.id]}
             marketOpen={marketOpen}
             barWidth={barWidth}
-            delayed={stockDelayed}
+            delayed={isDelayed(a)}
           />
           {/* Sits over the row's right edge, which is where the prices are,
               so it only appears on hover or keyboard focus — the numbers are

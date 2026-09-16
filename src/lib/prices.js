@@ -26,7 +26,7 @@ export function premiumPct(asset) {
 
 /**
  * Merge seed identities with the token price map ({ [id]: { tokenPrice, change24h, marketCap } })
- * and the stock quote map ({ [ticker]: { price, prevClose, asOf } }).
+ * and the stock quote map ({ [ticker]: { price, basis, prevClose, asOf } }).
  * Assets without data yet keep null prices (UI shows skeletons).
  * Keeps curated seed order — market-cap sorting would put treasury tokens above
  * the household-name stocks people open the app for.

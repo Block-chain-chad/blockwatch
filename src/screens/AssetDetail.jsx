@@ -100,7 +100,6 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
   const {
     asset,
     staticAsset,
-    marketOpen,
     session,
     lastFetchAt,
     chart,
@@ -195,13 +194,7 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
 
         {/* The gap leads: the bordered block with the gap %, its bar, and the
             two legs with their own ages. */}
-        <GapPanel
-          asset={asset}
-          scrub={scrub}
-          session={session}
-          marketOpen={marketOpen}
-          lastFetchAt={lastFetchAt}
-        />
+        <GapPanel asset={asset} scrub={scrub} session={session} lastFetchAt={lastFetchAt} />
 
         {/* How the token itself moved over the selected zoom — or, while
             scrubbing, from the period start to the finger. Secondary to the

@@ -222,6 +222,26 @@ export function visibleWindow(heights, scrollTop, viewportHeight, overscan = 6) 
   return { start, end, top, bottom }
 }
 
+/**
+ * Age in seconds of the OLDEST dated share quote across the board's
+ * companies, or null when even one of them has no dated quote.
+ *
+ * headerLine speaks for the whole board, so it has to speak for its worst
+ * row: the quote set is capped and rotates, which leaves symbols at very
+ * different ages, and one undated quote makes "the share leg is live"
+ * unprovable rather than true.
+ */
+export function oldestQuoteAge(companies, now) {
+  let oldest = null
+  for (const c of companies) {
+    const at = c.logoAsset?.stockQuote?.asOf
+    if (!Number.isFinite(at)) return null
+    const age = (now - at) / 1000
+    if (oldest == null || age > oldest) oldest = age
+  }
+  return oldest
+}
+
 /** The control strip's honesty count: how many companies, and what the share leg is right now. */
 export function headerLine({ count, session, stockAgeSeconds }) {
   const noun = count === 1 ? 'company' : 'companies'
@@ -231,7 +251,9 @@ export function headerLine({ count, session, stockAgeSeconds }) {
       ? `${head} · share leg stale, refreshing`
       : `${head} · share leg live`
   }
-  if (session === 'post') return `${head} · share legs at 4pm close, after hours`
+  // "4pm close" was a lie on the eight 1pm days a year the calendar now knows
+  // about (lib/market.js), so the strip names the close without timing it.
+  if (session === 'post') return `${head} · share legs at today’s close, after hours`
   if (session === 'pre') return `${head} · share legs at last close, pre-market`
   return `${head} · share legs at last close`
 }

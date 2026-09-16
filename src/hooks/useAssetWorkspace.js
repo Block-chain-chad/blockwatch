@@ -32,7 +32,7 @@ export function alertLabelFor(rule) {
  */
 export function useAssetWorkspace(assetId, range, chartRetry = 0) {
   const asset = useAsset(assetId)
-  const { marketOpen, session, assets, lastFetchAt } = usePrices()
+  const { session, assets, lastFetchAt } = usePrices()
 
   // This asset + its cross-issuer siblings (same underlying) need live token
   // prices and the underlying's quote — long-tail assets aren't polled
@@ -85,7 +85,6 @@ export function useAssetWorkspace(assetId, range, chartRetry = 0) {
   return {
     asset,
     staticAsset,
-    marketOpen,
     session,
     lastFetchAt,
     chart,
