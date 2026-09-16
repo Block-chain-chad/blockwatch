@@ -19,43 +19,57 @@
 //
 // WHAT IS PROVEN HERE, on the built transaction:
 //   - it is payable by this wallet and needs only this wallet's signature;
-//   - every top-level instruction calls a program we expect;
+//   - every top-level instruction calls a program we expect, or is the single
+//     wrapped-SOL cleanup shape spelled out at isWrappedSolCleanup below;
 //   - it contains a Jupiter instruction, so it is a swap at all;
-//   - it touches the user's associated token accounts for BOTH of the mints
-//     the quote names. Those two addresses are derived here from the quote
-//     and looked for in message.staticAccountKeys — where they really do
-//     live, because a user-specific account cannot sit in one of Jupiter's
-//     shared lookup tables. A transaction built for a different pair of mints
-//     than the one we quoted and showed the user is therefore refused.
+//   - it NAMES the user's associated token accounts for BOTH of the mints the
+//     quote names. Those two addresses are derived here from the quote and
+//     looked for in message.staticAccountKeys — where they really do live,
+//     because a user-specific account cannot sit in one of Jupiter's shared
+//     lookup tables.
+// Read that last one for exactly what it is. Forcing the transaction to NAME
+// both accounts is not the same as proving they are where the value comes
+// from and where it goes: a hostile builder could name them as read-only
+// filler and route the value through a lookup-table address instead. It
+// raises the cost of handing us a transaction in a different pair than the
+// one on the screen; it does not rule one out.
 // And on the quote itself: its own numbers are internally consistent with the
 // slippage bound printed on the screen.
 //
-// NATIVE SOL is deliberately out of scope. services/swap.js only ever trades
-// USDC against a verified xStocks mint, so neither leg is ever the native
-// mint and there is no wrapped-SOL account to account for. If a native SOL
-// leg is ever added, its wrapped-SOL account must be added to this check at
-// the same time, or the check will refuse every such swap.
+// NATIVE SOL is never a LEG. services/swap.js only ever trades USDC against a
+// verified xStocks mint, so neither side of the trade is the native mint. The
+// ROUTE is a different matter, and this file used to confuse the two: Jupiter
+// regularly hops through wrapped SOL (USDC -> SOL -> GOOGLx), and when it
+// does it opens a temporary wrapped-SOL account for the user and closes it at
+// the TOP LEVEL to hand back the rent. That close is an SPL Token
+// instruction. Assuming it could never appear refused about one real swap in
+// three, so it is now allowed — in one exact shape and no other.
 //
 // Every failure is a refusal to sign, which is always safe: nothing has been
 // sent at that point.
 
-// Programs a Jupiter swap is allowed to invoke AT THE TOP LEVEL. Checked
-// against real lite-api.jup.ag transactions, both directions, one hop and
-// two: compute budget (fee and unit limit), associated token (create the
-// destination account), and the aggregator itself. That is the whole list.
+// Programs a Jupiter swap may invoke AT THE TOP LEVEL with no further
+// questions asked: compute budget (fee and unit limit), associated token
+// (create the destination account), and the aggregator itself.
 //
-// The SPL token programs and the system program are NOT on it, and their
-// absence is the point. A swap does move tokens, but it moves them from
-// INSIDE Jupiter — as inner instructions the aggregator issues under its own
-// authority. A token transfer or a SOL transfer sitting at the top level,
-// carrying the user's signature, is not something a swap needs and is exactly
-// the shape a drainer takes: move the user's balance out, then add one
-// Jupiter instruction so the transaction still looks like a trade. With those
-// programs allowed, that transaction passed every other check here.
+// This list is NOT the whole story, and an earlier comment here claiming it
+// was had simply never seen a SOL-routed swap. The SPL token program appears
+// too, for the wrapped-SOL cleanup described above; it is admitted one
+// instruction shape at a time, by isWrappedSolCleanup, never by sitting here.
 //
-// If a route ever legitimately needs one of them at the top level — wrapping
-// native SOL would — it gets added deliberately, with the reason written
-// down, never because a response turned up asking for it.
+// The SPL token programs and the system program are deliberately absent as
+// blanket entries, and that absence is the point. A swap does move tokens,
+// but it moves them from INSIDE Jupiter — as inner instructions the
+// aggregator issues under its own authority. A token transfer or a SOL
+// transfer sitting at the top level, carrying the user's signature, is not
+// something a swap needs and is exactly the shape a drainer takes: move the
+// user's balance out, then add one Jupiter instruction so the transaction
+// still looks like a trade. With those programs allowed wholesale, that
+// transaction passed every other check in this file.
+//
+// Any further widening gets made deliberately, one readable shape at a time,
+// with the reason written down — never because a response turned up asking
+// for it.
 export const JUPITER_PROGRAM = 'JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4'
 export const ASSOCIATED_TOKEN_PROGRAM = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'
 export const ALLOWED_PROGRAMS = new Set([
@@ -69,6 +83,12 @@ export const ALLOWED_PROGRAMS = new Set([
 // derived UNDER, which changes the address it lands on.
 export const SPL_TOKEN_PROGRAM = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
 export const TOKEN_2022_PROGRAM = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'
+
+// Native SOL's mint. Never a leg of an Onstock trade, but a routing hop often
+// enough that the account Jupiter opens for it has to be recognisable here.
+// Wrapped SOL is a classic SPL token, so its account derives under
+// SPL_TOKEN_PROGRAM, not Token-2022.
+export const WRAPPED_SOL_MINT = 'So11111111111111111111111111111111111111112'
 
 /**
  * The owner's associated token account for one mint, base58.
@@ -153,7 +173,7 @@ export function checkQuote({ quote, inputMint, outputMint, amountRaw, slippageBp
 export function describeTransaction(tx) {
   const message = tx?.message ?? {}
   const keys = (message.staticAccountKeys ?? []).map((k) => k?.toBase58?.() ?? String(k))
-  const instructions = message.compiledInstructions ?? message.instructions ?? []
+  const compiled = message.compiledInstructions ?? message.instructions ?? []
   return {
     feePayer: keys[0] ?? null,
     requiredSignatures: message.header?.numRequiredSignatures ?? null,
@@ -161,9 +181,60 @@ export function describeTransaction(tx) {
     // here, which is exactly why the accounts we go looking for are ones that
     // cannot live in a lookup table (see the header).
     accounts: keys,
-    // null for a program id that lives in a lookup table rather than in the
-    // message — unresolvable here, and therefore not something we will sign.
-    programs: instructions.map((i) => keys[i?.programIdIndex] ?? null),
+    instructions: compiled.map((i) => ({
+      // null for a program id that lives in a lookup table rather than in the
+      // message — unresolvable here, and therefore not something we will sign.
+      program: keys[i?.programIdIndex] ?? null,
+      // Raw bytes on a v0 message. A legacy message base58-encodes its data
+      // and this module does not decode base58, so it is null there — and
+      // null satisfies no allowed instruction shape, which is the safe way
+      // round.
+      data: i?.data instanceof Uint8Array ? i.data : null,
+      // This instruction's accounts, in order, resolved through the same
+      // table; null again for anything that lives in a lookup table.
+      accounts: (i?.accountKeyIndexes ?? i?.accounts ?? []).map((n) => keys[n] ?? null),
+    })),
+  }
+}
+
+// SPL Token's CloseAccount instruction: a single data byte, discriminator 9.
+// The two shapes a drainer would want are Transfer (discriminator 3, nine
+// bytes) and TransferChecked (12, ten bytes), so neither can be mistaken for
+// this one on length or first byte.
+const CLOSE_ACCOUNT = 9
+
+/**
+ * Is this top-level SPL Token instruction the wrapped-SOL cleanup Jupiter
+ * appends when a route hops through native SOL? That is the only SPL Token
+ * instruction this file will sign at the top level.
+ *
+ * Everything has to match at once: CloseAccount, exactly three accounts, and
+ * those three being the wallet's own wrapped-SOL associated token account,
+ * the wallet as the destination for the returned rent, and the wallet as the
+ * owner authorising the close. Closing somebody else's account, or sending
+ * the rent anywhere but back to the user, is refused like any other surprise.
+ *
+ * `PublicKey` is threaded in for the same reason associatedTokenAddress takes
+ * it: this module stays free of @solana/web3.js. Without it the derivation
+ * throws and the answer is no, which is the right way to fail.
+ */
+function isWrappedSolCleanup({ instruction, publicKey, PublicKey }) {
+  const { data, accounts } = instruction
+  if (!data || data.length !== 1 || data[0] !== CLOSE_ACCOUNT) return false
+  if (accounts.length !== 3) return false
+  if (accounts[1] !== publicKey || accounts[2] !== publicKey) return false
+  try {
+    return (
+      accounts[0] ===
+      associatedTokenAddress({
+        PublicKey,
+        owner: publicKey,
+        mint: WRAPPED_SOL_MINT,
+        tokenProgram: SPL_TOKEN_PROGRAM,
+      })
+    )
+  } catch {
+    return false
   }
 }
 
@@ -171,15 +242,17 @@ export function describeTransaction(tx) {
  * Is this transaction safe to hand to the wallet?
  *
  * `build` is Jupiter's /swap response body; `tx` the deserialized
- * transaction; `publicKey` the connected wallet, base58.
+ * transaction; `publicKey` the connected wallet, base58; `PublicKey` the
+ * class from @solana/web3.js, needed to derive the wrapped-SOL account a
+ * SOL-routed swap closes.
  *
  * `expectedAccounts` is what ties the transaction to the quote: the token
- * accounts this exact trade has to touch, derived from the quote's mints by
+ * accounts this exact trade has to name, derived from the quote's mints by
  * associatedTokenAddress. It is REQUIRED — a caller that omits it gets a
  * refusal, never a quiet pass, because a check that no-ops when it is not
  * configured is worse than no check at all.
  */
-export function checkBuiltTransaction({ build, tx, publicKey, expectedAccounts }) {
+export function checkBuiltTransaction({ build, tx, publicKey, expectedAccounts, PublicKey }) {
   // Jupiter simulates the transaction it built. If it already knows the swap
   // fails, asking the user to sign it just burns their fee.
   if (build?.simulationError) {
@@ -187,23 +260,30 @@ export function checkBuiltTransaction({ build, tx, publicKey, expectedAccounts }
     return { ok: false, reason: `Jupiter says this swap would fail (${detail})`, code: 'simulation' }
   }
 
-  const { feePayer, requiredSignatures, programs, accounts } = describeTransaction(tx)
+  const { feePayer, requiredSignatures, instructions, accounts } = describeTransaction(tx)
   if (requiredSignatures !== 1) {
     return no(`transaction wants ${requiredSignatures} signatures, not just yours`)
   }
   if (!publicKey) return no('no wallet to check the transaction against')
   if (feePayer !== publicKey) return no('transaction is not payable by your wallet')
-  if (programs.length === 0) return no('transaction does nothing')
-  for (const program of programs) {
-    if (!ALLOWED_PROGRAMS.has(program)) {
-      return no(`transaction calls an unexpected program (${program ?? 'unreadable'})`)
+  if (instructions.length === 0) return no('transaction does nothing')
+  for (const instruction of instructions) {
+    if (ALLOWED_PROGRAMS.has(instruction.program)) continue
+    if (
+      instruction.program === SPL_TOKEN_PROGRAM &&
+      isWrappedSolCleanup({ instruction, publicKey, PublicKey })
+    ) {
+      continue
     }
+    return no(`transaction calls an unexpected program (${instruction.program ?? 'unreadable'})`)
   }
-  if (!programs.includes(JUPITER_PROGRAM)) return no('transaction contains no swap')
+  if (!instructions.some((i) => i.program === JUPITER_PROGRAM)) {
+    return no('transaction contains no swap')
+  }
 
-  // It is a swap. Is it OUR swap? Both of the quote's token accounts have to
-  // appear in it, or Jupiter built a trade in a different pair of mints than
-  // the one the user read on the screen.
+  // It is a swap. Is it plausibly OUR swap? Both of the quote's token
+  // accounts have to be named in it — see the header for how far that goes
+  // and where it stops.
   if (!Array.isArray(expectedAccounts) || expectedAccounts.length === 0) {
     return no('nothing to check this transaction against')
   }

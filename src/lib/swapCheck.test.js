@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { PublicKey } from '@solana/web3.js'
+import { PublicKey, VersionedTransaction } from '@solana/web3.js'
 import {
   checkQuote,
   checkBuiltTransaction,
@@ -8,6 +8,7 @@ import {
   JUPITER_PROGRAM,
   SPL_TOKEN_PROGRAM,
   TOKEN_2022_PROGRAM,
+  WRAPPED_SOL_MINT,
 } from './swapCheck'
 
 /*
@@ -157,6 +158,7 @@ const verify = (over = {}) =>
     tx: tx(),
     publicKey: WALLET,
     expectedAccounts: accounts,
+    PublicKey,
     ...over,
   })
 
@@ -182,24 +184,41 @@ describe('associatedTokenAddress', () => {
 
 describe('describeTransaction', () => {
   it('reads the fee payer, signer count, accounts and programs from a v0 message', () => {
-    expect(describeTransaction(tx())).toEqual({
-      feePayer: WALLET,
-      requiredSignatures: 1,
-      accounts: [WALLET, USDC_ATA, MINT_ATA, COMPUTE_BUDGET, JUPITER_PROGRAM],
-      programs: [COMPUTE_BUDGET, JUPITER_PROGRAM],
+    const seen = describeTransaction(tx())
+    expect(seen.feePayer).toBe(WALLET)
+    expect(seen.requiredSignatures).toBe(1)
+    expect(seen.accounts).toEqual([WALLET, USDC_ATA, MINT_ATA, COMPUTE_BUDGET, JUPITER_PROGRAM])
+    expect(seen.instructions.map((i) => i.program)).toEqual([COMPUTE_BUDGET, JUPITER_PROGRAM])
+  })
+
+  it("surfaces each instruction's data bytes and resolved accounts", () => {
+    // Without these two the wrapped-SOL cleanup below cannot be told apart
+    // from a token transfer, which is the whole point of reading them.
+    const withDetail = tx({
+      compiledInstructions: [
+        { programIdIndex: 4, data: Uint8Array.from([9]), accountKeyIndexes: [1, 0, 0] },
+      ],
     })
+    const [only] = describeTransaction(withDetail).instructions
+    expect(Array.from(only.data)).toEqual([9])
+    expect(only.accounts).toEqual([USDC_ATA, WALLET, WALLET])
   })
 
   it('reads a legacy message too', () => {
     const legacy = tx({ compiledInstructions: undefined, instructions: [{ programIdIndex: 4 }] })
-    expect(describeTransaction(legacy).programs).toEqual([JUPITER_PROGRAM])
+    expect(describeTransaction(legacy).instructions.map((i) => i.program)).toEqual([JUPITER_PROGRAM])
   })
 
-  it('reports an unreadable program rather than guessing', () => {
-    // A program id that lives in an address lookup table cannot be resolved
-    // in the browser, so it must not silently pass as "fine".
-    const viaLookup = tx({ compiledInstructions: [{ programIdIndex: 99 }] })
-    expect(describeTransaction(viaLookup).programs).toEqual([null])
+  it('reports an unreadable program, account or data rather than guessing', () => {
+    // A program id or account that lives in an address lookup table cannot be
+    // resolved in the browser, so it must not silently pass as "fine". Legacy
+    // messages base58-encode instruction data, which this module does not
+    // decode — also null rather than a guess.
+    const viaLookup = tx({ compiledInstructions: [{ programIdIndex: 99, accountKeyIndexes: [98] }] })
+    const [only] = describeTransaction(viaLookup).instructions
+    expect(only.program).toBe(null)
+    expect(only.accounts).toEqual([null])
+    expect(only.data).toBe(null)
   })
 })
 
@@ -321,5 +340,174 @@ describe('checkBuiltTransaction', () => {
 
   it('refuses when there is no wallet to check against', () => {
     expect(verify({ publicKey: null }).ok).toBe(false)
+  })
+})
+
+/*
+ * Jupiter routes THROUGH wrapped SOL often — about one built swap in three in
+ * the reviewer's sample — even though neither leg of an Onstock trade is ever
+ * native SOL. On those routes it opens a temporary wrapped-SOL account for the
+ * user and closes it at the TOP LEVEL to hand the rent back. An earlier
+ * version of this check refused every one of them.
+ *
+ * The allowance is one instruction shape and nothing else, so these cases
+ * matter in both directions: the real cleanup must pass, and every neighbour
+ * of it must not.
+ */
+describe('the wrapped-SOL cleanup a SOL-routed swap closes with', () => {
+  const WSOL_ATA = ata(WRAPPED_SOL_MINT, SPL_TOKEN_PROGRAM)
+  const STRANGER = 'GkQ4nBYs5NLRQnnsTjMXk8cCnLJeHZJnGb1qY2sNjYy9'
+
+  /*
+   * A SOL-routed buy: the ordinary swap, plus the close. Index 5 is the SPL
+   * token program and 6 the account being closed, so a case can move either
+   * without disturbing the rest of the message.
+   */
+  const routedViaSol = (instruction = {}) =>
+    tx({
+      staticAccountKeys: [
+        key(WALLET),
+        key(USDC_ATA),
+        key(MINT_ATA),
+        key(COMPUTE_BUDGET),
+        key(JUPITER_PROGRAM),
+        key(SPL_TOKEN_PROGRAM),
+        key(WSOL_ATA),
+        key(STRANGER),
+      ],
+      compiledInstructions: [
+        { programIdIndex: 3 },
+        { programIdIndex: 4 },
+        {
+          programIdIndex: 5,
+          data: Uint8Array.from([9]), // CloseAccount
+          accountKeyIndexes: [6, 0, 0], // wSOL account, rent to us, owned by us
+          ...instruction,
+        },
+      ],
+    })
+
+  it('accepts the close of our own wrapped-SOL account', () => {
+    expect(verify({ tx: routedViaSol() })).toEqual({ ok: true })
+  })
+
+  it('refuses closing an account that is not our wrapped-SOL account', () => {
+    // Closing a token account sends its balance to the destination. Pointed
+    // at the account holding the stock the user just bought, this shape would
+    // empty it.
+    expect(verify({ tx: routedViaSol({ accountKeyIndexes: [2, 0, 0] }) }).ok).toBe(false)
+    expect(verify({ tx: routedViaSol({ accountKeyIndexes: [7, 0, 0] }) }).ok).toBe(false)
+  })
+
+  it('refuses sending the returned rent anywhere but back to the user', () => {
+    expect(verify({ tx: routedViaSol({ accountKeyIndexes: [6, 7, 0] }) }).ok).toBe(false)
+  })
+
+  it('refuses a close authorised by someone other than the user', () => {
+    expect(verify({ tx: routedViaSol({ accountKeyIndexes: [6, 0, 7] }) }).ok).toBe(false)
+  })
+
+  it('refuses a close carrying more accounts than CloseAccount takes', () => {
+    expect(verify({ tx: routedViaSol({ accountKeyIndexes: [6, 0, 0, 7] }) }).ok).toBe(false)
+  })
+
+  it('refuses a token Transfer and a TransferChecked, which is the drain', () => {
+    // Transfer is discriminator 3 with 9 data bytes, TransferChecked 12 with
+    // 10. The allowance keys on both the length and the first byte, so
+    // neither can pass as the one-byte close.
+    const transfer = { data: new Uint8Array(9), accountKeyIndexes: [1, 7, 0] }
+    transfer.data[0] = 3
+    const checked = { data: new Uint8Array(10), accountKeyIndexes: [1, 7, 0] }
+    checked.data[0] = 12
+    expect(verify({ tx: routedViaSol(transfer) }).ok).toBe(false)
+    expect(verify({ tx: routedViaSol(checked) }).ok).toBe(false)
+  })
+
+  it('refuses a close on a message whose data we cannot read', () => {
+    // Legacy messages base58-encode instruction data. We do not decode it, so
+    // the shape is unproven and the answer has to be no.
+    expect(verify({ tx: routedViaSol({ data: '3' }) }).ok).toBe(false)
+  })
+
+  it('refuses the close when the caller gave us no way to derive the account', () => {
+    // Without PublicKey the wrapped-SOL address cannot be derived, and an
+    // underivable address must never be treated as a match.
+    expect(verify({ tx: routedViaSol(), PublicKey: undefined }).ok).toBe(false)
+  })
+
+  /*
+   * Not a hand-built fixture: this is a real transaction lite-api.jup.ag
+   * built on 2026-09-15 for "sell 1 GOOGLx into USDC", routed
+   * Whirlpool + Quantum, which took it through wrapped SOL. It was never
+   * signed and never sent, and the wallet in it is a throwaway keypair
+   * generated for the capture, so there is nothing here to protect.
+   *
+   * The hand-built cases above pin the rule; this one pins the rule to
+   * reality. If Jupiter's cleanup ever changes shape, this is the case that
+   * notices before a user does.
+   */
+  const REAL_WALLET = '2MyjKTJhQeqmvTLLGjgvAxTZ3GHJbFWwMmzb1U9VfxaU'
+  const REAL_SWAP_BASE64 =
+    'AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAQAGChQ7co81CTWnlk0FsaMyj8mfvMMYnF2eqVaULwOupHvBCPsgEuoMQ7RNAafC1LJcKaxMeUZL6NkL7jtdWXKh6fJU3q53OXkadta3CaLdyZy2K1XkruVaFIY7UFY5UqpLUM1b8mxOPphBjn1FY3i72XIPRJYn1LP6+qJlt5OsokYtAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADBkZv5SEXMv/srbpyw5vnvIzlu8X3EmssQ5s6QAAAAAR51VvyMcBu7nTFbs5oFQf9sbLeo/SOUQKxzaJWvBOPBt324ddloZPZy+FGzut5rBy0he1fWzeROoz1hX7/AKmMlyWPTiSJ8bs9ECkUjg2DC1oTmdr/EIQEjnvY2+n4WbQ/+if11/ZKdMCbHylYed5LCas238ndUUsyGqezjOXoFKO5r2z3Fmtm9BReVpHTttcVBTGxexL2vyOtJUlvDuEGBQAFAsBcFQAFAAkDBBcBAAAAAAAIBgADABwEBwEBCAYAAQAWBAcBAQYkBwACAwYcBgkGGgcZFAASFh0BDQIREw8OEBUAAQMLCgwbBxgXKuUXy5d6460qAgAAAC8AAGQAAX0AZAECAOH1BQAAAAAu8Y4UAAAAADIAAAcDAQAAAQkCBkesiPH9WNP0dPhu8dkDWf0a2fIJ0VlSv1q2qvzsTYsDq62oCQCpF6yvFQSqCrLRZwtoOIf3PvZK4yRWZHyfZU8OmPsOQdTMPgqo29YbBzPgONw13TYBNA=='
+
+  const realSwap = () =>
+    VersionedTransaction.deserialize(Buffer.from(REAL_SWAP_BASE64, 'base64'))
+
+  it('accepts the real SOL-routed swap Jupiter built', () => {
+    const forRealWallet = (mint, tokenProgram) =>
+      associatedTokenAddress({ PublicKey, owner: REAL_WALLET, mint, tokenProgram })
+
+    const verdict = checkBuiltTransaction({
+      build: { simulationError: null },
+      tx: realSwap(),
+      publicKey: REAL_WALLET,
+      expectedAccounts: [
+        forRealWallet(MINT, TOKEN_2022_PROGRAM),
+        forRealWallet(USDC, SPL_TOKEN_PROGRAM),
+      ],
+      PublicKey,
+    })
+    expect(verdict).toEqual({ ok: true })
+  })
+
+  it('is a transaction that really does close a wrapped-SOL account', () => {
+    // Guards the case above from passing for the wrong reason: if the capture
+    // were ever replaced by a route with no wrapped-SOL leg, it would stop
+    // testing the thing it is named for.
+    const closes = describeTransaction(realSwap()).instructions.filter(
+      (i) => i.program === SPL_TOKEN_PROGRAM
+    )
+    expect(closes).toHaveLength(1)
+    expect(Array.from(closes[0].data)).toEqual([9])
+    expect(closes[0].accounts).toEqual([
+      associatedTokenAddress({
+        PublicKey,
+        owner: REAL_WALLET,
+        mint: WRAPPED_SOL_MINT,
+        tokenProgram: SPL_TOKEN_PROGRAM,
+      }),
+      REAL_WALLET,
+      REAL_WALLET,
+    ])
+  })
+
+  it('refuses that same real transaction for a different wallet', () => {
+    expect(
+      checkBuiltTransaction({
+        build: { simulationError: null },
+        tx: realSwap(),
+        publicKey: WALLET,
+        expectedAccounts: accounts,
+        PublicKey,
+      }).ok
+    ).toBe(false)
+  })
+
+  it('still refuses the token program on a transaction with no swap in it', () => {
+    const noSwap = routedViaSol()
+    noSwap.message.compiledInstructions = noSwap.message.compiledInstructions.filter(
+      (i) => i.programIdIndex !== 4
+    )
+    expect(verify({ tx: noSwap }).ok).toBe(false)
   })
 })

@@ -280,7 +280,7 @@ async function submit({ quote, provider, intent, publicKey, key, inputMint, outp
 
   // Last gate before the wallet. Still phase 'build': refusing here means
   // nothing was sent.
-  const built = checkBuiltTransaction({ build: body, tx, publicKey, expectedAccounts })
+  const built = checkBuiltTransaction({ build: body, tx, publicKey, expectedAccounts, PublicKey })
   if (!built.ok) {
     const err = swapError(built.reason, 'build')
     err.code = built.code
