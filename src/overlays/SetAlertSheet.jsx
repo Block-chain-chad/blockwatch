@@ -5,6 +5,7 @@ import { formatPct, formatPrice } from '../lib/format'
 import Sheet, { SheetTitle } from '../components/Sheet'
 import { useLocalState } from '../hooks/useLocalState'
 import { NOTIFY_KEY, NOTIFY_OFFER_COPY, notifyOfferVisible } from '../lib/alertNotify'
+import { requestNotificationPermission } from '../services/notifications'
 import { driftWindowNote } from '../lib/alertRules'
 
 const THRESHOLDS = [0.5, 1, 2, 5]
@@ -200,14 +201,11 @@ function NotifyOffer() {
       <button
         type="button"
         onClick={() => {
-          // Older Safari takes a callback and returns undefined; everything
-          // current returns a promise. Resolve once either way.
-          new Promise((resolve) => {
-            const r = Notification.requestPermission(resolve)
-            if (r && typeof r.then === 'function') r.then(resolve)
-          })
-            .then((result) => {
-              const answer = result === 'granted' ? 'on' : 'declined'
+          // services/notifications.js owns the ask, the browser quirks and
+          // the one analytics event that comes out of it.
+          requestNotificationPermission()
+            .then((outcome) => {
+              const answer = outcome === 'granted' ? 'on' : 'declined'
               // The sheet may have closed before the browser bubble was
               // answered: write the answer straight to storage so it survives
               // this component unmounting, then mirror it into state for a

@@ -12,6 +12,13 @@ import { renderToStaticMarkup } from 'react-dom/server'
  * for a real component test setup.
  */
 
+// The ask for system notifications now lives in services/notifications.js.
+// Stubbed so the test can prove the sheet does not make it while rendering.
+vi.mock('../services/notifications', () => ({
+  requestNotificationPermission: vi.fn(() => Promise.resolve('granted')),
+  permissionOutcome: (r) => r,
+}))
+
 // The sheet reads the alert store on render; no provider exists here.
 vi.mock('../state/AlertsContext', () => ({
   useAlerts: () => ({
@@ -22,6 +29,7 @@ vi.mock('../state/AlertsContext', () => ({
   }),
 }))
 
+const { requestNotificationPermission } = await import('../services/notifications')
 const { default: SetAlertSheet } = await import('./SetAlertSheet')
 
 const asset = {
@@ -69,5 +77,37 @@ describe('SetAlertSheet renders', () => {
     expect(html).toContain('trades thinly')
     // The two cautions are different claims and both belong on screen.
     expect(html).toContain('while the US market is open')
+  })
+})
+
+/*
+ * The one-time ask for system notifications. Rendering must never ask and
+ * never record an answer: React runs a component body twice under StrictMode,
+ * and a permission bubble nobody pressed a button for is both a broken
+ * browser contract and a false product number. The event itself is covered in
+ * services/notifications.test.js.
+ */
+describe('the notification offer', () => {
+  it('shows the ask on the desktop sheet when the browser has not been asked', () => {
+    vi.stubGlobal('Notification', { permission: 'default' })
+    const html = renderToStaticMarkup(
+      <SetAlertSheet asset={asset} onClose={() => {}} notify />,
+    )
+    expect(html).toContain('Get a system notification')
+  })
+
+  it('asks nothing while rendering, however many times React renders', () => {
+    vi.stubGlobal('Notification', { permission: 'default' })
+    for (let i = 0; i < 3; i++) {
+      renderToStaticMarkup(<SetAlertSheet asset={asset} onClose={() => {}} notify />)
+    }
+    expect(requestNotificationPermission).not.toHaveBeenCalled()
+  })
+
+  it('does not offer at all on the phone sheet, which passes no notify', () => {
+    vi.stubGlobal('Notification', { permission: 'default' })
+    const html = renderToStaticMarkup(<SetAlertSheet asset={asset} onClose={() => {}} />)
+    expect(html).not.toContain('Get a system notification')
+    expect(requestNotificationPermission).not.toHaveBeenCalled()
   })
 })
