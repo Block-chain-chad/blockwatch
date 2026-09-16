@@ -381,9 +381,28 @@ describe('reconcileRatio — pin versus live', () => {
     expect(reconcileRatio({ multiplier: 'bad' }, null, { now: NOW })).toBeNull()
   })
 
-  it('leaves an unpinned asset at 1, since there is nothing to reconcile', () => {
+  it('leaves an asset with no mint at 1, since the issuer never scaled it', () => {
     expect(reconcileRatio(null, null, { now: NOW })).toBe('1')
     expect(reconcileRatio(null, { multiplier: '10' }, { now: NOW })).toBe('1')
+  })
+
+  it('REFUSES an unpinned Solana mint, the same as everywhere else', () => {
+    // F4 removed the assume-1.0 habit from the candle and spread paths; this
+    // was the last place it survived, guarded only by the sheet happening to
+    // check verifiedToken first.
+    const mint = 'UnverifiedMintAddress11111111111111111111111'
+    expect(reconcileRatio(null, null, { mint, now: NOW })).toBeNull()
+    expect(reconcileRatio(null, { multiplier: '10' }, { mint, now: NOW })).toBeNull()
+  })
+
+  it('refuses a live payload that is truthy but says nothing readable', () => {
+    // effectiveMultiplier defaults a shapeless object to 1.0, and against a
+    // pin near 1.0 that lands inside the drift band — sizing a real sell on a
+    // ratio nobody ever reported. Read explicitly instead.
+    const pin = { multiplier: '1.0004' }
+    for (const live of [{}, [], true, '10', 42]) {
+      expect(reconcileRatio(pin, live, { now: NOW }), `accepted ${JSON.stringify(live)}`).toBeNull()
+    }
   })
 })
 

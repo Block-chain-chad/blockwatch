@@ -184,14 +184,21 @@ function provablyAfterPin(pinned, live, verifiedAt) {
  * `verifiedAt` is when the pin was taken (data/verifiedMints' checkedAt). It
  * is passed in rather than imported so this module stays pure.
  *
- * `pinned` may be null for an asset the issuer never scaled, in which case
- * there is nothing to reconcile and 1 stands.
+ * With no pin it defers to ratioFor, which draws the line between "the issuer
+ * never scaled this" and "we have not checked this one" — an unpinned Solana
+ * mint refuses here exactly as it does everywhere else.
  */
-export function reconcileRatio(pinned, live, { now = Date.now(), verifiedAt } = {}) {
-  if (!pinned) return DEFAULT_MULTIPLIER
+export function reconcileRatio(pinned, live, { mint, now = Date.now(), verifiedAt } = {}) {
+  if (!pinned) return ratioFor(null, mint, now)
   const pin = effectiveMultiplier(pinned, now)
   const a = toRational(pin)
   if (!live) return a ? pin : null
+  // A live payload that is truthy but carries no readable multiplier is not an
+  // answer. Read it explicitly rather than letting effectiveMultiplier's
+  // default turn `{}` or `true` into 1.0 — which, against a pin near 1.0,
+  // sits inside the drift band and would size a real sell on a ratio nobody
+  // ever reported.
+  if (toRational(live.multiplier) == null) return null
   const b = toRational(effectiveMultiplier(live, now))
   if (a == null || b == null) return null
   const fresh = effectiveMultiplier(live, now)

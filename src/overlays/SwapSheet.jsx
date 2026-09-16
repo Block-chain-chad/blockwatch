@@ -134,7 +134,7 @@ export default function SwapSheet({ asset, onClose }) {
   const multiplier =
     liveRatio === undefined
       ? effectiveMultiplier(token)
-      : reconcileRatio(token, liveRatio, { verifiedAt: VERIFIED_AT })
+      : reconcileRatio(token, liveRatio, { mint, verifiedAt: VERIFIED_AT })
 
   // What the user asked for, in the input mint's smallest units — the single
   // definition, used to quote AND to state the intent at confirm time. Scaled
