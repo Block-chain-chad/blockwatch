@@ -28,11 +28,26 @@ import { createRoot } from 'react-dom/client'
  * asked for. The environment is set per file, so the other suites stay in
  * node exactly as before.
  *
- * The numbers are the issuer's real ratios, read off Solana mainnet:
+ * The ratios below are FIXTURES, not reads of data/verifiedMints.json, and
+ * that is deliberate. The pinned file is regenerated from the chain — weekly
+ * by .github/workflows/repin-mints.yml, and by hand whenever anyone re-pins —
+ * and the issuer accrues most of these ratios continuously. Tests asserting
+ * exact raw amounts against a file that legitimately changes underneath them
+ * are tests that fail for being right: a simulated re-pin (CRMx rolled
+ * forward, AZNx one accrual step, a later checkedAt) broke four of them, which
+ * would have failed the re-pin job and stopped the pull request ever opening.
+ *
+ * So the pinned lookup is mocked here exactly as the live read already is, and
+ * the real file gets one test of its own at the bottom that checks what should
+ * genuinely never change: that it parses, and still has 103 entries with
+ * readable ratios.
+ *
+ * The fixture values are the issuer's real ratios as of 2026-09-16, all with
+ * 8 decimals:
  *   NFLXx  10                   -> typing 1 must quote 10000000 raw
  *   AZNx   0.5111362527152737   -> typing 1 must quote 195642550 raw
  *   TSLAx  1                    -> typing 1 must quote 100000000 raw
- * All three have 8 decimals.
+ *   CRMx   1.0054716788543585   -> typing 1 must quote 99455809 raw
  */
 
 const getSwapQuote = vi.fn()
@@ -54,10 +69,37 @@ vi.mock('../state/WalletContext', () => ({
   useWallet: () => ({ publicKey: 'TestWa11etPubkey1111111111111111111111111111', provider: {} }),
 }))
 
+const { BY_ID } = await import('../data/universe')
+
+/** When the fixture pin was taken. Fixed, so schedules can be dated against it. */
+const VERIFIED_AT = '2026-09-16T20:57:21.973Z'
+
+/** The pinned ratios these tests assert against, keyed by asset id. */
+const PINS = {
+  'netflix-xstock': { multiplier: '1', nextMultiplier: '10', nextMultiplierAt: '2025-11-16T23:55:00.000Z' },
+  'astrazeneca-xstock': { multiplier: '0.5111362527152737' },
+  'tesla-xstock': { multiplier: '1' },
+  'salesforce-xstock': {
+    multiplier: '1.0036630653273484',
+    nextMultiplier: '1.0054716788543585',
+    nextMultiplierAt: '2026-06-11T00:30:00.000Z',
+  },
+}
+
+vi.mock('../data/verifiedMints', async (importOriginal) => {
+  const real = await importOriginal()
+  return {
+    ...real,
+    VERIFIED_AT: '2026-09-16T20:57:21.973Z',
+    verifiedToken: (asset) => {
+      const pin = PINS[asset?.id]
+      return pin ? { mint: asset.mint, ticker: asset.ticker, decimals: 8, issuer: 'xStocks', ...pin } : null
+    },
+  }
+})
+
 const { default: SwapSheet } = await import('./SwapSheet')
 const { applyFlags, SWAP_FLAG } = await import('../services/featureFlags')
-const { BY_ID } = await import('../data/universe')
-const { VERIFIED_AT } = await import('../data/verifiedMints')
 
 const NFLX = BY_ID['netflix-xstock']
 const AZN = BY_ID['astrazeneca-xstock']
@@ -351,5 +393,23 @@ describe('the sheet sizes on the live ratio, and falls back to the pin', () => {
       root.render(<SwapSheet asset={NFLX} onClose={() => {}} />)
     })
     expect(container.textContent).not.toContain("we won't size a trade")
+  })
+})
+
+/*
+ * The real pinned file still gets a guard, just not one that asserts values
+ * the issuer is entitled to change. These are the things a re-pin must never
+ * do: lose the file, lose mints, or write a ratio nothing can read.
+ */
+describe('the real pinned file', () => {
+  it('parses, keeps all 103 mints, and gives every one a readable ratio', async () => {
+    const { VERIFIED_MINTS } = await vi.importActual('../data/verifiedMints')
+    const { effectiveMultiplier, toRational } = await vi.importActual('../lib/multiplier')
+    const entries = Object.values(VERIFIED_MINTS)
+    expect(entries).toHaveLength(103)
+    for (const m of entries) {
+      expect(toRational(effectiveMultiplier(m)), `${m.ticker} has an unreadable ratio`).not.toBeNull()
+      expect(m.decimals).toBe(8)
+    }
   })
 })
