@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useWallet } from '../state/WalletContext'
 import { getSwapQuote, executeSwap, toRaw, formatRaw, USDC_DECIMALS } from '../services/swap'
 import { verifiedToken } from '../data/verifiedMints'
+import { useFlag, SWAP_FLAG, SWAP_PAUSED_LINE } from '../services/featureFlags'
 import Sheet, { SheetTitle } from '../components/Sheet'
 
 /*
@@ -33,6 +34,11 @@ const QUOTE_REFRESH_MS = 8000
 
 export default function SwapSheet({ asset, onClose }) {
   const { publicKey, provider } = useWallet()
+  // The remote switch. Read synchronously and fail-closed, so this sheet is
+  // never briefly usable while an answer is on its way. TradeButton already
+  // refuses to open it; this is the second lock on the same door, as with the
+  // unverified-mint check below.
+  const swapAllowed = useFlag(SWAP_FLAG)
   // The verified token, or nothing. Both the address we trade and the
   // decimals we size the trade with come from here — pinned, checked against
   // the issuer on chain, and the same on every render.
@@ -230,6 +236,32 @@ export default function SwapSheet({ asset, onClose }) {
 
   const unitLabel = side === 'buy' ? 'USDC' : asset.ticker
   const outLabel = side === 'buy' ? asset.ticker : 'USDC'
+
+  // Switched off. Only while nothing has been handed to the wallet yet: if
+  // the flag flips mid-signature we must NOT replace the outcome screen with
+  // this card, because "submitted" and "we lost track of it" are the two
+  // things the user most needs to read. `idle` and `rejected` both mean
+  // nothing is in flight.
+  const nothingInFlight = status === 'idle' || status === 'rejected'
+  if (!swapAllowed && nothingInFlight) {
+    return (
+      <Sheet onClose={onClose} className="z-[55]">
+        <div className="px-1 pb-2 text-center">
+          <SheetTitle className="text-lg font-semibold">Swapping is paused</SheetTitle>
+          <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+            {SWAP_PAUSED_LINE} Nothing is wrong with your wallet, and your
+            watchlists and alerts are unaffected.
+          </p>
+          <button
+            onClick={onClose}
+            className="mt-5 w-full rounded-xl bg-zinc-900 py-3 text-sm font-medium text-zinc-200 active:bg-zinc-800"
+          >
+            Close
+          </button>
+        </div>
+      </Sheet>
+    )
+  }
 
   // No verified address, no swap. TradeButton already keeps this sheet shut
   // in that case; this is the second lock on the same door, because the cost

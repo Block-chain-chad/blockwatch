@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Header from '../components/Header'
 import { useWaitlist } from '../state/WaitlistContext'
 import { track } from '../services/analytics'
+import { useFlag, LINK_OUT_FLAG, LINK_OUT_PAUSED_LINE } from '../services/featureFlags'
 import { CheckCircleIcon, WalletIcon, BellIcon } from '../components/Icons'
 
 /*
@@ -38,6 +39,10 @@ const RESTRICTED = [
 
 export default function Trade({ onOpenProfile }) {
   const { entry, join } = useWaitlist()
+  // The "Open to you" card is OnStock telling someone a venue is available to
+  // them, which is the regional-access claim the first-day review flagged. It
+  // answers to the same switch as the per-asset link-outs.
+  const linkOutOn = useFlag(LINK_OUT_FLAG)
   const [email, setEmail] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -61,28 +66,39 @@ export default function Trade({ onOpenProfile }) {
           place with the right numbers.
         </p>
 
-        {/* The one you can actually use. */}
-        <a
-          href={PRIMARY.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => track('trade_out', { venue: PRIMARY.id })}
-          className="mt-4 flex items-start gap-3 rounded-lg border p-4 transition-colors active:bg-zinc-900"
-          style={{ borderColor: 'var(--border-default)' }}
-        >
-          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-800 text-accent">
-            <PRIMARY.icon size={18} />
-          </span>
-          <span className="min-w-0">
-            <span className="flex items-center gap-2">
-              <span className="t-label text-zinc-100">{PRIMARY.name} ↗</span>
-              <span className="t-micro rounded-full bg-gain/10 px-2 py-0.5 text-gain">
-                Open to you
-              </span>
+        {/* The one you can actually use — unless it is switched off, in which
+            case say so rather than leaving a gap above the restricted list. */}
+        {!linkOutOn && (
+          <p
+            className="t-caption mt-4 rounded-lg border p-4 text-zinc-400"
+            style={{ borderColor: 'var(--border-subtle)' }}
+          >
+            {LINK_OUT_PAUSED_LINE} We're reviewing where we can point people.
+          </p>
+        )}
+        {linkOutOn && (
+          <a
+            href={PRIMARY.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => track('trade_out', { venue: PRIMARY.id })}
+            className="mt-4 flex items-start gap-3 rounded-lg border p-4 transition-colors active:bg-zinc-900"
+            style={{ borderColor: 'var(--border-default)' }}
+          >
+            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-800 text-accent">
+              <PRIMARY.icon size={18} />
             </span>
-            <span className="t-caption mt-1 block text-zinc-500">{PRIMARY.blurb}</span>
-          </span>
-        </a>
+            <span className="min-w-0">
+              <span className="flex items-center gap-2">
+                <span className="t-label text-zinc-100">{PRIMARY.name} ↗</span>
+                <span className="t-micro rounded-full bg-gain/10 px-2 py-0.5 text-gain">
+                  Open to you
+                </span>
+              </span>
+              <span className="t-caption mt-1 block text-zinc-500">{PRIMARY.blurb}</span>
+            </span>
+          </a>
+        )}
 
         {/* The four you cannot — stated once, listed compactly, still reachable
             for anyone outside the US. */}

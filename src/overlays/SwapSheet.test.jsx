@@ -4,6 +4,7 @@ import SwapSheet from './SwapSheet'
 import TradeButton from '../components/asset/TradeButton'
 import { VERIFIED_MINTS } from '../data/verifiedMints'
 import { BY_ID } from '../data/universe'
+import { applyFlags, SWAP_FLAG } from '../services/featureFlags'
 
 /*
  * A smoke render of the two trade entry points, without a browser.
@@ -26,9 +27,15 @@ beforeEach(() => {
 })
 afterEach(() => {
   vi.unstubAllGlobals()
+  applyFlags(null)
 })
 
 describe('SwapSheet renders', () => {
+  // The swap is switched off by default, so these two reach for the form
+  // deliberately. The switch itself is covered in
+  // services/featureFlags.entryPoints.test.jsx.
+  beforeEach(() => applyFlags({ [SWAP_FLAG]: true }))
+
   it('shows the form for a token whose address is verified', () => {
     const html = renderToStaticMarkup(<SwapSheet asset={verified} onClose={() => {}} />)
     expect(html).toContain(`Swap ${verified.ticker}`)
