@@ -146,6 +146,37 @@ export function perShare(basePrice, multiplier) {
   return basePrice / (Number(r.num) / Number(r.den))
 }
 
+/**
+ * A candle series priced per BASE token -> priced per share.
+ *
+ * GeckoTerminal serves pool OHLCV, and a pool trades base tokens, so for
+ * NFLXx it reports around 757 while the share and the app's own readout say
+ * 76. Drawing that beside a 76 price line is two different units on one
+ * screen, and the premium a reader infers from it is nine hundred percent of
+ * nothing.
+ *
+ * Volume is deliberately untouched: GeckoTerminal's is volume_usd, already in
+ * dollars, and dollars do not change when the unit of the thing being counted
+ * does.
+ *
+ * Returns null on a ratio it cannot read, so the caller draws nothing rather
+ * than a chart in the wrong unit.
+ */
+export function candlesPerShare(candles, multiplier) {
+  if (!Array.isArray(candles)) return null
+  if (isUnity(multiplier)) return candles
+  const r = toRational(multiplier)
+  if (r == null) return null
+  const m = Number(r.num) / Number(r.den)
+  return candles.map((c) => ({
+    ...c,
+    open: c.open / m,
+    high: c.high / m,
+    low: c.low / m,
+    close: c.close / m,
+  }))
+}
+
 const MONTHS = Object.freeze([
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',

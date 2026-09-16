@@ -20,6 +20,16 @@ export const CHART_RANGES = {
  * semantic the live premium pill uses when markets are closed).
  * Uses the UNCLIPPED stock series so early-window token points can reference
  * the prior session's close.
+ *
+ * UNITS. Both sides are PER SHARE, which is the only way this subtraction
+ * means anything. The token side comes from CoinGecko's market_chart, and
+ * CoinGecko applies the issuer's scaled-amount multiplier itself: checked
+ * against mainnet on 2026-09-16, NFLXx (ratio 10) came back at 76.98 while
+ * its DEX pool priced a base token at 757 and the real NFLX share was 76.41.
+ * So nothing is converted here, and nothing should be — dividing this series
+ * by the multiplier would invent a 90% discount on a screen with a Buy
+ * button. The pool-sourced candles in services/candles.js are the ones that
+ * do need converting; they arrive per base token.
  */
 function buildPremiumSeries(token, stockRaw, fallbackStockPrice) {
   const src =

@@ -9,6 +9,7 @@ import {
   rawToUi,
   uiToRaw,
   perShare,
+  candlesPerShare,
   multiplierLine,
 } from './multiplier'
 import { VERIFIED_MINTS, VERIFIED_AT } from '../data/verifiedMints'
@@ -205,6 +206,53 @@ describe('perShare — a pool price per base token becomes a price per share', (
   it('returns null for an unusable price or ratio', () => {
     expect(perShare(NaN, '10')).toBeNull()
     expect(perShare(100, 'bad')).toBeNull()
+  })
+})
+
+describe('candlesPerShare — pool candles become comparable to the share', () => {
+  // Shaped like services/candles.js output. The NFLXx numbers are the real
+  // pool level measured on 2026-09-16, when NFLX itself traded at 76.41.
+  const pool = [
+    { time: 1_757_000_000, open: 757.45, high: 762.1, low: 751.0, close: 760.0, volume: 12345 },
+    { time: 1_757_000_300, open: 760.0, high: 764.0, low: 758.5, close: 761.2, volume: 999 },
+  ]
+
+  it('divides a 10x ratio down to share level', () => {
+    const out = candlesPerShare(pool, '10')
+    expect(out[0].open).toBeCloseTo(75.745, 4)
+    expect(out[0].high).toBeCloseTo(76.21, 4)
+    expect(out[0].low).toBeCloseTo(75.1, 4)
+    expect(out[0].close).toBeCloseTo(76.0, 4)
+    expect(out[1].close).toBeCloseTo(76.12, 4)
+  })
+
+  it('leaves volume alone, because it is already dollars', () => {
+    expect(candlesPerShare(pool, '10')[0].volume).toBe(12345)
+    expect(candlesPerShare(pool, '10')[1].volume).toBe(999)
+  })
+
+  it('returns the very same array for a 1.0 asset, so nothing is copied for 37 of 103', () => {
+    expect(candlesPerShare(pool, '1')).toBe(pool)
+  })
+
+  it('scales a fractional ratio upward', () => {
+    expect(candlesPerShare([{ time: 1, open: 84.51, high: 84.51, low: 84.51, close: 84.51, volume: 1 }], '0.5111362527152737')[0].close).toBeCloseTo(
+      165.33,
+      1
+    )
+  })
+
+  it('draws nothing rather than a chart in the wrong unit', () => {
+    expect(candlesPerShare(pool, 'bad')).toBeNull()
+    expect(candlesPerShare(pool, '0')).toBeNull()
+    expect(candlesPerShare(null, '10')).toBeNull()
+  })
+
+  it('keeps the candle shape intact', () => {
+    expect(Object.keys(candlesPerShare(pool, '2')[0]).sort()).toEqual(
+      ['close', 'high', 'low', 'open', 'time', 'volume'].sort()
+    )
+    expect(candlesPerShare(pool, '2')[0].time).toBe(1_757_000_000)
   })
 })
 
