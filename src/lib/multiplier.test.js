@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest'
 import {
   DEFAULT_MULTIPLIER,
   MAX_PIN_AGE_DAYS,
-  MAX_RATIO_DRIFT,
+  RATIO_RISE_CEILING,
+  RATIO_DROP_FLOOR,
   reconcileRatio,
   ratioFor,
   toRational,
@@ -365,14 +366,14 @@ describe('reconcileRatio — pin versus live', () => {
     expect(reconcileRatio({ multiplier: '10' }, { multiplier: '1' }, { now: NOW, verifiedAt: PINNED_AT })).toBeNull()
   })
 
-  it('accepts an accrual-sized difference without asking for provenance', () => {
+  it('accepts an upward accrual-sized difference without asking for provenance', () => {
     // OPENx's real history has a single accrual step of 2.0816%, so a band
     // tighter than that would refuse a legitimate dividend.
     expect(reconcileRatio({ multiplier: '1' }, { multiplier: '1.0208' }, { now: NOW })).toBe('1.0208')
-    expect(reconcileRatio({ multiplier: '1' }, { multiplier: '1.049' }, { now: NOW })).toBe('1.049')
+    expect(reconcileRatio({ multiplier: '1' }, { multiplier: '1.05' }, { now: NOW })).toBe('1.05')
     // Past the band, and with nothing tying it to the pin.
     expect(reconcileRatio({ multiplier: '1' }, { multiplier: '1.06' }, { now: NOW })).toBeNull()
-    expect(MAX_RATIO_DRIFT).toBe(0.05)
+    expect(RATIO_RISE_CEILING).toBe('1.05')
   })
 
   it('refuses an unreadable value from either side', () => {
@@ -551,5 +552,41 @@ describe('reconcileRatio refuses a provable update that moves the ratio down', (
     const highPin = { multiplier: '4' }
     const halved = { multiplier: '4', nextMultiplier: '2', nextMultiplierAt: AFTER }
     expect(reconcileRatio(highPin, halved, opts)).toBeNull()
+  })
+})
+
+/*
+ * The no-provenance band is asymmetric.
+ *
+ * Its five percent was bought by OPENx's 2.0816% UPWARD accrual step. Nothing
+ * downward ever needed that room, and applied symmetrically it accepted a live
+ * 0.951 against a pin of 1 with no provenance at all — which sells 105.15 when
+ * 100 is typed, because raw size is the typed amount divided by the ratio.
+ */
+describe('the drift band is wider upward than downward', () => {
+  const pin = { multiplier: '1' }
+  const opts = { now: NOW }
+
+  it('accepts a five percent rise with no provenance', () => {
+    expect(reconcileRatio(pin, { multiplier: '1.05' }, opts)).toBe('1.05')
+  })
+
+  it('refuses the symmetric case that used to pass', () => {
+    // 0.951 against a pin of 1: 4.9% down, inside the old symmetric band.
+    expect(reconcileRatio(pin, { multiplier: '0.951' }, opts)).toBeNull()
+  })
+
+  it('accepts a dip inside the downward floor', () => {
+    expect(reconcileRatio(pin, { multiplier: '0.99' }, opts)).toBe('0.99')
+    expect(reconcileRatio(pin, { multiplier: '0.98' }, opts)).toBe('0.98')
+  })
+
+  it('refuses one just past the downward floor', () => {
+    expect(reconcileRatio(pin, { multiplier: '0.979' }, opts)).toBeNull()
+  })
+
+  it('names the two bounds', () => {
+    expect(RATIO_RISE_CEILING).toBe('1.05')
+    expect(RATIO_DROP_FLOOR).toBe('0.98')
   })
 })

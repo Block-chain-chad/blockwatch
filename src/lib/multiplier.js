@@ -102,20 +102,20 @@ export function pendingMultiplier(pinned, now = Date.now()) {
 }
 
 /**
- * How far a live ratio may sit from the pinned one before it needs to show its
- * working.
+ * How far ABOVE the pin a live ratio may sit before it needs to show its
+ * working, as a fraction of the pin: the band inside which an upward
+ * difference needs no provenance.
  *
- * This is the band inside which a difference needs no provenance at all.
  * Accruals ratchet by well under a percent in a typical step — CRMx moved
  * 0.1229% — but the largest single step in the pinned history is OPENx at
  * 2.0816%, so a tighter band would refuse a legitimate dividend. Five percent
  * clears every accrual on record with room, and sits far below the smallest
  * split (CRWDx, 4x).
  *
- * Past this band the live value is not rejected outright: it can still be
+ * Past this band an upward value is not rejected outright: it can still be
  * accepted by proving it is a post-pin update. See reconcileRatio.
  */
-export const MAX_RATIO_DRIFT = 0.05
+export const RATIO_RISE_CEILING = '1.05'
 
 /**
  * How far below the pin a ratio may sit before it needs a fresh verification,
@@ -137,13 +137,25 @@ function sameRatio(a, b) {
 }
 
 /**
- * Whether `live` is at least `floor` times `pin`, in exact integer math.
+ * Whether `live` is at least `bound` times `pin`, in exact integer math.
  *
- *   live/pin >= floor.num/floor.den
- *     <=> live.num * pin.den * floor.den >= floor.num * live.den * pin.num
+ *   live/pin >= bound.num/bound.den
+ *     <=> live.num * pin.den * bound.den >= bound.num * live.den * pin.num
  */
-function notBelow(live, pin, floor) {
-  return live.num * pin.den * floor.den >= floor.num * live.den * pin.num
+function notBelow(live, pin, bound) {
+  return live.num * pin.den * bound.den >= bound.num * live.den * pin.num
+}
+
+/**
+ * The mirror: whether `live` is at most `bound` times `pin`.
+ *
+ * Both bounds are integer comparisons rather than float arithmetic, because a
+ * float lands on the wrong side of its own boundary: 1.05 / 1 - 1 evaluates to
+ * 0.050000000000000044, so a ratio exactly at the band was being refused.
+ * These decide whether a sell is sized at all.
+ */
+function notAbove(live, pin, bound) {
+  return live.num * pin.den * bound.den <= bound.num * live.den * pin.num
 }
 
 /**
@@ -226,23 +238,29 @@ export function reconcileRatio(pinned, live, { mint, now = Date.now(), verifiedA
   const b = toRational(effectiveMultiplier(live, now))
   if (a == null || b == null) return null
   const fresh = effectiveMultiplier(live, now)
-  const drift = Math.abs(Number(b.num) / Number(b.den) / (Number(a.num) / Number(a.den)) - 1)
-  if (drift <= MAX_RATIO_DRIFT) return fresh
-  if (!provablyAfterPin(pinned, live, verifiedAt)) return null
-  // Provenance establishes that this config FOLLOWS the pin. It says nothing
-  // about the value, and the value is what sizes the trade.
+
+  // BELOW the pin: refuse past the floor, whatever the provenance says.
   //
-  // 48 of the 103 pins have a multiplier of exactly 1, so condition (a) is
-  // met by any feed reporting the true standing value — which leaves a
-  // nextMultiplier field and a post-pin date as the only things standing
-  // between a fabricated ratio and a sell. Pointed downward that is a
-  // multiplier on the amount sold: a live nextMultiplier of 0.1 against a pin
-  // of 1 sizes a typed 1 as ten, and 0.0001 as ten thousand.
+  // Provenance establishes that a config FOLLOWS the pin. It says nothing
+  // about its value, and the value is what sizes the trade. 48 of the 103
+  // pins sit at exactly 1, so a feed reporting the true standing value clears
+  // the first provenance condition for free — leaving a nextMultiplier field
+  // and a post-pin date as the only guard. Downward that is a multiplier on
+  // the amount sold, since raw size is the typed amount DIVIDED by the ratio:
+  // 0.1 against a pin of 1 sells ten times what was typed, 0.0001 sells ten
+  // thousand times.
   //
-  // So a provable update is still refused if it moves the ratio down past the
-  // floor. Up is unbounded on purpose: that is a split, which is the whole
-  // reason this hatch exists.
-  return notBelow(b, a, toRational(RATIO_DROP_FLOOR)) ? fresh : null
+  // The drift band does not help here either. Its five percent was bought by
+  // OPENx's upward accrual step and nothing downward ever needed it; applied
+  // symmetrically it accepted a live 0.951 against a pin of 1 with no
+  // provenance at all, which sells 105.15 when 100 is typed.
+  if (!notBelow(b, a, toRational(RATIO_DROP_FLOOR))) return null
+
+  // AT OR ABOVE the pin: inside the band it needs no provenance, past the band
+  // it must prove it followed the pin. Upward is unbounded once proved,
+  // because that is a split and catching a missed split is the whole point.
+  if (notAbove(b, a, toRational(RATIO_RISE_CEILING))) return fresh
+  return provablyAfterPin(pinned, live, verifiedAt) ? fresh : null
 }
 
 /**

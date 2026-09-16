@@ -110,9 +110,10 @@ export default function SwapSheet({ asset, onClose }) {
   // The pin is issuer-verified but only knows changes scheduled before
   // verify-mints last ran, and the issuer schedules them continuously — so
   // this also asks Jupiter what the chain says now, and reconcileRatio decides
-  // between them: within drift it takes the live value, past drift it takes it
-  // only when the live config proves it is the pin's own ratio moved forward,
-  // and otherwise yields null and stops the trade.
+  // between them: inside the band it takes the live value, above the band only
+  // when the live config proves it is the pin's own ratio moved forward, and
+  // below the floor never — a ratio read too low oversells in proportion.
+  // Anything it will not vouch for yields null and stops the trade.
   //
   // `undefined` means the live read has not answered yet. Until it does the
   // pin stands: it is the verified value, just possibly a step behind.
