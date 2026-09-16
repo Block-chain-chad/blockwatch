@@ -221,7 +221,9 @@ export default function SwapSheet({ asset, onClose }) {
         // possibly-broadcast. signAndSend broadcasts before it can time out,
         // so we must NOT claim it failed: that invites a double swap.
         setStatus('unknown')
-        setMessage(null)
+        // A repeat of a swap we already lost track of names the earlier
+        // attempt, so the screen is about that one and not this tap.
+        setMessage(err?.code === 'unresolved' ? err.message : null)
       }
     }
   }
@@ -310,6 +312,7 @@ export default function SwapSheet({ asset, onClose }) {
             may still have gone through. Check your wallet's recent activity
             before trying again, so you don't swap twice.
           </p>
+          {message && <p className="mt-2 text-xs leading-relaxed text-zinc-400">{message}</p>}
           {publicKey && (
             <a
               href={`https://solscan.io/account/${publicKey}`}

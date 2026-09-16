@@ -107,6 +107,27 @@ export async function getSwapQuote({ side, mint, amountRaw, timeoutMs = QUOTE_TI
 // yet. Cleared in a finally, so a finished or failed swap can be retried.
 const inFlight = new Set()
 
+// Swaps that reached the wallet and whose outcome we never learned.
+//
+// The in-flight lock above is released in a finally, which is right for every
+// other ending: a build refusal or a wallet cancellation can be retried at
+// once because nothing was sent. This ending is different —
+// signAndSendTransaction broadcasts before it can fail, so the transaction may
+// already be on chain. With only the lock, closing the sheet and reopening it
+// let the identical trade go straight through, and the user pays twice.
+//
+// Keys are held for a few minutes: long enough for a Solana transaction to
+// confirm or for its blockhash to expire (about 90 seconds), and for someone
+// to actually look at their wallet, but not so long that one lost swap locks
+// that trade out for the rest of the session.
+const UNRESOLVED_MS = 5 * 60_000
+const unresolved = new Map()
+
+/** Test seam: forget the swaps whose outcome we never learned. */
+export function forgetUnresolvedSwaps() {
+  unresolved.clear()
+}
+
 /**
  * Every error out of executeSwap carries a `phase` so the UI can tell the user
  * the truth about their money:
@@ -165,6 +186,25 @@ export async function executeSwap({ quote, provider, intent }) {
     mint: intent.mint,
     amountRaw: intent.amountRaw,
   })
+  // Expired entries go first, so a long session cannot grow this map without
+  // bound.
+  const now = Date.now()
+  for (const [held, at] of unresolved) {
+    if (now - at >= UNRESOLVED_MS) unresolved.delete(held)
+  }
+
+  if (unresolved.has(key)) {
+    recordSwap('blocked', { key, wallet: publicKey, reason: 'earlier attempt unresolved' })
+    // Phase 'broadcast', never 'build': the honest statement is that money may
+    // already have moved, and the sheet must not offer a clean retry.
+    const repeat = swapError(
+      'You sent this exact swap a few minutes ago and we never learned whether it went through. Check your wallet before sending it again.',
+      'broadcast'
+    )
+    repeat.code = 'unresolved'
+    throw repeat
+  }
+
   if (inFlight.has(key)) {
     // Worth a record of its own: a repeat that got this far is the exact
     // event a double-submit bug produces.
@@ -280,12 +320,16 @@ async function submit({ quote, provider, intent, publicKey, key, inputMint, outp
     tagged.cause = err
     // A wallet that says 4001 declined it; anything else may already be on
     // chain, and the record must say so rather than guess.
-    recordSwap(err?.code === 4001 ? 'rejected' : 'unknown', {
+    const cancelled = err?.code === 4001
+    recordSwap(cancelled ? 'rejected' : 'unknown', {
       key,
       wallet: publicKey,
       reason: err?.message ?? 'wallet threw',
       walletCode: err?.code ?? null,
     })
+    // Held past the finally that releases the in-flight lock, so reopening the
+    // sheet cannot send this same trade again while its fate is unknown.
+    if (!cancelled) unresolved.set(key, Date.now())
     throw tagged
   }
   recordSwap('sent', { key, wallet: publicKey, signature })

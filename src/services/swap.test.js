@@ -4,6 +4,7 @@ import {
   formatRaw,
   getSwapQuote,
   executeSwap,
+  forgetUnresolvedSwaps,
   tokenProgramFor,
   SLIPPAGE_BPS,
   USDC_MINT,
@@ -242,6 +243,9 @@ describe('executeSwap', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', buildReturns(VALID_TX))
     vi.stubGlobal('localStorage', fakeStorage())
+    // Module-scope state that deliberately outlives one swap; each case needs
+    // it empty or it inherits the previous case's lost transaction.
+    forgetUnresolvedSwaps()
   })
   afterEach(() => {
     vi.unstubAllGlobals()
@@ -393,6 +397,65 @@ describe('executeSwap', () => {
 
     wallet.release()
     await expect(first).resolves.toBe('SIG')
+  })
+
+  it('refuses the same swap again after one whose outcome we never learned', async () => {
+    // The wallet broadcast and then threw. signAndSendTransaction sends before
+    // it can fail, so this trade may be on chain. Closing the sheet releases
+    // the in-flight lock; reopening it and confirming the identical trade must
+    // NOT go through on the strength of that.
+    const lost = provider({
+      signAndSendTransaction: vi.fn(async () => {
+        throw new Error('Transaction was not confirmed in 30.00 seconds')
+      }),
+    })
+    const first = await executeSwap({ quote: QUOTE, provider: lost, intent: INTENT }).catch((e) => e)
+    expect(first.phase).toBe('broadcast')
+
+    const again = provider()
+    const repeat = await executeSwap({ quote: QUOTE, provider: again, intent: INTENT }).catch(
+      (e) => e
+    )
+    expect(repeat.code).toBe('unresolved')
+    // Never 'build': the sheet must not offer a clean retry for a trade that
+    // may already have spent the money.
+    expect(repeat.phase).toBe('broadcast')
+    expect(repeat.message).toMatch(/few minutes ago/)
+    expect(again.signAndSendTransaction).not.toHaveBeenCalled()
+    expect(readSwapAudit().map((r) => r.event)).toEqual(['submitted', 'unknown', 'blocked'])
+  })
+
+  it('still lets a different trade through while one is unresolved', async () => {
+    const lost = provider({
+      signAndSendTransaction: vi.fn(async () => {
+        throw new Error('Transaction was not confirmed in 30.00 seconds')
+      }),
+    })
+    await executeSwap({ quote: QUOTE, provider: lost, intent: INTENT }).catch(() => {})
+    const other = { ...INTENT, amountRaw: '20000000' }
+    const otherQuote = { ...QUOTE, inAmount: '20000000' }
+    await expect(
+      executeSwap({ quote: otherQuote, provider: provider(), intent: other })
+    ).resolves.toBe('SIG')
+  })
+
+  it('forgets an unresolved swap once the window has passed', async () => {
+    // A lost swap must not lock that trade out for the rest of the session.
+    vi.useFakeTimers()
+    try {
+      const lost = provider({
+        signAndSendTransaction: vi.fn(async () => {
+          throw new Error('Transaction was not confirmed in 30.00 seconds')
+        }),
+      })
+      await executeSwap({ quote: QUOTE, provider: lost, intent: INTENT }).catch(() => {})
+      vi.advanceTimersByTime(5 * 60_000 + 1)
+      await expect(
+        executeSwap({ quote: QUOTE, provider: provider(), intent: INTENT })
+      ).resolves.toBe('SIG')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('lets the same swap be retried once the first one is finished', async () => {
