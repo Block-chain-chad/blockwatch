@@ -15,6 +15,13 @@
 //   5. Emit src/data/universe.json (sorted by 24h volume) and a human-readable
 //      mapping table at scripts/universe-report.txt for eyeballing.
 //
+// The Solana mint addresses collected in step 5 come from CoinGecko and are
+// good enough to LOOK UP a price, not to SPEND money at. Nothing here reaches
+// the swap path: scripts/verify-mints.mjs takes each address to the chain and
+// asks the issuer, and only its output is tradeable. Always run it after this:
+//
+//   node scripts/build-universe.mjs && node scripts/verify-mints.mjs
+//
 // Free-tier budgets: CoinGecko keyless (~10 calls, 2.5s apart), Finnhub
 // 60/min (validation throttled to ~55/min; cache makes re-runs near-free).
 
@@ -335,3 +342,8 @@ console.log(`  underlying matched: ${matched}, token-only: ${assets.length - mat
 console.log(`  by issuer: ${JSON.stringify(byIssuer)}`)
 console.log(`  by type:   ${JSON.stringify(byType)}`)
 console.log(`Full mapping table: scripts/universe-report.txt`)
+console.log(
+  `\nNEXT: node scripts/verify-mints.mjs — until it runs, any new or changed\n` +
+    `mint is untradeable in the app (that is deliberate: CoinGecko's address is\n` +
+    `not the issuer's word, and this one spends real money).`
+)
