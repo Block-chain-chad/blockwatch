@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   groupCompanies, BOARD_SORTS, BOARD_LENSES, MAX_CREDIBLE_GAP,
   boundCandidates, CANDIDATE_CAP, freezeOrder, flattenRows, visibleWindow, headerLine,
-  oldestQuoteAge,
+  quoteAges,
   COMPANY_ROW_H, WRAPPER_ROW_H,
 } from './board'
 
@@ -218,21 +218,57 @@ describe('headerLine', () => {
       '1 company · share legs at last close, pre-market'
     )
   })
+
+  it('counts the rows the freshness claim does not cover', () => {
+    // The old line collapsed to 'stale, refreshing' whenever ANY row was
+    // undated, which on a real board is always, so the warning stopped
+    // meaning anything. The age now speaks for the dated rows and the count
+    // speaks for the rest.
+    expect(
+      headerLine({ count: 150, session: 'regular', stockAgeSeconds: 12, undatedCount: 3 })
+    ).toBe('150 companies · share leg live · 3 undated')
+    expect(
+      headerLine({ count: 150, session: 'regular', stockAgeSeconds: 900, undatedCount: 3 })
+    ).toBe('150 companies · share leg stale, refreshing · 3 undated')
+  })
+
+  it('says nothing about undated rows when there are none', () => {
+    expect(headerLine({ count: 12, session: 'regular', stockAgeSeconds: 12, undatedCount: 0 })).toBe(
+      '12 companies · share leg live'
+    )
+  })
+
+  it('leaves the closed-session line alone', () => {
+    // Outside the regular session every quote is a close, so the count would
+    // read '150 undated' all night and qualify a claim nobody made.
+    expect(
+      headerLine({ count: 150, session: 'closed', stockAgeSeconds: null, undatedCount: 150 })
+    ).toBe('150 companies · share legs at last close')
+  })
 })
 
-describe('oldestQuoteAge', () => {
+describe('quoteAges', () => {
   const now = 1_000_000_000_000
   const co = (asOf) => ({ logoAsset: { stockQuote: asOf == null ? null : { asOf } } })
 
-  it('reports the worst row on the board, not the best', () => {
-    expect(oldestQuoteAge([co(now - 5_000), co(now - 300_000), co(now - 60_000)], now)).toBe(300)
+  it('reports the worst DATED row, not the best', () => {
+    expect(quoteAges([co(now - 5_000), co(now - 300_000), co(now - 60_000)], now)).toEqual({
+      oldest: 300,
+      undated: 0,
+    })
   })
 
-  it('refuses to answer at all when any row has no dated quote', () => {
-    // One undated quote makes 'the share leg is live' unprovable, and the
-    // strip must not claim it on the strength of the other rows.
-    expect(oldestQuoteAge([co(now - 5_000), co(null)], now)).toBe(null)
-    expect(oldestQuoteAge([{ logoAsset: null }], now)).toBe(null)
-    expect(oldestQuoteAge([], now)).toBe(null)
+  it('keeps speaking for the dated rows when some rows are undated', () => {
+    // A prevClose quote always has asOf null, so on a 150-company board this
+    // used to return null and the strip warned about staleness all session.
+    expect(quoteAges([co(now - 5_000), co(null), { logoAsset: null }], now)).toEqual({
+      oldest: 5,
+      undated: 2,
+    })
+  })
+
+  it('has no age to give when nothing is dated', () => {
+    expect(quoteAges([co(null), co(null)], now)).toEqual({ oldest: null, undated: 2 })
+    expect(quoteAges([], now)).toEqual({ oldest: null, undated: 0 })
   })
 })

@@ -223,33 +223,54 @@ export function visibleWindow(heights, scrollTop, viewportHeight, overscan = 6) 
 }
 
 /**
- * Age in seconds of the OLDEST dated share quote across the board's
- * companies, or null when even one of them has no dated quote.
+ * Two numbers about the board's share quotes: the age in seconds of the
+ * OLDEST DATED one, and how many rows carry no timestamp at all.
  *
- * headerLine speaks for the whole board, so it has to speak for its worst
- * row: the quote set is capped and rotates, which leaves symbols at very
- * different ages, and one undated quote makes "the share leg is live"
- * unprovable rather than true.
+ * It used to be one number that went null the moment any single row was
+ * undated. That sounds strict and reads as nothing: a quote with
+ * basis 'prevClose' always has asOf null, so on a 150-company board the
+ * header said "share leg stale, refreshing" all session, every session. A
+ * badge that is always on is a badge nobody reads, and it hid the real thing
+ * it was meant to warn about.
+ *
+ * So the two facts are kept apart. The age speaks for the worst DATED row,
+ * which is a true statement about the quotes we can actually date, and the
+ * count says plainly how many rows it does not cover. Neither one pretends to
+ * be the other.
  */
-export function oldestQuoteAge(companies, now) {
+export function quoteAges(companies, now) {
   let oldest = null
+  let undated = 0
   for (const c of companies) {
     const at = c.logoAsset?.stockQuote?.asOf
-    if (!Number.isFinite(at)) return null
+    if (!Number.isFinite(at)) {
+      undated += 1
+      continue
+    }
     const age = (now - at) / 1000
     if (oldest == null || age > oldest) oldest = age
   }
-  return oldest
+  return { oldest, undated }
 }
 
-/** The control strip's honesty count: how many companies, and what the share leg is right now. */
-export function headerLine({ count, session, stockAgeSeconds }) {
+/**
+ * The control strip's honesty count: how many companies, what the share leg is
+ * right now, and how many rows the freshness claim does not cover.
+ *
+ * The undated count is appended in the regular session only. That is the one
+ * session where the line makes a claim about liveness for the count to
+ * qualify; outside it every quote is a close by definition and the number
+ * would just be noise on the strip all night.
+ */
+export function headerLine({ count, session, stockAgeSeconds, undatedCount = 0 }) {
   const noun = count === 1 ? 'company' : 'companies'
   const head = `${count} ${noun}`
   if (session === 'regular') {
-    return isStockDelayed(session, stockAgeSeconds)
-      ? `${head} · share leg stale, refreshing`
-      : `${head} · share leg live`
+    const leg = isStockDelayed(session, stockAgeSeconds)
+      ? 'share leg stale, refreshing'
+      : 'share leg live'
+    const undated = undatedCount > 0 ? ` · ${undatedCount} undated` : ''
+    return `${head} · ${leg}${undated}`
   }
   // "4pm close" was a lie on the eight 1pm days a year the calendar now knows
   // about (lib/market.js), so the strip names the close without timing it.

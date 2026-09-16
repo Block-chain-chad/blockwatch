@@ -8,7 +8,7 @@ import { track } from '../../services/analytics'
 import { ASSETS } from '../../data/universe'
 import {
   BOARD_LENSES, BOARD_SORTS, groupCompanies, boundCandidates, freezeOrder, flattenRows,
-  visibleWindow, headerLine, oldestQuoteAge,
+  visibleWindow, headerLine, quoteAges,
 } from '../../lib/board'
 import { shareFreshness } from '../../lib/provenance'
 import { formatPct, formatPrice } from '../../lib/format'
@@ -163,12 +163,19 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, 
 
   // The strip claims "share leg live" for the whole board, so it has to speak
   // for the OLDEST quote on it, not for the batch fetch time: a rotating,
-  // capped quote set leaves symbols at very different ages, and an undated
-  // quote (null) makes the claim unprovable rather than true.
-  const stockAge = oldestQuoteAge(companies, now)
+  // capped quote set leaves symbols at very different ages. Rows the claim
+  // cannot cover at all — an undated quote, which every prevClose row is —
+  // are counted beside it rather than collapsing the whole line.
+  const { oldest: stockAge, undated: undatedCount } = quoteAges(companies, now)
   const tokenAge = lastFetchAt ? (now - lastFetchAt) / 1000 : null
   const activeSort = BOARD_SORTS.find((s) => s.id === sort) ?? BOARD_SORTS[0]
   const grid = gridFor(big.gapColumn)
+  const header = headerLine({
+    count: companies.length,
+    session,
+    stockAgeSeconds: stockAge,
+    undatedCount,
+  })
 
   return (
     <section aria-label="Gap Board" className="flex h-full min-h-0 flex-col">
@@ -204,8 +211,8 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, 
           Credible only
         </label>
         <div className="flex-1" />
-        <span className="num t-caption min-w-0 truncate text-right text-zinc-500" title={headerLine({ count: companies.length, session, stockAgeSeconds: stockAge })}>
-          {headerLine({ count: companies.length, session, stockAgeSeconds: stockAge })}
+        <span className="num t-caption min-w-0 truncate text-right text-zinc-500" title={header}>
+          {header}
         </span>
       </div>
 
