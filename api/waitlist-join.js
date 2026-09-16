@@ -11,8 +11,38 @@
 // CORS: the native app POSTs this from capacitor://localhost, which makes it a
 // cross-origin request with a preflight. The preflight must be answered before
 // the 405/403 gates below (see api/_cors.js).
+//
+// ABUSE: this endpoint makes us send mail to an address a stranger chose, so
+// it is rate limited per caller AND per address (see api/_rateLimit.js — the
+// limits are best-effort and per-instance; read that file before quoting the
+// numbers to anyone).
 
 import { applyCors, handlePreflight, isNativeOrigin } from './_cors.js'
+import {
+  clientKey,
+  createRateLimiter,
+  opaqueKey,
+  sendTooManyRequests,
+} from './_rateLimit.js'
+
+// Two buckets, because they stop different things.
+//
+// Per caller: joining is a once-in-a-lifetime action, so 5 with a slow refill
+// is generous for a real person who mistyped, hit send twice, or came back on
+// a second device, and hostile to a loop. The client has no retry queue — a
+// 429 surfaces as a failed join — so this is deliberately not tighter.
+const perClient = createRateLimiter({ capacity: 5, refillPerSecond: 5 / 3600 })
+
+// Per address: the one that actually protects an inbox. The Origin gate below
+// is forgeable and the per-caller bucket resets on every cold start or new
+// instance, so without this a script could still ask us to mail one stranger
+// repeatedly. Keyed on a hash, never the address itself — see opaqueKey.
+// Note this bucket is spent on ATTEMPTS, not sends: is_new already means a
+// re-join mails nothing, and this keeps the attempts from reaching Supabase.
+const perEmail = createRateLimiter({ capacity: 3, refillPerSecond: 3 / 3600 })
+
+// Exported for the tests, which need a known-empty bucket per case.
+export const limiters = { perClient, perEmail }
 
 const welcomeHtml = (siteUrl, siteHost, position) => `
 <div style="font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;color:#18181b">
@@ -60,8 +90,11 @@ export default async function handler(req, res) {
 
   // Cheap abuse gate: browsers always send an Origin header on POSTs, and it
   // must be this deployment. Blocks naked curl-spam from burning the Resend
-  // quota. Not bulletproof (Origin is forgeable) — it raises the floor, the
-  // idempotent RPC and Resend's own limits do the rest.
+  // quota. It is NOT a security control and never was — anything that is not a
+  // browser sets this header to whatever it likes, so treat it as a filter for
+  // accidents and drive-by scripts only. What actually bounds the damage from
+  // a caller that does forge it: the buckets above, the is_new flag (a re-join
+  // mails nothing), and Resend's own limits.
   // The native app's WebView isn't served from Vercel, so its Origin is a
   // Capacitor scheme rather than this host. The accepted set comes from
   // api/_cors.js so this gate and the CORS allowlist cannot drift apart —
@@ -80,10 +113,21 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: 'forbidden' })
   }
 
+  // Counted before anything is parsed, so a loop of junk bodies costs the
+  // same as a loop of real ones.
+  const client = perClient.take(clientKey(req))
+  if (!client.ok) return sendTooManyRequests(res, client.retryAfter)
+
+  // Length is checked BEFORE the pattern: the local part is unbounded in the
+  // regex, so a megabyte-long address would otherwise be backtracked over
+  // before being thrown away.
   const email = String(req.body?.email ?? '').trim().toLowerCase()
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || email.length > 254) {
+  if (email.length > 254 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return res.status(400).json({ error: 'invalid email' })
   }
+
+  const address = perEmail.take(opaqueKey(email))
+  if (!address.ok) return sendTooManyRequests(res, address.retryAfter)
 
   const supabaseUrl = (process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL ?? '').replace(
     /\/(rest\/v1\/?)?$/,
