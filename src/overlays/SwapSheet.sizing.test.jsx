@@ -1,4 +1,14 @@
 // @vitest-environment jsdom
+
+// React checks this flag to decide whether act() is really act(). Without it
+// act still runs the work, but React is not in act mode — so it prints "the
+// current testing environment is not configured to support act(...)" on every
+// update, and, more to the point, its warning about state updates that were
+// NOT wrapped in act is never raised. That warning is the one worth having:
+// it is how an un-awaited effect writing into a money path gets caught.
+// Must be set before react-dom loads.
+globalThis.IS_REACT_ACT_ENVIRONMENT = true
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
