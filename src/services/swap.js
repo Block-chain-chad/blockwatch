@@ -16,6 +16,7 @@ import {
   SPL_TOKEN_PROGRAM,
   TOKEN_2022_PROGRAM,
 } from '../lib/swapCheck'
+import { rawToUi, uiToRaw } from '../lib/multiplier'
 
 const QUOTE_BASE = 'https://lite-api.jup.ag/swap/v1/quote'
 const SWAP_BASE = 'https://lite-api.jup.ag/swap/v1/swap'
@@ -418,4 +419,39 @@ export function formatRaw(raw, decimals, { maxFractionDigits = 4, significantDig
   const frac = fracPart.slice(0, keep).replace(/0+$/, '')
   const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
   return frac ? `${grouped}.${frac}` : grouped
+}
+
+/**
+ * The raw amount a sell must carry, from the figure the user typed.
+ *
+ * The typed figure is in WALLET units, because that is the only number a user
+ * can be looking at — Phantom shows raw/10^decimals scaled by the issuer's
+ * multiplier, and the issuer means it to be a share count. The chain is sized
+ * in raw. So this undoes the decimals and then the multiplier, both in exact
+ * integer math.
+ *
+ * Getting this wrong is not cosmetic. Passing the typed figure straight to
+ * toRaw, which is what this replaces, oversells by the multiplier: on NFLXx
+ * (ratio 10) "sell 1" built a transaction for ten tokens as the wallet counts
+ * them. 66 of the 103 pinned mints have a ratio that is not 1.
+ *
+ * Returns null on a ratio it cannot read, so the caller cannot quote or send.
+ * '0' means the amount is below one atomic unit.
+ */
+export function sellAmountRaw(typed, decimals, multiplier) {
+  if (!Number.isSafeInteger(decimals) || decimals < 0) return null
+  return uiToRaw(toRaw(typed, decimals), multiplier)
+}
+
+/**
+ * A raw amount, rendered in the units the user's wallet will show it in.
+ *
+ * Pass the multiplier of the mint the amount is denominated in — and '1' for
+ * USDC, which has no ratio. Without this the sheet promises "0.129 NFLXx" for
+ * a trade Phantom then reports as 1.29.
+ *
+ * Display only. Nothing that sizes a transaction may read this.
+ */
+export function formatWallet(raw, decimals, multiplier, options) {
+  return formatRaw(rawToUi(raw, multiplier), decimals, options)
 }

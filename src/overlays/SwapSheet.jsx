@@ -4,11 +4,13 @@ import {
   getSwapQuote,
   executeSwap,
   toRaw,
-  formatRaw,
+  sellAmountRaw,
+  formatWallet,
   USDC_DECIMALS,
   SLIPPAGE_BPS,
 } from '../services/swap'
 import { verifiedToken } from '../data/verifiedMints'
+import { effectiveMultiplier } from '../lib/multiplier'
 import { useFlag, SWAP_FLAG, SWAP_PAUSED_LINE } from '../services/featureFlags'
 import Sheet, { SheetTitle } from '../components/Sheet'
 
@@ -23,6 +25,19 @@ import Sheet, { SheetTitle } from '../components/Sheet'
  * The mint and its decimals come from data/verifiedMints — the address the
  * issuer vouches for on chain — not from the asset record and not from a
  * price API answering at swap time. An unverified asset gets no swap here.
+ *
+ * UNITS. Three of them meet on this screen, and confusing two costs money:
+ *
+ *   raw      the integer Jupiter quotes in and the transaction carries.
+ *   base     raw / 10^decimals. Never shown to anyone.
+ *   wallet   base * multiplier. What Phantom displays, what the issuer means
+ *            by "one token is one share", and therefore the only unit a user
+ *            can be typing or reading.
+ *
+ * So every number a human touches on this sheet is in wallet units, and every
+ * number handed to Jupiter or to executeSwap is raw. The two conversions are
+ * marked below. 66 of the 103 pinned mints have a multiplier that is not 1,
+ * so for most assets these are not the same number.
  */
 
 // Price impact is the silent way to lose money on a thin token: warn loudly
@@ -89,18 +104,41 @@ export default function SwapSheet({ asset, onClose }) {
     statusRef.current = status
   }, [status])
 
+  // The issuer's share-per-token ratio, pinned beside the mint it belongs to.
+  // 1 for anything the issuer has not scaled, which is 37 of the 103 pinned
+  // mints; 10 for NFLXx after its split. See lib/multiplier.js.
+  const multiplier = effectiveMultiplier(token)
+
   // What the user asked for, in the input mint's smallest units — the single
   // definition, used to quote AND to state the intent at confirm time. Scaled
   // from the raw STRING, not a coerced number: toRaw does BigInt string math
   // (and expands "1e5" itself), so a 20-digit input cannot silently mis-size
   // the transaction the way a float round-trip would. null means there is no
   // amount to work with yet; '0' means below one atomic unit of this mint.
-  const inputDecimals = side === 'buy' ? USDC_DECIMALS : decimals
+  //
+  // UNITS, and the reason this is not one line.
+  //
+  // Buying, the input is USDC: no ratio, nothing to convert.
+  //
+  // Selling, the input is the token, and the number the user types is the one
+  // they read off Phantom — which is the UI amount, raw/10^decimals scaled by
+  // the multiplier. The chain is sized in raw. Treating the typed figure as
+  // raw/10^decimals, which is what this did before, oversells by the
+  // multiplier: "1" on NFLXx built a transaction for ten NFLXx as the wallet
+  // counts them. uiToRaw undoes the scaling, in exact BigInt fraction math so
+  // no float reaches a transaction size, and truncates so the trade is
+  // marginally smaller than asked rather than larger.
+  //
+  // uiToRaw returns null on a ratio it cannot parse. That null flows straight
+  // through to "no amount", so an unreadable ratio stops the trade instead of
+  // quietly defaulting to 1 — defaulting to 1 IS the bug.
   const typed = Number(amount)
   const amountRaw =
     decimals == null || !(typed > 0) || !Number.isFinite(typed)
       ? null
-      : toRaw(amount, inputDecimals)
+      : side === 'buy'
+        ? toRaw(amount, USDC_DECIMALS)
+        : sellAmountRaw(amount, decimals, multiplier)
 
   // Live quote: re-quotes on amount/side change and every 8s so a resting
   // quote can't go stale. Does NOT depend on `status`; pauses via statusRef
@@ -169,8 +207,22 @@ export default function SwapSheet({ asset, onClose }) {
   const outDecimals = side === 'buy' ? decimals : USDC_DECIMALS
   // Formatted straight from the integer units Jupiter quoted — no float step
   // between the promise and the pixel.
-  const received = quote ? formatRaw(quote.outAmount, outDecimals) : null
-  const minReceived = quote ? formatRaw(quote.otherAmountThreshold, outDecimals) : null
+  //
+  // UNITS. Jupiter quotes raw amounts. Buying, the output is the token, and
+  // the wallet that receives it will show raw/10^decimals scaled by the
+  // multiplier — so these two lines have to scale too, or this sheet promises
+  // 0.129 NFLXx and Phantom then shows 1.29. rawToUi multiplies the integer by
+  // the ratio as an exact fraction and truncates, so what is displayed is
+  // never more than the chain will deliver. Selling, the output is USDC, which
+  // has no ratio.
+  //
+  // This is display only. The transaction is sized by amountRaw above and the
+  // quote Jupiter built, both of which stay raw.
+  const outMultiplier = side === 'buy' ? multiplier : '1'
+  const received = quote ? formatWallet(quote.outAmount, outDecimals, outMultiplier) : null
+  const minReceived = quote
+    ? formatWallet(quote.otherAmountThreshold, outDecimals, outMultiplier)
+    : null
   // Jupiter may omit priceImpactPct entirely, or send something that doesn't
   // parse. Both collapse to null here — via Number.isFinite, so NaN and
   // Infinity land in the same place instead of sneaking past a `>= 5` test
