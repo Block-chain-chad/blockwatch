@@ -17,8 +17,10 @@ const KEY = import.meta.env.VITE_POSTHOG_KEY
 const HOST = import.meta.env.VITE_POSTHOG_HOST || 'https://us.i.posthog.com'
 
 // Anonymous per-device id (no accounts in MVP) — this is what makes
-// "daily return visits" measurable.
-function deviceId() {
+// "daily return visits" measurable. Exported because feature-flag evaluation
+// keys off the same id: a flag rolled out to a slice of devices then covers
+// exactly the devices the product numbers are counting.
+export function deviceId() {
   try {
     let id = localStorage.getItem('bw.device.v1')
     if (!id) {

@@ -7,8 +7,16 @@ import { initTheme } from './lib/theme'
 import { isNativeApp } from './lib/platform'
 import { handleAuthLink } from './services/authLinks'
 import { initMonitoring } from './services/monitoring'
+import { startFeatureFlags } from './services/featureFlags'
 
 initTheme()
+
+// Remote switches (the in-app swap among them) start loading before the first
+// render, not after first paint like crash reporting: they decide whether a
+// real-money button is on screen. Until PostHog answers, every flag sits at
+// its build-time fallback, and the swap's fallback is off — so there is no
+// moment where the swap is reachable because the answer had not arrived.
+startFeatureFlags()
 
 // Emailed auth links (confirm / magic / reset) land on /auth/confirm.
 // Web: the URL is this page's own. Native: links arrive as Universal Link
