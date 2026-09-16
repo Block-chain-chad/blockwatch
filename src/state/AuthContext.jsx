@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase, pendingRecovery } from '../services/supabase'
 import { consumePendingAuthResult, subscribeAuthLinks } from '../services/authLinks'
+import { track } from '../services/analytics'
 
 const AuthContext = createContext({ session: null, ready: true, available: false })
 
@@ -77,6 +78,10 @@ export function AuthProvider({ children }) {
       password,
     })
     if (error) throw error
+    // After the throw, so a wrong password counts nothing. Counted here and
+    // not in SignInSheet so every caller of this path is counted, and so no
+    // email ever sits next to the event.
+    track('sign_in_completed', { method: 'password' })
   }
 
   /**
@@ -93,7 +98,10 @@ export function AuthProvider({ children }) {
       options: { emailRedirectTo: AUTH_REDIRECT },
     })
     if (error) throw error
-    if (data.session) return 'signed-in'
+    if (data.session) {
+      track('sign_in_completed', { method: 'signup' })
+      return 'signed-in'
+    }
     // Existing accounts come back as a placeholder user with no identities.
     if (!data.user?.identities?.length) return 'exists'
     return 'confirm'

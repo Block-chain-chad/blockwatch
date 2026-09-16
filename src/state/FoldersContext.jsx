@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { useAuth } from './AuthContext'
 import { supabase } from '../services/supabase'
+import { track } from '../services/analytics'
 
 const ANON_KEY = 'bw.folders.v1'
 const TOAST_MS = 5000
@@ -193,6 +194,10 @@ export function FoldersProvider({ children }) {
   function createFolder(name) {
     const id = newId()
     setFolders((prev) => [...prev, { id, name: name.trim(), assetIds: [] }])
+    // Counted here, not at the two buttons that reach it, so a third place to
+    // make a folder is counted the day it ships. The name is the user's own
+    // words and never leaves the device.
+    track('folder_created')
     return id
   }
 
@@ -226,7 +231,14 @@ export function FoldersProvider({ children }) {
           : f
       )
     )
-    if (removing) showUndoToast(`Removed from “${folder.name}”`, prev)
+    if (removing) {
+      showUndoToast(`Removed from “${folder.name}”`, prev)
+    } else {
+      // Adding is the reason someone comes back; removing is not. The
+      // reserved watchlist rides the same call, so say which kind of list was
+      // added to and nothing else — no folder name, no asset id.
+      track('folder_asset_added', { list: folderId === WATCHLIST_ID ? 'watchlist' : 'folder' })
+    }
   }
 
   // Consumers see only real user folders; the watchlist has its own API.

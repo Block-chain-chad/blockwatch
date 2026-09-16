@@ -2,6 +2,7 @@
 import { useEffect, useRef } from 'react'
 import { useAlerts } from '../state/AlertsContext'
 import { alertNotification, unseenEvents, shouldPost } from '../lib/alertNotify'
+import { track } from '../services/analytics'
 
 /**
  * A fired alert becomes one system notification (spec 2026-09-15 §4.1).
@@ -40,6 +41,9 @@ export function useAlertNotifications() {
       const { title, body, tag } = alertNotification(event)
       try {
         new Notification(title, { body, tag })
+        // Only after the browser accepted it. A notification the user never
+        // saw is not a reason to come back, so a throw below counts nothing.
+        track('notification_shown')
       } catch {
         // an insecure context, or a browser that refuses page-created
         // notifications: the feed and the bell still have it

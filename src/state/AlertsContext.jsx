@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { usePrices, useAssetSubscription } from './PricesContext'
 import { useAuth } from './AuthContext'
 import { supabase } from '../services/supabase'
+import { track } from '../services/analytics'
 import { premiumPct } from '../lib/prices'
 import { canAlertOnGap, driftStep } from '../lib/alertRules'
 
@@ -266,6 +267,11 @@ export function AlertsProvider({ children }) {
   }, [assets, store.rules, session])
 
   function setDriftAlert(assetId, threshold) {
+    // Only a first drift alert for this asset is a creation. Re-opening the
+    // sheet to move the threshold is an update, and counting it as a
+    // creation would inflate the one number this event exists to answer:
+    // how many people ever set an alert.
+    if (!store.rules[assetId]?.drift) track('alert_created', { type: 'drift' })
     // Fresh rule, fresh cooldown — a re-created or re-thresholded alert must
     // be able to fire immediately, not inherit the old rule's cooldown.
     delete driftFiredRef.current[assetId]
@@ -281,6 +287,7 @@ export function AlertsProvider({ children }) {
   }
 
   function setPriceAlert(assetId, target, direction) {
+    if (!store.rules[assetId]?.price) track('alert_created', { type: 'target' })
     setStore((prev) => {
       const rule = { ...prev.rules[assetId], price: { target, direction } }
       return { ...prev, rules: { ...prev.rules, [assetId]: rule } }

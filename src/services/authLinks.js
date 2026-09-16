@@ -4,6 +4,7 @@
 // redirect. The token_hash is one-time and short-lived; verifyOtp consumes it.
 
 import { supabase } from './supabase'
+import { track } from './analytics'
 
 // Exactly the three types our email templates emit. Reject everything else.
 const LINK_TYPES = new Set(['signup', 'magiclink', 'recovery'])
@@ -78,8 +79,14 @@ export async function handleAuthLink(url) {
     })
     if (error || !data?.session) {
       emit({ kind: 'expired' })
+    } else if (link.type === 'recovery') {
+      emit({ kind: 'recovery' })
     } else {
-      emit(link.type === 'recovery' ? { kind: 'recovery' } : { kind: 'welcome' })
+      // A magic link or a signup confirmation: the session exists, so this is
+      // a completed sign-in. handledTokens above makes it once per link even
+      // when iOS delivers the same URL twice.
+      track('sign_in_completed', { method: 'link' })
+      emit({ kind: 'welcome' })
     }
   } catch {
     emit({ kind: 'expired' })
