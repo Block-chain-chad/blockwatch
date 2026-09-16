@@ -42,7 +42,7 @@ import {
   normalizeYahooCandles,
   isStockRequest,
 } from '../lib/candles'
-import { candlesPerShare, effectiveMultiplier } from '../lib/multiplier'
+import { candlesPerShare, ratioFor } from '../lib/multiplier'
 import { verifiedToken } from '../data/verifiedMints'
 
 const IS_PROD = import.meta.env.PROD
@@ -158,7 +158,11 @@ export async function getTokenCandles(asset, timeframeId) {
       // Scaled here rather than in api/candles.js so the proxy stays a dumb
       // relay: its responses are shared and edge-cached across every user,
       // and the ratio is a per-asset fact the client already holds pinned.
-      const perShareCandles = candlesPerShare(candles, effectiveMultiplier(verifiedToken(asset)))
+      // A mint with no pin refuses rather than assuming 1.0 — see ratioFor.
+      // An unverified Solana token drawn at a ratio of 1 puts NFLXx candles at
+      // 757 under a $76 share, which is the bug this whole conversion exists
+      // to remove.
+      const perShareCandles = candlesPerShare(candles, ratioFor(verifiedToken(asset), asset?.mint))
       if (perShareCandles == null) return null
       const data = { network, pool, timeframe: timeframe.id, candles: perShareCandles }
       candleCache.set(key, { at: Date.now(), data })

@@ -4,6 +4,7 @@ import {
   MAX_PIN_AGE_DAYS,
   MAX_RATIO_DRIFT,
   reconcileRatio,
+  ratioFor,
   toRational,
   effectiveMultiplier,
   pendingMultiplier,
@@ -376,5 +377,30 @@ describe('reconcileRatio — pin versus live', () => {
   it('leaves an unpinned asset at 1, since there is nothing to reconcile', () => {
     expect(reconcileRatio(null, null, NOW)).toBe('1')
     expect(reconcileRatio(null, { multiplier: '10' }, NOW)).toBe('1')
+  })
+})
+
+/*
+ * ratioFor — the difference between "1.0 by design" and "we have not checked".
+ *
+ * All 103 Solana mints are pinned today, so the refusal below cannot fire in
+ * production right now. It fires the moment a universe rebuild adds a mint
+ * before verify-mints runs again, or verification rejects one — and at that
+ * moment a silent 1.0 draws a ratio-10 mint's candles at 757 under a $76
+ * share.
+ */
+describe('ratioFor', () => {
+  it('uses the pin when there is one', () => {
+    expect(ratioFor(NFLX, 'XsEH7wWfJJu2ZT3UCFeVfALnVA6CP5ur7Ee11KmzVpL', NOW)).toBe('10')
+  })
+
+  it('is 1.0 for an asset with no mint at all, which is Ondo and bStocks', () => {
+    expect(ratioFor(null, null, NOW)).toBe('1')
+    expect(ratioFor(null, undefined, NOW)).toBe('1')
+  })
+
+  it('REFUSES for a Solana mint that carries no pin', () => {
+    // Not the same silence: this is a token we simply have not verified.
+    expect(ratioFor(null, 'SomeUnverifiedMintAddress1111111111111111111', NOW)).toBeNull()
   })
 })

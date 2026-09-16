@@ -144,6 +144,28 @@ export function reconcileRatio(pinned, live, now = Date.now()) {
   return drift <= MAX_RATIO_DRIFT ? fresh : null
 }
 
+/**
+ * The ratio to price an asset's on-chain data with: a decimal string, or null
+ * meaning "we do not know, show nothing".
+ *
+ * The distinction this draws is between two very different silences.
+ *
+ * An asset with NO mint has no Token-2022 extension to carry a ratio — Ondo's
+ * tokens are Ethereum ERC-20s, bStocks' mechanism is undetermined, and neither
+ * appears in universe.json with an address. For those, 1.0 is a fact about the
+ * issuer, and it is safe.
+ *
+ * An asset WITH a mint but no pin is a different animal: it is a Solana token
+ * we have not verified, because verification rejected it or because a universe
+ * rebuild added it before verify-mints last ran. Defaulting that to 1.0 is a
+ * guess, and on a mint like NFLXx the guess draws candles at 757 under a $76
+ * share. So it refuses, the same way the swap path refuses an unpinned mint.
+ */
+export function ratioFor(pinned, mint, now = Date.now()) {
+  if (pinned) return effectiveMultiplier(pinned, now)
+  return mint ? null : DEFAULT_MULTIPLIER
+}
+
 /** Whether a multiplier is exactly one, and so changes nothing on screen. */
 export function isUnity(multiplier) {
   const r = toRational(multiplier)

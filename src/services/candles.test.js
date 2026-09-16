@@ -127,3 +127,35 @@ describe('getTokenCandles — pool candles arrive per share, not per base token'
     expect(await getTokenCandles(NFLX, '5m')).toBeNull()
   })
 })
+
+/*
+ * An unverified Solana mint. Every one of the 103 is pinned today, so this
+ * path cannot fire in production — it fires when a universe rebuild adds a
+ * mint before verify-mints runs again, or when verification rejects one.
+ * Drawing those candles at an assumed ratio of 1.0 is how a ratio-10 mint
+ * ends up plotted at 757 under a $76 share.
+ */
+describe('getTokenCandles — an unpinned mint draws nothing', () => {
+  const UNPINNED = {
+    id: 'not-verified-xstock',
+    ticker: 'FAKEx',
+    issuer: 'xStocks',
+    underlying: 'FAKE',
+    mint: 'UnverifiedMintAddress11111111111111111111111',
+  }
+
+  it('returns null rather than assuming one token is one share', async () => {
+    const getTokenCandles = await freshService(UNPINNED)
+    expect(await getTokenCandles(UNPINNED, '5m')).toBeNull()
+  })
+
+  it('still draws for an asset with no mint, where 1.0 is the issuer fact', async () => {
+    // Ondo trades on Ethereum and has no Token-2022 extension to carry a
+    // ratio, so there is nothing to refuse.
+    const ONDO = { id: 'nvidia-ondo-tokenized-stock', ticker: 'NVDAon', issuer: 'Ondo', underlying: 'NVDA' }
+    const getTokenCandles = await freshService(ONDO)
+    const out = await getTokenCandles(ONDO, '5m')
+    expect(out).not.toBeNull()
+    expect(out.candles[0].open).toBe(757.45)
+  })
+})

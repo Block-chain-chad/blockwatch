@@ -93,3 +93,17 @@ describe('getTokenSpread — bid and ask come out per share', () => {
     expect(await getTokenSpread(NFLX_MINT)).toBeNull()
   })
 })
+
+/*
+ * An unverified Solana mint. getTokenSpread always has an address, so an
+ * absent pin means "not checked", never "1.0". Every mint is pinned today;
+ * this covers the window after a universe rebuild and before verification.
+ */
+describe('getTokenSpread — an unpinned mint reports nothing', () => {
+  const UNPINNED = 'UnverifiedMintAddress11111111111111111111111'
+
+  it('returns null rather than pricing at an assumed ratio of 1', async () => {
+    const s = await freshSpread(UNPINNED, 764)
+    expect(s).toBeNull()
+  })
+})
