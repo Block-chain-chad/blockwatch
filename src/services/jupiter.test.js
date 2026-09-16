@@ -107,3 +107,92 @@ describe('getTokenSpread — an unpinned mint reports nothing', () => {
     expect(s).toBeNull()
   })
 })
+
+/*
+ * fetchLiveRatio. The sheet's fallback to the pin is only reached when this
+ * SETTLES, so a hung endpoint left the sheet sizing on the pin with no way to
+ * know it was doing so. It is bounded now, and cached briefly so reopening the
+ * sheet against a dead endpoint reaches the fallback at once.
+ */
+describe('fetchLiveRatio', () => {
+  const MINT = 'XsczbcQ3zfcgAEt9qHQES8pxKAVG5rujPSHQEXi4kaN' // CRMx
+
+  /** The real shape of /price/v3 for a scaled mint. */
+  const payload = {
+    [MINT]: {
+      usdPrice: 254.15,
+      decimals: 8,
+      scaledUiConfig: {
+        multiplier: 1.0054716788543585,
+        newMultiplier: 1.0067077500492987,
+        newMultiplierEffectiveAt: '2026-09-17T00:30:00Z',
+      },
+    },
+  }
+
+  async function fresh(fetchImpl) {
+    vi.resetModules()
+    vi.stubGlobal('fetch', fetchImpl)
+    return (await import('./jupiter')).fetchLiveRatio
+  }
+
+  it('reads both values and the effective time as plain decimal strings', async () => {
+    const f = await fresh(vi.fn(async () => ({ ok: true, status: 200, json: async () => payload })))
+    expect(await f(MINT)).toEqual({
+      multiplier: '1.0054716788543585',
+      nextMultiplier: '1.0067077500492987',
+      nextMultiplierAt: '2026-09-17T00:30:00.000Z',
+    })
+  })
+
+  it('gives up rather than hanging, so the caller reaches its fallback', async () => {
+    // A request that never settles. Without a bound the sheet waits forever
+    // on the pin; with one this rejects and the pin becomes a decision.
+    const f = await fresh(
+      vi.fn(
+        (_url, init) =>
+          new Promise((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () => reject(new Error('TimeoutError')))
+          })
+      )
+    )
+    vi.useFakeTimers()
+    try {
+      const p = expect(f(MINT)).rejects.toThrow()
+      await vi.advanceTimersByTimeAsync(5_000)
+      await p
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('passes an abort signal at all', async () => {
+    const spy = vi.fn(async () => ({ ok: true, status: 200, json: async () => payload }))
+    const f = await fresh(spy)
+    await f(MINT)
+    expect(spy.mock.calls[0][1]?.signal).toBeInstanceOf(AbortSignal)
+  })
+
+  it('serves a repeat from cache instead of spending another request', async () => {
+    const spy = vi.fn(async () => ({ ok: true, status: 200, json: async () => payload }))
+    const f = await fresh(spy)
+    await f(MINT)
+    await f(MINT)
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+
+  it('caches a failure too, so a dead endpoint is not re-waited on each open', async () => {
+    const spy = vi.fn(async () => ({ ok: false, status: 500, json: async () => ({}) }))
+    const f = await fresh(spy)
+    await expect(f(MINT)).rejects.toThrow(/500/)
+    await expect(f(MINT)).rejects.toThrow(/500/)
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+
+  it('returns null for a mint that carries no ratio at all', async () => {
+    const f = await fresh(
+      vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ [MINT]: { usdPrice: 1 } }) }))
+    )
+    expect(await f(MINT)).toBeNull()
+  })
+})

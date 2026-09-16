@@ -32,6 +32,15 @@ export const FAST_POLL_MS = 2_500
 const spreadCache = new Map()
 const SPREAD_TTL = 60_000
 
+// The live ratio read. One request per sheet open is already modest against
+// this module's documented budget of about 24 a minute inside a 60 limit, but
+// a user toggling between two assets should not spend one each time. Short,
+// because a stale ratio is the thing being fixed: within a minute the pin is
+// never more than one scheduled step behind anyway.
+const ratioCache = new Map()
+const RATIO_TTL = 60_000
+const RATIO_TIMEOUT_MS = 4_000
+
 async function quoteJson(params) {
   const res = await fetch(`${QUOTE_BASE}?${new URLSearchParams(params)}`)
   if (!res.ok) throw new Error(`Jupiter quote ${res.status}`)
@@ -111,7 +120,31 @@ export async function getTokenSpread(mint) {
  * anything else.
  */
 export async function fetchLiveRatio(mint) {
-  const res = await fetch(`${BASE}?ids=${mint}`)
+  const hit = ratioCache.get(mint)
+  if (hit && Date.now() - hit.at < RATIO_TTL) {
+    if (hit.error) throw hit.error
+    return hit.data
+  }
+  try {
+    const data = await readLiveRatio(mint)
+    ratioCache.set(mint, { at: Date.now(), data })
+    return data
+  } catch (err) {
+    // Cached too, briefly. A caller that reopens the sheet against a dead
+    // endpoint should reach its fallback at once rather than wait out another
+    // timeout each time.
+    ratioCache.set(mint, { at: Date.now(), error: err })
+    throw err
+  }
+}
+
+async function readLiveRatio(mint) {
+  // A bounded wait, unlike the bare fetch this replaces. The caller's fallback
+  // to the pin is only reached when this SETTLES; hung, the sheet sits on the
+  // pin indefinitely with no way to know it is doing so. Shorter than the
+  // 12 seconds a quote gets, because nobody is blocked on a quote the way
+  // they are on being able to type an amount at all.
+  const res = await fetch(`${BASE}?ids=${mint}`, { signal: AbortSignal.timeout(RATIO_TIMEOUT_MS) })
   if (!res.ok) throw new Error(`Jupiter ${res.status}`)
   const cfg = (await res.json())?.[mint]?.scaledUiConfig
   if (!cfg) return null
