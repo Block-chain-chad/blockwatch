@@ -10,7 +10,7 @@ vi.hoisted(() => {
 })
 
 const { default: GapPanel } = await import('./GapPanel')
-const { applyFlags, SWAP_FLAG } = await import('../../services/featureFlags')
+const { applyFlags, SWAP_FLAG, RATIO_LINE_FLAG } = await import('../../services/featureFlags')
 
 /*
  * The panel that carries the gap number, rendered without a browser (the
@@ -101,7 +101,7 @@ describe('GapPanel share leg', () => {
  * dropped the ratios fails here too.
  */
 describe('GapPanel issuer ratio line', () => {
-  beforeEach(() => applyFlags({ [SWAP_FLAG]: true }))
+  beforeEach(() => applyFlags({ [RATIO_LINE_FLAG]: true }))
   afterEach(() => applyFlags(null))
 
   const withId = (id, ticker, underlying) =>
@@ -172,9 +172,19 @@ describe('GapPanel issuer ratio line is gated', () => {
       />
     )
 
-  it('is absent with the flag off', () => {
-    applyFlags({ [SWAP_FLAG]: false })
+  it('is absent with its own flag off', () => {
+    applyFlags({ [RATIO_LINE_FLAG]: false })
     expect(render()).not.toContain('Issuer ratio')
+  })
+
+  it('does NOT ride the swap flag, so enabling the swap cannot ship it', () => {
+    applyFlags({ [SWAP_FLAG]: true })
+    expect(render()).not.toContain('Issuer ratio')
+  })
+
+  it('is present with its own flag on, and the swap still off', () => {
+    applyFlags({ [RATIO_LINE_FLAG]: true, [SWAP_FLAG]: false })
+    expect(render()).toContain('Issuer ratio: 1 token tracks the value of 10 NFLX shares.')
   })
 
   it('is absent when no flag has answered, so it fails closed', () => {

@@ -25,6 +25,12 @@ import { deviceId } from './analytics'
  *  PostHog → Feature flags. Changing one here orphans the switch. */
 export const SWAP_FLAG = 'in-app-swap'
 export const LINK_OUT_FLAG = 'jupiter-link-out'
+// The issuer-ratio sentence on the asset screen. Its own switch, NOT because
+// it is trading functionality — it is a line of text on a screen every visitor
+// sees — but because it describes what a tokenized security represents and a
+// lawyer has not ruled on the noun. It borrowed the swap flag at first, which
+// meant enabling the swap would have shipped the sentence with it.
+export const RATIO_LINE_FLAG = 'issuer-ratio-line'
 
 /* The user-facing meaning of each flag, kept here rather than at the four
    places that render it, so the three entry points cannot drift into saying
@@ -73,6 +79,8 @@ export function envEnabled(value, whenUnset) {
 const FALLBACK = {
   [SWAP_FLAG]: envEnabled(import.meta.env.VITE_SWAP_ENABLED, false),
   [LINK_OUT_FLAG]: envEnabled(import.meta.env.VITE_JUPITER_LINK_OUT_ENABLED, true),
+  // Off until a lawyer has read the sentence. Fails closed like the swap.
+  [RATIO_LINE_FLAG]: envEnabled(import.meta.env.VITE_ISSUER_RATIO_LINE_ENABLED, false),
 }
 
 /** PostHog's answer, or null while there is none. */
