@@ -101,6 +101,43 @@ export async function getTokenSpread(mint) {
  * ratio is 10, came back at 75.78 while a quote implied 774.90 per base token
  * and the real NFLX share was 76.41.
  */
+/**
+ * The issuer's share-per-token ratio as the chain has it RIGHT NOW, in the
+ * same shape data/verifiedMints.json pins, or null when this mint has none.
+ *
+ * /price/v3 carries `scaledUiConfig` for Token-2022 scaled mints — the same
+ * two values and effective time the mint account holds. That matters because
+ * the pin can only know changes the issuer had scheduled when
+ * scripts/verify-mints.mjs last ran, and these are scheduled continuously.
+ * A live example: on 2026-09-16 at 20:17 UTC the pin for CRMx recorded
+ * 1.0054716788543585 with nothing pending, while by 20:47 the chain carried a
+ * new value of 1.0067077500492987 effective 00:30 the next morning. A sell
+ * sized on the pin after that moment would be 0.1229% too large, and for
+ * accruing mints a stale ratio always errs toward overselling.
+ *
+ * Numbers come back as JSON floats, so they are re-serialised to plain decimal
+ * strings — lib/multiplier.js reads them as exact fractions and will not take
+ * anything else.
+ */
+export async function fetchLiveRatio(mint) {
+  const res = await fetch(`${BASE}?ids=${mint}`)
+  if (!res.ok) throw new Error(`Jupiter ${res.status}`)
+  const cfg = (await res.json())?.[mint]?.scaledUiConfig
+  if (!cfg) return null
+  const plain = (v) => {
+    if (typeof v !== 'number' || !Number.isFinite(v) || v <= 0) return null
+    const s = String(v)
+    return /^\d+(?:\.\d+)?$/.test(s) ? s : null
+  }
+  const multiplier = plain(cfg.multiplier)
+  if (multiplier == null) return null
+  const nextMultiplier = plain(cfg.newMultiplier)
+  const at = cfg.newMultiplierEffectiveAt ? Date.parse(cfg.newMultiplierEffectiveAt) : NaN
+  return nextMultiplier != null && Number.isFinite(at)
+    ? { multiplier, nextMultiplier, nextMultiplierAt: new Date(at).toISOString() }
+    : { multiplier }
+}
+
 export async function fetchFastPrices(mints) {
   const res = await fetch(`${BASE}?ids=${mints.join(',')}`)
   if (!res.ok) throw new Error(`Jupiter ${res.status}`)

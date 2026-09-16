@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest'
 import {
   DEFAULT_MULTIPLIER,
   MAX_PIN_AGE_DAYS,
+  MAX_RATIO_DRIFT,
+  reconcileRatio,
   toRational,
   effectiveMultiplier,
   pendingMultiplier,
@@ -309,5 +311,70 @@ describe('the pinned ratios are real and fresh', () => {
     expect(ageDays, `verifiedMints.json is ${ageDays.toFixed(1)} days old — re-run scripts/verify-mints.mjs`).toBeLessThan(
       MAX_PIN_AGE_DAYS
     )
+  })
+})
+
+/*
+ * reconcileRatio — which ratio sizes a trade.
+ *
+ * The pin is issuer-verified but frozen at the moment verify-mints ran, and
+ * the issuer schedules changes continuously. Measured live on 2026-09-16: the
+ * pin for CRMx was taken at 20:17 UTC carrying 1.0054716788543585 with nothing
+ * pending, and by 20:47 the chain held a new value of 1.0067077500492987
+ * effective 00:30 the next morning. Sizing a sell on the pin after that moment
+ * sells 0.1229% more than typed, and for accruing mints a stale ratio always
+ * errs toward overselling.
+ */
+describe('reconcileRatio — pin versus live', () => {
+  const CRM_PIN = {
+    multiplier: '1.0036630653273484',
+    nextMultiplier: '1.0054716788543585',
+    nextMultiplierAt: '2026-06-11T00:30:00.000Z',
+  }
+  const CRM_LIVE = {
+    multiplier: '1.0054716788543585',
+    nextMultiplier: '1.0067077500492987',
+    nextMultiplierAt: '2026-09-17T00:30:00.000Z',
+  }
+  const AFTER = Date.parse('2026-09-17T01:00:00.000Z')
+
+  it('falls back to the pin when the live read is unavailable', () => {
+    expect(reconcileRatio(CRM_PIN, null, NOW)).toBe('1.0054716788543585')
+  })
+
+  it('prefers the live value once a scheduled change the pin never saw takes effect', () => {
+    // This is the whole point: at 01:00 the pin still says 1.00547 and the
+    // chain says 1.00671.
+    expect(effectiveMultiplier(CRM_PIN, AFTER)).toBe('1.0054716788543585')
+    expect(reconcileRatio(CRM_PIN, CRM_LIVE, AFTER)).toBe('1.0067077500492987')
+  })
+
+  it('agrees with the pin before that change takes effect', () => {
+    expect(reconcileRatio(CRM_PIN, CRM_LIVE, NOW)).toBe('1.0054716788543585')
+  })
+
+  it('refuses when the two disagree by more than accrual ever could', () => {
+    // A split the pin has not seen, or a feed saying something the issuer did
+    // not. Either way the ratio is unknown, and an unknown ratio must stop a
+    // sell rather than size it tenfold.
+    expect(reconcileRatio({ multiplier: '1' }, { multiplier: '10' }, NOW)).toBeNull()
+    expect(reconcileRatio({ multiplier: '10' }, { multiplier: '1' }, NOW)).toBeNull()
+  })
+
+  it('accepts drift right up to the bound and refuses past it', () => {
+    expect(reconcileRatio({ multiplier: '1' }, { multiplier: '1.019' }, NOW)).toBe('1.019')
+    expect(reconcileRatio({ multiplier: '1' }, { multiplier: '1.021' }, NOW)).toBeNull()
+    expect(MAX_RATIO_DRIFT).toBe(0.02)
+  })
+
+  it('refuses an unreadable value from either side', () => {
+    expect(reconcileRatio({ multiplier: 'bad' }, { multiplier: '1' }, NOW)).toBeNull()
+    expect(reconcileRatio({ multiplier: '1' }, { multiplier: 'bad' }, NOW)).toBeNull()
+    expect(reconcileRatio({ multiplier: 'bad' }, null, NOW)).toBeNull()
+  })
+
+  it('leaves an unpinned asset at 1, since there is nothing to reconcile', () => {
+    expect(reconcileRatio(null, null, NOW)).toBe('1')
+    expect(reconcileRatio(null, { multiplier: '10' }, NOW)).toBe('1')
   })
 })

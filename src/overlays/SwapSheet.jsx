@@ -10,7 +10,8 @@ import {
   SLIPPAGE_BPS,
 } from '../services/swap'
 import { verifiedToken } from '../data/verifiedMints'
-import { effectiveMultiplier } from '../lib/multiplier'
+import { effectiveMultiplier, reconcileRatio } from '../lib/multiplier'
+import { fetchLiveRatio } from '../services/jupiter'
 import { useFlag, SWAP_FLAG, SWAP_PAUSED_LINE } from '../services/featureFlags'
 import Sheet, { SheetTitle } from '../components/Sheet'
 
@@ -104,10 +105,31 @@ export default function SwapSheet({ asset, onClose }) {
     statusRef.current = status
   }, [status])
 
-  // The issuer's share-per-token ratio, pinned beside the mint it belongs to.
-  // 1 for anything the issuer has not scaled, which is 37 of the 103 pinned
-  // mints; 10 for NFLXx after its split. See lib/multiplier.js.
-  const multiplier = effectiveMultiplier(token)
+  // The issuer's share-per-token ratio.
+  //
+  // The pin is issuer-verified but only knows changes scheduled before
+  // verify-mints last ran, and the issuer schedules them continuously — so
+  // this also asks Jupiter what the chain says now, and reconcileRatio decides
+  // between them. A disagreement past MAX_RATIO_DRIFT yields null, which
+  // stops the sell rather than sizing it on a ratio we cannot confirm.
+  //
+  // `undefined` means the live read has not answered yet. Until it does the
+  // pin stands: it is the verified value, just possibly a step behind.
+  const [liveRatio, setLiveRatio] = useState(undefined)
+  useEffect(() => {
+    setLiveRatio(undefined)
+    if (!mint) return
+    let alive = true
+    fetchLiveRatio(mint).then(
+      (r) => alive && setLiveRatio(r),
+      () => alive && setLiveRatio(null) // unreachable: fall back to the pin
+    )
+    return () => {
+      alive = false
+    }
+  }, [mint])
+  const multiplier =
+    liveRatio === undefined ? effectiveMultiplier(token) : reconcileRatio(token, liveRatio)
 
   // What the user asked for, in the input mint's smallest units — the single
   // definition, used to quote AND to state the intent at confirm time. Scaled
@@ -149,7 +171,20 @@ export default function SwapSheet({ asset, onClose }) {
     // A different amount or side is a different trade — any acknowledgment
     // made against the old numbers is void.
     setAckedImpact(null)
-    if (amountRaw == null) return
+    if (amountRaw == null) {
+      // Usually there is simply nothing typed yet, and silence is right. But
+      // a positive amount with no raw size means the ratio was refused — we
+      // cannot say how many tokens this sells, so we will not sell any. That
+      // has to be said: an unexplained dash beside a live Confirm button
+      // reads as a glitch worth retrying, and this one is not.
+      setQuoting(false)
+      if (typed > 0 && Number.isFinite(typed) && decimals != null) {
+        setMessage(
+          `We can't confirm how many shares one ${asset.ticker} currently represents, so we won't size a trade in it. Try again shortly.`
+        )
+      }
+      return
+    }
     if (amountRaw === '0') {
       // Below one atomic unit of this mint — a quote request here is
       // guaranteed to fail, so don't fire one.
@@ -202,7 +237,7 @@ export default function SwapSheet({ asset, onClose }) {
       alive = false
       clearInterval(t)
     }
-  }, [amountRaw, side, mint])
+  }, [amountRaw, side, mint, typed, decimals, asset.ticker])
 
   const outDecimals = side === 'buy' ? decimals : USDC_DECIMALS
   // Formatted straight from the integer units Jupiter quoted — no float step

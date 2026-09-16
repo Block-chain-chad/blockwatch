@@ -26,6 +26,7 @@ import { createRoot } from 'react-dom/client'
  */
 
 const getSwapQuote = vi.fn()
+const fetchLiveRatio = vi.fn()
 
 vi.mock('../services/swap', async (importOriginal) => ({
   ...(await importOriginal()),
@@ -34,6 +35,11 @@ vi.mock('../services/swap', async (importOriginal) => ({
 
 // The sheet reads the wallet and the remote switch. Neither is what these
 // tests are about, so both are stubbed to the state that shows the form.
+vi.mock('../services/jupiter', async (importOriginal) => ({
+  ...(await importOriginal()),
+  fetchLiveRatio: (...args) => fetchLiveRatio(...args),
+}))
+
 vi.mock('../state/WalletContext', () => ({
   useWallet: () => ({ publicKey: 'TestWa11etPubkey1111111111111111111111111111', provider: {} }),
 }))
@@ -52,6 +58,10 @@ let root
 beforeEach(() => {
   applyFlags({ [SWAP_FLAG]: true })
   getSwapQuote.mockReset()
+  fetchLiveRatio.mockReset()
+  // Default: the live read finds nothing to say, so the pin stands. Tests
+  // about the live path override this.
+  fetchLiveRatio.mockResolvedValue(null)
   // A quote that never resolves: these tests are about what is ASKED for, and
   // a resolved quote would start the 8s refresh loop mid-assertion.
   getSwapQuote.mockImplementation(() => new Promise(() => {}))
@@ -137,5 +147,68 @@ describe('the sell amount the sheet actually quotes', () => {
     // 100 USDC at 6 decimals, untouched by the token's ratio.
     expect(lastQuotedAmount()).toBe('100000000')
     expect(getSwapQuote.mock.calls.at(-1)[0].side).toBe('buy')
+  })
+})
+
+/*
+ * The live ratio read.
+ *
+ * The pin only knows changes the issuer had scheduled when verify-mints ran.
+ * CRMx proved that within half an hour: pinned at 1.0054716788543585 with
+ * nothing pending, while the chain already carried 1.0067077500492987
+ * effective the next morning. So the sheet asks Jupiter, and reconcileRatio
+ * decides between the two answers.
+ */
+describe('the sheet sizes on the live ratio, and falls back to the pin', () => {
+  const CRM = BY_ID['salesforce-xstock']
+
+  it('uses a scheduled change the pin never saw, once it has taken effect', async () => {
+    vi.setSystemTime(new Date('2026-09-17T01:00:00.000Z'))
+    fetchLiveRatio.mockResolvedValue({
+      multiplier: '1.0054716788543585',
+      nextMultiplier: '1.0067077500492987',
+      nextMultiplierAt: '2026-09-17T00:30:00.000Z',
+    })
+    await sell(CRM, '1')
+    // 10^8 / 1.0067077500492987, truncated. The pin alone would have sized
+    // this at 99455809 — 0.12293% more than the user asked to sell.
+    expect(lastQuotedAmount()).toBe('99333694')
+    expect(lastQuotedAmount()).not.toBe('99455809')
+    vi.useRealTimers()
+  })
+
+  it('falls back to the pin when Jupiter cannot be reached', async () => {
+    fetchLiveRatio.mockRejectedValue(new Error('offline'))
+    await sell(CRM, '1')
+    expect(lastQuotedAmount()).toBe('99455809') // the pin's effective ratio
+  })
+
+  it('falls back to the pin when the mint carries no live ratio', async () => {
+    fetchLiveRatio.mockResolvedValue(null)
+    await sell(NFLX, '1')
+    expect(lastQuotedAmount()).toBe('10000000')
+  })
+
+  it('refuses to size anything when live and pin disagree beyond drift', async () => {
+    // A split the pin has not seen, or a feed that is wrong. Either way we do
+    // not know the ratio, and sizing on the stale pin would oversell tenfold.
+    fetchLiveRatio.mockResolvedValue({ multiplier: '100' })
+    await sell(NFLX, '1')
+    expect(getSwapQuote).not.toHaveBeenCalled()
+  })
+
+  it('says why, instead of leaving an unexplained dash', async () => {
+    fetchLiveRatio.mockResolvedValue({ multiplier: '100' })
+    await sell(NFLX, '1')
+    expect(container.textContent).toContain("we won't size a trade in it")
+    expect(container.textContent).toContain('NFLXx')
+  })
+
+  it('stays silent when nothing has been typed yet', async () => {
+    fetchLiveRatio.mockResolvedValue({ multiplier: '100' })
+    await act(async () => {
+      root.render(<SwapSheet asset={NFLX} onClose={() => {}} />)
+    })
+    expect(container.textContent).not.toContain("we won't size a trade in it")
   })
 })

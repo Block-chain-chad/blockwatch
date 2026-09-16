@@ -38,6 +38,17 @@
 // there is nothing to read. If either issuer turns out to use a ratio, it
 // needs its own pin here and the default below stops applying to it.
 
+// WHAT THE PIN DOES NOT KNOW
+//
+// data/verifiedMints.json records the ratio as the chain had it when
+// scripts/verify-mints.mjs last ran, including any change the issuer had
+// ALREADY scheduled by then. It cannot know one scheduled afterwards, and the
+// issuer schedules them continuously: within half an hour of the pin taken on
+// 2026-09-16, CRMx had a new value effective the next morning that the file
+// does not contain. For an accruing mint a stale ratio always errs toward
+// overselling, so the sell path reads the live value from Jupiter and treats
+// the pin as the fallback. See reconcileRatio.
+
 /** The ratio for anything the issuer has not told us otherwise about. */
 export const DEFAULT_MULTIPLIER = '1'
 
@@ -88,6 +99,49 @@ export function pendingMultiplier(pinned, now = Date.now()) {
   if (!Number.isFinite(at) || now >= at) return null
   if (pinned.nextMultiplier === pinned.multiplier) return null
   return { multiplier: pinned.nextMultiplier, at: pinned.nextMultiplierAt }
+}
+
+/**
+ * How far a live ratio may sit from the pinned one before we stop guessing.
+ *
+ * Accruing mints ratchet by a fraction of a percent per step — CRMx moved
+ * 0.1229% in one — so honest drift between two verification runs is small.
+ * Anything past this is not drift: it is a split the pin has not seen, or a
+ * feed saying something the issuer did not. Both mean we do not know the
+ * ratio, and not knowing has to stop a sell rather than pick a side.
+ */
+export const MAX_RATIO_DRIFT = 0.02
+
+/**
+ * The ratio to size a trade with, given the pin and whatever the live feed
+ * says: a decimal string, or null meaning "refuse, we do not know".
+ *
+ * The pin is issuer-verified but only knows changes scheduled before it was
+ * taken. The live read is current but comes from a price API. So:
+ *
+ *   no live read        -> the pin. It is verified, and a feed being down is
+ *                          not a reason to distrust it.
+ *   live agrees         -> the live value, which is the fresher of two
+ *                          answers that say the same thing.
+ *   live disagrees      -> null. A 10x gap here is a split the pin missed, in
+ *                          which case sizing on the pin oversells tenfold; or
+ *                          a feed that is wrong, in which case sizing on it
+ *                          does the same. Refusing costs a trade. Guessing
+ *                          costs the trade AND the money.
+ *
+ * `pinned` may be null for an asset the issuer never scaled, in which case
+ * there is nothing to reconcile and 1 stands.
+ */
+export function reconcileRatio(pinned, live, now = Date.now()) {
+  if (!pinned) return DEFAULT_MULTIPLIER
+  const pin = effectiveMultiplier(pinned, now)
+  if (!live) return toRational(pin) ? pin : null
+  const fresh = effectiveMultiplier(live, now)
+  const a = toRational(pin)
+  const b = toRational(fresh)
+  if (a == null || b == null) return null
+  const drift = Math.abs(Number(b.num) / Number(b.den) / (Number(a.num) / Number(a.den)) - 1)
+  return drift <= MAX_RATIO_DRIFT ? fresh : null
 }
 
 /** Whether a multiplier is exactly one, and so changes nothing on screen. */
