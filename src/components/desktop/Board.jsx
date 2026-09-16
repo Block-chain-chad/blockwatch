@@ -10,7 +10,7 @@ import {
   BOARD_LENSES, BOARD_SORTS, groupCompanies, boundCandidates, freezeOrder, flattenRows,
   visibleWindow, headerLine, quoteAges,
 } from '../../lib/board'
-import { shareFreshness } from '../../lib/provenance'
+import { ageWords, shareFreshness } from '../../lib/provenance'
 import { formatPct, formatPrice } from '../../lib/format'
 import { GapBar } from '../shared'
 import { BIG_SCREEN_BASE } from '../../lib/bigScreen'
