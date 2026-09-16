@@ -425,6 +425,37 @@ describe('executeSwap', () => {
     expect(readSwapAudit().map((r) => r.event)).toEqual(['submitted', 'unknown', 'blocked'])
   })
 
+  it('catches a repeat even when the ratio source changed the raw size', async () => {
+    // The scenario: Confirm, connection lost, outcome unknown. The user taps
+    // again. In between, the live ratio answered where the pin had before (or
+    // the reverse), so the SAME typed sell is now a different number of raw
+    // units — CRMx's real pair is 99455809 and 99333694. Keyed on raw units
+    // this sails straight past the repeat guard and may spend the money twice.
+    const lost = provider({
+      signAndSendTransaction: vi.fn(async () => {
+        throw new Error('Transaction was not confirmed in 30.00 seconds')
+      }),
+    })
+    const viaPin = { ...INTENT, amountRaw: '99455809', typedAmount: '1', multiplier: '1.0054716788543585' }
+    await executeSwap({
+      quote: { ...QUOTE, inAmount: '99455809' },
+      provider: lost,
+      intent: viaPin,
+    }).catch(() => {})
+
+    const again = provider()
+    const viaLive = { ...INTENT, amountRaw: '99333694', typedAmount: '1', multiplier: '1.0067077500492987' }
+    const repeat = await executeSwap({
+      quote: { ...QUOTE, inAmount: '99333694' },
+      provider: again,
+      intent: viaLive,
+    }).catch((e) => e)
+
+    expect(repeat.code).toBe('unresolved')
+    expect(repeat.phase).toBe('broadcast')
+    expect(again.signAndSendTransaction).not.toHaveBeenCalled()
+  })
+
   it('still lets a different trade through while one is unresolved', async () => {
     const lost = provider({
       signAndSendTransaction: vi.fn(async () => {

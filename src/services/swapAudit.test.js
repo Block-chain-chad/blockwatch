@@ -77,3 +77,39 @@ describe('recordSwap', () => {
     expect(readSwapAudit()).toEqual([])
   })
 })
+
+/*
+ * The repeat guard has to survive the ratio moving underneath it.
+ *
+ * A sell is sized by the issuer's share-per-token ratio, which the sheet reads
+ * live and falls back to the pin for. One typed amount therefore has two
+ * possible raw sizes — CRMx's real pair is 99455809 off the pin and 99333694
+ * off the live read. Keyed on raw units, the same trade tapped twice across a
+ * flip in the ratio source looks like two different trades.
+ */
+describe('swapKey identifies the trade the user asked for', () => {
+  const base = { wallet: 'W', side: 'sell', mint: 'M' }
+
+  it('is the same key for one typed amount sized two different ways', () => {
+    const viaPin = swapKey({ ...base, amountRaw: '99455809', typedAmount: '1' })
+    const viaLive = swapKey({ ...base, amountRaw: '99333694', typedAmount: '1' })
+    expect(viaPin).toBe(viaLive)
+  })
+
+  it('still separates genuinely different amounts', () => {
+    expect(swapKey({ ...base, amountRaw: '1', typedAmount: '1' })).not.toBe(
+      swapKey({ ...base, amountRaw: '2', typedAmount: '2' })
+    )
+  })
+
+  it('still separates wallet, side and mint', () => {
+    const k = swapKey({ ...base, typedAmount: '1' })
+    expect(k).not.toBe(swapKey({ ...base, wallet: 'W2', typedAmount: '1' }))
+    expect(k).not.toBe(swapKey({ ...base, side: 'buy', typedAmount: '1' }))
+    expect(k).not.toBe(swapKey({ ...base, mint: 'M2', typedAmount: '1' }))
+  })
+
+  it('falls back to raw units for a caller that states no typed amount', () => {
+    expect(swapKey({ ...base, amountRaw: '99455809' })).toBe('W:sell:M:99455809')
+  })
+})

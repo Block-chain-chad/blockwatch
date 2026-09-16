@@ -186,6 +186,9 @@ export async function executeSwap({ quote, provider, intent }) {
     side: intent.side,
     mint: intent.mint,
     amountRaw: intent.amountRaw,
+    // Keyed on the typed figure, because the raw size of one typed trade now
+    // depends on which ratio source answered. See swapKey.
+    typedAmount: intent.typedAmount,
   })
   // Expired entries go first, so a long session cannot grow this map without
   // bound.
