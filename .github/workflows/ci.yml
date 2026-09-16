@@ -1,0 +1,59 @@
+# Quality gate on every push and pull request (Linux runner — free minutes,
+# unlike the macOS iOS workflows, which stay manual).
+#
+# Runs the same three gates that used to be run by hand before each merge:
+# lint (oxlint), the unit suite (vitest), and the production web build (vite).
+# Until this file existed, tests only ran inside the manual TestFlight
+# workflow, so nothing checked a PR automatically.
+#
+# No secrets needed: every VITE_* variable is optional (see .env.example), the
+# tests are pure, and the build inlines `undefined` for anything missing.
+# Vercel does its own production build on merge; this is the pre-merge check.
+
+name: CI
+
+on:
+  # Every branch, not just main and release/**. Work here lives on long-lived
+  # feature branches for days before a pull request exists, which is exactly
+  # when an unchecked regression is cheapest to fix.
+  push:
+    branches: ['**']
+  pull_request:
+
+permissions:
+  contents: read
+
+# One run per branch at a time. `head_ref` is the source branch of a pull
+# request and `ref_name` is the branch of a push, so naming both the same
+# means a branch with an open pull request is not billed twice: the newer
+# run supersedes the older one instead of racing it.
+concurrency:
+  group: ci-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: lint · test · build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pinned to 22 to match the iOS workflows, so all three agree.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
