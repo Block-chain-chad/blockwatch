@@ -36,8 +36,9 @@ export default function AboutSheet({ onClose }) {
           <p className="text-xs leading-relaxed text-zinc-500">
             Token market data by CoinGecko; stock quotes and company data by Finnhub; share
             price history by Yahoo Finance. Prices are informational only and may be delayed.
-            OnStock is a tracker — it does not hold funds, execute trades, or give investment
-            advice.
+            OnStock never holds your funds and gives no investment advice. It does not execute
+            trades: where a swap is offered, OnStock only prepares the transaction for your own
+            wallet to approve and send.
           </p>
         </div>
         <p className="text-center text-[11px] text-zinc-500">OnStock v0.1 · MVP preview</p>
