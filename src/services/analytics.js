@@ -11,6 +11,42 @@
 // not reach PostHog at all by default, so the counts are real users only.
 // See lib/environment.js.
 
+// EVENT CATALOG — every event OnStock sends, and the properties it carries.
+// One list, so a product question can be answered without reading the app.
+// Every event also carries `environment` (stamped in track below); none of
+// them carries an email, a wallet address, a folder name or an asset list.
+//
+//   Opening the app
+//     app_opened              {}                          App.jsx
+//     meter_open              { home, visit, days }       desktop/MeterShell.jsx
+//     meter_asset             { from }                    desktop/MeterShell.jsx
+//     meter_chart_open        {}                          desktop/MeterShell.jsx
+//     meter_lens              { lens }                    desktop/Board.jsx
+//
+//   Looking around
+//     search                  { query, results }          SearchOverlay, SymbolSearch
+//     search_miss             { query }                   SearchOverlay, SymbolSearch
+//     chart_mode              { mode, ticker }            ChartWorkspace, AssetDetail
+//     share                   { ticker, action }          ShareSheet.jsx
+//
+//   Coming back — the actions that give someone a reason to (2026-09-16)
+//     folder_created          {}                          state/FoldersContext.jsx
+//     folder_asset_added      { list: 'folder' | 'watchlist' }
+//                                                         state/FoldersContext.jsx
+//     alert_created           { type: 'drift' | 'target' }
+//                                                         state/AlertsContext.jsx
+//     notification_permission { result: 'granted' | 'denied' | 'default' }
+//                                                         services/notifications.js
+//     notification_shown      {}                          hooks/useAlertNotifications.js
+//     sign_in_completed       { method: 'password' | 'signup' | 'link' }
+//                                                         state/AuthContext.jsx, services/authLinks.js
+//
+//   Money
+//     trade_out               { ticker?, venue }          TradeButton, GapHeader, Trade
+//     swap_sent               {}                          services/swap.js
+//     wallet_connect          {}                          state/WalletContext.jsx
+//     waitlist_join           {}                          state/WaitlistContext.jsx
+
 import { appEnvironment, telemetryEnabled } from '../lib/environment'
 
 const KEY = import.meta.env.VITE_POSTHOG_KEY
