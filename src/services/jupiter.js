@@ -3,6 +3,16 @@
 // xStocks line) ride this feed; everything else stays on the minute poll.
 // Budget: one batched call per FAST_POLL_MS for on-screen assets ≈ 24
 // requests/min, inside the lite tier's 60/min.
+//
+// UNITS, and a trap. Jupiter's two endpoints here do not speak the same one.
+// /price/v3 reports per SHARE: it applies the issuer's Token-2022 scaled-
+// amount multiplier for us. /swap/v1/quote reports raw integer amounts, which
+// are per BASE token, and one base token is `multiplier` shares. Everything
+// this module hands out is per share, so the quote-derived numbers are
+// converted and the price-derived ones are not. Both are marked below.
+
+import { effectiveMultiplier, perShare } from '../lib/multiplier'
+import { tokenByMint } from '../data/verifiedMints'
 
 const BASE = 'https://lite-api.jup.ag/price/v3'
 const QUOTE_BASE = 'https://lite-api.jup.ag/swap/v1/quote'
@@ -61,8 +71,18 @@ export async function getTokenSpread(mint) {
     const usdOut = Number(sell.outAmount) / 1e6
     if (!(tokens > 0) || !(usdOut > 0)) throw new Error('no sell route')
 
-    const ask = SPREAD_REF_USD / tokens
-    const bid = usdOut / tokens
+    // UNIT BOUNDARY. Jupiter's QUOTE endpoint works in raw amounts, so
+    // `tokens` is base tokens and these two prices come out per BASE token.
+    // They are displayed beside the share price and the gap, which are per
+    // SHARE, so they are converted here. Without it NFLXx reads "Bid $757 ·
+    // Ask $775" under a $77 price.
+    //
+    // spreadPct is deliberately left alone: it is a ratio of the two, and a
+    // ratio does not care what unit both sides are in.
+    const multiplier = effectiveMultiplier(tokenByMint(mint))
+    const ask = perShare(SPREAD_REF_USD / tokens, multiplier)
+    const bid = perShare(usdOut / tokens, multiplier)
+    if (!(ask > 0) || !(bid > 0)) throw new Error('unusable ratio for this mint')
     data = { ask, bid, spreadPct: ((ask - bid) / ask) * 100, refUsd: SPREAD_REF_USD }
   } catch {
     data = null // cached too: a dead pool shouldn't be re-probed every render
@@ -71,7 +91,16 @@ export async function getTokenSpread(mint) {
   return data
 }
 
-/** Live DEX prices for a list of mint addresses: { [mint]: usdPrice }. */
+/**
+ * Live DEX prices for a list of mint addresses: { [mint]: usdPrice }.
+ *
+ * These are already per SHARE and must NOT be converted. Jupiter's two
+ * endpoints do not agree with each other: the quote endpoint above deals in
+ * raw amounts, while this price endpoint applies the issuer's scaled-amount
+ * multiplier itself. Checked against mainnet on 2026-09-16 — NFLXx, whose
+ * ratio is 10, came back at 75.78 while a quote implied 774.90 per base token
+ * and the real NFLX share was 76.41.
+ */
 export async function fetchFastPrices(mints) {
   const res = await fetch(`${BASE}?ids=${mints.join(',')}`)
   if (!res.ok) throw new Error(`Jupiter ${res.status}`)

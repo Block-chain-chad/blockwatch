@@ -34,3 +34,17 @@ export function verifiedToken(asset) {
   if (asset.mint && asset.mint !== pinned.mint) return null
   return pinned
 }
+
+const BY_MINT = new Map(Object.values(VERIFIED_MINTS).map((m) => [m.mint, m]))
+
+/**
+ * The pinned entry for a mint ADDRESS, or null.
+ *
+ * For the places that only ever hold an address — services/jupiter.js works in
+ * mints, not assets — and need the issuer's share-per-token ratio to say which
+ * unit a number is in. Never a substitute for verifiedToken, which also checks
+ * the address against the asset record; this is a lookup, not a verification.
+ */
+export function tokenByMint(mint) {
+  return (mint && BY_MINT.get(mint)) || null
+}
