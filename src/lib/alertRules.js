@@ -87,7 +87,12 @@ export function driftStep({ premium, threshold, state = 'inside', lastFiredAt = 
  * The drift tab's promise about when an alert can reach someone. It lives
  * beside the gate so the words and the rule cannot drift apart: a silent
  * gate is indistinguishable from broken alerts to the person who set one.
+ *
+ * Three of the six places that open the alert sheet do not check that the
+ * asset has an underlying first, so `underlying` can be null on a NAV-based
+ * token; the sentence says "share" rather than printing it.
  */
 export function driftWindowNote(underlying) {
-  return `These only fire while the US market is open and the ${underlying} quote is live — outside those hours the gap is not a real spread, so we stay quiet.`
+  const name = underlying ? `${underlying} quote` : 'share quote'
+  return `These only fire while the US market is open and the ${name} is live — outside those hours the gap is not a real spread, so we stay quiet.`
 }
