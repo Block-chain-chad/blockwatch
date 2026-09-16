@@ -1,14 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
 import { useWallet } from '../state/WalletContext'
-import { getSwapQuote, executeSwap, toRaw, formatRaw, USDC_DECIMALS } from '../services/swap'
+import {
+  getSwapQuote,
+  executeSwap,
+  toRaw,
+  formatRaw,
+  USDC_DECIMALS,
+  SLIPPAGE_BPS,
+} from '../services/swap'
 import { verifiedToken } from '../data/verifiedMints'
 import { useFlag, SWAP_FLAG, SWAP_PAUSED_LINE } from '../services/featureFlags'
 import Sheet, { SheetTitle } from '../components/Sheet'
 
 /*
  * Non-custodial swap sheet. Buy (spend USDC) or sell (spend token); a live
- * quote refreshes as you type and every few seconds, showing the guaranteed
- * minimum received and the route's price impact. Confirming hands an unsigned
+ * quote refreshes as you type and every few seconds, showing the minimum
+ * received — the floor below which the transaction fails rather than settles
+ * — and the route's price impact. Confirming hands an unsigned
  * transaction to the wallet — the user signs and sends inside Phantom, funds
  * never touch OnStock. No platform fee is applied anywhere.
  *
@@ -31,6 +39,11 @@ const ACK_TOLERANCE_PCT = 0.5
 // request timeout in services/swap.js — see the in-flight guard in the quote
 // effect, which is what keeps the two from fighting.
 const QUOTE_REFRESH_MS = 8000
+// The slippage tolerance the user is actually trading under, as a percentage,
+// derived from the single definition in services/swap.js so the number on
+// screen can never drift from the number sent to Jupiter. It is fixed: the
+// sheet offers no control over it, and the copy says so.
+const SLIPPAGE_PCT = SLIPPAGE_BPS / 100
 
 export default function SwapSheet({ asset, onClose }) {
   const { publicKey, provider } = useWallet()
@@ -419,6 +432,11 @@ export default function SwapSheet({ asset, onClose }) {
                 {impact != null ? `${impact.toFixed(2)}%` : impactUnknown ? 'Unknown' : '—'}
               </span>
             </div>
+            <p className="pt-1 text-[11px] leading-relaxed text-zinc-500">
+              Slippage tolerance is fixed at {SLIPPAGE_PCT}% and can't be changed here.
+              Sending the swap costs a Solana network fee, paid from your wallet on top
+              of the amount above.
+            </p>
           </div>
 
           {message && (
@@ -495,8 +513,9 @@ export default function SwapSheet({ asset, onClose }) {
 
           <p className="mt-3 px-1 text-[11px] leading-relaxed text-zinc-400">
             Swap runs on Jupiter from your own wallet — you approve and send it in your wallet;
-            OnStock never holds your funds. Prices move; you're guaranteed at least the
-            minimum shown. Not investment advice.
+            OnStock never holds your funds. If the price moves past the minimum shown, the
+            swap fails and nothing is exchanged. You still pay the Solana network fee. Not
+            investment advice.
           </p>
         </>
       )}

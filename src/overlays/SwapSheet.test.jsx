@@ -5,6 +5,7 @@ import TradeButton from '../components/asset/TradeButton'
 import { VERIFIED_MINTS } from '../data/verifiedMints'
 import { BY_ID } from '../data/universe'
 import { applyFlags, SWAP_FLAG } from '../services/featureFlags'
+import { SLIPPAGE_BPS } from '../services/swap'
 
 /*
  * A smoke render of the two trade entry points, without a browser.
@@ -48,6 +49,44 @@ describe('SwapSheet renders', () => {
     const html = renderToStaticMarkup(<SwapSheet asset={unverified} onClose={() => {}} />)
     expect(html).toContain('Can’t swap this one here')
     expect(html).not.toContain('You pay')
+  })
+})
+
+/*
+ * The sheet's own words about what the swap does. The slippage bound makes a
+ * bad trade FAIL; it does not hand the user the minimum. The sheet used to
+ * promise the minimum, and never named the tolerance or the network fee.
+ */
+describe('SwapSheet disclosure copy', () => {
+  beforeEach(() => applyFlags({ [SWAP_FLAG]: true }))
+
+  const render = () => renderToStaticMarkup(<SwapSheet asset={verified} onClose={() => {}} />)
+
+  it('describes the minimum as a failure point, not a guarantee', () => {
+    const html = render()
+    expect(html).toContain(
+      'If the price moves past the minimum shown, the swap fails and nothing is exchanged.'
+    )
+    expect(html).toContain('You still pay the Solana network fee.')
+    expect(html).not.toContain('guaranteed')
+  })
+
+  it('keeps the two statements the review confirmed are accurate', () => {
+    const html = render()
+    expect(html).toContain('OnStock never holds your funds')
+    expect(html).toContain('Not investment advice')
+  })
+
+  it('names the slippage tolerance, from the one definition of it', () => {
+    const html = render()
+    // Derived, so a change to SLIPPAGE_BPS moves the number on screen with it
+    // rather than leaving a second, stale copy behind.
+    expect(html).toContain(`Slippage tolerance is fixed at ${SLIPPAGE_BPS / 100}%`)
+    expect(html).toContain('can&#x27;t be changed here')
+  })
+
+  it('says a Solana network fee applies on top of the quote', () => {
+    expect(render()).toContain('costs a Solana network fee')
   })
 })
 
