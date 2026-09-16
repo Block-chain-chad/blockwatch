@@ -10,8 +10,8 @@
 //
 // Returned shape per ticker: { price, basis, prevClose, asOf }.
 //  - asOf is the ms epoch the PROVIDER stamped on the quote, or null. Never
-//    the time we fetched it: our own proxy serves quotes up to ~13 minutes old
-//    (api/finnhub.js caches 180s with a 600s stale-while-revalidate window),
+//    the time we fetched it: our own proxy serves quotes up to ~15 minutes old
+//    (api/finnhub.js caches 300s with a 600s stale-while-revalidate window),
 //    so fetch time would understate a quote's age by exactly the amount that
 //    matters. A quote we cannot date is shown as undated, never as "now".
 //  - basis is 'trade' when the provider gave a traded price, 'prevClose' when
@@ -61,10 +61,29 @@ function fromFinnhub(q) {
   }
 }
 
+/**
+ * The error a refused quote throws, tagged so callers can tell "ask again in a
+ * moment" apart from "this symbol has no price".
+ *
+ * A 429 says nothing about the symbol. It comes from api/finnhub.js's own
+ * buckets (or Finnhub's), which refill in seconds, and every one of them is
+ * either per-caller or per-instance — so a shared office or carrier address
+ * cold-loading two boards at once can collect them for symbols that are
+ * perfectly fine. Treated as an ordinary failure it reads as "no quote", and
+ * the rotation does not come back to that symbol for a full cycle, which is
+ * three minutes on a wide Board. Tagging it lets the caller retry instead.
+ */
+function refused(status) {
+  const err = new Error(`quote ${status}`)
+  err.rateLimited = true
+  return err
+}
+
 async function fetchFinnhub(ticker) {
   const res = await fetch(
     `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(ticker)}&token=${FINNHUB_KEY}`
   )
+  if (res.status === 429) throw refused(res.status)
   if (!res.ok) throw new Error(`Finnhub ${res.status}`)
   return fromFinnhub(await res.json())
 }
@@ -91,6 +110,7 @@ async function fetchApiQuote(ticker) {
   const res = await fetch(
     `${API_BASE}/api/finnhub?kind=quote&symbol=${encodeURIComponent(ticker)}${API_CACHE_SUFFIX}`
   )
+  if (res.status === 429) throw refused(res.status)
   if (!res.ok) throw new Error(`quote ${res.status}`)
   return fromFinnhub(await res.json())
 }
@@ -100,19 +120,44 @@ const fetchQuote = IS_PROD ? fetchApiQuote : FINNHUB_KEY ? fetchFinnhub : fetchY
 /**
  * Fetch many tickers with limited concurrency. Individual failures are
  * tolerated (missing from the result) so one bad symbol can't blank the board.
- * Returns { [ticker]: { price, basis, prevClose, asOf } }.
+ *
+ * Returns { quotes, rateLimited }:
+ *   quotes      { [ticker]: { price, basis, prevClose, asOf } }
+ *   rateLimited tickers that were REFUSED, not answered — ask again shortly.
+ *
+ * The two are reported separately because they mean opposite things to the
+ * caller. A ticker missing from `quotes` because the provider had nothing for
+ * it should wait its turn in the rotation. A ticker in `rateLimited` was never
+ * asked a real question, so waiting a whole rotation leaves its share price
+ * blank for minutes over a limit that cleared in a second.
+ *
+ * Once a refusal arrives the remaining batches are not sent. They would be
+ * refused too — the bucket is emptier with every one — and the deficit only
+ * deepens. The unsent tickers are reported as rateLimited, which is what they
+ * are in effect: not answered, worth asking again.
+ *
+ * Still throws when every ticker failed for an ordinary reason and none was
+ * refused, because that is a broken feed and the caller should keep its cache.
  */
 export async function getStockPrices(tickers, concurrency = 5) {
-  const out = {}
+  const quotes = {}
+  const rateLimited = []
   for (let i = 0; i < tickers.length; i += concurrency) {
     const batch = tickers.slice(i, i + concurrency)
     const settled = await Promise.allSettled(batch.map((t) => fetchQuote(t)))
     settled.forEach((r, j) => {
-      if (r.status === 'fulfilled') out[batch[j]] = r.value
+      if (r.status === 'fulfilled') quotes[batch[j]] = r.value
+      else if (r.reason?.rateLimited) rateLimited.push(batch[j])
     })
+    if (rateLimited.length > 0) {
+      rateLimited.push(...tickers.slice(i + concurrency))
+      break
+    }
   }
-  if (Object.keys(out).length === 0) throw new Error('stock feed: all quotes failed')
-  return out
+  if (Object.keys(quotes).length === 0 && rateLimited.length === 0) {
+    throw new Error('stock feed: all quotes failed')
+  }
+  return { quotes, rateLimited }
 }
 
 // --- Price history (for the detail chart) ---------------------------------

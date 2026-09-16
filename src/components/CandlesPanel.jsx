@@ -5,6 +5,7 @@ import { useCandles } from '../hooks/useCandles'
 import { DEFAULT_TIMEFRAME_ID } from '../lib/candles'
 import { timeframesFor, coerceTimeframe, isIntraday, networkName } from '../lib/candleSeries'
 import { QUICK_KEYS, describeKey } from '../lib/indicatorCatalog'
+import { STOCK_HISTORY_PROVIDER } from '../lib/provenance'
 
 /*
  * The Candles mode of the asset chart: one side of the gap at a time, drawn
@@ -94,7 +95,7 @@ export default function CandlesPanel({
     : candles.data
       ? side === 'token'
         ? `Token candles are the largest ${network ?? asset.chain ?? 'DEX'} pool, one venue, not a composite.`
-        : `${asset.underlying} share candles, regular session only, via Yahoo Finance.`
+        : `${asset.underlying} share candles, regular session only, via ${STOCK_HISTORY_PROVIDER}.`
       : side === 'token'
         ? `No ${asset.ticker} candles right now.`
         : `No ${asset.underlying} candles at this interval.`

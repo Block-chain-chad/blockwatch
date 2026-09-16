@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import handler from './candles.js'
+import handler, { limiters } from './candles.js'
 
 /*
  * The handler's job is to spend GeckoTerminal's shared ~30/min budget only on
@@ -75,6 +75,10 @@ const ohlcvBody = {
 
 let fetchMock
 beforeEach(() => {
+  // Every case starts with full buckets; the rate-limit block below is the
+  // only one that cares how many tokens are left.
+  limiters.perClient.reset()
+  limiters.perInstance.reset()
   fetchMock = vi.fn(async (url) => ({
     ok: true,
     status: 200,
@@ -201,5 +205,113 @@ describe('api/candles — ohlcv', () => {
     const res = await call(ohlcvQuery({ c: 'app' }))
     expect(res.headers['Access-Control-Allow-Origin']).toBe('capacitor://localhost')
     expect(res.headers['Cache-Control']).toBe('s-maxage=30, stale-while-revalidate=300')
+  })
+})
+
+/*
+ * The buckets. This endpoint had none: the allowlisted params bounded the
+ * cache-key space, but nothing bounded how fast one caller could turn misses
+ * into upstream calls against GeckoTerminal's shared ~30/min free tier — the
+ * same shape as the Finnhub drain, on an upstream with no key to raise.
+ */
+
+/** A caller identified by IP, so cases never share a bucket by accident. */
+const from = (ip) => ({ 'x-vercel-forwarded-for': ip })
+
+describe('api/candles — per-caller rate limit', () => {
+  it('does not refuse a person flicking between charts', async () => {
+    // The instance breaker is the tighter of the two, so keep it out of the
+    // way here: this block is about the per-caller bucket on its own.
+    for (let i = 0; i < 60; i += 1) {
+      limiters.perInstance.reset()
+      expect((await call(ohlcvQuery(), from('5.5.5.5'))).statusCode).toBe(200)
+    }
+  })
+
+  it('stops a caller that keeps going, without reaching upstream', async () => {
+    for (let i = 0; i < 60; i += 1) {
+      limiters.perInstance.reset()
+      await call(ohlcvQuery(), from('6.6.6.6'))
+    }
+    const spent = fetchMock.mock.calls.length
+    const res = await call(ohlcvQuery(), from('6.6.6.6'))
+    expect(res.statusCode).toBe(429)
+    expect(res.body).toEqual({ error: 'too many requests' })
+    expect(fetchMock.mock.calls.length).toBe(spent)
+  })
+
+  it('never lets the CDN cache one caller rejection for everyone', async () => {
+    for (let i = 0; i < 60; i += 1) {
+      limiters.perInstance.reset()
+      await call(ohlcvQuery(), from('7.7.7.7'))
+    }
+    const res = await call(ohlcvQuery(), from('7.7.7.7'))
+    expect(res.headers['Cache-Control']).toBe('no-store')
+    expect(Number(res.headers['Retry-After'])).toBeGreaterThan(0)
+  })
+
+  it('does not punish a second visitor for the first one', async () => {
+    for (let i = 0; i < 61; i += 1) {
+      limiters.perInstance.reset()
+      await call(ohlcvQuery(), from('8.8.8.8'))
+    }
+    limiters.perInstance.reset()
+    expect((await call(ohlcvQuery(), from('9.9.9.9'))).statusCode).toBe(200)
+  })
+
+  it('charges a request the params were going to refuse anyway', async () => {
+    for (let i = 0; i < 60; i += 1) await call(ohlcvQuery({ limit: '7' }), from('1.2.3.4'))
+    expect((await call(ohlcvQuery(), from('1.2.3.4'))).statusCode).toBe(429)
+  })
+
+  it('does not charge a CORS preflight', async () => {
+    for (let i = 0; i < 100; i += 1) {
+      const res = fakeRes()
+      await handler({ method: 'OPTIONS', query: {}, headers: from('5.4.3.2') }, res)
+      expect(res.statusCode).toBe(204)
+    }
+    expect((await call(ohlcvQuery(), from('5.4.3.2'))).statusCode).toBe(200)
+  })
+})
+
+describe('api/candles — instance circuit breaker', () => {
+  it("spends GeckoTerminal's minute and not a call more, whoever is asking", async () => {
+    // The per-caller bucket is keyed on a header. This one is not, so forging
+    // or rotating that header cannot buy more upstream calls.
+    for (let i = 0; i < 30; i += 1) {
+      expect((await call(ohlcvQuery(), from(`10.0.0.${i}`))).statusCode).toBe(200)
+    }
+    expect(fetchMock.mock.calls.length).toBe(30)
+    const res = await call(ohlcvQuery(), from('10.1.1.1'))
+    expect(res.statusCode).toBe(429)
+    expect(res.headers['Cache-Control']).toBe('no-store')
+    expect(fetchMock.mock.calls.length).toBe(30)
+  })
+
+  it('does not charge the budget for a request that never reaches upstream', async () => {
+    // A malformed param is refused before the breaker is touched, so a junk
+    // loop cannot spend the shared minute that real charts need.
+    for (let i = 0; i < 100; i += 1) await call(ohlcvQuery({ pool: 'nope' }), from(`11.0.0.${i % 9}`))
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect((await call(ohlcvQuery(), from('11.9.9.9'))).statusCode).toBe(200)
+  })
+
+  it('counts the resolve lane against the same budget as candles', async () => {
+    for (let i = 0; i < 30; i += 1) {
+      expect(
+        (await call({ op: 'resolve', ticker: 'AAPLx', network: 'solana' }, from(`12.0.0.${i}`)))
+          .statusCode
+      ).toBe(200)
+    }
+    const res = await call(ohlcvQuery(), from('12.9.9.9'))
+    expect(res.statusCode).toBe(429)
+  })
+
+  it('refills at one every two seconds, matching the real upstream limit', async () => {
+    const t0 = Date.now()
+    for (let i = 0; i < 30; i += 1) expect(limiters.perInstance.take('all', t0).ok).toBe(true)
+    expect(limiters.perInstance.take('all', t0).ok).toBe(false)
+    expect(limiters.perInstance.take('all', t0 + 1_000).ok).toBe(false)
+    expect(limiters.perInstance.take('all', t0 + 2_000).ok).toBe(true)
   })
 })

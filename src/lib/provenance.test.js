@@ -9,6 +9,10 @@ import {
   tokenLegLine,
   shareLegLine,
   shareFreshness,
+  chartHistoryCredit,
+  STOCK_QUOTE_PROVIDER,
+  STOCK_HISTORY_PROVIDER,
+  TOKEN_PROVIDER,
 } from './provenance'
 
 describe('legendStatus', () => {
@@ -22,32 +26,79 @@ describe('legendStatus', () => {
 
   it('reads the spec string for the stock leg after the close', () => {
     expect(legendStatus('stock', 'closed', 12)).toBe(
-      'Market closed · Data is delayed · NASDAQ by Yahoo Finance'
+      'Market closed · Data is delayed · NASDAQ by Finnhub'
     )
     expect(legendStatus('stock', 'post', 12)).toBe(
-      'After hours · Data is delayed · NASDAQ by Yahoo Finance'
+      'After hours · Data is delayed · NASDAQ by Finnhub'
     )
     expect(legendStatus('stock', 'pre', 12)).toBe(
-      'Pre-market · Data is delayed · NASDAQ by Yahoo Finance'
+      'Pre-market · Data is delayed · NASDAQ by Finnhub'
     )
   })
 
   it('states the cadence instead of a delay during regular hours with a fresh quote', () => {
     expect(legendStatus('stock', 'regular', 12)).toBe(
-      'Market open · One update every 30 seconds · NASDAQ by Yahoo Finance'
+      'Market open · One update every 30 seconds · NASDAQ by Finnhub'
     )
     expect(legendStatus('stock', 'regular', 600)).toBe(
-      'Market open · Data is delayed · NASDAQ by Yahoo Finance'
+      'Market open · Data is delayed · NASDAQ by Finnhub'
     )
   })
 
   it('names the venue it is given', () => {
     expect(legendStatus('token', 'regular', 1, { venue: 'Orca' })).toContain('Orca by GeckoTerminal')
-    expect(legendStatus('stock', 'closed', 1, { venue: 'NYSE' })).toContain('NYSE by Yahoo Finance')
+    expect(legendStatus('stock', 'closed', 1, { venue: 'NYSE' })).toContain('NYSE by Finnhub')
   })
 
   it('treats an unknown session as closed', () => {
     expect(legendStatus('stock', undefined, 1)).toMatch(/^Market closed/)
+  })
+})
+
+/*
+ * Two companies sit behind the stock side and the legend used to credit one of
+ * them for both. The share QUOTE — the price, its timestamp, and therefore
+ * every freshness word in this line — comes from Finnhub through
+ * api/finnhub.js. The share HISTORY drawn on the chart comes from Yahoo
+ * through api/history.js. The line said Yahoo for both.
+ */
+describe('legendStatus — who the stock leg credits', () => {
+  it('credits the quote provider, because the words are about the quote', () => {
+    // 'Data is delayed' and 'One update every 30 seconds' are computed from
+    // the quote's age. Yahoo's name on that sentence was simply wrong.
+    expect(legendStatus('stock', 'regular', 12)).toContain(`by ${STOCK_QUOTE_PROVIDER}`)
+    expect(legendStatus('stock', 'closed', 12)).not.toContain('Yahoo')
+  })
+
+  it('takes the real provider from the caller, for the keyless dev fallback', () => {
+    // src/services/stocks.js quotes from Yahoo when there is no Finnhub key
+    // and no proxy, so the legend must be able to say so rather than assume.
+    expect(legendStatus('stock', 'regular', 12, { source: 'Yahoo Finance' })).toContain(
+      'by Yahoo Finance'
+    )
+  })
+
+  it('leaves the token leg with its own provider', () => {
+    expect(legendStatus('token', 'regular', 5)).toContain(`by ${TOKEN_PROVIDER}`)
+    expect(legendStatus('token', 'regular', 5, { source: 'Jupiter' })).toContain('by Jupiter')
+  })
+})
+
+describe('chartHistoryCredit', () => {
+  it('names Yahoo for the thing Yahoo actually provides', () => {
+    expect(chartHistoryCredit()).toBe('Share history by Yahoo Finance')
+    expect(STOCK_HISTORY_PROVIDER).toBe('Yahoo Finance')
+  })
+
+  it('is a different sentence from the quote credit, not the same one', () => {
+    // The whole point of the split: one source is never made to stand for the
+    // other, so the two strings must not be interchangeable.
+    expect(chartHistoryCredit()).not.toContain(STOCK_QUOTE_PROVIDER)
+    expect(legendStatus('stock', 'regular', 12)).not.toContain(STOCK_HISTORY_PROVIDER)
+  })
+
+  it('takes an override, so a future history provider needs no new sentence', () => {
+    expect(chartHistoryCredit('Polygon')).toBe('Share history by Polygon')
   })
 })
 

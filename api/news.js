@@ -22,9 +22,34 @@
 
 import { applyCors, handlePreflight, setCacheControl } from './_cors.js'
 import { rejectUnknownParams } from './_params.js'
+import { isAllowedSymbol } from './_symbols.js'
+import { clientKey, createRateLimiter, sendTooManyRequests } from './_rateLimit.js'
 import { parseRssItems } from './_rss.js'
 
 const ALLOWED_PARAMS = new Set(['symbol', 'topic', 'c'])
+
+// Per-caller ceiling. Best-effort and PER INSTANCE, exactly like the buckets
+// in api/finnhub.js and api/history.js — read ./_rateLimit.js before quoting
+// these numbers at anyone.
+//
+// Tighter than api/history.js because a request here is not one upstream call.
+// The topic lane fans out to TOPIC_QUERIES.length (six) Google fetches, and
+// the symbol lane is asked for once per detail screen the user opens — far
+// less often than a chart. 30 burst refilling at 0.5/second covers a user
+// opening a new asset every couple of seconds and bounds a script to 30
+// requests, or about 180 Google fetches, a minute per instance.
+//
+// No per-instance breaker, for the same reason api/history.js has none: Google
+// News RSS is keyless, so there is no quota of ours to drain, and refusing
+// headlines to innocent users would cost more than the Vercel invocations it
+// saves. What bounds this endpoint is that neither lane takes free text — the
+// symbol lane matches the app's own allowlist and the topic lane has exactly
+// one valid key, so the edge-cache key space is small and almost every
+// request is a cache hit that never runs this function at all.
+const perClient = createRateLimiter({ capacity: 30, refillPerSecond: 0.5 })
+
+// Exported for the tests, which need a known-empty bucket per case.
+export const limiters = { perClient }
 
 // Topic keys map to fixed queries. NEVER accept a free-text query: it would
 // make this an open relay for arbitrary Google searches, and unbound the
@@ -52,6 +77,9 @@ export default async function handler(req, res) {
   const originScoped = applyCors(req, res)
   if (rejectUnknownParams(req, res, ALLOWED_PARAMS)) return
 
+  const client = perClient.take(clientKey(req))
+  if (!client.ok) return sendTooManyRequests(res, client.retryAfter)
+
   const hasSymbol = req.query.symbol != null
   const hasTopic = req.query.topic != null
   // Exactly one lane. Both would be ambiguous; neither has nothing to fetch.
@@ -64,7 +92,12 @@ export default async function handler(req, res) {
 
 async function symbolLane(req, res, originScoped) {
   const symbol = String(req.query.symbol ?? '')
-  if (!/^[A-Z0-9.\-]{1,10}$/i.test(symbol)) {
+  // Exact match against the app's own symbol list. src/services/stocks.js
+  // sends the underlying straight out of universe.json, so this lane sees the
+  // canonical (dotted) spelling — BRK.B, not the Yahoo BRK-B that
+  // api/history.js takes. See api/_symbols.js for why the old shape check was
+  // a free way to mint unbounded cache keys.
+  if (!isAllowedSymbol(symbol)) {
     return res.status(400).json({ error: 'bad request' })
   }
   try {

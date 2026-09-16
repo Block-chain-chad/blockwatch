@@ -7,8 +7,27 @@
 import { formatPrice, EM_DASH } from './format'
 import { getMarketDay } from './market'
 
-/** Yahoo's regular-session quote lags the tape by this much. */
+/** A delayed regular-session share quote lags the tape by this much. */
 export const STOCK_DELAY_MINUTES = 15
+
+/**
+ * Who provides what, when nobody says otherwise.
+ *
+ * Two different companies sit behind the stock side of this app and the
+ * legend used to credit one of them for both. The share QUOTE — the price,
+ * its timestamp, and therefore every freshness word beside it — comes from
+ * Finnhub through api/finnhub.js. The share HISTORY drawn on the chart comes
+ * from Yahoo's chart endpoint through api/history.js. Naming Yahoo for the
+ * quote was simply wrong, and it is the kind of wrong that matters: a user
+ * who wants to check a price against its source has to be told the right one.
+ *
+ * DEV_ prefix on neither, deliberately: these are what production serves. A
+ * caller that knows better passes `source` — src/services/stocks.js exports
+ * STOCK_QUOTE_SOURCE, which says Yahoo Finance in the keyless dev fallback.
+ */
+export const STOCK_QUOTE_PROVIDER = 'Finnhub'
+export const STOCK_HISTORY_PROVIDER = 'Yahoo Finance'
+export const TOKEN_PROVIDER = 'GeckoTerminal'
 
 /** PricesContext refreshes token prices on this cadence. */
 export const TOKEN_REFRESH_SECONDS = 30
@@ -18,7 +37,7 @@ export const TOKEN_REFRESH_SECONDS = 30
  * called live. One poll cycle of headroom and no more.
  *
  * In practice most quotes will read "delayed" during the session, because
- * api/finnhub.js shares one cached response for 180s (plus a 600s
+ * api/finnhub.js shares one cached response for 300s (plus a 600s
  * stale-while-revalidate tail). That is the true state of the pipeline, and
  * the age printed beside the word says exactly how true. Tightening s-maxage
  * buys freshness at the cost of Finnhub quota; it does not change this rule.
@@ -186,21 +205,40 @@ export function shareFreshness({ quote, session, now = Date.now() }) {
  * legendStatus('token', session, age)
  *   → '24/7 · One update every 30 seconds · Raydium by GeckoTerminal'
  * legendStatus('stock', 'closed', age)
- *   → 'Market closed · Data is delayed · NASDAQ by Yahoo Finance'
+ *   → 'Market closed · Data is delayed · NASDAQ by Finnhub'
  * legendStatus('stock', 'regular', 12)
- *   → 'Market open · One update every 30 seconds · NASDAQ by Yahoo Finance'
+ *   → 'Market open · One update every 30 seconds · NASDAQ by Finnhub'
  *
  * `venue` names the pool's DEX (token) or the listing exchange (stock);
  * the defaults are the ones the flagship xStocks pairs trade on.
+ *
+ * `source` names the provider. The stock leg's default is the QUOTE provider,
+ * not the history one, because everything else in this line — the session
+ * word, the cadence, "Data is delayed" — is computed from the quote's age.
+ * Crediting the chart's history provider here would attach Yahoo's name to a
+ * statement about a Finnhub number. Use chartHistoryCredit below to name the
+ * source of the drawn series.
  */
-export function legendStatus(leg, session, ageSeconds, { venue } = {}) {
+export function legendStatus(leg, session, ageSeconds, { venue, source } = {}) {
   const cadence = `One update every ${TOKEN_REFRESH_SECONDS} seconds`
   if (leg === 'stock') {
     const word = STOCK_SESSION_WORD[session] ?? STOCK_SESSION_WORD.closed
     const freshness = isStockDelayed(session, ageSeconds) ? 'Data is delayed' : cadence
-    return `${word} · ${freshness} · ${venue ?? 'NASDAQ'} by Yahoo Finance`
+    return `${word} · ${freshness} · ${venue ?? 'NASDAQ'} by ${source ?? STOCK_QUOTE_PROVIDER}`
   }
-  return `24/7 · ${cadence} · ${venue ?? 'Raydium'} by GeckoTerminal`
+  return `24/7 · ${cadence} · ${venue ?? 'Raydium'} by ${source ?? TOKEN_PROVIDER}`
+}
+
+/**
+ * chartHistoryCredit() → 'Share history by Yahoo Finance'
+ *
+ * The other half of the split. Wherever a share series is drawn — the gap
+ * chart's stock line, the candles chart on the stock side — the bars are
+ * Yahoo's, however recent the quote beside them is. One line each, so neither
+ * source is credited for the other's work.
+ */
+export function chartHistoryCredit(source = STOCK_HISTORY_PROVIDER) {
+  return `Share history by ${source}`
 }
 
 /** delayTooltip(15) → 'Quotes are delayed by 15 min' */

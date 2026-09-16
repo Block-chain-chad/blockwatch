@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { ASSETS, BY_ID, CORE_IDS } from '../data/universe'
 import { mergeAssets } from '../lib/prices'
+import { quoteCycle, withRetries } from '../lib/quoteRotation'
 import { isUsMarketOpen, getMarketSession } from '../lib/market'
 import { fetchTokenMarkets, loadPriceCache, savePriceCache, POLL_MS } from '../services/coingecko'
 import { fetchFastPrices, FAST_POLL_MS } from '../services/jupiter'
@@ -81,9 +82,15 @@ export function PricesProvider({ children }) {
   const lastRefreshRef = useRef(0)
   const quoteRotorRef = useRef(0)
   // Closed-market fill of never-quoted tickers: ticker -> ms it was last
-  // tried, so a ticker that fails to quote (Finnhub c:0, a 429) is not
-  // retried every minute all night.
+  // tried, so a ticker that fails to quote (Finnhub c:0) is not retried every
+  // minute all night. A ticker REFUSED with a 429 is not one of those: it is
+  // queued below instead, because a refusal says nothing about the symbol.
   const closedTriedRef = useRef(new Map())
+  // Tickers the proxy refused with a 429, waiting to be asked again. A refusal
+  // is "ask again shortly", not "this symbol has no price" — see
+  // ../lib/quoteRotation.js for why letting the rotation move past one leaves
+  // a cold board blank for three minutes.
+  const quoteRetryRef = useRef([])
 
   function subscribedIds() {
     const set = new Set()
@@ -174,8 +181,22 @@ export function PricesProvider({ children }) {
     async function fetchStocks(tickers) {
       if (tickers.length === 0) return
       try {
-        const data = await getStockPrices(tickers)
+        const { quotes: data, rateLimited } = await getStockPrices(tickers)
+        // Queue refusals before the cancelled check: a provider unmounting
+        // mid-flight should not swallow the fact that these were never asked.
+        if (rateLimited.length > 0) {
+          quoteRetryRef.current = withRetries(
+            quoteRetryRef.current,
+            rateLimited,
+            STOCK_QUOTE_CAP
+          )
+        }
         if (cancelled) return
+        // A cycle that was refused outright carried no quotes, so it must not
+        // stamp a fetch time: doing so would tell the closed-market branch
+        // below that closes are fresh and buy a refusal thirty minutes of
+        // silence.
+        if (Object.keys(data).length === 0) return
         const at = Date.now()
         stockFetchRef.current = at
         // Merge over previous quotes so a partial failure keeps older tickers.
@@ -214,21 +235,29 @@ export function PricesProvider({ children }) {
           const missing = all
             .filter((t) => !quotesRef.current[t] && now - (tried.get(t) ?? -Infinity) >= CLOSED_MARKET_REFRESH_MS)
             .slice(0, STOCK_QUOTE_CAP)
-          for (const t of missing) tried.set(t, now)
-          if (missing.length > 0) await fetchStocks(missing)
+          // Refused tickers jump this queue. Guard (b) is the reason they have
+          // to: a 429 would otherwise be recorded as a real attempt and leave
+          // that share price blank for the full thirty minutes, over a limit
+          // that cleared in a second.
+          const due = withRetries(missing, quoteRetryRef.current, STOCK_QUOTE_CAP)
+          quoteRetryRef.current = []
+          // Marked after the cap is applied, so a long retry queue never marks
+          // a ticker tried that this cycle had no room to ask about.
+          for (const t of due) tried.set(t, now)
+          if (due.length > 0) await fetchStocks(due)
         }
         return
       }
       // Cap quotes per cycle (a 100-asset folder must not fire 100 Finnhub
-      // calls a minute); overflow rotates through on subsequent cycles.
-      let list = all
-      if (all.length > STOCK_QUOTE_CAP) {
-        const off = quoteRotorRef.current % all.length
-        list = all.slice(off, off + STOCK_QUOTE_CAP)
-        if (list.length < STOCK_QUOTE_CAP) list = list.concat(all.slice(0, STOCK_QUOTE_CAP - list.length))
-        quoteRotorRef.current = (off + STOCK_QUOTE_CAP) % all.length
-      }
-      await fetchStocks(list)
+      // calls a minute); overflow rotates through on subsequent cycles. The
+      // rotor advances every cycle whatever happened, so nothing starves;
+      // refused tickers come back at the front of the next one instead. See
+      // ../lib/quoteRotation.js for the arithmetic behind both rules.
+      const { list, nextRotor } = quoteCycle(all, quoteRotorRef.current, STOCK_QUOTE_CAP)
+      quoteRotorRef.current = nextRotor
+      const due = withRetries(list, quoteRetryRef.current, STOCK_QUOTE_CAP)
+      quoteRetryRef.current = []
+      await fetchStocks(due)
     }
 
     // Cross-tab leader lock (localStorage heartbeat): only one tab runs the

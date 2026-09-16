@@ -18,13 +18,17 @@
 //     upstream call.
 //
 // RATE LIMIT: GeckoTerminal's free tier is roughly 30 requests per minute for
-// everyone behind this deployment put together, with no key to raise it. The
-// edge cache is the budget: every param is an enum or a fixed-shape address so
-// the space of cache keys is small and every miss is a request a real chart
-// needed. Never accept a free-text param here — that both opens a relay and
-// unbounds the cache key, the same way an unknown param would (see
-// ./_params.js). Upstream 429s come back as 502 like any other upstream
-// failure; the client renders nothing rather than an error.
+// everyone behind this deployment put together, with no key to raise it. Three
+// things hold the line, in order of how much work they do. The edge cache does
+// most of it: every param is an enum or a fixed-shape address, so the space of
+// cache keys is small and every miss is a request a real chart needed. Never
+// accept a free-text param here — that both opens a relay and unbounds the
+// cache key, the same way an unknown param would (see ./_params.js). Then the
+// two buckets below: a per-caller bucket, and a per-instance breaker sized at
+// GeckoTerminal's real 30/minute and spent only on calls that reach upstream.
+// Both are best-effort and per instance (./_rateLimit.js). Upstream 429s still
+// come back as 502 like any other upstream failure; the client renders nothing
+// rather than an error.
 //
 // Nothing upstream is relayed wholesale: both ops return only fields derived
 // by api/_geckoterminal.js.
@@ -35,6 +39,7 @@
 
 import { applyCors, handlePreflight, setCacheControl } from './_cors.js'
 import { rejectUnknownParams } from './_params.js'
+import { clientKey, createRateLimiter, sendTooManyRequests } from './_rateLimit.js'
 import {
   NETWORKS,
   TIMEFRAME_AGGREGATES,
@@ -75,12 +80,42 @@ const CACHE = Object.freeze({
 
 const UPSTREAM_HEADERS = { Accept: 'application/json', 'User-Agent': 'BlockWatch tracker' }
 
+// Per-caller ceiling. Best-effort and PER INSTANCE, like every bucket in this
+// directory — read ./_rateLimit.js before quoting these numbers at anyone.
+//
+// Sized against one person watching charts. A minute chart refetches on the
+// 30-second TTL above, so a single open chart costs about two upstream calls a
+// minute; resolve is cached a day. Flicking between a dozen tokens in a minute
+// is a busy human. 60 burst refilling at 1/second is well past that.
+const perClient = createRateLimiter({ capacity: 60, refillPerSecond: 1 })
+
+// THE QUOTA'S CEILING, and the reason this file gets a breaker where
+// api/history.js and api/news.js do not. GeckoTerminal's free tier is roughly
+// 30 requests a minute for EVERYONE behind this deployment put together, with
+// no key to raise it — the same shared-quota shape as Finnhub, so it gets the
+// same treatment: sized at the real upstream limit, spent only on calls that
+// actually go upstream, and keyed on a constant so it cannot be split by
+// forging or rotating a header.
+//
+// Honest about the cost. This does not buy a user anything: a request past the
+// budget gets a 429 from us instead of a 429 from GeckoTerminal, and either
+// way the chart does not draw. What it buys is that the refusal is cheap and
+// falls on the caller who overspent, rather than on whoever asks next after a
+// scraper has already spent the minute for everybody.
+const perInstance = createRateLimiter({ capacity: 30, refillPerSecond: 0.5, maxKeys: 1 })
+
+// Exported for the tests, which need a known-empty bucket per case.
+export const limiters = { perClient, perInstance }
+
 const str = (v) => (typeof v === 'string' ? v : '')
 
 export default async function handler(req, res) {
   if (handlePreflight(req, res)) return
   const originScoped = applyCors(req, res)
   if (rejectUnknownParams(req, res, ALL_PARAMS)) return
+
+  const client = perClient.take(clientKey(req))
+  if (!client.ok) return sendTooManyRequests(res, client.retryAfter)
 
   const op = str(req.query.op)
   const allowed = Object.hasOwn(OP_PARAMS, op) ? OP_PARAMS[op] : null
@@ -102,6 +137,11 @@ async function fetchUpstream(url) {
 async function resolveOp(req, res, originScoped, network) {
   const ticker = str(req.query.ticker)
   if (!TICKER.test(ticker)) return res.status(400).json({ error: 'bad request' })
+
+  // Spent here rather than at the top of the handler, so a request the params
+  // were going to refuse anyway never costs the shared budget a token.
+  const instance = perInstance.take('all')
+  if (!instance.ok) return sendTooManyRequests(res, instance.retryAfter)
 
   let candidates
   try {
@@ -131,6 +171,10 @@ async function ohlcvOp(req, res, originScoped, network) {
   ) {
     return res.status(400).json({ error: 'bad request' })
   }
+
+  // As in resolveOp: the shared budget pays only for calls that reach upstream.
+  const instance = perInstance.take('all')
+  if (!instance.ok) return sendTooManyRequests(res, instance.retryAfter)
 
   let json
   try {
