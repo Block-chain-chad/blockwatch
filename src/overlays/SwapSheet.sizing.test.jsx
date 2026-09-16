@@ -74,6 +74,9 @@ afterEach(async () => {
   await act(async () => root.unmount())
   container.remove()
   applyFlags(null)
+  // Always, not at the end of a test body: a failed assertion returns early
+  // and would leak a mocked clock into every test after it.
+  vi.useRealTimers()
 })
 
 /** Render the sheet, switch to Sell, and type `typed` into the amount box. */
@@ -163,7 +166,7 @@ describe('the sheet sizes on the live ratio, and falls back to the pin', () => {
   const CRM = BY_ID['salesforce-xstock']
 
   it('uses a scheduled change the pin never saw, once it has taken effect', async () => {
-    vi.setSystemTime(new Date('2026-09-17T01:00:00.000Z'))
+    vi.setSystemTime(new Date('2026-09-17T01:00:00.000Z')) // after it takes effect
     fetchLiveRatio.mockResolvedValue({
       multiplier: '1.0054716788543585',
       nextMultiplier: '1.0067077500492987',
@@ -174,10 +177,14 @@ describe('the sheet sizes on the live ratio, and falls back to the pin', () => {
     // this at 99455809 — 0.12293% more than the user asked to sell.
     expect(lastQuotedAmount()).toBe('99333694')
     expect(lastQuotedAmount()).not.toBe('99455809')
-    vi.useRealTimers()
   })
 
   it('falls back to the pin when Jupiter cannot be reached', async () => {
+    // The clock is pinned BEFORE the change the pin itself now carries takes
+    // effect. Left on the real clock this test dies of old age: from
+    // 2026-09-17T00:30Z the pinned schedule fires and the answer becomes
+    // 99333694 with nothing having changed in the code.
+    vi.setSystemTime(new Date('2026-09-16T12:00:00.000Z'))
     fetchLiveRatio.mockRejectedValue(new Error('offline'))
     await sell(CRM, '1')
     expect(lastQuotedAmount()).toBe('99455809') // the pin's effective ratio
