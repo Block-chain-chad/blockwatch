@@ -5,6 +5,13 @@
 // Without VITE_POSTHOG_KEY this no-ops (logging to the console in dev so the
 // events are still visible while building). Analytics must never break or slow
 // the app: every call is fire-and-forget and swallows all errors.
+//
+// Every event carries `environment`, stamped here rather than at the call
+// sites so no caller can forget it or claim the wrong one. Development does
+// not reach PostHog at all by default, so the counts are real users only.
+// See lib/environment.js.
+
+import { appEnvironment, telemetryEnabled } from '../lib/environment'
 
 const KEY = import.meta.env.VITE_POSTHOG_KEY
 const HOST = import.meta.env.VITE_POSTHOG_HOST || 'https://us.i.posthog.com'
@@ -25,8 +32,11 @@ function deviceId() {
 }
 
 export function track(event, properties = {}) {
-  if (!KEY) {
-    if (import.meta.env.DEV) console.debug('[analytics]', event, properties)
+  // Stamped last, so a caller passing its own `environment` cannot mislabel
+  // the event.
+  const stamped = { ...properties, environment: appEnvironment }
+  if (!KEY || !telemetryEnabled) {
+    if (import.meta.env.DEV) console.debug('[analytics]', event, stamped)
     return
   }
   try {
@@ -38,7 +48,7 @@ export function track(event, properties = {}) {
         api_key: KEY,
         event,
         distinct_id: deviceId(),
-        properties,
+        properties: stamped,
       }),
     }).catch(() => {})
   } catch {
