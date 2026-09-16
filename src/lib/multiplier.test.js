@@ -612,18 +612,21 @@ describe('the drift band is wider upward than downward', () => {
     expect(reconcileRatio(pin, { multiplier: '0.951' }, opts)).toBeNull()
   })
 
-  it('accepts a dip inside the downward floor', () => {
-    expect(reconcileRatio(pin, { multiplier: '0.99' }, opts)).toBe('0.99')
-    expect(reconcileRatio(pin, { multiplier: '0.98' }, opts)).toBe('0.98')
+  it('accepts a dip inside the downward floor, which is only jitter-wide', () => {
+    expect(reconcileRatio(pin, { multiplier: '0.9995' }, opts)).toBe('0.9995')
+    expect(reconcileRatio(pin, { multiplier: '0.999' }, opts)).toBe('0.999')
   })
 
-  it('refuses one just past the downward floor', () => {
-    expect(reconcileRatio(pin, { multiplier: '0.979' }, opts)).toBeNull()
+  it('refuses the two percent that used to pass, and everything below it', () => {
+    // A pin of 1 against a live 0.98 built 102040816 raw for a typed 1 — a
+    // 2.04% oversell, bought with slack no legitimate event ever needs.
+    expect(reconcileRatio(pin, { multiplier: '0.98' }, opts)).toBeNull()
+    expect(reconcileRatio(pin, { multiplier: '0.9989' }, opts)).toBeNull()
   })
 
   it('names the two bounds', () => {
     expect(RATIO_RISE_CEILING).toBe('1.05')
-    expect(RATIO_DROP_FLOOR).toBe('0.98')
+    expect(RATIO_DROP_FLOOR).toBe('0.999')
   })
 })
 

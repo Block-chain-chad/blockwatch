@@ -119,7 +119,7 @@ export const RATIO_RISE_CEILING = '1.05'
 
 /**
  * How far below the pin a ratio may sit before it needs a fresh verification,
- * as a fraction of the pin. Two percent.
+ * as a fraction of the pin. A tenth of a percent.
  *
  * The asymmetry is not fussiness, it is what the instrument does. Splits and
  * dividend accrual only ever move a ratio UP, and those are the changes that
@@ -128,8 +128,16 @@ export const RATIO_RISE_CEILING = '1.05'
  * read too high undersells, a ratio read too low OVERSELLS in proportion, so
  * a fabricated 0.0001 sells ten thousand times what was typed. A rare event
  * should cost a re-run of scripts/verify-mints.mjs, not an unverified sell.
+ *
+ * Which is why this is as narrow as it is. There is no legitimate event that
+ * moves a ratio down WITHOUT provenance, so every bit of slack here buys
+ * nothing and absorbs a wrong feed in the expensive direction: at two percent
+ * a pin of 1 against a live 0.98 built 102040816 raw for a typed 1, a 2.04%
+ * oversell nobody asked for. A tenth of a percent still absorbs serialisation
+ * jitter between a float and its decimal string, and caps the worst
+ * unverified oversell at 0.1%.
  */
-export const RATIO_DROP_FLOOR = '0.98'
+export const RATIO_DROP_FLOOR = '0.999'
 
 /**
  * The most a proven update may multiply the pinned ratio by.
