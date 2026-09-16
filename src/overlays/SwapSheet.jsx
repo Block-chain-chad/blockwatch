@@ -369,17 +369,13 @@ export default function SwapSheet({ asset, onClose }) {
             <div className="flex justify-between">
               <span className="text-zinc-500">You receive</span>
               <span className="tabular-nums text-zinc-100">
-                {received != null
-                  ? `${fmtAmount(received)} ${outLabel}`
-                  : quoting
-                    ? 'Quoting…'
-                    : '—'}
+                {received != null ? `${received} ${outLabel}` : quoting ? 'Quoting…' : '—'}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-zinc-500">Minimum received</span>
               <span className="tabular-nums text-zinc-400">
-                {minReceived != null ? `${fmtAmount(minReceived)} ${outLabel}` : '—'}
+                {minReceived != null ? `${minReceived} ${outLabel}` : '—'}
               </span>
             </div>
             <div className="flex justify-between">
