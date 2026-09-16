@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   DEFAULT_MULTIPLIER,
   RATIO_RISE_CEILING,
+  MAX_PROVEN_RISE,
   RATIO_DROP_FLOOR,
   reconcileRatio,
   ratioFor,
@@ -480,6 +481,9 @@ describe('ratioFor', () => {
 describe('reconcileRatio accepts a provable post-pin split', () => {
   const PINNED_AT = '2026-09-16T20:17:19.852Z'
   const AFTER_SPLIT = Date.parse('2026-09-18T12:00:00.000Z')
+  // The hatch is opt-in now. Every test in here is about the hatch, so they
+  // all ask for it; the buy-side cases that must NOT get it are below.
+  const withHatch = { now: AFTER_SPLIT, verifiedAt: PINNED_AT, allowProvenUpdate: true }
 
   it('takes a 10x jump when the live config proves it followed the pin', () => {
     const pin = { multiplier: '1' }
@@ -488,45 +492,45 @@ describe('reconcileRatio accepts a provable post-pin split', () => {
       nextMultiplier: '10',
       nextMultiplierAt: '2026-09-17T23:55:00.000Z', // after the pin was taken
     }
-    expect(reconcileRatio(pin, live, { now: AFTER_SPLIT, verifiedAt: PINNED_AT })).toBe('10')
+    expect(reconcileRatio(pin, live, withHatch)).toBe('10')
   })
 
   it('accepts when the live standing value matches the pin\'s SCHEDULED value', () => {
     // The ordinary shape once a pinned schedule has fired: CRMx exactly.
     const pin = { multiplier: '1', nextMultiplier: '2', nextMultiplierAt: '2026-09-01T00:00:00.000Z' }
     const live = { multiplier: '2', nextMultiplier: '20', nextMultiplierAt: '2026-09-17T00:00:00.000Z' }
-    expect(reconcileRatio(pin, live, { now: AFTER_SPLIT, verifiedAt: PINNED_AT })).toBe('20')
+    expect(reconcileRatio(pin, live, withHatch)).toBe('20')
   })
 
   it('compares as fractions, so "1" and "1.0000" are the same starting point', () => {
     const pin = { multiplier: '1' }
     const live = { multiplier: '1.0000', nextMultiplier: '10', nextMultiplierAt: '2026-09-17T23:55:00.000Z' }
-    expect(reconcileRatio(pin, live, { now: AFTER_SPLIT, verifiedAt: PINNED_AT })).toBe('10')
+    expect(reconcileRatio(pin, live, withHatch)).toBe('10')
   })
 
   it('refuses when the value it moved FROM is not one the pin ever recorded', () => {
     // An old-old value: this config is not the pin moved forward.
     const pin = { multiplier: '2', nextMultiplier: '3', nextMultiplierAt: '2026-09-01T00:00:00.000Z' }
     const live = { multiplier: '1', nextMultiplier: '10', nextMultiplierAt: '2026-09-17T23:55:00.000Z' }
-    expect(reconcileRatio(pin, live, { now: AFTER_SPLIT, verifiedAt: PINNED_AT })).toBeNull()
+    expect(reconcileRatio(pin, live, withHatch)).toBeNull()
   })
 
   it('refuses a schedule dated BEFORE the pin, which is another mint\'s config', () => {
     const pin = { multiplier: '1' }
     const live = { multiplier: '1', nextMultiplier: '10', nextMultiplierAt: '2026-05-01T00:00:00.000Z' }
-    expect(reconcileRatio(pin, live, { now: AFTER_SPLIT, verifiedAt: PINNED_AT })).toBeNull()
+    expect(reconcileRatio(pin, live, withHatch)).toBeNull()
   })
 
   it('refuses a bare large value with no schedule to prove anything', () => {
     expect(
-      reconcileRatio({ multiplier: '1' }, { multiplier: '10' }, { now: AFTER_SPLIT, verifiedAt: PINNED_AT })
+      reconcileRatio({ multiplier: '1' }, { multiplier: '10' }, withHatch)
     ).toBeNull()
   })
 
   it('refuses when no verifiedAt is supplied, since (c) cannot be checked', () => {
     const pin = { multiplier: '1' }
     const live = { multiplier: '1', nextMultiplier: '10', nextMultiplierAt: '2026-09-17T23:55:00.000Z' }
-    expect(reconcileRatio(pin, live, { now: AFTER_SPLIT })).toBeNull()
+    expect(reconcileRatio(pin, live, { now: AFTER_SPLIT, allowProvenUpdate: true })).toBeNull()
   })
 })
 
@@ -548,7 +552,7 @@ describe('reconcileRatio refuses a provable update that moves the ratio down', (
   const AFTER = '2026-09-16T20:58:21.973Z' // one minute past the pin
   const NOW_LATER = Date.parse('2026-09-20T12:00:00.000Z')
   const pin = { multiplier: '1' } // TSLAx's real pin
-  const opts = { now: NOW_LATER, verifiedAt: PINNED_AT }
+  const opts = { now: NOW_LATER, verifiedAt: PINNED_AT, allowProvenUpdate: true }
 
   it('refuses the reproduction: a tenth, which would sell ten times the amount typed', () => {
     const live = { multiplier: '1', nextMultiplier: '0.1', nextMultiplierAt: AFTER }
@@ -619,5 +623,53 @@ describe('the drift band is wider upward than downward', () => {
   it('names the two bounds', () => {
     expect(RATIO_RISE_CEILING).toBe('1.05')
     expect(RATIO_DROP_FLOOR).toBe('0.98')
+  })
+})
+
+/*
+ * The hatch is opt-in, and capped.
+ *
+ * provablyAfterPin says a config FOLLOWS the pin. It says nothing about the
+ * size of the value, and what an over-large value costs depends entirely on
+ * what the number is used for. Sizing an input divides by the ratio, so too
+ * high undersells. Stating an output multiplies by it, so too high overstates
+ * what the user is about to sign for — and the transaction stays valid, so
+ * nothing downstream catches it.
+ */
+describe('the proven-update hatch is opt-in and bounded', () => {
+  const PINNED_AT = '2026-09-16T20:57:21.973Z'
+  const AFTER = '2026-09-16T20:58:21.973Z'
+  const NOW_LATER = Date.parse('2026-09-20T12:00:00.000Z')
+  const pin = { multiplier: '1' }
+  const split = { multiplier: '1', nextMultiplier: '10', nextMultiplierAt: AFTER }
+  const absurd = { multiplier: '1', nextMultiplier: '1000', nextMultiplierAt: AFTER }
+  const base = { now: NOW_LATER, verifiedAt: PINNED_AT }
+
+  it('is closed by default, so a caller has to have thought about it', () => {
+    expect(reconcileRatio(pin, split, base)).toBeNull()
+  })
+
+  it('opens on request, for a real split', () => {
+    expect(reconcileRatio(pin, split, { ...base, allowProvenUpdate: true })).toBe('10')
+  })
+
+  it('refuses an absurd value even when opened and even when proven', () => {
+    // The V1 reproduction: 1000 against a pin of 1, correctly shaped and
+    // correctly dated, was accepted before the cap existed.
+    expect(reconcileRatio(pin, absurd, { ...base, allowProvenUpdate: true })).toBeNull()
+  })
+
+  it('caps at twenty times the pin, above the largest real split of ten', () => {
+    const at20 = { multiplier: '1', nextMultiplier: '20', nextMultiplierAt: AFTER }
+    const past20 = { multiplier: '1', nextMultiplier: '20.1', nextMultiplierAt: AFTER }
+    expect(reconcileRatio(pin, at20, { ...base, allowProvenUpdate: true })).toBe('20')
+    expect(reconcileRatio(pin, past20, { ...base, allowProvenUpdate: true })).toBeNull()
+    expect(MAX_PROVEN_RISE).toBe('20')
+  })
+
+  it('still serves a ratio inside the band without the hatch, either way', () => {
+    // A buy must keep working normally; only the hatch is withheld from it.
+    expect(reconcileRatio(pin, { multiplier: '1.03' }, base)).toBe('1.03')
+    expect(reconcileRatio(pin, { multiplier: '1.03' }, { ...base, allowProvenUpdate: true })).toBe('1.03')
   })
 })

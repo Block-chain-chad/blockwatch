@@ -233,6 +233,61 @@ describe('the sheet sizes on the live ratio, and falls back to the pin', () => {
     expect(lastQuotedAmount()).not.toBe('100000000')
   })
 
+  it('does NOT let a proven ratio inflate what a BUY says it receives', async () => {
+    // The reproduction. On a buy the ratio multiplies the displayed output
+    // rather than dividing the size, so a proven-but-huge value overstates
+    // what the user is signing for while the USDC-sized transaction stays
+    // perfectly valid — nothing downstream can catch it. Before the hatch was
+    // made sell-only this printed "You receive 400 TSLAx" for a quote
+    // delivering 0.4.
+    vi.setSystemTime(new Date('2026-09-20T12:00:00.000Z'))
+    getSwapQuote.mockResolvedValue({
+      inAmount: '100000000',
+      outAmount: '40000000', // 0.4 TSLAx at 8 decimals
+      otherAmountThreshold: '39800000',
+      priceImpactPct: '0.001',
+    })
+    fetchLiveRatio.mockResolvedValue({
+      multiplier: '1',
+      nextMultiplier: '1000',
+      nextMultiplierAt: new Date(Date.parse(VERIFIED_AT) + 60_000).toISOString(),
+    })
+    await act(async () => {
+      root.render(<SwapSheet asset={TSLA} onClose={() => {}} />)
+    })
+    const input = container.querySelector('input[type="number"]')
+    const setValue = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+    await act(async () => {
+      setValue.call(input, '100')
+      input.dispatchEvent(new window.Event('input', { bubbles: true }))
+    })
+    expect(container.textContent).not.toContain('400 TSLAx')
+    expect(container.textContent).not.toContain('398 TSLAx')
+    expect(container.textContent).toContain("we won't size a trade we can't state the size of")
+  })
+
+  it('still displays a BUY under a ratio inside the band', async () => {
+    getSwapQuote.mockResolvedValue({
+      inAmount: '100000000',
+      outAmount: '40000000',
+      otherAmountThreshold: '39800000',
+      priceImpactPct: '0.001',
+    })
+    fetchLiveRatio.mockResolvedValue({ multiplier: '1.02' })
+    await act(async () => {
+      root.render(<SwapSheet asset={TSLA} onClose={() => {}} />)
+    })
+    const input = container.querySelector('input[type="number"]')
+    const setValue = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+    await act(async () => {
+      setValue.call(input, '100')
+      input.dispatchEvent(new window.Event('input', { bubbles: true }))
+    })
+    // 0.4 base tokens at a ratio of 1.02 is 0.408 in the wallet.
+    expect(container.textContent).toContain('0.408 TSLAx')
+    expect(container.textContent).not.toContain("we won't size a trade")
+  })
+
   it('refuses a provable config that points the ratio DOWN', async () => {
     // The hatch that lets a missed split through checks shape, not value, and
     // TSLAx is one of the 48 pins sitting at exactly 1 — so a feed reporting

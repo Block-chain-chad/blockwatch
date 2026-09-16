@@ -115,6 +115,16 @@ export default function SwapSheet({ asset, onClose }) {
   // below the floor never — a ratio read too low oversells in proportion.
   // Anything it will not vouch for yields null and stops the trade.
   //
+  // The proven-update hatch is opened for a SELL only. On a sell the ratio
+  // divides the size, so an over-high one merely undersells, and the
+  // alternative is that a name whose issuer just split it cannot be sold at
+  // all until someone re-pins by hand. On a BUY the same ratio multiplies the
+  // figure in "You receive" and "Minimum received" — which this sheet's own
+  // copy calls the floor below which the trade fails — so an over-high one
+  // overstates what the user is signing for while the transaction itself,
+  // sized in USDC, stays perfectly valid. Nothing downstream can catch that.
+  // Outside the band a buy refuses and shows the ratio message instead.
+  //
   // `undefined` means the live read has not answered yet. Until it does the
   // pin stands: it is the verified value, just possibly a step behind.
   const [liveRatio, setLiveRatio] = useState(undefined)
@@ -135,7 +145,11 @@ export default function SwapSheet({ asset, onClose }) {
   const multiplier =
     liveRatio === undefined
       ? effectiveMultiplier(token)
-      : reconcileRatio(token, liveRatio, { mint, verifiedAt: VERIFIED_AT })
+      : reconcileRatio(token, liveRatio, {
+          mint,
+          verifiedAt: VERIFIED_AT,
+          allowProvenUpdate: side === 'sell',
+        })
 
   // What the user asked for, in the input mint's smallest units — the single
   // definition, used to quote AND to state the intent at confirm time. Scaled

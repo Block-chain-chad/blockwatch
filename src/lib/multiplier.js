@@ -131,6 +131,18 @@ export const RATIO_RISE_CEILING = '1.05'
  */
 export const RATIO_DROP_FLOOR = '0.98'
 
+/**
+ * The most a proven update may multiply the pinned ratio by.
+ *
+ * Defence in depth on the hatch. provablyAfterPin establishes that a config
+ * FOLLOWS the pin, not that its value is sane, and the largest real split in
+ * the pinned history is 10x (NFLXx, PPLTx). Twenty leaves room for something
+ * bigger than anything Backed has done while still refusing the absurd, so a
+ * feed reporting a ratio of 1000 is turned away before anyone has to reason
+ * about which side of the trade it would corrupt.
+ */
+export const MAX_PROVEN_RISE = '20'
+
 /** Two ratios equal as fractions, so "1" and "1.0" are the same number. */
 function sameRatio(a, b) {
   return a != null && b != null && a.num * b.den === b.num * a.den
@@ -220,11 +232,30 @@ function provablyAfterPin(pinned, live, verifiedAt) {
  * `verifiedAt` is when the pin was taken (data/verifiedMints' checkedAt). It
  * is passed in rather than imported so this module stays pure.
  *
+ * `allowProvenUpdate` opts IN to that third case, and defaults to OFF.
+ *
+ * It is a caller's decision because the cost of a too-high ratio depends on
+ * what the number is being used for, and only the caller knows. Sizing an
+ * INPUT — a sell — divides by the ratio, so too high merely undersells, and
+ * the alternative is a name whose sell path is dead until someone re-pins by
+ * hand. Stating an OUTPUT — what a buy receives — multiplies by it, so too
+ * high overstates what the user is about to sign for, without the transaction
+ * being wrong in any way a check could catch. A proven ratio of 1000 against
+ * a pin of 1 printed "You receive 400 TSLAx" for a quote delivering 0.4, with
+ * the sheet's own copy calling the minimum a failure floor.
+ *
+ * So the hatch is available where it prevents a loss and closed where it would
+ * only mislead, and the default is the safe one.
+ *
  * With no pin it defers to ratioFor, which draws the line between "the issuer
  * never scaled this" and "we have not checked this one" — an unpinned Solana
  * mint refuses here exactly as it does everywhere else.
  */
-export function reconcileRatio(pinned, live, { mint, now = Date.now(), verifiedAt } = {}) {
+export function reconcileRatio(
+  pinned,
+  live,
+  { mint, now = Date.now(), verifiedAt, allowProvenUpdate = false } = {}
+) {
   if (!pinned) return ratioFor(null, mint, now)
   const pin = effectiveMultiplier(pinned, now)
   const a = toRational(pin)
@@ -256,10 +287,13 @@ export function reconcileRatio(pinned, live, { mint, now = Date.now(), verifiedA
   // provenance at all, which sells 105.15 when 100 is typed.
   if (!notBelow(b, a, toRational(RATIO_DROP_FLOOR))) return null
 
-  // AT OR ABOVE the pin: inside the band it needs no provenance, past the band
-  // it must prove it followed the pin. Upward is unbounded once proved,
-  // because that is a split and catching a missed split is the whole point.
+  // AT OR ABOVE the pin: inside the band it needs no provenance.
   if (notAbove(b, a, toRational(RATIO_RISE_CEILING))) return fresh
+
+  // Past the band it must prove it followed the pin, the caller must have
+  // asked for that to be enough, and it must still be a believable size.
+  if (!allowProvenUpdate) return null
+  if (!notAbove(b, a, toRational(MAX_PROVEN_RISE))) return null
   return provablyAfterPin(pinned, live, verifiedAt) ? fresh : null
 }
 
