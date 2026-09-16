@@ -9,7 +9,13 @@
 
 import { track } from './analytics'
 import { recordSwap, swapKey } from './swapAudit'
-import { checkQuote, checkBuiltTransaction } from '../lib/swapCheck'
+import {
+  checkQuote,
+  checkBuiltTransaction,
+  associatedTokenAddress,
+  SPL_TOKEN_PROGRAM,
+  TOKEN_2022_PROGRAM,
+} from '../lib/swapCheck'
 
 const QUOTE_BASE = 'https://lite-api.jup.ag/swap/v1/quote'
 const SWAP_BASE = 'https://lite-api.jup.ag/swap/v1/swap'
@@ -23,6 +29,20 @@ export const SLIPPAGE_BPS = 50 // 0.5% — shown to the user as the worst-case b
 // cycle — so the "Quoting…" state can never sit there forever on a hung
 // request while Confirm stays live against an ageing quote.
 const QUOTE_TIMEOUT_MS = 12_000
+
+/**
+ * Which program owns a mint on this path, which is what its associated token
+ * account address is derived under.
+ *
+ * Only two kinds of mint ever reach here. USDC is a classic SPL token. Every
+ * other address comes from data/verifiedMints.json, and scripts/verify-mints.mjs
+ * refuses to pin an address whose mint account is not owned by Token-2022 —
+ * that is one of the four issuer facts it checks on chain — so the else
+ * branch is a fact about the data, not a guess.
+ */
+export function tokenProgramFor(mint) {
+  return mint === USDC_MINT ? SPL_TOKEN_PROGRAM : TOKEN_2022_PROGRAM
+}
 
 /** Which way round the mints go for a side. One definition, used everywhere. */
 export function swapMints({ side, mint }) {
@@ -190,18 +210,37 @@ async function submit({ quote, provider, intent, publicKey, key, inputMint, outp
   if (!body?.swapTransaction) throw swapError('no transaction returned', 'build')
 
   let tx
+  let PublicKey
   try {
-    const { VersionedTransaction } = await import('@solana/web3.js')
-    tx = VersionedTransaction.deserialize(
+    const web3 = await import('@solana/web3.js')
+    PublicKey = web3.PublicKey
+    tx = web3.VersionedTransaction.deserialize(
       Uint8Array.from(atob(body.swapTransaction), (c) => c.charCodeAt(0))
     )
   } catch (err) {
     throw swapError(`could not read the transaction: ${err?.message ?? err}`, 'build')
   }
 
+  // What ties the built transaction back to the quote the user was shown: the
+  // two token accounts THIS trade has to move value between. Derived from the
+  // intent's mints, never read off the response.
+  let expectedAccounts
+  try {
+    expectedAccounts = [inputMint, outputMint].map((mint) =>
+      associatedTokenAddress({
+        PublicKey,
+        owner: publicKey,
+        mint,
+        tokenProgram: tokenProgramFor(mint),
+      })
+    )
+  } catch (err) {
+    throw swapError(`could not work out this trade's token accounts: ${err?.message ?? err}`, 'build')
+  }
+
   // Last gate before the wallet. Still phase 'build': refusing here means
   // nothing was sent.
-  const built = checkBuiltTransaction({ build: body, tx, publicKey })
+  const built = checkBuiltTransaction({ build: body, tx, publicKey, expectedAccounts })
   if (!built.ok) {
     const err = swapError(built.reason, 'build')
     err.code = built.code

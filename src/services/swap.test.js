@@ -1,7 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { toRaw, formatRaw, getSwapQuote, executeSwap, SLIPPAGE_BPS, USDC_MINT } from './swap'
+import {
+  toRaw,
+  formatRaw,
+  getSwapQuote,
+  executeSwap,
+  tokenProgramFor,
+  SLIPPAGE_BPS,
+  USDC_MINT,
+} from './swap'
 import { readSwapAudit } from './swapAudit'
-import { JUPITER_PROGRAM } from '../lib/swapCheck'
+import { JUPITER_PROGRAM, SPL_TOKEN_PROGRAM, TOKEN_2022_PROGRAM } from '../lib/swapCheck'
 
 /*
  * Tests for the money path.
@@ -28,55 +36,77 @@ import { JUPITER_PROGRAM } from '../lib/swapCheck'
 
 const MINT = 'XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN'
 
+// The same formula the mocked PublicKey below derives with. Stated twice on
+// purpose: vi.mock is hoisted and cannot see anything declared out here. The
+// REAL curve derivation is covered in lib/swapCheck.test.js against the real
+// library; what matters to these tests is only that it is deterministic and
+// changes with the mint.
+const fakeAta = (owner, tokenProgram, mint) => `ata:${owner}:${tokenProgram}:${mint}`
+const USDC_ACCOUNT = fakeAta('PUBKEY', SPL_TOKEN_PROGRAM, USDC_MINT)
+const MINT_ACCOUNT = fakeAta('PUBKEY', TOKEN_2022_PROGRAM, MINT)
+
 // A transaction shaped the way @solana/web3.js hands one back: one signer,
-// this wallet paying, compute budget plus the Jupiter aggregator.
-const goodTx = (feePayer = 'PUBKEY') => ({
+// this wallet paying, the trade's two token accounts, compute budget plus the
+// Jupiter aggregator.
+const goodTx = (feePayer = 'PUBKEY', outAccount = MINT_ACCOUNT) => ({
   message: {
     header: { numRequiredSignatures: 1 },
     staticAccountKeys: [
       { toBase58: () => feePayer },
+      { toBase58: () => USDC_ACCOUNT },
+      { toBase58: () => outAccount },
       { toBase58: () => 'ComputeBudget111111111111111111111111111111' },
       { toBase58: () => JUPITER_PROGRAM },
     ],
-    compiledInstructions: [{ programIdIndex: 1 }, { programIdIndex: 2 }],
+    compiledInstructions: [{ programIdIndex: 3 }, { programIdIndex: 4 }],
   },
 })
 
 // The mock deserializer decodes our fixtures: an empty payload is a broken
-// transaction, 'evil' builds one that calls an unknown program.
-vi.mock('@solana/web3.js', () => ({
-  VersionedTransaction: {
-    deserialize: (bytes) => {
-      if (bytes?.length === 0) throw new Error('bad transaction')
-      const text = new TextDecoder().decode(bytes)
-      if (text === 'evil') {
-        return {
-          message: {
-            header: { numRequiredSignatures: 1 },
-            staticAccountKeys: [
-              { toBase58: () => 'PUBKEY' },
-              { toBase58: () => 'DrainerProgram11111111111111111111111111' },
-            ],
-            compiledInstructions: [{ programIdIndex: 1 }],
-          },
+// transaction, 'evil' calls an unknown program, 'wrong-mint' is a perfectly
+// well formed Jupiter swap in a pair nobody quoted.
+vi.mock('@solana/web3.js', () => {
+  // Stand-in for the address type. Deterministic, mint-sensitive, no curve
+  // maths — which is all these tests need from it.
+  class FakeKey {
+    constructor(value) {
+      this.value = String(value)
+    }
+    toBytes() {
+      return this.value
+    }
+    toBase58() {
+      return this.value
+    }
+    toString() {
+      return this.value
+    }
+    static findProgramAddressSync(seeds) {
+      return [new FakeKey(`ata:${seeds.join(':')}`), 255]
+    }
+  }
+  return {
+    PublicKey: FakeKey,
+    VersionedTransaction: {
+      deserialize: (bytes) => {
+        if (bytes?.length === 0) throw new Error('bad transaction')
+        const text = new TextDecoder().decode(bytes)
+        if (text === 'evil') {
+          const evil = goodTx()
+          evil.message.staticAccountKeys[3] = {
+            toBase58: () => 'DrainerProgram11111111111111111111111111',
+          }
+          return evil
         }
-      }
-      if (text === 'other-payer') {
-        return {
-          message: {
-            header: { numRequiredSignatures: 1 },
-            staticAccountKeys: [
-              { toBase58: () => 'SOMEONE-ELSE' },
-              { toBase58: () => JUPITER_PROGRAM },
-            ],
-            compiledInstructions: [{ programIdIndex: 1 }],
-          },
+        if (text === 'other-payer') return goodTx('SOMEONE-ELSE')
+        if (text === 'wrong-mint') {
+          return goodTx('PUBKEY', 'ata:PUBKEY:some-program:SomeOtherMint')
         }
-      }
-      return goodTx()
+        return goodTx()
+      },
     },
-  },
-}))
+  }
+})
 
 const VALID_TX = btoa('a-real-transaction')
 
@@ -185,6 +215,15 @@ describe('formatRaw — the number on screen is the number quoted', () => {
   })
 })
 
+describe('tokenProgramFor', () => {
+  it('sends USDC to the classic token program and everything else to Token-2022', () => {
+    // Every pinned address in data/verifiedMints.json was checked on chain to
+    // be a Token-2022 mint, so the else branch is a fact, not a guess.
+    expect(tokenProgramFor(USDC_MINT)).toBe(SPL_TOKEN_PROGRAM)
+    expect(tokenProgramFor(MINT)).toBe(TOKEN_2022_PROGRAM)
+  })
+})
+
 describe('executeSwap', () => {
   const provider = (overrides = {}) => ({
     publicKey: { toString: () => 'PUBKEY' },
@@ -290,6 +329,18 @@ describe('executeSwap', () => {
     vi.stubGlobal('fetch', buildReturns(btoa('evil')))
     const err = await executeSwap({ quote: QUOTE, provider: p, intent: INTENT }).catch((e) => e)
     expect(err.phase).toBe('build')
+    expect(p.signAndSendTransaction).not.toHaveBeenCalled()
+  })
+
+  it('refuses a transaction built for a mint the user never saw', async () => {
+    // A real single-signer Jupiter swap, this wallet paying, only allowed
+    // programs — but the output leg belongs to some other token. Nothing in
+    // the quote check catches this: the quote is fine, the transaction is not.
+    const p = provider()
+    vi.stubGlobal('fetch', buildReturns(btoa('wrong-mint')))
+    const err = await executeSwap({ quote: QUOTE, provider: p, intent: INTENT }).catch((e) => e)
+    expect(err.phase).toBe('build')
+    expect(err.message).toMatch(/token accounts/)
     expect(p.signAndSendTransaction).not.toHaveBeenCalled()
   })
 

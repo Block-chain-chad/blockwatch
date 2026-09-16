@@ -8,15 +8,33 @@
 //   checkBuiltTransaction — is the thing Jupiter built for that quote
 //                           something we're willing to ask the wallet to sign?
 //
-// Honest about the limit: a browser cannot decode a Jupiter route and prove
-// it pays out what the quote promised — the mints and pool accounts live in
-// an address lookup table the page never fetches, and the real guarantee of
-// the minimum received is enforced ON CHAIN by the swap program itself. What
-// we CAN prove, and do prove here, is that the transaction is this user's,
-// needs only this user's signature, calls nothing but programs we expect, and
-// was built from a quote whose own numbers are internally consistent with the
-// slippage bound printed on the screen. A tampered or mismatched response
-// fails one of those.
+// Honest about the limit, in both directions.
+//
+// WHAT IS NOT PROVEN HERE. A browser cannot decode a Jupiter route and prove
+// it pays out what the quote promised. The pool accounts and the route's own
+// hops live in an address lookup table the page never fetches, and the real
+// guarantee of the minimum received is enforced ON CHAIN by the swap program
+// itself, against the otherAmountThreshold baked into the route. Neither the
+// DIRECTION nor the SIZE of the transfer is checked below.
+//
+// WHAT IS PROVEN HERE, on the built transaction:
+//   - it is payable by this wallet and needs only this wallet's signature;
+//   - every top-level instruction calls a program we expect;
+//   - it contains a Jupiter instruction, so it is a swap at all;
+//   - it touches the user's associated token accounts for BOTH of the mints
+//     the quote names. Those two addresses are derived here from the quote
+//     and looked for in message.staticAccountKeys — where they really do
+//     live, because a user-specific account cannot sit in one of Jupiter's
+//     shared lookup tables. A transaction built for a different pair of mints
+//     than the one we quoted and showed the user is therefore refused.
+// And on the quote itself: its own numbers are internally consistent with the
+// slippage bound printed on the screen.
+//
+// NATIVE SOL is deliberately out of scope. services/swap.js only ever trades
+// USDC against a verified xStocks mint, so neither leg is ever the native
+// mint and there is no wrapped-SOL account to account for. If a native SOL
+// leg is ever added, its wrapped-SOL account must be added to this check at
+// the same time, or the check will refuse every such swap.
 //
 // Every failure is a refusal to sign, which is always safe: nothing has been
 // sent at that point.
@@ -39,11 +57,42 @@
 // native SOL would — it gets added deliberately, with the reason written
 // down, never because a response turned up asking for it.
 export const JUPITER_PROGRAM = 'JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4'
+export const ASSOCIATED_TOKEN_PROGRAM = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'
 export const ALLOWED_PROGRAMS = new Set([
   JUPITER_PROGRAM,
   'ComputeBudget111111111111111111111111111111',
-  'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
+  ASSOCIATED_TOKEN_PROGRAM,
 ])
+
+// The two programs a mint can be owned by. These are NOT allowed as top-level
+// callers (see above); they name the program an associated token account is
+// derived UNDER, which changes the address it lands on.
+export const SPL_TOKEN_PROGRAM = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
+export const TOKEN_2022_PROGRAM = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'
+
+/**
+ * The owner's associated token account for one mint, base58.
+ *
+ * `PublicKey` is passed in rather than imported so this module stays free of
+ * @solana/web3.js: services/swap.js already loads that library dynamically
+ * when a swap sheet opens, and a static import here would drag it into the
+ * main bundle. The derivation is the canonical one — the associated token
+ * program's address for the seeds [owner, token program, mint].
+ *
+ * Throws if any of the three is not a valid address. The caller treats that
+ * as a refusal to sign, like every other failure in this module.
+ */
+export function associatedTokenAddress({ PublicKey, owner, mint, tokenProgram }) {
+  const [ata] = PublicKey.findProgramAddressSync(
+    [
+      new PublicKey(owner).toBytes(),
+      new PublicKey(tokenProgram).toBytes(),
+      new PublicKey(mint).toBytes(),
+    ],
+    new PublicKey(ASSOCIATED_TOKEN_PROGRAM)
+  )
+  return ata.toBase58()
+}
 
 const ok = { ok: true }
 const no = (reason) => ({ ok: false, reason })
@@ -108,6 +157,10 @@ export function describeTransaction(tx) {
   return {
     feePayer: keys[0] ?? null,
     requiredSignatures: message.header?.numRequiredSignatures ?? null,
+    // Every account the message itself names. Lookup-table entries are not in
+    // here, which is exactly why the accounts we go looking for are ones that
+    // cannot live in a lookup table (see the header).
+    accounts: keys,
     // null for a program id that lives in a lookup table rather than in the
     // message — unresolvable here, and therefore not something we will sign.
     programs: instructions.map((i) => keys[i?.programIdIndex] ?? null),
@@ -119,8 +172,14 @@ export function describeTransaction(tx) {
  *
  * `build` is Jupiter's /swap response body; `tx` the deserialized
  * transaction; `publicKey` the connected wallet, base58.
+ *
+ * `expectedAccounts` is what ties the transaction to the quote: the token
+ * accounts this exact trade has to touch, derived from the quote's mints by
+ * associatedTokenAddress. It is REQUIRED — a caller that omits it gets a
+ * refusal, never a quiet pass, because a check that no-ops when it is not
+ * configured is worse than no check at all.
  */
-export function checkBuiltTransaction({ build, tx, publicKey }) {
+export function checkBuiltTransaction({ build, tx, publicKey, expectedAccounts }) {
   // Jupiter simulates the transaction it built. If it already knows the swap
   // fails, asking the user to sign it just burns their fee.
   if (build?.simulationError) {
@@ -128,7 +187,7 @@ export function checkBuiltTransaction({ build, tx, publicKey }) {
     return { ok: false, reason: `Jupiter says this swap would fail (${detail})`, code: 'simulation' }
   }
 
-  const { feePayer, requiredSignatures, programs } = describeTransaction(tx)
+  const { feePayer, requiredSignatures, programs, accounts } = describeTransaction(tx)
   if (requiredSignatures !== 1) {
     return no(`transaction wants ${requiredSignatures} signatures, not just yours`)
   }
@@ -141,6 +200,19 @@ export function checkBuiltTransaction({ build, tx, publicKey }) {
     }
   }
   if (!programs.includes(JUPITER_PROGRAM)) return no('transaction contains no swap')
+
+  // It is a swap. Is it OUR swap? Both of the quote's token accounts have to
+  // appear in it, or Jupiter built a trade in a different pair of mints than
+  // the one the user read on the screen.
+  if (!Array.isArray(expectedAccounts) || expectedAccounts.length === 0) {
+    return no('nothing to check this transaction against')
+  }
+  const present = new Set(accounts)
+  for (const account of expectedAccounts) {
+    if (!present.has(account)) {
+      return no('transaction does not touch the token accounts this trade needs')
+    }
+  }
 
   return ok
 }
