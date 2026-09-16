@@ -190,15 +190,27 @@ export default function SwapSheet({ asset, onClose }) {
       // a trade in it. That has to be said: an unexplained dash beside a live
       // Confirm button reads as a glitch worth retrying.
       //
-      // The copy promises nothing this screen cannot deliver. It does not say
-      // "try again shortly", because the ratio is re-read only when the sheet
-      // reopens and re-verifying the pin is a manual step — so waiting here
-      // changes nothing. It does say the holding is unaffected and can still
-      // be sold from the wallet, because the failure is ours, not theirs.
+      // Wording is the Compliance Reviewer's, verbatim. Do not paraphrase it
+      // without sending the new version back.
+      //
+      // What the previous attempt got wrong, and why this is narrower. It
+      // asserted the ISSUER had changed the ratio, when three of the four
+      // paths that land here are Onstock's own gap: an unreadable feed, an
+      // unparseable value, a difference we will not vouch for, and only then
+      // an actual change. It said "we haven't re-checked it" while the sheet
+      // re-checks on every open. It promised the user's tokens were
+      // unaffected on the BUY side, where they may hold none. And it said
+      // they could still be swapped from the wallet, which is an availability
+      // claim Onstock cannot support: Backed's mints carry pause and
+      // blocklist extensions, Jupiter excludes US wallets, and no region gate
+      // exists here yet.
+      //
+      // What is left is only what this screen actually knows: it cannot state
+      // the size, so it will not size it, and nothing has happened.
       setQuoting(false)
       if (typed > 0 && Number.isFinite(typed) && decimals != null) {
         setMessage(
-          `${asset.ticker}'s issuer has changed how many shares one token represents, and we haven't re-checked it. We won't size a trade we can't state the size of. Your tokens are unaffected and can still be swapped from your wallet.`
+          `We can't confirm how many shares one ${asset.ticker} token currently represents right now, so we won't size a trade we can't state the size of. Nothing has been sent and your balance is unchanged.`
         )
       }
       return

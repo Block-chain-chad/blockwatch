@@ -271,19 +271,23 @@ describe('the sheet sizes on the live ratio, and falls back to the pin', () => {
       input.dispatchEvent(new window.Event('input', { bubbles: true }))
     })
     expect(getSwapQuote).not.toHaveBeenCalled()
-    expect(container.textContent).toContain("We won't size a trade we can't state the size of")
+    expect(container.textContent).toContain("we won't size a trade we can't state the size of")
   })
 
   it('says why, instead of leaving an unexplained dash', async () => {
     fetchLiveRatio.mockResolvedValue({ multiplier: '100' })
     await sell(NFLX, '1')
-    expect(container.textContent).toContain("We won't size a trade we can't state the size of")
-    expect(container.textContent).toContain('NFLXx')
-    // No promise the screen cannot keep: the ratio is re-read only on reopen
-    // and re-verifying the pin is manual, so "try again shortly" would be a
-    // lie. It does say the holding is unaffected, because it is.
+    expect(container.textContent).toContain(
+      "We can't confirm how many shares one NFLXx token currently represents right now"
+    )
+    expect(container.textContent).toContain('Nothing has been sent and your balance is unchanged')
+    // Claims the Compliance Reviewer struck. The message fires on four paths,
+    // three of them Onstock's own gap, so it must not assert the issuer did
+    // anything; and Onstock cannot promise the token is swappable elsewhere.
     expect(container.textContent).not.toContain('Try again shortly')
-    expect(container.textContent).toContain('Your tokens are unaffected')
+    expect(container.textContent).not.toContain('issuer has changed')
+    expect(container.textContent).not.toContain('swapped from your wallet')
+    expect(container.textContent).not.toContain('Your tokens are unaffected')
   })
 
   it('stays silent when nothing has been typed yet', async () => {
@@ -291,6 +295,6 @@ describe('the sheet sizes on the live ratio, and falls back to the pin', () => {
     await act(async () => {
       root.render(<SwapSheet asset={NFLX} onClose={() => {}} />)
     })
-    expect(container.textContent).not.toContain("We won't size a trade")
+    expect(container.textContent).not.toContain("we won't size a trade")
   })
 })
