@@ -189,6 +189,54 @@ describe('fetchLiveRatio', () => {
     expect(spy).toHaveBeenCalledTimes(1)
   })
 
+  it('reads a ratio serialised as a STRING, not just as a float', async () => {
+    // Jupiter sends floats today. A feed that switched to strings would
+    // otherwise make every live read return null and leave the sell path
+    // quietly on the pin — the staleness this read exists to remove, arriving
+    // without a sound.
+    const asStrings = {
+      [MINT]: {
+        scaledUiConfig: {
+          multiplier: '1.0054716788543585',
+          newMultiplier: '1.0067077500492987',
+          newMultiplierEffectiveAt: '2026-09-17T00:30:00Z',
+        },
+      },
+    }
+    const f = await fresh(vi.fn(async () => ({ ok: true, status: 200, json: async () => asStrings })))
+    expect(await f(MINT)).toEqual({
+      multiplier: '1.0054716788543585',
+      nextMultiplier: '1.0067077500492987',
+      nextMultiplierAt: '2026-09-17T00:30:00.000Z',
+    })
+  })
+
+  it('still refuses exponent notation, which cannot be read as a fraction', async () => {
+    const exp = { [MINT]: { scaledUiConfig: { multiplier: '1e-7' } } }
+    const f = await fresh(vi.fn(async () => ({ ok: true, status: 200, json: async () => exp })))
+    expect(await f(MINT)).toBeNull()
+  })
+
+  it('counts a config it cannot read, so a changed shape surfaces', async () => {
+    const track = vi.fn()
+    vi.resetModules()
+    vi.doMock('./analytics', () => ({ track }))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({ [MINT]: { scaledUiConfig: { multiplier: { nested: 'object' } } } }),
+      }))
+    )
+    const { fetchLiveRatio } = await import('./jupiter')
+    expect(await fetchLiveRatio(MINT)).toBeNull()
+    expect(track).toHaveBeenCalledWith('ratio_unreadable', { source: 'jupiter_price_v3' })
+    // Nothing identifying: no mint, no wallet, no amount.
+    expect(JSON.stringify(track.mock.calls[0][1])).not.toContain(MINT)
+    vi.doUnmock('./analytics')
+  })
+
   it('returns null for a mint that carries no ratio at all', async () => {
     const f = await fresh(
       vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ [MINT]: { usdPrice: 1 } }) }))

@@ -12,6 +12,7 @@
 // converted and the price-derived ones are not. Both are marked below.
 
 import { perShare, ratioFor } from '../lib/multiplier'
+import { track } from './analytics'
 import { tokenByMint } from '../data/verifiedMints'
 
 const BASE = 'https://lite-api.jup.ag/price/v3'
@@ -138,6 +139,24 @@ export async function fetchLiveRatio(mint) {
   }
 }
 
+/**
+ * A positive decimal as a plain decimal string, or null.
+ *
+ * Accepts a JSON number OR a decimal string. Jupiter serialises these as
+ * floats today, but a feed that switched to strings would otherwise make every
+ * live read return null and leave the sell path quietly on the pin — the exact
+ * staleness the live read exists to remove, arriving silently. Exponent
+ * notation is still refused: lib/multiplier.js reads these as exact fractions
+ * and cannot parse it.
+ */
+function plain(v) {
+  if (typeof v === 'number' && (!Number.isFinite(v) || v <= 0)) return null
+  if (typeof v !== 'number' && typeof v !== 'string') return null
+  const s = String(v).trim()
+  if (!/^\d+(?:\.\d+)?$/.test(s)) return null
+  return Number(s) > 0 ? s : null
+}
+
 async function readLiveRatio(mint) {
   // A bounded wait, unlike the bare fetch this replaces. The caller's fallback
   // to the pin is only reached when this SETTLES; hung, the sheet sits on the
@@ -148,13 +167,16 @@ async function readLiveRatio(mint) {
   if (!res.ok) throw new Error(`Jupiter ${res.status}`)
   const cfg = (await res.json())?.[mint]?.scaledUiConfig
   if (!cfg) return null
-  const plain = (v) => {
-    if (typeof v !== 'number' || !Number.isFinite(v) || v <= 0) return null
-    const s = String(v)
-    return /^\d+(?:\.\d+)?$/.test(s) ? s : null
-  }
   const multiplier = plain(cfg.multiplier)
-  if (multiplier == null) return null
+  if (multiplier == null) {
+    // The payload said it had a ratio and then did not give us one we can
+    // read. Silently that is invisible: the sell path just falls back to the
+    // pin forever and nobody learns the shape changed. Counted so it surfaces.
+    // No mint, no wallet, no amount — the event says a shape changed, nothing
+    // about who was looking at it.
+    track('ratio_unreadable', { source: 'jupiter_price_v3' })
+    return null
+  }
   const nextMultiplier = plain(cfg.newMultiplier)
   const at = cfg.newMultiplierEffectiveAt ? Date.parse(cfg.newMultiplierEffectiveAt) : NaN
   return nextMultiplier != null && Number.isFinite(at)
