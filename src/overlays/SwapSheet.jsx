@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useWallet } from '../state/WalletContext'
-import { getSwapQuote, executeSwap, toRaw, fromRaw, USDC_DECIMALS } from '../services/swap'
+import { getSwapQuote, executeSwap, toRaw, formatRaw, USDC_DECIMALS } from '../services/swap'
+import { verifiedToken } from '../data/verifiedMints'
 import Sheet, { SheetTitle } from '../components/Sheet'
 
 /*
@@ -9,6 +10,10 @@ import Sheet, { SheetTitle } from '../components/Sheet'
  * minimum received and the route's price impact. Confirming hands an unsigned
  * transaction to the wallet — the user signs and sends inside Phantom, funds
  * never touch OnStock. No platform fee is applied anywhere.
+ *
+ * The mint and its decimals come from data/verifiedMints — the address the
+ * issuer vouches for on chain — not from the asset record and not from a
+ * price API answering at swap time. An unverified asset gets no swap here.
  */
 
 // Price impact is the silent way to lose money on a thin token: warn loudly
@@ -21,28 +26,21 @@ const IMPACT_ACK_PCT = 5
 // different trade — not to untick the box every 8 seconds while someone reads
 // the warning. Half a percentage point.
 const ACK_TOLERANCE_PCT = 0.5
-// Solana mints are 0-9 decimals; the ceiling is slack, not a spec. Anything
-// outside this from the price API is unusable — feeding it to BigInt scaling
-// throws RangeError, and a throw in a render effect takes down the whole app.
-const MAX_DECIMALS = 18
 // How often a resting quote re-quotes. Note this is SHORTER than the quote
 // request timeout in services/swap.js — see the in-flight guard in the quote
 // effect, which is what keeps the two from fighting.
 const QUOTE_REFRESH_MS = 8000
 
-// Small receipts (0.00003 of a pricey token) must not display as bare "0".
-function fmtAmount(n) {
-  if (n == null) return null
-  if (n === 0) return '0'
-  if (Math.abs(n) < 0.0001) return n.toPrecision(2)
-  return n.toLocaleString('en-US', { maximumFractionDigits: 4 })
-}
-
 export default function SwapSheet({ asset, onClose }) {
   const { publicKey, provider } = useWallet()
+  // The verified token, or nothing. Both the address we trade and the
+  // decimals we size the trade with come from here — pinned, checked against
+  // the issuer on chain, and the same on every render.
+  const token = verifiedToken(asset)
+  const mint = token?.mint ?? null
+  const decimals = token?.decimals ?? null
   const [side, setSide] = useState('buy')
   const [amount, setAmount] = useState('')
-  const [decimals, setDecimals] = useState(null)
   const [quote, setQuote] = useState(null)
   const [quoting, setQuoting] = useState(false)
   // Action lifecycle, kept OUT of the quote effect's deps (mutating a dep it
@@ -60,72 +58,41 @@ export default function SwapSheet({ asset, onClose }) {
   // what lets a refreshed quote keep the acknowledgment when the trade hasn't
   // materially changed, while a genuinely worse quote demands a fresh one.
   const [ackedImpact, setAckedImpact] = useState(null)
-  // True when this token's details (decimals) could not be loaded at all —
-  // bad value from the price API, or the request simply failed. Without this
-  // the sheet renders three em-dashes and a dead button with no explanation.
-  const [decimalsFailed, setDecimalsFailed] = useState(false)
   const reqRef = useRef(0)
+  // The double-submit lock. `status` is a state update — it has not landed
+  // when a second tap arrives in the same tick, and two taps on a phone
+  // routinely do. A ref flips synchronously, so the second call returns
+  // before it can ask the wallet for anything. services/swap.js holds the
+  // same line independently, for callers that are not this sheet.
+  const submittingRef = useRef(false)
 
   useEffect(() => {
     statusRef.current = status
   }, [status])
 
-  // Token decimals (needed to size a sell) from Jupiter's price API.
-  useEffect(() => {
-    let cancelled = false
-    setDecimalsFailed(false)
-    fetch(`https://lite-api.jup.ag/price/v3?ids=${asset.mint}`)
-      .then((r) => r.json())
-      .then((j) => {
-        if (cancelled) return
-        // Upstream value, therefore untrusted: -1, 6.5, NaN and 'abc' all make
-        // BigInt scaling throw, and this feeds a render effect. A numeric
-        // STRING ("6") is legitimate data though, so coerce first and validate
-        // the number — don't reject real data on a type technicality.
-        const raw = j?.[asset.mint]?.decimals
-        const n =
-          typeof raw === 'number' || (typeof raw === 'string' && raw.trim() !== '')
-            ? Number(raw)
-            : NaN
-        const valid = Number.isSafeInteger(n) && n >= 0 && n <= MAX_DECIMALS
-        setDecimals(valid ? n : null)
-        setDecimalsFailed(!valid)
-      })
-      .catch(() => {
-        // Always reachable (offline, DNS, Jupiter down) and previously silent.
-        if (!cancelled) setDecimalsFailed(true)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [asset.mint])
+  // What the user asked for, in the input mint's smallest units — the single
+  // definition, used to quote AND to state the intent at confirm time. Scaled
+  // from the raw STRING, not a coerced number: toRaw does BigInt string math
+  // (and expands "1e5" itself), so a 20-digit input cannot silently mis-size
+  // the transaction the way a float round-trip would. null means there is no
+  // amount to work with yet; '0' means below one atomic unit of this mint.
+  const inputDecimals = side === 'buy' ? USDC_DECIMALS : decimals
+  const typed = Number(amount)
+  const amountRaw =
+    decimals == null || !(typed > 0) || !Number.isFinite(typed)
+      ? null
+      : toRaw(amount, inputDecimals)
 
   // Live quote: re-quotes on amount/side change and every 8s so a resting
   // quote can't go stale. Does NOT depend on `status`; pauses via statusRef
   // once the user starts signing or the swap is terminal.
   useEffect(() => {
-    const amt = Number(amount)
     setQuote(null)
     setMessage(null)
     // A different amount or side is a different trade — any acknowledgment
     // made against the old numbers is void.
     setAckedImpact(null)
-    if (!(amt > 0) || !Number.isFinite(amt) || decimals == null) return
-    const inputDecimals = side === 'buy' ? USDC_DECIMALS : decimals
-    // Scale from the raw STRING, not the coerced number: toRaw does BigInt
-    // string math (and expands "1e5" itself), so 20-digit inputs can't
-    // silently mis-size the transaction the way a float round-trip would.
-    let amountRaw
-    try {
-      amountRaw = toRaw(amount, inputDecimals)
-    } catch {
-      // Never let a throw escape this effect: it would propagate to the
-      // top-level ErrorBoundary and replace the whole app mid-swap. Degrade
-      // to the same inline message a bad quote gets.
-      setQuoting(false)
-      setMessage('No route for that size — try a different amount.')
-      return
-    }
+    if (amountRaw == null) return
     if (amountRaw === '0') {
       // Below one atomic unit of this mint — a quote request here is
       // guaranteed to fail, so don't fire one.
@@ -147,7 +114,7 @@ export default function SwapSheet({ asset, onClose }) {
       const seq = ++reqRef.current
       setQuoting(true)
       try {
-        const q = await getSwapQuote({ side, mint: asset.mint, amountRaw })
+        const q = await getSwapQuote({ side, mint, amountRaw })
         if (!alive || seq !== reqRef.current) return
         setQuote(q)
         // NOTE: the acknowledgment is deliberately NOT cleared here. Same
@@ -178,11 +145,13 @@ export default function SwapSheet({ asset, onClose }) {
       alive = false
       clearInterval(t)
     }
-  }, [amount, side, decimals, asset.mint])
+  }, [amountRaw, side, mint])
 
   const outDecimals = side === 'buy' ? decimals : USDC_DECIMALS
-  const received = quote ? fromRaw(quote.outAmount, outDecimals) : null
-  const minReceived = quote ? fromRaw(quote.otherAmountThreshold, outDecimals) : null
+  // Formatted straight from the integer units Jupiter quoted — no float step
+  // between the promise and the pixel.
+  const received = quote ? formatRaw(quote.outAmount, outDecimals) : null
+  const minReceived = quote ? formatRaw(quote.otherAmountThreshold, outDecimals) : null
   // Jupiter may omit priceImpactPct entirely, or send something that doesn't
   // parse. Both collapse to null here — via Number.isFinite, so NaN and
   // Infinity land in the same place instead of sneaking past a `>= 5` test
@@ -206,11 +175,20 @@ export default function SwapSheet({ asset, onClose }) {
   const blockedByImpact = impactNeedsAck && !ackCovers
 
   async function confirm() {
-    if (!quote || status === 'signing' || blockedByImpact) return
+    if (!quote || !mint || !amountRaw || amountRaw === '0') return
+    if (submittingRef.current || blockedByImpact) return
+    submittingRef.current = true
     setStatus('signing')
     setMessage(null)
     try {
-      const signature = await executeSwap({ quote, provider })
+      const signature = await executeSwap({
+        quote,
+        provider,
+        // What the user asked for, scaled from what they typed — NOT read
+        // back off the quote. Stating it independently is what lets the
+        // service check one against the other.
+        intent: { side, mint, amountRaw, ticker: asset.ticker },
+      })
       setSig(signature)
       setStatus('done')
     } catch (err) {
@@ -224,14 +202,20 @@ export default function SwapSheet({ asset, onClose }) {
       // screen exists to prevent. Only code 4001 is a trustworthy
       // user-cancelled signal on its own.
       if (err?.code === 4001 || (soundsCancelled && err?.phase !== 'broadcast')) {
-        // The wallet refused to sign. Nothing was broadcast.
+        // The wallet refused to sign. Nothing was broadcast, so the form goes
+        // live again — and the lock has to come off with it.
+        submittingRef.current = false
         setStatus('rejected')
         setMessage('Cancelled in your wallet — nothing was sent.')
       } else if (err?.phase === 'build') {
         // Threw before the wallet was ever handed the transaction (see
-        // services/swap.js): we can promise nothing left the wallet.
+        // services/swap.js): we can promise nothing left the wallet, and
+        // "Try again" is safe.
+        submittingRef.current = false
         setStatus('failed')
-        setMessage(null)
+        // Refusals that are about THIS trade rather than the connection are
+        // worth naming — "couldn't build" alone invites a blind retry.
+        setMessage(err?.code === 'simulation' ? err.message : null)
       } else {
         // Anything else — including an untagged error — is treated as
         // possibly-broadcast. signAndSend broadcasts before it can time out,
@@ -244,6 +228,29 @@ export default function SwapSheet({ asset, onClose }) {
 
   const unitLabel = side === 'buy' ? 'USDC' : asset.ticker
   const outLabel = side === 'buy' ? asset.ticker : 'USDC'
+
+  // No verified address, no swap. TradeButton already keeps this sheet shut
+  // in that case; this is the second lock on the same door, because the cost
+  // of being wrong is the user's money in the wrong token.
+  if (!mint) {
+    return (
+      <Sheet onClose={onClose} className="z-[55]">
+        <div className="px-1 pb-2 text-center">
+          <SheetTitle className="text-lg font-semibold">Can’t swap this one here</SheetTitle>
+          <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+            We haven’t confirmed {asset.ticker}’s token address with its issuer, so we won’t
+            send your money to it. Nothing is wrong with your wallet.
+          </p>
+          <button
+            onClick={onClose}
+            className="mt-5 w-full rounded-xl bg-zinc-900 py-3 text-sm font-medium text-zinc-200 active:bg-zinc-800"
+          >
+            Close
+          </button>
+        </div>
+      </Sheet>
+    )
+  }
 
   return (
     <Sheet onClose={onClose} className="z-[55]">
@@ -277,6 +284,7 @@ export default function SwapSheet({ asset, onClose }) {
           <p className="mt-2 text-sm leading-relaxed text-zinc-400">
             Nothing was sent and nothing left your wallet — safe to try again.
           </p>
+          {message && <p className="mt-2 text-xs leading-relaxed text-zinc-400">{message}</p>}
           <button
             onClick={() => {
               // Back to the form with amount and side intact — no retyping.
@@ -384,12 +392,6 @@ export default function SwapSheet({ asset, onClose }) {
 
           {message && (
             <p className="mt-2 px-1 text-xs leading-relaxed text-zinc-400">{message}</p>
-          )}
-
-          {decimalsFailed && (
-            <p className="mt-2 px-1 text-xs leading-relaxed text-zinc-400">
-              Couldn’t load this token’s details. Close this and try again in a moment.
-            </p>
           )}
 
           {impactUnknown && (

@@ -5,6 +5,7 @@ import { premiumPct, isThinlyTraded } from '../../lib/prices'
 import { formatPct, formatPrice, EM_DASH } from '../../lib/format'
 import { tokenLegLine, shareLegLine } from '../../lib/provenance'
 import { STOCK_QUOTE_SOURCE } from '../../services/stocks'
+import { verifiedToken } from '../../data/verifiedMints'
 import { GapBar } from '../shared'
 import { ChevronLeft, StarIcon, BellIcon, PlusIcon, ShareIcon } from '../Icons'
 
@@ -22,6 +23,7 @@ const ICON_BTN = 'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg t
 
 export default function GapHeader({ asset, session, stocksAt, lastFetchAt, onExit, onSheet, inWatchlist, onToggleWatch }) {
   const now = useNow() // both legs' ages tick once a second
+  const token = verifiedToken(asset)
   const gap = premiumPct(asset)
   const thin = isThinlyTraded(asset)
   const diff = asset.tokenPrice != null && asset.stockPrice != null ? asset.tokenPrice - asset.stockPrice : null
@@ -87,10 +89,13 @@ export default function GapHeader({ asset, session, stocksAt, lastFetchAt, onExi
         <ShareIcon size={18} />
       </button>
       {/* The link-out, TradeButton's rung one. The wallet-connected swap
-          stays in the Readout's TradeButton; the header only links out. */}
-      {asset.mint && (
+          stays in the Readout's TradeButton; the header only links out. The
+          address comes from the verified list, not the asset record: sending
+          someone to a venue pre-filled with an unverified mint is the same
+          wrong-token risk as swapping at it. */}
+      {token && (
         <a
-          href={`https://jup.ag/swap/USDC-${asset.mint}`}
+          href={`https://jup.ag/swap/USDC-${token.mint}`}
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => track('trade_out', { ticker: asset.ticker, venue: 'jupiter' })}

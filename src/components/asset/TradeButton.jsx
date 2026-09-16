@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import { track } from '../../services/analytics'
 import { useWallet } from '../../state/WalletContext'
+import { verifiedToken } from '../../data/verifiedMints'
 import SwapSheet from '../../overlays/SwapSheet'
 
 /* The trading ladder in one block: wallet connected → in-app swap
    (rung two); otherwise route out to Jupiter (rung one). Nothing renders
-   for an asset without a mint.
+   unless the token's address has been verified with its issuer — both rungs
+   spend real money at an address, and CoinGecko's answer is not good enough
+   for either. See data/verifiedMints.
 
    `onSwap` is optional. The phone screen passes it and keeps the SwapSheet
    in its own tail beside the other sheets, so the sheet's place in the DOM
@@ -14,7 +17,8 @@ import SwapSheet from '../../overlays/SwapSheet'
 export default function TradeButton({ asset, onSwap }) {
   const wallet = useWallet()
   const [swapOpen, setSwapOpen] = useState(false)
-  if (!asset.mint) return null
+  const token = verifiedToken(asset)
+  if (!token) return null
   const openSwap = onSwap ?? (() => setSwapOpen(true))
   return (
     <>
@@ -35,7 +39,7 @@ export default function TradeButton({ asset, onSwap }) {
           </button>
         ) : (
           <a
-            href={`https://jup.ag/swap/USDC-${asset.mint}`}
+            href={`https://jup.ag/swap/USDC-${token.mint}`}
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => track('trade_out', { ticker: asset.ticker, venue: 'jupiter' })}
