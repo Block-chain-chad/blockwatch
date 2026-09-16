@@ -26,6 +26,13 @@ describe('canAlertOnGap', () => {
     expect(gate(traded(15 * 60))).toBe(false)
   })
 
+  it('shuts on a quote stamped in the future', () => {
+    // The gate reads shareFreshness's verdict, and a negative age used to
+    // come back 'live'. A device with a slow clock would have got drift
+    // alerts on every stale quote it held.
+    expect(gate({ price: 218.29, basis: 'trade', asOf: NOW + 5 * 60_000 })).toBe(false)
+  })
+
   it('shuts in every session but the regular one, however fresh the quote', () => {
     for (const session of ['pre', 'post', 'closed']) {
       expect(gate(traded(1), session)).toBe(false)

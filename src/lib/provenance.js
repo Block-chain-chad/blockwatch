@@ -25,6 +25,20 @@ export const TOKEN_REFRESH_SECONDS = 30
  */
 export const LIVE_QUOTE_SECONDS = 2 * TOKEN_REFRESH_SECONDS
 
+/**
+ * How far AHEAD of us a quote's timestamp may sit and still be believed.
+ *
+ * Age is (our clock - the provider's stamp), so the two clocks disagreeing
+ * puts a fresh quote a second or two in the future. That is ordinary. What is
+ * not ordinary is a quote minutes ahead: an age of -300 is below every
+ * staleness threshold there is, so the badge disappears, the words read
+ * 'live', and lib/alertRules.js starts letting drift alerts through on a
+ * number nobody can vouch for. A phone with a slow clock does that to every
+ * quote at once. Past this tolerance we stop treating the stamp as an age at
+ * all and say so.
+ */
+export const CLOCK_SKEW_SECONDS = 5
+
 // The stock leg's first segment per market session. Not SESSION_SHORT: the
 // legend speaks about the market ("Market closed"), the top bar about the
 // moment ("Overnight").
@@ -44,7 +58,11 @@ const STOCK_SESSION_WORD = {
  */
 export function isStockDelayed(session, ageSeconds) {
   if (session !== 'regular') return true
-  return !(Number.isFinite(ageSeconds) && ageSeconds <= LIVE_QUOTE_SECONDS)
+  if (!Number.isFinite(ageSeconds)) return true
+  // Future-dated by more than ordinary skew: not a fresh quote, an unreadable
+  // one. Same rule as shareFreshness, so the two cannot disagree.
+  if (ageSeconds < -CLOCK_SKEW_SECONDS) return true
+  return ageSeconds > LIVE_QUOTE_SECONDS
 }
 
 const CLOSE_WORD = { post: 'today’s close', pre: 'last close', closed: 'last close' }
@@ -99,8 +117,16 @@ export function shareFreshness({ quote, session, now = Date.now() }) {
       title: 'No share quote has arrived yet.',
     }
   }
-  const ageSeconds = Number.isFinite(quote.asOf) ? (now - quote.asOf) / 1000 : null
-  const stamped = ageSeconds == null ? '' : ` Quote timestamp ${new Date(quote.asOf).toISOString()}.`
+  const rawAge = Number.isFinite(quote.asOf) ? (now - quote.asOf) / 1000 : null
+  // A stamp far enough in the future is worth no more than no stamp: see
+  // CLOCK_SKEW_SECONDS. Null here, so every branch below already handles it.
+  const futureDated = rawAge != null && rawAge < -CLOCK_SKEW_SECONDS
+  const ageSeconds = futureDated ? null : rawAge
+  // Keyed on the stamp existing, not on the age being usable, so a quote we
+  // are refusing to date still shows the timestamp that made us refuse.
+  const stamped = Number.isFinite(quote.asOf)
+    ? ` Quote timestamp ${new Date(quote.asOf).toISOString()}.`
+    : ''
 
   if (quote.basis === 'prevClose') {
     return {
@@ -131,7 +157,9 @@ export function shareFreshness({ quote, session, now = Date.now() }) {
       ageSeconds: null,
       words: 'age unknown',
       badge: { text: 'Undated', tone: 'warn' },
-      title: 'The provider sent this quote without a timestamp, so its age is unknown.',
+      title: futureDated
+        ? `This quote is stamped in the future, so its real age is unknown. Check this device's clock.${stamped}`
+        : 'The provider sent this quote without a timestamp, so its age is unknown.',
     }
   }
 

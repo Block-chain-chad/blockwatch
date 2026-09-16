@@ -150,6 +150,30 @@ describe('shareFreshness', () => {
     expect(f.badge).toEqual({ text: 'Undated', tone: 'warn' })
   })
 
+  it('refuses to call a quote stamped in the future live', () => {
+    // Five minutes ahead of us. Age is -300, which is under every staleness
+    // threshold, so this used to render '0 s ago · live' with no badge at
+    // all — and on a phone with a slow clock, it did it to every quote.
+    const f = shareFreshness({ quote: traded(OPEN + 5 * 60_000), session: 'regular', now: OPEN })
+    expect(f.state).toBe('undated')
+    expect(f.ageSeconds).toBe(null)
+    expect(f.words).toBe('age unknown')
+    expect(f.badge).toEqual({ text: 'Undated', tone: 'warn' })
+    expect(f.title).toContain('clock')
+  })
+
+  it('still believes a quote a second or two ahead of this clock', () => {
+    // Two clocks never agree exactly. This much drift is normal and must not
+    // start blanking the price on every row.
+    const f = shareFreshness({ quote: traded(OPEN + 2_000), session: 'regular', now: OPEN })
+    expect(f.state).toBe('live')
+  })
+
+  it('will not call a future-dated quote fresh in the board header either', () => {
+    expect(isStockDelayed('regular', -300)).toBe(true)
+    expect(isStockDelayed('regular', -2)).toBe(false)
+  })
+
   it('says so when the provider only had a previous close', () => {
     const f = shareFreshness({ quote: { price: 218.29, basis: 'prevClose', asOf: null }, session: 'regular', now: OPEN })
     expect(f.state).toBe('close')
