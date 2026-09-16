@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
   DEFAULT_MULTIPLIER,
-  MAX_PIN_AGE_DAYS,
   RATIO_RISE_CEILING,
   RATIO_DROP_FLOOR,
   reconcileRatio,
@@ -307,15 +306,11 @@ describe('the pinned ratios are real and fresh', () => {
     expect(scaled.length).toBeGreaterThan(20)
   })
 
-  it(`fails once the pin is more than ${MAX_PIN_AGE_DAYS} days old`, () => {
-    // Dividend ratios move on the issuer's schedule. A pin left to go stale is
-    // a wrong ratio sizing a real sell, so this test is the reminder to re-run
-    // scripts/verify-mints.mjs rather than a formality.
-    const ageDays = (Date.now() - Date.parse(VERIFIED_AT)) / 86_400_000
-    expect(ageDays, `verifiedMints.json is ${ageDays.toFixed(1)} days old — re-run scripts/verify-mints.mjs`).toBeLessThan(
-      MAX_PIN_AGE_DAYS
-    )
-  })
+  // The pin's AGE is deliberately not asserted here. It used to be, and it
+  // turned the whole unit suite red on a date nobody had written down while
+  // reporting a routine re-pin as a broken test. It lives in
+  // scripts/check-pin-age.mjs now, run by `npm run check:pin` as its own CI
+  // step, with its rule tested in scripts/check-pin-age.test.js.
 })
 
 /*

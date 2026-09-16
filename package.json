@@ -10,6 +10,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
+    "check:pin": "node scripts/check-pin-age.mjs",
     "test:watch": "vitest"
   },
   "dependencies": {
