@@ -43,6 +43,8 @@ const {
 const verified = BY_ID[Object.keys(VERIFIED_MINTS)[0]]
 const mint = VERIFIED_MINTS[verified.id].mint
 const JUPITER_URL = `https://jup.ag/swap/USDC-${mint}`
+// What the Trade screen renders when, and only when, the link-out is on.
+const TRADE_VENUE_CARD = 'Jupiter ↗'
 
 // A connected wallet, so the in-app swap is the rung under test rather than
 // the link-out. Mocked at the module: these are static renders, so there is
@@ -104,7 +106,9 @@ describe('with no answer from PostHog — the default, and the loading state', (
     const { button, header, trade } = renderAll()
     expect(button).toContain(JUPITER_URL)
     expect(header).toContain(JUPITER_URL)
-    expect(trade).toContain('Open to you')
+    // The Trade screen's card, keyed off its link label rather than a badge:
+    // it carries no availability claim any more (screens/Trade.test.jsx).
+    expect(trade).toContain(TRADE_VENUE_CARD)
   })
 })
 
@@ -181,6 +185,6 @@ describe('with both flags on', () => {
     const { button, header, trade } = renderAll()
     expect(button).toContain(`Swap ${verified.ticker}`)
     expect(header).toContain(JUPITER_URL)
-    expect(trade).toContain('Open to you')
+    expect(trade).toContain(TRADE_VENUE_CARD)
   })
 })

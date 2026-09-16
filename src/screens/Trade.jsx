@@ -39,9 +39,9 @@ const RESTRICTED = [
 
 export default function Trade({ onOpenProfile }) {
   const { entry, join } = useWaitlist()
-  // The "Open to you" card is OnStock telling someone a venue is available to
-  // them, which is the regional-access claim the first-day review flagged. It
-  // answers to the same switch as the per-asset link-outs.
+  // The Jupiter card answers to the same switch as the per-asset link-outs.
+  // It carries no availability claim: the venue's own terms decide who may
+  // use it, and the footer says so.
   const linkOutOn = useFlag(LINK_OUT_FLAG)
   const [email, setEmail] = useState('')
   const [busy, setBusy] = useState(false)
@@ -66,8 +66,9 @@ export default function Trade({ onOpenProfile }) {
           place with the right numbers.
         </p>
 
-        {/* The one you can actually use — unless it is switched off, in which
-            case say so rather than leaving a gap above the restricted list. */}
+        {/* The on-chain route, led because it is the one OnStock can link
+            straight to the pair — unless it is switched off, in which case say
+            so rather than leaving a gap above the restricted list. */}
         {!linkOutOn && (
           <p
             className="t-caption mt-4 rounded-lg border p-4 text-zinc-400"
@@ -91,8 +92,8 @@ export default function Trade({ onOpenProfile }) {
             <span className="min-w-0">
               <span className="flex items-center gap-2">
                 <span className="t-label text-zinc-100">{PRIMARY.name} ↗</span>
-                <span className="t-micro rounded-full bg-gain/10 px-2 py-0.5 text-gain">
-                  Open to you
+                <span className="t-micro rounded-full bg-zinc-800 px-2 py-0.5 text-zinc-400">
+                  {PRIMARY.tag}
                 </span>
               </span>
               <span className="t-caption mt-1 block text-zinc-500">{PRIMARY.blurb}</span>
@@ -100,8 +101,9 @@ export default function Trade({ onOpenProfile }) {
           </a>
         )}
 
-        {/* The four you cannot — stated once, listed compactly, still reachable
-            for anyone outside the US. */}
+        {/* The four exchanges that say in their own terms they do not serve US
+            customers — stated once as a heading instead of four times. The
+            heading describes THESE four and nothing above it. */}
         <h3 className="t-micro mt-6 text-zinc-500">Not offered in the US</h3>
         <div className="mt-1.5 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
           {RESTRICTED.map((v) => (
@@ -122,9 +124,8 @@ export default function Trade({ onOpenProfile }) {
 
         <p className="t-caption mt-5 text-zinc-500">
           <span className="font-medium text-zinc-300">In the US?</span> Those four
-          exclude US customers — but regulated tokenized trading is rolling out
-          (the SEC approved Nasdaq's version in March 2026). Join the waitlist and
-          you'll get one email the moment you can trade here.
+          exclude US customers. Join the waitlist and you'll get one email the
+          moment in-app trading opens.
         </p>
 
         {entry ? (
@@ -165,6 +166,23 @@ export default function Trade({ onOpenProfile }) {
             </p>
           </form>
         )}
+
+        {/* Kept out of the waitlist paragraph on purpose. The approval is real
+            but it is about a registered exchange and registered securities,
+            not about the tokens OnStock tracks — placed next to "Join the
+            waitlist" it read as regulatory momentum behind OnStock. */}
+        <div
+          className="mt-8 border-t pt-4"
+          style={{ borderColor: 'var(--border-subtle)' }}
+        >
+          <p className="text-[11px] leading-relaxed text-zinc-500">
+            <span className="font-medium text-zinc-400">Elsewhere in the market:</span>{' '}
+            on March 18, 2026 the SEC approved a Nasdaq rule change allowing Nasdaq
+            to trade registered securities in tokenized form during the DTC pilot
+            program. That is a separate market from the tokens OnStock tracks, and
+            it is not an approval of OnStock or of any venue listed above.
+          </p>
+        </div>
 
         <p className="mt-6 text-center text-[11px] leading-relaxed text-zinc-400">
           External venues are independent services with their own terms and
