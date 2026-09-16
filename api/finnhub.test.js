@@ -250,7 +250,39 @@ describe('api/finnhub — unchanged behaviour', () => {
 
   it('still sets the shared cache policy on a good response', async () => {
     const res = await call({ kind: 'quote', symbol: 'AAPL' }, { 'x-vercel-forwarded-for': '13.0.0.1', origin: '' })
-    expect(res.headers['Cache-Control']).toBe('s-maxage=180, stale-while-revalidate=600')
+    expect(res.headers['Cache-Control']).toBe('s-maxage=300, stale-while-revalidate=600')
+  })
+
+  it('caches a quote for longer than the client takes to come back for it', async () => {
+    /*
+     * The number that matters, and the one that was wrong. The desktop Board
+     * watches up to CANDIDATE_CAP (150) underlyings; PricesContext quotes at
+     * most STOCK_QUOTE_CAP (50) per 60-second cycle and rotates, so a symbol
+     * is re-asked for every 150 / 50 * 60 = 180 seconds.
+     *
+     * A TTL equal to that interval expires exactly as the refetch arrives, so
+     * nearly every refetch misses and one wide board spends ~50 of the
+     * instance's 60 upstream calls a minute. The TTL has to sit strictly
+     * ABOVE the interval for any refetch to land on a warm edge.
+     */
+    const boardSymbols = 150
+    const perCycle = 50
+    const returnIntervalS = (boardSymbols / perCycle) * 60
+    expect(returnIntervalS).toBe(180)
+
+    const res = await call({ kind: 'quote', symbol: 'AAPL' }, { 'x-vercel-forwarded-for': '13.0.0.9', origin: '' })
+    const ttl = Number(/s-maxage=(\d+)/.exec(res.headers['Cache-Control'])[1])
+    expect(ttl).toBeGreaterThan(returnIntervalS)
+
+    // A miss refreshes the entry, then every refetch landing strictly inside
+    // the TTL is free, so one miss covers ceil(ttl / interval) refetches: one
+    // at the old 180s, two at 300s. The whole board refetches 50 times a
+    // minute, which halves the upstream cost from ~50 to ~25 — under the
+    // 60/min breaker, with room for a second concurrent client.
+    const refetchesPerMinute = (boardSymbols / returnIntervalS) * 60
+    const missesPerMinute = refetchesPerMinute / Math.ceil(ttl / returnIntervalS)
+    expect(refetchesPerMinute).toBe(50)
+    expect(missesPerMinute).toBeLessThanOrEqual(25)
   })
 
   it('passes an upstream failure through', async () => {

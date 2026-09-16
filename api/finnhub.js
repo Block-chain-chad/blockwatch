@@ -20,10 +20,32 @@ import { isAllowedSymbol } from './_symbols.js'
 import { clientKey, createRateLimiter, sendTooManyRequests } from './_rateLimit.js'
 
 const ALLOWED = {
-  // 180s shared cache: ~50 polled symbols become ~17 upstream calls/min per
-  // edge-cache copy, so several concurrent tester regions fit Finnhub's
-  // 60/min free tier. The client's UpdatedAgo pulse shows the honest age.
-  quote: { path: '/quote', cache: 's-maxage=180, stale-while-revalidate=600' },
+  // 300s shared cache, sized against how often the client actually comes back
+  // for a symbol rather than against a round number.
+  //
+  // The desktop Board watches up to CANDIDATE_CAP (150) underlyings and
+  // src/state/PricesContext.jsx quotes at most STOCK_QUOTE_CAP (50) of them
+  // per 60-second cycle, rotating. So one symbol is re-asked for every 180
+  // seconds. At the 180s TTL this used to carry, the refetch landed exactly
+  // as the entry expired and almost every one of them missed: about 50
+  // upstream calls a minute from a single wide-board user, 83% of the 60/min
+  // breaker below, and a second concurrent client got 429s for most of its
+  // symbols.
+  //
+  // At 300s the refetch at +180 is still fresh and only the one at +360
+  // misses, so misses and hits alternate: about 25 upstream calls a minute,
+  // 42% of the breaker, and two concurrent wide boards now fit where one used
+  // to strain.
+  //
+  // Spelled out because the obvious guess is wrong: 300s does NOT make two
+  // refetches in three a hit. That would need a TTL past two whole rotations
+  // (over 360s), and this is deliberately short of that. Nor does
+  // stale-while-revalidate change the arithmetic — it hides latency from the
+  // user but still spends an upstream call to revalidate.
+  //
+  // Honest to the user either way: the client's UpdatedAgo pulse reports the
+  // real age of the number, so a cached quote is never painted as live.
+  quote: { path: '/quote', cache: 's-maxage=300, stale-while-revalidate=600' },
   profile: { path: '/stock/profile2', cache: 's-maxage=86400, stale-while-revalidate=86400' },
   recommendation: { path: '/stock/recommendation', cache: 's-maxage=21600, stale-while-revalidate=86400' },
   earnings: { path: '/stock/earnings', cache: 's-maxage=21600, stale-while-revalidate=86400' },
@@ -35,9 +57,11 @@ const ALLOWED = {
 
 const ALLOWED_PARAMS = new Set(['kind', 'symbol', 'c'])
 
-// Per-caller ceiling. A cold Board load asks for up to CANDIDATE_CAP (150)
-// underlyings at once and a detail screen adds five more calls, so 240 with a
-// 4/s refill is several times the busiest honest minute. Only CACHE MISSES
+// Per-caller ceiling. A cold Board load does NOT ask for all 150 underlyings
+// at once, which an earlier version of this comment claimed: PricesContext
+// caps a cycle at STOCK_QUOTE_CAP (50) and rotates the rest onto later
+// cycles, so the busiest honest minute is those 50 plus the five a detail
+// screen adds. 240 with a 4/s refill is several times that. Only CACHE MISSES
 // ever reach here: a request Vercel's edge can answer never runs this
 // function, which is exactly the traffic we want to leave alone.
 //
@@ -61,11 +85,16 @@ const perClient = createRateLimiter({ capacity: 240, refillPerSecond: 4 })
 // does guarantee is that no single instance can be turned into an unbounded
 // relay onto a 60/minute upstream.
 //
-// The cost, stated plainly: on a genuinely COLD edge cache a 150-symbol Board
-// load produces 150 misses, and everything past the first 60 now gets a 429
-// from us. It used to get a 429 from Finnhub instead, having already spent
-// the quota for every other user — so this is the same wall, reached more
-// cheaply and without taking prices down for everyone else.
+// The cost, stated plainly and with the right numbers this time. A cold
+// 150-symbol Board load does not produce 150 misses: the client only asks for
+// 50 in its first cycle, which fits inside this 60-call burst. In steady
+// state that board costs about 25 upstream calls a minute at the quote TTL
+// above, so one wide board sits at 42% of an instance's minute and two fit.
+// The wall is a third concurrent cold board, or two going cold at the same
+// moment in the same region — those get a 429 from us. They used to get one
+// from Finnhub instead, having already spent the quota for every other user,
+// so this is the same wall reached more cheaply and without taking prices
+// down for everyone else.
 const perInstance = createRateLimiter({ capacity: 60, refillPerSecond: 1, maxKeys: 1 })
 
 // Exported for the tests, which need a known-empty bucket per case.
