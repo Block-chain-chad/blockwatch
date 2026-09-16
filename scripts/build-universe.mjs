@@ -343,7 +343,12 @@ console.log(`  by issuer: ${JSON.stringify(byIssuer)}`)
 console.log(`  by type:   ${JSON.stringify(byType)}`)
 console.log(`Full mapping table: scripts/universe-report.txt`)
 console.log(
-  `\nNEXT: node scripts/verify-mints.mjs — until it runs, any new or changed\n` +
+  `\nNEXT: node scripts/build-symbols.mjs — regenerates the allowlist api/finnhub.js\n` +
+    `forwards to Finnhub. Until it runs, a newly added underlying gets a 400 and\n` +
+    `its gap reads blank (api/_symbols.test.js fails the build first).`
+)
+console.log(
+  `THEN: node scripts/verify-mints.mjs — until it runs, any new or changed\n` +
     `mint is untradeable in the app (that is deliberate: CoinGecko's address is\n` +
     `not the issuer's word, and this one spends real money).`
 )
