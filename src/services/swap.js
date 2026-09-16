@@ -452,6 +452,11 @@ export function sellAmountRaw(typed, decimals, multiplier) {
   return uiToRaw(toRaw(typed, decimals), multiplier)
 }
 
+// Extra decimal places formatWallet scales through before formatting, so a
+// ratio below one cannot truncate a small holding to "0" on screen. Nine is
+// past any ratio's significant digits and still far inside BigInt.
+const DISPLAY_PAD = 9
+
 /**
  * A raw amount, rendered in the units the user's wallet will show it in.
  *
@@ -462,5 +467,20 @@ export function sellAmountRaw(typed, decimals, multiplier) {
  * Display only. Nothing that sizes a transaction may read this.
  */
 export function formatWallet(raw, decimals, multiplier, options) {
-  return formatRaw(rawToUi(raw, multiplier), decimals, options)
+  if (!Number.isSafeInteger(decimals) || decimals < 0) return null
+  const s = String(raw ?? '').trim()
+  if (!/^\d+$/.test(s)) return null
+  // Scale at extra precision, then format at the matching scale.
+  //
+  // rawToUi truncates to a whole raw unit, which is the right thing when the
+  // result is going to a transaction. Here it is going to a screen, and for a
+  // ratio below one it would swallow small amounts whole: a single raw unit of
+  // AZNx times 0.5111 truncates to zero, and the sheet would print "0" for
+  // something the user does hold. formatRaw already has dust handling that
+  // keeps significant digits going; padding first is what lets it reach them.
+  return formatRaw(
+    rawToUi((BigInt(s) * 10n ** BigInt(DISPLAY_PAD)).toString(), multiplier),
+    decimals + DISPLAY_PAD,
+    options
+  )
 }

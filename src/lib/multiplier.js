@@ -290,7 +290,11 @@ export function multiplierLine(pinned, now = Date.now()) {
   const ratio = Number(r.num) / Number(r.den)
   const whole = r.num % r.den === 0n
   const shares = whole ? String(ratio) : ratio.toFixed(4).replace(/0+$/, '').replace(/\.$/, '')
-  const cause = whole || ratio < 1 ? 'a split' : 'a dividend'
+  // What produces each shape. A whole-number ratio above one is a split; a
+  // ratio below one is a reverse split, which is a different corporate action
+  // and reads as a mistake if you call it a split. Everything else is
+  // dividend accrual, which is what moves a ratio by fractions of a percent.
+  const cause = ratio < 1 ? 'a reverse split' : whole ? 'a split' : 'a dividend'
   const at = pinned?.nextMultiplierAt ? Date.parse(pinned.nextMultiplierAt) : null
   const when = Number.isFinite(at) && now >= at ? ` since ${cause} on ${utcDate(at)}` : ''
   return `1 token = ${shares} ${shares === '1' ? 'share' : 'shares'}${when}`

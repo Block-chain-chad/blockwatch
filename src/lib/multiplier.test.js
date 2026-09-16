@@ -278,8 +278,10 @@ describe('multiplierLine — the one honest sentence on the asset screen', () =>
     expect(multiplierLine(ko, NOW)).toBe('1 token = 1.0226 shares since a dividend on 15 Sep 2026')
   })
 
-  it('handles a ratio below one', () => {
-    expect(multiplierLine(AZN, NOW)).toBe('1 token = 0.5111 shares since a split on 7 Aug 2026')
+  it('calls a ratio below one a reverse split, which is what makes one', () => {
+    expect(multiplierLine(AZN, NOW)).toBe(
+      '1 token = 0.5111 shares since a reverse split on 7 Aug 2026'
+    )
   })
 
   it('quotes the standing ratio while a change is still pending', () => {

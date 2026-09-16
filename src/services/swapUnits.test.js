@@ -177,3 +177,42 @@ describe('the ratios this all rests on are really in the pinned file', () => {
     for (const m of Object.values(VERIFIED_MINTS)) expect(m.decimals).toBe(DECIMALS)
   })
 })
+
+/*
+ * Dust. formatWallet scales a raw integer by the ratio, and scaling down
+ * truncates: one raw unit of AZNx times 0.5111 is less than a raw unit, so a
+ * naive conversion prints "0" for something the user does hold. formatRaw
+ * already keeps significant digits going for small amounts; these pin that the
+ * ratio step does not defeat it.
+ */
+describe('formatWallet keeps small amounts visible', () => {
+  it('does not collapse a dust amount to zero at a ratio below one', () => {
+    // One raw unit is 1e-8 base, which at 0.5111 is 5.11e-9 in the wallet.
+    // formatRaw shows two significant digits for dust, so: 0.0000000051.
+    const shown = formatWallet('1', DECIMALS, AZN)
+    expect(shown).not.toBe('0')
+    expect(shown).toBe('0.0000000051')
+  })
+
+  it('keeps formatRaw dust behaviour intact at a ratio of 1', () => {
+    expect(formatWallet('1', DECIMALS, ONE)).toBe(formatRaw('1', DECIMALS))
+  })
+
+  it('still renders ordinary amounts exactly as before', () => {
+    expect(formatWallet('12905000', DECIMALS, NFLX)).toBe('1.2905')
+    expect(formatWallet('313940000', USDC_DECIMALS, ONE)).toBe('313.94')
+    expect(formatWallet('6670000', DECIMALS, CRWD)).toBe('0.2668')
+    expect(formatWallet('118330000', DECIMALS, AZN)).toBe('0.6048')
+  })
+
+  it('groups thousands the same way', () => {
+    expect(formatWallet('123456700000000', DECIMALS, ONE)).toBe('1,234,567')
+  })
+
+  it('still refuses bad input rather than printing something', () => {
+    expect(formatWallet('12905000', DECIMALS, 'bad')).toBeNull()
+    expect(formatWallet('1.5', DECIMALS, ONE)).toBeNull()
+    expect(formatWallet(null, DECIMALS, ONE)).toBeNull()
+    expect(formatWallet('100', null, ONE)).toBeNull()
+  })
+})
