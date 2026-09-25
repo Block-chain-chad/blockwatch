@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Header from '../components/Header'
 import UpdatedAgo from '../components/UpdatedAgo'
 import OnboardingTip from '../components/OnboardingTip'
+import InstallPrompt from '../components/InstallPrompt'
 import TreasuryYields from '../components/TreasuryYields'
 import LearnCards from '../components/LearnCards'
 import { usePrices, useAssetSubscription } from '../state/PricesContext'
@@ -185,7 +186,11 @@ export default function Home({ onOpenProfile, onOpenAsset, onOpenSearch }) {
       <UpdatedAgo className="px-4 pt-3 text-center" />
 
       {/* Below the list, never above it: nothing may push the first price row
-          down (see the note on SessionLine above). This is here so someone who
+          down (see the note on SessionLine above). Renders only for Safari on
+          iOS in a normal tab; see lib/installPrompt.js. */}
+      <InstallPrompt />
+
+      {/* Also below the list, for the same reason. This is here so someone who
           meets "gap", "1:1" or "basis point" on a row can look it up without
           first finding the News tab, where the same list also lives. */}
       <LearnCards source="home" />
