@@ -138,6 +138,7 @@ describe('api/candles — resolve', () => {
     expect(res.body.candidates.map((c) => c.name)).toEqual(['AAPLx / USDC'])
     expect(res.body.pool.address).toBe(SOL_POOL)
     expect(res.body.pool.secret).toBeUndefined()
+    expect(res.body.pool.liquidityUsd).toBe(5)
     expect(res.headers['Cache-Control']).toBe('s-maxage=86400, stale-while-revalidate=604800')
     expect(res.headers['Content-Type']).toMatch(/json/)
   })
@@ -145,8 +146,25 @@ describe('api/candles — resolve', () => {
   it('caches a miss for less time than a hit', async () => {
     const res = await call({ op: 'resolve', ticker: 'ZZZZQ', network: 'solana' })
     expect(res.statusCode).toBe(200)
-    expect(res.body).toEqual({ network: 'solana', ticker: 'ZZZZQ', pool: null, candidates: [] })
+    expect(res.body).toEqual({
+      network: 'solana',
+      ticker: 'ZZZZQ',
+      pool: null,
+      candidates: [],
+      asOf: expect.any(String),
+    })
     expect(res.headers['Cache-Control']).toBe('s-maxage=3600, stale-while-revalidate=86400')
+  })
+
+  it('stamps asOf with the time the upstream answer arrived', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-09-24T14:05:00.000Z'))
+    try {
+      const res = await call({ op: 'resolve', ticker: 'AAPLx', network: 'solana' })
+      expect(res.body.asOf).toBe('2026-09-24T14:05:00.000Z')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('502s when upstream fails, including a rate limit', async () => {

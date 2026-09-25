@@ -9,7 +9,9 @@
 //     Which pool a ticker's candles should come from. Returns the pools where
 //     the ticker is the BASE token, busiest first (see api/_geckoterminal.js
 //     for why the search result cannot be used as-is), plus the top one as
-//     `pool`. Cached a day: pools do not move.
+//     `pool`, and `asOf`: when this answer was fetched from GeckoTerminal.
+//     Cached a day: pools do not move. Their liquidity does, and a cached
+//     answer can be served for days, which is why `asOf` travels with it.
 //
 //   ?op=ohlcv&network=solana&pool=<address>&timeframe=minute&aggregate=5&limit=300
 //     Candles for one pool, ascending, in the shared candle shape. Cached for
@@ -144,8 +146,12 @@ async function resolveOp(req, res, originScoped, network) {
   if (!instance.ok) return sendTooManyRequests(res, instance.retryAfter)
 
   let candidates
+  let asOf
   try {
     const json = await fetchUpstream(searchUrl(ticker, network))
+    // Stamped when the upstream answer arrives, so the edge cache stores the
+    // real age of the figures along with them.
+    asOf = new Date().toISOString()
     candidates = matchingPools(parseSearchPools(json), ticker).slice(0, MAX_CANDIDATES)
   } catch {
     return res.status(502).json({ error: 'upstream unreachable' })
@@ -153,7 +159,7 @@ async function resolveOp(req, res, originScoped, network) {
 
   setCacheControl(res, candidates.length ? CACHE.resolve : CACHE.resolveMiss, originScoped)
   res.setHeader('Content-Type', 'application/json; charset=utf-8')
-  return res.status(200).json({ network, ticker, pool: candidates[0] ?? null, candidates })
+  return res.status(200).json({ network, ticker, pool: candidates[0] ?? null, candidates, asOf })
 }
 
 async function ohlcvOp(req, res, originScoped, network) {
