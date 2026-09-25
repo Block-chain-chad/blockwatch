@@ -78,7 +78,7 @@ const CACHE = Object.freeze({
   day: 's-maxage=3600, stale-while-revalidate=86400',
 })
 
-const UPSTREAM_HEADERS = { Accept: 'application/json', 'User-Agent': 'BlockWatch tracker' }
+const UPSTREAM_HEADERS = { Accept: 'application/json', 'User-Agent': 'OnStock tracker' }
 
 // Per-caller ceiling. Best-effort and PER INSTANCE, like every bucket in this
 // directory — read ./_rateLimit.js before quoting these numbers at anyone.
