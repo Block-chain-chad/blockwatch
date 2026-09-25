@@ -53,7 +53,7 @@ const POOL_TTL = 24 * 60 * 60_000
 const POOL_MISS_TTL = 60 * 60_000
 const STOCK_TTL = 5 * 60_000
 
-const poolCache = new Map() // assetKey -> { at, data: { network, pool } | null }
+const poolCache = new Map() // assetKey -> { at, data: { network, pool, asOf } | null }
 const poolInflight = new Map() // assetKey -> Promise
 const candleCache = new Map() // `${assetKey}|${timeframeId}` -> { at, data }
 const candleInflight = new Map() // same key -> Promise, while a fetch is out
@@ -67,22 +67,36 @@ async function fetchJson(url) {
   return res.json()
 }
 
-/** Pools where `ticker` is the base token on one network, busiest first. */
+/** An ISO time the proxy stamped, or null when it is missing or unreadable. */
+function readAsOf(v) {
+  return typeof v === 'string' && Number.isFinite(Date.parse(v)) ? v : null
+}
+
+/**
+ * Pools where `ticker` is the base token on one network, busiest first, and
+ * when that list was fetched from GeckoTerminal ({ candidates, asOf }). asOf
+ * is null for a proxy response cached before the proxy started sending it.
+ */
 async function searchCandidates(ticker, network) {
   if (IS_PROD) {
     const body = await fetchJson(
       `${API_BASE}/api/candles?op=resolve&ticker=${encodeURIComponent(ticker)}&network=${network}${API_CACHE_SUFFIX}`
     )
-    return Array.isArray(body?.candidates) ? body.candidates : []
+    return {
+      candidates: Array.isArray(body?.candidates) ? body.candidates : [],
+      asOf: readAsOf(body?.asOf),
+    }
   }
   const json = await fetchJson(`/gt${GT_API_PREFIX}${searchPath(ticker, network)}`)
-  return matchingPools(parseSearchPools(json), ticker)
+  return { candidates: matchingPools(parseSearchPools(json), ticker), asOf: new Date().toISOString() }
 }
 
 /**
- * The pool an asset's candles come from: { network, pool } or null. Tries the
- * networks lib/candles.js says the issuer trades on, in order, and stops at
- * the first that has a usable pool. Cached per asset.
+ * The pool an asset's candles come from: { network, pool, asOf } or null.
+ * Tries the networks lib/candles.js says the issuer trades on, in order, and
+ * stops at the first that has a usable pool. Cached per asset, and shared:
+ * the candle chart and Key statistics both come through here, so opening
+ * both is one lookup, not two.
  */
 export async function resolvePool(asset) {
   const key = assetKey(asset)
@@ -96,9 +110,10 @@ export async function resolvePool(asset) {
     let failed = false
     for (const network of networksFor(asset)) {
       try {
-        const pool = choosePool(await searchCandidates(asset.ticker, network), asset)
+        const { candidates, asOf } = await searchCandidates(asset.ticker, network)
+        const pool = choosePool(candidates, asset)
         if (pool) {
-          data = { network, pool }
+          data = { network, pool, asOf }
           break
         }
       } catch {

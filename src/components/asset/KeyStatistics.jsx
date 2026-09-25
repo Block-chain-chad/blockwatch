@@ -1,4 +1,6 @@
 import { formatCompact } from '../../lib/format'
+import { formatAsOf } from '../../lib/poolLiquidity'
+import { usePoolLiquidity } from '../../hooks/usePoolLiquidity'
 import { ChevronDown } from '../Icons'
 import { formatPrice } from '../shared'
 
@@ -45,6 +47,7 @@ export default function KeyStatistics({
   open,
   onToggle,
 }) {
+  const liquidity = usePoolLiquidity(asset, open && hasTokenStats)
   if (!(hasTokenStats || hasStockStats)) return null
   const ts = asset.tokenStats
   return (
@@ -156,6 +159,15 @@ export default function KeyStatistics({
                       spread ? `${spread.spreadPct.toFixed(1)}% (~$${spread.refUsd} trade)` : null
                     }
                   />
+                  {liquidity && (
+                    <div>
+                      <StatRow label="Pool liquidity (charted pool)" value={formatCompact(liquidity.usd)} />
+                      <p className="pt-0.5 text-right text-[11px] text-zinc-500">
+                        {liquidity.poolName ? `${liquidity.poolName} pool, ` : ''}as of{' '}
+                        {formatAsOf(liquidity.asOf)}
+                      </p>
+                    </div>
+                  )}
                 </>
               )}
               {hasStockStats && (

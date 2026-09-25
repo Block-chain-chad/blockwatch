@@ -159,3 +159,80 @@ describe('getTokenCandles — an unpinned mint draws nothing', () => {
     expect(out.candles[0].open).toBe(757.45)
   })
 })
+
+/*
+ * One pool lookup, shared. Key statistics asks resolvePool for the pool's
+ * liquidity; the candle chart asks it for the pool to draw. Opening both, in
+ * either order or at the same moment, must be one call to the resolve lane,
+ * which spends the shared GeckoTerminal budget on an edge-cache miss.
+ */
+describe('resolvePool: shared with the candle chart, and carries asOf', () => {
+  const AS_OF = '2026-09-24T14:05:00.000Z'
+
+  function countingService(asset, resolveBody) {
+    const fetchMock = vi.fn(async (url) => {
+      const u = new URL(String(url), 'https://onstock.test')
+      if (u.searchParams.get('op') === 'resolve') {
+        return { ok: true, status: 200, json: async () => resolveBody }
+      }
+      return { ok: true, status: 200, json: async () => ({ candles: BASE_CANDLES }) }
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const resolveCalls = () =>
+      fetchMock.mock.calls.filter(([url]) => new URL(String(url), 'https://onstock.test').searchParams.get('op') === 'resolve')
+        .length
+    return { resolveCalls }
+  }
+
+  const body = (asset, extra = {}) => ({
+    candidates: [
+      {
+        address: 'PooLaddressBase58xxxxxxxxxxxxxxxxxxxxxxxxx',
+        name: `${asset.ticker} / USDC`,
+        baseSymbol: asset.ticker,
+        baseAddress: asset.mint,
+        quoteSymbol: 'USDC',
+        volume24h: 1_000_000,
+        liquidityUsd: 2_500_000,
+      },
+    ],
+    asOf: AS_OF,
+    ...extra,
+  })
+
+  it('makes one resolve call when Key statistics and the chart ask at the same moment', async () => {
+    const { resolveCalls } = countingService(TSLA, body(TSLA))
+    const { resolvePool, getTokenCandles } = await import('./candles')
+    const [resolved, candles] = await Promise.all([resolvePool(TSLA), getTokenCandles(TSLA, '5m')])
+    expect(resolved.pool.liquidityUsd).toBe(2_500_000)
+    expect(candles).not.toBeNull()
+    expect(resolveCalls()).toBe(1)
+  })
+
+  it('makes one resolve call when the chart opens after Key statistics, and the other way round', async () => {
+    const { resolveCalls } = countingService(TSLA, body(TSLA))
+    const { resolvePool, getTokenCandles } = await import('./candles')
+    await resolvePool(TSLA)
+    await getTokenCandles(TSLA, '5m')
+    await resolvePool(TSLA)
+    expect(resolveCalls()).toBe(1)
+  })
+
+  it('passes the time the proxy stamped through to the caller', async () => {
+    countingService(TSLA, body(TSLA))
+    const { resolvePool } = await import('./candles')
+    expect((await resolvePool(TSLA)).asOf).toBe(AS_OF)
+  })
+
+  it('gives asOf as null for a cached answer from before the proxy sent it', async () => {
+    countingService(TSLA, body(TSLA, { asOf: undefined }))
+    const { resolvePool } = await import('./candles')
+    expect((await resolvePool(TSLA)).asOf).toBeNull()
+  })
+
+  it('gives asOf as null when the stamp is not a time', async () => {
+    countingService(TSLA, body(TSLA, { asOf: 'yesterday-ish' }))
+    const { resolvePool } = await import('./candles')
+    expect((await resolvePool(TSLA)).asOf).toBeNull()
+  })
+})

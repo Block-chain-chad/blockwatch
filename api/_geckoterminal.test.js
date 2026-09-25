@@ -94,8 +94,22 @@ describe('parseSearchPools', () => {
     const [p] = parseSearchPools(eth)
     expect(p.baseAddress).toBe('0x2d1f7226bd1f780af6b9a49dcc0ae00e8df4bdee')
     expect(p.quoteSymbol).toBe('USDC')
-    expect(p.liquidityUsd).toBe(0)
+    // No reserve_in_usd in the payload: unknown, not an empty pool.
+    expect(p.liquidityUsd).toBeNull()
     expect(p.dex).toBeNull()
+  })
+
+  it('reads the reserve as a number, and anything unreadable as null, never 0', () => {
+    const one = (reserve) =>
+      parseSearchPools({ data: [pool('AAPLx / USDC', 'EHdow7Yhmr1ac8Qff9Co1LhSosr38puA6zLd4cbJLdpV', 1, AAPL_MINT, { reserve_in_usd: reserve })] })[0]
+        .liquidityUsd
+    expect(one('1234567.89')).toBe(1234567.89)
+    expect(one(250000)).toBe(250000)
+    expect(one(undefined)).toBeNull()
+    expect(one(null)).toBeNull()
+    expect(one('n/a')).toBeNull()
+    expect(one('')).toBeNull()
+    expect(one('  ')).toBeNull()
   })
 
   it('skips rows without an address and survives junk', () => {
@@ -136,6 +150,11 @@ describe('matchingPools / pickPool', () => {
 })
 
 describe('normalizeOhlcv', () => {
+  it('drops a row with a blank price leg instead of reading it as zero', () => {
+    const json = { data: { attributes: { ohlcv_list: [[200, '1', '2', '', '1.5', '10'], [100, 1, 1, 1, 1, 5]] } } }
+    expect(normalizeOhlcv(json).map((c) => c.time)).toEqual([100])
+  })
+
   // Live shape: newest first, [unix_seconds, open, high, low, close, volume].
   const ohlcv = {
     data: {

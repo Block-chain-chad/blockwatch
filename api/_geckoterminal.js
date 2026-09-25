@@ -71,8 +71,10 @@ export function splitPoolName(name) {
   return { base: strip(base), quote: strip(quote) }
 }
 
+// A blank string is missing, not zero: Number('') is 0, which would turn an
+// absent reserve into an empty pool and an absent price leg into a zero.
 const num = (v) => {
-  const n = typeof v === 'string' ? Number(v) : v
+  const n = typeof v === 'string' ? (v.trim() === '' ? NaN : Number(v)) : v
   return Number.isFinite(n) ? n : null
 }
 
@@ -106,7 +108,9 @@ export function parseSearchPools(json) {
       quoteSymbol: quote,
       quoteAddress: addressFromTokenId(row?.relationships?.quote_token?.data?.id),
       volume24h: num(a.volume_usd?.h24) ?? 0,
-      liquidityUsd: num(a.reserve_in_usd) ?? 0,
+      // Null, not 0, when GeckoTerminal sends no reserve: the app shows this
+      // figure, and a missing value must never read as an empty pool.
+      liquidityUsd: num(a.reserve_in_usd),
       dex: typeof row?.relationships?.dex?.data?.id === 'string' ? row.relationships.dex.data.id : null,
     })
   }
