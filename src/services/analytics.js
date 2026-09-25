@@ -42,6 +42,8 @@
 //     notification_shown      {}                          hooks/useAlertNotifications.js
 //     sign_in_completed       { method: 'password' | 'signup' | 'link' }
 //                                                         state/AuthContext.jsx, services/authLinks.js
+//     install_prompt_shown    {}                          InstallPrompt.jsx
+//     install_prompt_dismissed {}                         InstallPrompt.jsx
 //
 //   Money
 //     trade_out               { ticker?, venue }          TradeButton, GapHeader, Trade
