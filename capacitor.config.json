@@ -1,6 +1,6 @@
 {
   "_comment": "CapacitorHttp is intentionally DISABLED (it ships inside @capacitor/core, no install needed). Reachability for /api/* is solved with CORS on our own serverless functions instead — see api/_cors.js. If a /api/* call still fails on a real device, add \"plugins\": { \"CapacitorHttp\": { \"enabled\": true } } here, run `npm run build:ios`, and then RE-TEST Supabase sign-in: the plugin patches global fetch/XHR, so it can change how the auth client behaves.",
   "appId": "app.blockwatch",
-  "appName": "BlockWatch",
+  "appName": "OnStock",
   "webDir": "dist"
 }
