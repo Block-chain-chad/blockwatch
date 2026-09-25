@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ChevronRight } from './Icons'
 import Sheet, { SheetTitle } from './Sheet'
+import { track } from '../services/analytics'
 
 // Plain-language explainers for an audience with zero crypto knowledge —
 // the one concept-per-card, tap-to-read pattern (no slideshow, no quiz).
@@ -91,8 +92,18 @@ function LearnSheet({ lesson, onClose }) {
   )
 }
 
-export default function LearnCards() {
+/**
+ * `source` names the screen the list sits on ('home' | 'news' | 'desktop'),
+ * so learn_open can say which placement people actually read from.
+ */
+export default function LearnCards({ source }) {
   const [open, setOpen] = useState(null)
+
+  function openLesson(lesson) {
+    setOpen(lesson)
+    track('learn_open', { source, lesson: lesson.id })
+  }
+
   return (
     // A list, not a horizontal card rail. Four short titles in a scroller meant
     // the fourth was always cut off and the third read as "Why weeke…", and it
@@ -108,7 +119,7 @@ export default function LearnCards() {
       {LESSONS.map((l) => (
         <button
           key={l.id}
-          onClick={() => setOpen(l)}
+          onClick={() => openLesson(l)}
           className="hover-row flex w-full items-center justify-between border-b px-4 py-2.5 text-left transition-colors active:bg-zinc-900"
           style={{ borderColor: 'var(--border-subtle)' }}
         >
