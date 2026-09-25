@@ -20,6 +20,11 @@ import LearnCards from '../LearnCards'
  * asset does. The two disclosures render open with a plain heading here;
  * the phone keeps its buttons because it passes onToggle.
  */
+/* Key statistics is always open here, so clicking down the Board would look
+   up a pool for every row passed on the way. Wait for the selection to sit
+   still this long first. */
+const POOL_LOOKUP_DELAY_MS = 1000
+
 const CHART_TABS = [
   { id: 'statistics', label: 'Statistics' },
   { id: 'news', label: 'News' },
@@ -121,6 +126,7 @@ export default function DetailTabs({
               hasStockStats={hasStockStats}
               bothSides={bothSides}
               open
+              poolLookupDelayMs={POOL_LOOKUP_DELAY_MS}
             />
             <AboutSection asset={asset} info={info} />
             <AnalystRatings info={info} />

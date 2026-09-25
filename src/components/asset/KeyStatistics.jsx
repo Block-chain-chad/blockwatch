@@ -1,5 +1,5 @@
 import { formatCompact } from '../../lib/format'
-import { formatAsOf } from '../../lib/poolLiquidity'
+import { liquidityCaption } from '../../lib/poolLiquidity'
 import { usePoolLiquidity } from '../../hooks/usePoolLiquidity'
 import { ChevronDown } from '../Icons'
 import { formatPrice } from '../shared'
@@ -36,7 +36,10 @@ const compactNum = (n) =>
 
    `open` / `onToggle` drive the disclosure. When `onToggle` is a function
    the header is the button that flips it (the phone); when it is omitted
-   the header is a plain heading and `open` says whether the body shows. */
+   the header is a plain heading and `open` says whether the body shows.
+
+   `poolLookupDelayMs` is the wait before the Pool liquidity lookup; see
+   hooks/usePoolLiquidity.js. The desktop sets it, the phone does not. */
 export default function KeyStatistics({
   asset,
   info,
@@ -46,8 +49,9 @@ export default function KeyStatistics({
   bothSides,
   open,
   onToggle,
+  poolLookupDelayMs = 0,
 }) {
-  const liquidity = usePoolLiquidity(asset, open && hasTokenStats)
+  const liquidity = usePoolLiquidity(asset, open && hasTokenStats, poolLookupDelayMs)
   if (!(hasTokenStats || hasStockStats)) return null
   const ts = asset.tokenStats
   return (
@@ -163,8 +167,7 @@ export default function KeyStatistics({
                     <div>
                       <StatRow label="Pool liquidity (charted pool)" value={formatCompact(liquidity.usd)} />
                       <p className="pt-0.5 text-right text-[11px] text-zinc-500">
-                        {liquidity.poolName ? `${liquidity.poolName} pool, ` : ''}as of{' '}
-                        {formatAsOf(liquidity.asOf)}
+                        {liquidityCaption(liquidity)}
                       </p>
                     </div>
                   )}

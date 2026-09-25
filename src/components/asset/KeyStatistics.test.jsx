@@ -20,18 +20,26 @@ vi.mock('../../services/candles', () => ({ resolvePool: (...args) => resolvePool
 const { default: KeyStatistics } = await import('./KeyStatistics')
 
 const AS_OF = '2026-09-24T14:05:00.000Z'
+// Real ids and pinned mints from data/verifiedMints.json: the row only vouches
+// for a pool whose base token is the verified address.
+const APPLE_MINT = 'XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp'
+const TESLA_MINT = 'XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB'
 const ASSET = {
   id: 'apple-xstock',
   ticker: 'AAPLx',
   issuer: 'xStocks',
   underlying: 'AAPL',
+  mint: APPLE_MINT,
   tokenStats: { supply: 1000 },
 }
+const OTHER = { ...ASSET, id: 'tesla-xstock', ticker: 'TSLAx', underlying: 'TSLA', mint: TESLA_MINT }
 const found = (pool = {}, asOf = AS_OF) => ({
   network: 'solana',
-  pool: { address: 'x', name: 'AAPLx / USDC', liquidityUsd: 2_500_000, ...pool },
+  pool: { address: 'x', name: 'AAPLx / USDC', baseAddress: APPLE_MINT, liquidityUsd: 2_500_000, ...pool },
   asOf,
 })
+const foundTesla = (pool = {}) =>
+  found({ name: 'TSLAx / USDC', baseAddress: TESLA_MINT, liquidityUsd: 900_000, ...pool })
 
 let container
 let root
@@ -119,25 +127,55 @@ describe('KeyStatistics pool liquidity', () => {
     resolvePool.mockReturnValueOnce(new Promise((r) => (finish = r)))
     await render()
     expect(text()).toContain('$2.5m')
-    const OTHER = { ...ASSET, id: 'tesla-xstock', ticker: 'TSLAx', underlying: 'TSLA' }
     await render({ asset: OTHER })
     expect(resolvePool).toHaveBeenCalledTimes(2)
     expect(text()).not.toContain('Pool liquidity')
-    await act(async () => finish(found({ name: 'TSLAx / USDC', liquidityUsd: 900_000 })))
+    await act(async () => finish(foundTesla()))
     expect(text()).toContain('$900k')
   })
 
   it('ignores a slow answer for the asset the screen has already left', async () => {
     let finishFirst
     resolvePool.mockReturnValueOnce(new Promise((r) => (finishFirst = r)))
-    resolvePool.mockResolvedValueOnce(found({ name: 'TSLAx / USDC', liquidityUsd: 900_000 }))
+    resolvePool.mockResolvedValueOnce(foundTesla())
     await render()
-    const OTHER = { ...ASSET, id: 'tesla-xstock', ticker: 'TSLAx', underlying: 'TSLA' }
     await render({ asset: OTHER })
     expect(text()).toContain('$900k')
     await act(async () => finishFirst(found()))
     expect(text()).toContain('$900k')
     expect(text()).not.toContain('$2.5m')
+  })
+
+  it('shows no row for a pool trading a different token than the verified one', async () => {
+    resolvePool.mockResolvedValue(found({ baseAddress: TESLA_MINT }))
+    await render()
+    expect(text()).not.toContain('Pool liquidity')
+  })
+
+  it('drops the fee tier from the pool name', async () => {
+    resolvePool.mockResolvedValue(found({ name: 'AAPLx / USDC 0.51%' }))
+    await render()
+    expect(text()).toContain('AAPLx / USDC pool, as of')
+    expect(text()).not.toContain('0.51%')
+  })
+
+  it('says the figure may be out of date when it is more than a day old', async () => {
+    resolvePool.mockResolvedValue(found({}, new Date(Date.now() - 25 * 60 * 60_000).toISOString()))
+    await render()
+    expect(text()).toContain('may be out of date')
+  })
+
+  it('does not say so when the figure is fresh', async () => {
+    resolvePool.mockResolvedValue(found({}, new Date(Date.now() - 60_000).toISOString()))
+    await render()
+    expect(text()).toContain('Pool liquidity')
+    expect(text()).not.toContain('out of date')
+  })
+
+  it('does not look up an asset with no pinned address', async () => {
+    await render({ asset: { ...ASSET, id: 'wrapped-apple-xstock', ticker: 'WAAPLx', mint: undefined } })
+    await render({ asset: { ...ASSET, id: 'nvidia-ondo-tokenized-stock', ticker: 'NVDAon', issuer: 'Ondo', mint: undefined } })
+    expect(resolvePool).not.toHaveBeenCalled()
   })
 
   it('does not look up for an issuer whose chain is not known', async () => {
@@ -148,5 +186,63 @@ describe('KeyStatistics pool liquidity', () => {
   it('does not look up when the asset has no token statistics', async () => {
     await render({ hasTokenStats: false, hasStockStats: true })
     expect(resolvePool).not.toHaveBeenCalled()
+  })
+})
+
+/*
+ * The desktop keeps Key statistics open, so it asks for a wait before the
+ * lookup: clicking down the Board must not resolve a pool for every row it
+ * passes. The phone passes no wait and looks up on open, as above.
+ */
+describe('KeyStatistics pool liquidity on the desktop', () => {
+  const DELAY = 1000
+
+  beforeEach(() => vi.useFakeTimers())
+  afterEach(() => vi.useRealTimers())
+
+  it('waits for the selection to settle before looking up', async () => {
+    resolvePool.mockResolvedValue(found())
+    await render({ poolLookupDelayMs: DELAY })
+    await act(async () => vi.advanceTimersByTime(DELAY - 1))
+    expect(resolvePool).not.toHaveBeenCalled()
+    await act(async () => vi.advanceTimersByTime(1))
+    expect(resolvePool).toHaveBeenCalledTimes(1)
+    expect(resolvePool.mock.calls[0][0].id).toBe('apple-xstock')
+    expect(text()).toContain('$2.5m')
+  })
+
+  it('cancels when the selection changes first, and looks up only the one it lands on', async () => {
+    resolvePool.mockResolvedValue(foundTesla())
+    await render({ poolLookupDelayMs: DELAY })
+    await act(async () => vi.advanceTimersByTime(DELAY / 2))
+    await render({ poolLookupDelayMs: DELAY, asset: OTHER })
+    await act(async () => vi.advanceTimersByTime(DELAY - 1))
+    expect(resolvePool).not.toHaveBeenCalled()
+    await act(async () => vi.advanceTimersByTime(1))
+    expect(resolvePool).toHaveBeenCalledTimes(1)
+    expect(resolvePool.mock.calls[0][0].id).toBe('tesla-xstock')
+  })
+
+  it('does not restart the wait on a price tick', async () => {
+    resolvePool.mockResolvedValue(found())
+    await render({ poolLookupDelayMs: DELAY })
+    await act(async () => vi.advanceTimersByTime(DELAY / 2))
+    await render({ poolLookupDelayMs: DELAY, asset: { ...ASSET, tokenPrice: 201 } })
+    await act(async () => vi.advanceTimersByTime(DELAY / 2))
+    expect(resolvePool).toHaveBeenCalledTimes(1)
+  })
+
+  it('looks up nothing when the screen closes during the wait', async () => {
+    await render({ poolLookupDelayMs: DELAY })
+    act(() => root.unmount())
+    root = createRoot(container)
+    await act(async () => vi.advanceTimersByTime(DELAY * 2))
+    expect(resolvePool).not.toHaveBeenCalled()
+  })
+
+  it('still looks up at once on the phone, with no wait', async () => {
+    resolvePool.mockResolvedValue(found())
+    await render()
+    expect(resolvePool).toHaveBeenCalledTimes(1)
   })
 })
