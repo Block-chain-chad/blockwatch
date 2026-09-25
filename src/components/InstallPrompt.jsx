@@ -6,6 +6,11 @@ import { browserInstallContext, shouldOfferInstall } from '../lib/installPrompt'
 
 const FLAG = 'bw.tip.install.v1'
 
+// install_prompt_shown counts page loads that showed the row, not mounts:
+// Home unmounts and remounts on every tab switch (App.jsx), and counting each
+// of those would inflate the number the day-2 question divides by.
+let shownThisLoad = false
+
 function alreadyDismissed() {
   try {
     return localStorage.getItem(FLAG) === '1'
@@ -22,6 +27,9 @@ function alreadyDismissed() {
  * an icon. Same shape and dismiss-once rule as OnboardingTip: a hairline
  * caption row, not a card, and gone for good once closed.
  *
+ * Share sits in the toolbar on older iPhones; Safari's compact layout on
+ * iOS 26 moves it under the ··· menu, so the copy names both.
+ *
  * Who sees it is decided in lib/installPrompt.js: Safari on iOS, in a normal
  * tab, not in the native app. Everyone else renders nothing.
  */
@@ -32,10 +40,10 @@ export default function InstallPrompt() {
       shouldOfferInstall({ ...browserInstallContext(), native: isNativeApp() }),
   )
 
-  // Counted when the row appears. It only ever goes from shown to hidden, so
-  // this runs once per showing.
   useEffect(() => {
-    if (visible) track('install_prompt_shown')
+    if (!visible || shownThisLoad) return
+    shownThisLoad = true
+    track('install_prompt_shown')
   }, [visible])
 
   if (!visible) return null
@@ -58,8 +66,8 @@ export default function InstallPrompt() {
       <span className="mt-[5px] size-1.5 shrink-0 rounded-full bg-accent" />
       <p className="t-caption flex-1 text-zinc-400">
         Open OnStock in one tap: tap Share{' '}
-        <ShareIcon size={14} className="inline-block -translate-y-px align-middle text-zinc-300" />, then
-        Add to Home Screen.
+        <ShareIcon size={14} className="inline-block -translate-y-px align-middle text-zinc-300" /> (under
+        ··· on newer iPhones), then Add to Home Screen.
       </p>
       <button
         onClick={dismiss}

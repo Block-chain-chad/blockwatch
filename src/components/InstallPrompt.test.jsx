@@ -4,13 +4,16 @@
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { act } from 'react'
-import { createRoot } from 'react-dom/client'
 
 /*
  * The Add to Home Screen row. Who qualifies is pinned in
- * lib/installPrompt.test.js; this file pins the behaviour around it: shown
- * once counted once, dismissed for good, and silent when storage throws.
+ * lib/installPrompt.test.js; this file pins the behaviour around it: counted
+ * once per page load however often Home remounts, dismissed for good, and
+ * silent when storage throws.
+ *
+ * "Once per page load" lives in module state, so every test starts from a
+ * fresh module graph (pageLoad below). React is imported through the same
+ * fresh graph, so the component and the renderer share one React.
  */
 
 const track = vi.fn()
@@ -24,11 +27,29 @@ const IPHONE_SAFARI =
 const ANDROID_CHROME =
   'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36'
 
-const { default: InstallPrompt } = await import('./InstallPrompt')
-
+let act
+let createRoot
+let InstallPrompt
 let container
 let root
 let store
+
+/** A new page load: fresh modules, and a fresh root to render into. */
+async function pageLoad() {
+  if (root) act(() => root.unmount())
+  vi.resetModules()
+  ;({ act } = await import('react'))
+  ;({ createRoot } = await import('react-dom/client'))
+  ;({ default: InstallPrompt } = await import('./InstallPrompt'))
+  root = createRoot(container)
+}
+
+/** Home leaving and coming back on a tab switch: same page load, new mount. */
+function remount() {
+  act(() => root.unmount())
+  root = createRoot(container)
+  mount()
+}
 
 // Own properties on the navigator instance shadow jsdom's, and are deleted
 // after each test to uncover them again. jsdom has no maxTouchPoints at all.
@@ -48,7 +69,7 @@ function mount() {
 
 const shown = () => container.textContent.includes('Add to Home Screen')
 
-beforeEach(() => {
+beforeEach(async () => {
   track.mockClear()
   native = false
   store = {}
@@ -61,10 +82,12 @@ beforeEach(() => {
   })
   container = document.createElement('div')
   document.body.appendChild(container)
-  root = createRoot(container)
+  root = null
+  await pageLoad()
 })
 afterEach(() => {
   act(() => root.unmount())
+  root = null
   container.remove()
   vi.unstubAllGlobals()
   for (const k of NAV_KEYS) delete window.navigator[k]
@@ -77,12 +100,35 @@ describe('InstallPrompt', () => {
     mount()
     mount() // a re-render is not a second showing
     expect(shown()).toBe(true)
-    expect(container.textContent).toContain('tap Share')
     expect(track).toHaveBeenCalledTimes(1)
     expect(track).toHaveBeenCalledWith('install_prompt_shown')
   })
 
-  it('stays gone once dismissed, across a reload', () => {
+  it('names Share and where iOS 26 moved it', () => {
+    stubBrowser()
+    mount()
+    // The share glyph sits between "Share" and the bracket; it has no text.
+    expect(container.textContent.replace(/\s+/g, ' ')).toContain(
+      'tap Share (under ··· on newer iPhones), then Add to Home Screen.',
+    )
+  })
+
+  it('counts one showing per page load, however often Home remounts', async () => {
+    stubBrowser()
+    mount()
+    remount()
+    remount()
+    expect(shown()).toBe(true)
+    expect(track).toHaveBeenCalledTimes(1)
+
+    // The next page load is a new showing.
+    await pageLoad()
+    mount()
+    expect(track).toHaveBeenCalledTimes(2)
+    expect(track).toHaveBeenLastCalledWith('install_prompt_shown')
+  })
+
+  it('stays gone once dismissed, across a remount and a reload', async () => {
     stubBrowser()
     mount()
     act(() => container.querySelector('button[aria-label="Dismiss tip"]').click())
@@ -90,9 +136,10 @@ describe('InstallPrompt', () => {
     expect(track).toHaveBeenLastCalledWith('install_prompt_dismissed')
     expect(track).toHaveBeenCalledTimes(2)
 
-    act(() => root.unmount())
-    root = createRoot(container)
     track.mockClear()
+    remount()
+    expect(shown()).toBe(false)
+    await pageLoad()
     mount()
     expect(shown()).toBe(false)
     expect(track).not.toHaveBeenCalled()
