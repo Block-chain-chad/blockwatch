@@ -8,7 +8,7 @@ import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 
 /*
- * The Pool liquidity row. It appears only when there is a figure and a time
+ * The Pool size row. It appears only when there is a figure and a time
  * for it, and the pool is looked up once per asset while the screen is open:
  * not before Key statistics is opened, not again when it is closed and
  * reopened, and not on every price tick.
@@ -70,7 +70,10 @@ describe('KeyStatistics pool liquidity', () => {
   it('shows the charted pool, its liquidity and when it was measured', async () => {
     resolvePool.mockResolvedValue(found())
     await render()
-    expect(text()).toContain('Pool liquidity (charted pool)')
+    expect(text()).toContain('Pool size (one pool)')
+    expect(text()).toContain(
+      "Not how much you can trade: larger trades move the price more, and other pools and exchanges aren't included.",
+    )
     expect(text()).toContain('$2.5m')
     expect(text()).toContain('AAPLx / USDC pool, as of Sep 24,')
   })
@@ -78,20 +81,20 @@ describe('KeyStatistics pool liquidity', () => {
   it('shows no row when the pool has no reserve figure', async () => {
     resolvePool.mockResolvedValue(found({ liquidityUsd: null }))
     await render()
-    expect(text()).not.toContain('Pool liquidity')
+    expect(text()).not.toContain('Pool size')
     expect(text()).not.toContain('$0')
   })
 
   it('shows no row when the figure has no time', async () => {
     resolvePool.mockResolvedValue(found({}, null))
     await render()
-    expect(text()).not.toContain('Pool liquidity')
+    expect(text()).not.toContain('Pool size')
   })
 
   it('shows no row when there is no pool', async () => {
     resolvePool.mockResolvedValue(null)
     await render()
-    expect(text()).not.toContain('Pool liquidity')
+    expect(text()).not.toContain('Pool size')
   })
 
   it('does not look the pool up until Key statistics is opened', async () => {
@@ -122,7 +125,7 @@ describe('KeyStatistics pool liquidity', () => {
     const OTHER = { ...ASSET, id: 'tesla-xstock', ticker: 'TSLAx', underlying: 'TSLA' }
     await render({ asset: OTHER })
     expect(resolvePool).toHaveBeenCalledTimes(2)
-    expect(text()).not.toContain('Pool liquidity')
+    expect(text()).not.toContain('Pool size')
     await act(async () => finish(found({ name: 'TSLAx / USDC', liquidityUsd: 900_000 })))
     expect(text()).toContain('$900k')
   })
@@ -148,5 +151,20 @@ describe('KeyStatistics pool liquidity', () => {
   it('does not look up when the asset has no token statistics', async () => {
     await render({ hasTokenStats: false, hasStockStats: true })
     expect(resolvePool).not.toHaveBeenCalled()
+  })
+})
+
+describe('KeyStatistics bid/ask spread', () => {
+  it('says the spread comes from a test quote of a stated size', async () => {
+    resolvePool.mockResolvedValue(null)
+    await render({ spread: { spreadPct: 0.4321, refUsd: 200, bid: 1, ask: 1.004 } })
+    expect(text()).toContain('Bid/ask spread (from a $200 test quote)0.4%')
+    expect(text()).not.toContain('trade)')
+  })
+
+  it('shows no spread row without a quote', async () => {
+    resolvePool.mockResolvedValue(null)
+    await render({ spread: null })
+    expect(text()).not.toContain('Bid/ask spread')
   })
 })

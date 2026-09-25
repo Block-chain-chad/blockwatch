@@ -11,7 +11,7 @@ const LESSONS = [
     title: "What's a premium?",
     body: [
       'A tokenized stock usually trades within a whisker of the real share price. The pill on each row shows the gap: green means the token costs more than the stock (a premium), red means less (a discount), and gray means they match (1:1).',
-      "Small gaps are normal — tokens trade around the clock on their own markets, so supply and demand nudge them off the stock price. Big, persistent gaps are worth noticing: they mean token traders are paying up (or bailing out) relative to the real thing.",
+      "Small gaps are normal: tokens trade around the clock on their own markets, so supply and demand nudge them off the stock price. Big or long-lasting gaps are less common. They can come from thin trading, a stale share price, a pause at the issuer or an exchange, or a data error, as well as from demand for the token. A gap describes prices; it isn't a signal to buy or sell.",
       'The Premium history chart on every asset page shows whether today\'s gap is typical for that asset or something new.',
     ],
   },
@@ -19,8 +19,8 @@ const LESSONS = [
     id: 'backing',
     title: 'How are tokens backed?',
     body: [
-      'Each token is issued against a real share. The issuer buys actual stock and holds it with a licensed custodian; the token is a claim on that share, which is why its price hugs the real one.',
-      'That anchor works through redemption: if the token got much cheaper than the stock, professional traders could buy tokens, redeem for shares, and pocket the difference — and that very trade pulls prices back together.',
+      "Each token is issued against a real share. The issuer buys actual stock and holds it with a licensed custodian as backing, and the token is built to track that share's price, which is why its price hugs the real one.",
+      'That anchor works through redemption: if the token got much cheaper than the stock, eligible professional traders could buy tokens and redeem them with the issuer, and that trade pulls prices back together. Redemption is limited: it requires identity checks, has minimum sizes, and is not available to people in the United States.',
       "You can check the details on any asset page under 'Details': the issuer, the chain it lives on, and the stock it tracks.",
     ],
   },
@@ -30,7 +30,7 @@ const LESSONS = [
     body: [
       'The US stock market closes at 4 PM Eastern on Friday. Tokens don\'t close — they keep trading nights, weekends, and holidays.',
       "While the market is closed, we compare tokens against the stock's last closing price, and the app labels it that way. A token drifting a percent or two over a weekend isn't an error — it's a live guess about where the stock will open on Monday.",
-      'That gap usually snaps back within minutes of the market reopening.',
+      'When the market reopens, the comparison switches back to the live share price, so the gap can change quickly. It may narrow, persist or widen.',
     ],
   },
   {
@@ -39,7 +39,7 @@ const LESSONS = [
     body: [
       'Two companies issue most of the tokens here. xStocks (by Swiss firm Backed) live on the Solana blockchain and trade on exchanges like Kraken and Bybit. Ondo Global Markets tokens live on Ethereum.',
       'The same stock can be tokenized by both — NVIDIA exists as NVDAx and NVDAon — usually at slightly different prices.',
-      "When an asset has a sibling from the other issuer, its page shows an 'Also tokenized by' section so you can compare and pick the cheaper one.",
+      "When an asset has a sibling from the other issuer, its page shows an 'Also tokenized by' section so you can compare them. Price isn't the only difference: the issuers, their legal structures, their chains and where each can be traded all differ.",
     ],
   },
   {
@@ -65,7 +65,7 @@ const LESSONS = [
     title: 'Who actually holds my money?',
     body: [
       'Not us. OnStock is a tracker — it reads public prices and shows you the gap. It never takes custody of your funds, never moves them, and cannot trade on your behalf.',
-      "When you buy, that happens somewhere else. Tapping through to trade sends you out to Jupiter, where the swap settles on-chain from your own wallet. Your keys stay with you the whole time, which is what 'non-custodial' means: nobody in the middle can freeze, lend out or lose what you hold.",
+      "When you buy, that happens somewhere else. Tapping through to trade sends you out to Jupiter, where the swap settles on-chain from your own wallet. Your keys stay with you the whole time, which is what 'non-custodial' means: no one in the middle holds your tokens for you. The token's issuer may still be able to pause or freeze it.",
       'The flip side of that is real: if you lose your wallet keys, no one — including us — can recover them for you.',
     ],
   },

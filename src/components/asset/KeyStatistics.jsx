@@ -4,6 +4,11 @@ import { usePoolLiquidity } from '../../hooks/usePoolLiquidity'
 import { ChevronDown } from '../Icons'
 import { formatPrice } from '../shared'
 
+/* Under the pool figure, always. A pool's size is easy to read as how much
+   can be traded at the quoted price, which it is not. */
+const POOL_SIZE_NOTE =
+  "Not how much you can trade: larger trades move the price more, and other pools and exchanges aren't included."
+
 /* One row of the Key statistics disclosure; hides itself when the value is missing. */
 function StatRow({ label, value }) {
   if (value == null) return null
@@ -154,17 +159,20 @@ export default function KeyStatistics({
                     value={ts.supply != null ? `${compactNum(ts.supply)} tokens` : null}
                   />
                   <StatRow
-                    label="Bid/ask spread"
-                    value={
-                      spread ? `${spread.spreadPct.toFixed(1)}% (~$${spread.refUsd} trade)` : null
+                    label={
+                      spread ? `Bid/ask spread (from a $${spread.refUsd} test quote)` : 'Bid/ask spread'
                     }
+                    value={spread ? `${spread.spreadPct.toFixed(1)}%` : null}
                   />
                   {liquidity && (
                     <div>
-                      <StatRow label="Pool liquidity (charted pool)" value={formatCompact(liquidity.usd)} />
+                      <StatRow label="Pool size (one pool)" value={formatCompact(liquidity.usd)} />
                       <p className="pt-0.5 text-right text-[11px] text-zinc-500">
                         {liquidity.poolName ? `${liquidity.poolName} pool, ` : ''}as of{' '}
                         {formatAsOf(liquidity.asOf)}
+                      </p>
+                      <p className="pt-0.5 text-right text-[11px] text-zinc-500">
+                        {POOL_SIZE_NOTE}
                       </p>
                     </div>
                   )}
