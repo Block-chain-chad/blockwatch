@@ -16,6 +16,7 @@ import {
   SPL_TOKEN_PROGRAM,
   TOKEN_2022_PROGRAM,
 } from '../lib/swapCheck'
+import { rawToUi, uiToRaw } from '../lib/multiplier'
 
 const QUOTE_BASE = 'https://lite-api.jup.ag/swap/v1/quote'
 const SWAP_BASE = 'https://lite-api.jup.ag/swap/v1/swap'
@@ -185,6 +186,9 @@ export async function executeSwap({ quote, provider, intent }) {
     side: intent.side,
     mint: intent.mint,
     amountRaw: intent.amountRaw,
+    // Keyed on the typed figure, because the raw size of one typed trade now
+    // depends on which ratio source answered. See swapKey.
+    typedAmount: intent.typedAmount,
   })
   // Expired entries go first, so a long session cannot grow this map without
   // bound.
@@ -297,6 +301,19 @@ async function submit({ quote, provider, intent, publicKey, key, inputMint, outp
     inputMint,
     outputMint,
     amountRaw: intent.amountRaw,
+    // What the user typed, and the issuer ratio in force for this trade. On a
+    // SELL the ratio is what turned the typed figure into amountRaw; on a BUY
+    // the input is USDC and the ratio applies to the output side instead, as
+    // the number of tokens the user is told they receive. Recorded either way,
+    // because it is what makes the record answerable.
+    // Without these the record is unreadable after the fact: amountRaw is the
+    // typed figure divided by a number the issuer moves on its own schedule,
+    // so "did this sell what they asked for" cannot be answered from the trail
+    // alone — and reconstructing the ratio later gives whatever it is THEN,
+    // not what it was at signing. Both are captured verbatim: the ratio as the
+    // exact decimal string used, the amount as the exact string typed.
+    typedAmount: intent.typedAmount ?? null,
+    multiplier: intent.multiplier ?? null,
     quotedOutRaw: quote.outAmount,
     minOutRaw: quote.otherAmountThreshold,
     slippageBps: SLIPPAGE_BPS,
@@ -418,4 +435,59 @@ export function formatRaw(raw, decimals, { maxFractionDigits = 4, significantDig
   const frac = fracPart.slice(0, keep).replace(/0+$/, '')
   const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
   return frac ? `${grouped}.${frac}` : grouped
+}
+
+/**
+ * The raw amount a sell must carry, from the figure the user typed.
+ *
+ * The typed figure is in WALLET units, because that is the only number a user
+ * can be looking at — Phantom shows raw/10^decimals scaled by the issuer's
+ * multiplier, and the issuer means it to be a share count. The chain is sized
+ * in raw. So this undoes the decimals and then the multiplier, both in exact
+ * integer math.
+ *
+ * Getting this wrong is not cosmetic. Passing the typed figure straight to
+ * toRaw, which is what this replaces, oversells by the multiplier: on NFLXx
+ * (ratio 10) "sell 1" built a transaction for ten tokens as the wallet counts
+ * them. 66 of the 103 pinned mints have a ratio that is not 1.
+ *
+ * Returns null on a ratio it cannot read, so the caller cannot quote or send.
+ * '0' means the amount is below one atomic unit.
+ */
+export function sellAmountRaw(typed, decimals, multiplier) {
+  if (!Number.isSafeInteger(decimals) || decimals < 0) return null
+  return uiToRaw(toRaw(typed, decimals), multiplier)
+}
+
+// Extra decimal places formatWallet scales through before formatting, so a
+// ratio below one cannot truncate a small holding to "0" on screen. Nine is
+// past any ratio's significant digits and still far inside BigInt.
+const DISPLAY_PAD = 9
+
+/**
+ * A raw amount, rendered in the units the user's wallet will show it in.
+ *
+ * Pass the multiplier of the mint the amount is denominated in — and '1' for
+ * USDC, which has no ratio. Without this the sheet promises "0.129 NFLXx" for
+ * a trade Phantom then reports as 1.29.
+ *
+ * Display only. Nothing that sizes a transaction may read this.
+ */
+export function formatWallet(raw, decimals, multiplier, options) {
+  if (!Number.isSafeInteger(decimals) || decimals < 0) return null
+  const s = String(raw ?? '').trim()
+  if (!/^\d+$/.test(s)) return null
+  // Scale at extra precision, then format at the matching scale.
+  //
+  // rawToUi truncates to a whole raw unit, which is the right thing when the
+  // result is going to a transaction. Here it is going to a screen, and for a
+  // ratio below one it would swallow small amounts whole: a single raw unit of
+  // AZNx times 0.5111 truncates to zero, and the sheet would print "0" for
+  // something the user does hold. formatRaw already has dust handling that
+  // keeps significant digits going; padding first is what lets it reach them.
+  return formatRaw(
+    rawToUi((BigInt(s) * 10n ** BigInt(DISPLAY_PAD)).toString(), multiplier),
+    decimals + DISPLAY_PAD,
+    options
+  )
 }

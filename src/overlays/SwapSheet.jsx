@@ -4,11 +4,15 @@ import {
   getSwapQuote,
   executeSwap,
   toRaw,
-  formatRaw,
+  sellAmountRaw,
+  formatWallet,
   USDC_DECIMALS,
   SLIPPAGE_BPS,
 } from '../services/swap'
-import { verifiedToken } from '../data/verifiedMints'
+import { verifiedToken, VERIFIED_AT } from '../data/verifiedMints'
+import { effectiveMultiplier, reconcileRatio } from '../lib/multiplier'
+import { fetchLiveRatio } from '../services/jupiter'
+import { track } from '../services/analytics'
 import { useFlag, SWAP_FLAG, SWAP_PAUSED_LINE } from '../services/featureFlags'
 import Sheet, { SheetTitle } from '../components/Sheet'
 
@@ -23,6 +27,19 @@ import Sheet, { SheetTitle } from '../components/Sheet'
  * The mint and its decimals come from data/verifiedMints — the address the
  * issuer vouches for on chain — not from the asset record and not from a
  * price API answering at swap time. An unverified asset gets no swap here.
+ *
+ * UNITS. Three of them meet on this screen, and confusing two costs money:
+ *
+ *   raw      the integer Jupiter quotes in and the transaction carries.
+ *   base     raw / 10^decimals. Never shown to anyone.
+ *   wallet   base * multiplier. What Phantom displays, what the issuer means
+ *            by "one token is one share", and therefore the only unit a user
+ *            can be typing or reading.
+ *
+ * So every number a human touches on this sheet is in wallet units, and every
+ * number handed to Jupiter or to executeSwap is raw. The two conversions are
+ * marked below. 66 of the 103 pinned mints have a multiplier that is not 1,
+ * so for most assets these are not the same number.
  */
 
 // Price impact is the silent way to lose money on a thin token: warn loudly
@@ -89,18 +106,104 @@ export default function SwapSheet({ asset, onClose }) {
     statusRef.current = status
   }, [status])
 
+  // The issuer's share-per-token ratio.
+  //
+  // The pin is issuer-verified but only knows changes scheduled before
+  // verify-mints last ran, and the issuer schedules them continuously — so
+  // this also asks Jupiter what the chain says now, and reconcileRatio decides
+  // between them: inside the band it takes the live value, above the band only
+  // when the live config proves it is the pin's own ratio moved forward, and
+  // below the floor never — a ratio read too low oversells in proportion.
+  // Anything it will not vouch for yields null and stops the trade.
+  //
+  // The proven-update hatch is opened for a SELL only. On a sell the ratio
+  // divides the size, so an over-high one merely undersells, and the
+  // alternative is that a name whose issuer just split it cannot be sold at
+  // all until someone re-pins by hand. On a BUY the same ratio multiplies the
+  // figure in "You receive" and "Minimum received" — which this sheet's own
+  // copy calls the floor below which the trade fails — so an over-high one
+  // overstates what the user is signing for while the transaction itself,
+  // sized in USDC, stays perfectly valid. Nothing downstream can catch that.
+  // Outside the band a buy refuses and shows the ratio message instead.
+  //
+  // `undefined` means the live read has not answered yet. Until it does the
+  // pin stands: it is the verified value, just possibly a step behind.
+  const [liveRatio, setLiveRatio] = useState(undefined)
+  useEffect(() => {
+    setLiveRatio(undefined)
+    if (!mint) return
+    let alive = true
+    fetchLiveRatio(mint).then(
+      (r) => alive && setLiveRatio(r),
+      // A non-ok response, a network failure or the timeout. All of them mean
+      // the same thing here: no live answer, so the pin stands.
+      () => alive && setLiveRatio(null)
+    )
+    return () => {
+      alive = false
+    }
+  }, [mint])
+  // Why a refusal happened, recorded during render and reported from an
+  // effect. Refusing is usually CORRECT, which is exactly why it has to be
+  // counted: if the feed's shape changed so that every payload reported a
+  // superseded value, more than half the pinned catalogue would refuse on both
+  // sides and, from outside, look like nothing happening at all.
+  let refusal = null
+  const multiplier =
+    liveRatio === undefined
+      ? effectiveMultiplier(token)
+      : reconcileRatio(token, liveRatio, {
+          mint,
+          verifiedAt: VERIFIED_AT,
+          allowProvenUpdate: side === 'sell',
+          onRefuse: (reason) => {
+            refusal = reason
+          },
+        })
+
+  // Keyed on the reason and the mint, so one refusal is one event rather than
+  // one per render. The payload is the reason and nothing else: no mint, no
+  // wallet, no amount. See REFUSAL_REASONS.
+  useEffect(() => {
+    if (refusal) track('ratio_refused', { reason: refusal })
+  }, [refusal, mint])
+
   // What the user asked for, in the input mint's smallest units — the single
   // definition, used to quote AND to state the intent at confirm time. Scaled
   // from the raw STRING, not a coerced number: toRaw does BigInt string math
   // (and expands "1e5" itself), so a 20-digit input cannot silently mis-size
   // the transaction the way a float round-trip would. null means there is no
   // amount to work with yet; '0' means below one atomic unit of this mint.
-  const inputDecimals = side === 'buy' ? USDC_DECIMALS : decimals
+  //
+  // UNITS, and the reason this is not one line.
+  //
+  // Buying, the input is USDC: no ratio, nothing to convert.
+  //
+  // Selling, the input is the token, and the number the user types is the one
+  // they read off Phantom — which is the UI amount, raw/10^decimals scaled by
+  // the multiplier. The chain is sized in raw. Treating the typed figure as
+  // raw/10^decimals, which is what this did before, oversells by the
+  // multiplier: "1" on NFLXx built a transaction for ten NFLXx as the wallet
+  // counts them. uiToRaw undoes the scaling, in exact BigInt fraction math so
+  // no float reaches a transaction size, and truncates so the trade is
+  // marginally smaller than asked rather than larger.
+  //
+  // uiToRaw returns null on a ratio it cannot parse. That null flows straight
+  // through to "no amount", so an unreadable ratio stops the trade instead of
+  // quietly defaulting to 1 — defaulting to 1 IS the bug.
+  // A refused ratio stops BOTH sides, not just the sell. Buying is sized in
+  // USDC, so the amount would be right — but the whole promise of the trade is
+  // "you receive N tokens", and N is quoted in the unit the wallet displays,
+  // which is exactly what a refused ratio means we cannot compute. Leaving
+  // that as a dash beside a live Confirm button is an unpriced trade with a
+  // working button.
   const typed = Number(amount)
   const amountRaw =
-    decimals == null || !(typed > 0) || !Number.isFinite(typed)
+    decimals == null || multiplier == null || !(typed > 0) || !Number.isFinite(typed)
       ? null
-      : toRaw(amount, inputDecimals)
+      : side === 'buy'
+        ? toRaw(amount, USDC_DECIMALS)
+        : sellAmountRaw(amount, decimals, multiplier)
 
   // Live quote: re-quotes on amount/side change and every 8s so a resting
   // quote can't go stale. Does NOT depend on `status`; pauses via statusRef
@@ -111,7 +214,38 @@ export default function SwapSheet({ asset, onClose }) {
     // A different amount or side is a different trade — any acknowledgment
     // made against the old numbers is void.
     setAckedImpact(null)
-    if (amountRaw == null) return
+    if (amountRaw == null) {
+      // Usually there is simply nothing typed yet, and silence is right. But
+      // a positive amount with no raw size means the ratio was refused — we
+      // cannot say how many shares one token stands for, so we will not size
+      // a trade in it. That has to be said: an unexplained dash beside a live
+      // Confirm button reads as a glitch worth retrying.
+      //
+      // Wording is the Compliance Reviewer's, verbatim. Do not paraphrase it
+      // without sending the new version back.
+      //
+      // What the previous attempt got wrong, and why this is narrower. It
+      // asserted the ISSUER had changed the ratio, when three of the four
+      // paths that land here are Onstock's own gap: an unreadable feed, an
+      // unparseable value, a difference we will not vouch for, and only then
+      // an actual change. It said "we haven't re-checked it" while the sheet
+      // re-checks on every open. It promised the user's tokens were
+      // unaffected on the BUY side, where they may hold none. And it said
+      // they could still be swapped from the wallet, which is an availability
+      // claim Onstock cannot support: Backed's mints carry pause and
+      // blocklist extensions, Jupiter excludes US wallets, and no region gate
+      // exists here yet.
+      //
+      // What is left is only what this screen actually knows: it cannot state
+      // the size, so it will not size it, and nothing has happened.
+      setQuoting(false)
+      if (typed > 0 && Number.isFinite(typed) && decimals != null) {
+        setMessage(
+          `We can't confirm how many shares one ${asset.ticker} token currently represents right now, so we won't size a trade we can't state the size of. Nothing has been sent and your balance is unchanged.`
+        )
+      }
+      return
+    }
     if (amountRaw === '0') {
       // Below one atomic unit of this mint — a quote request here is
       // guaranteed to fail, so don't fire one.
@@ -164,13 +298,27 @@ export default function SwapSheet({ asset, onClose }) {
       alive = false
       clearInterval(t)
     }
-  }, [amountRaw, side, mint])
+  }, [amountRaw, side, mint, typed, decimals, asset.ticker])
 
   const outDecimals = side === 'buy' ? decimals : USDC_DECIMALS
   // Formatted straight from the integer units Jupiter quoted — no float step
   // between the promise and the pixel.
-  const received = quote ? formatRaw(quote.outAmount, outDecimals) : null
-  const minReceived = quote ? formatRaw(quote.otherAmountThreshold, outDecimals) : null
+  //
+  // UNITS. Jupiter quotes raw amounts. Buying, the output is the token, and
+  // the wallet that receives it will show raw/10^decimals scaled by the
+  // multiplier — so these two lines have to scale too, or this sheet promises
+  // 0.129 NFLXx and Phantom then shows 1.29. rawToUi multiplies the integer by
+  // the ratio as an exact fraction and truncates, so what is displayed is
+  // never more than the chain will deliver. Selling, the output is USDC, which
+  // has no ratio.
+  //
+  // This is display only. The transaction is sized by amountRaw above and the
+  // quote Jupiter built, both of which stay raw.
+  const outMultiplier = side === 'buy' ? multiplier : '1'
+  const received = quote ? formatWallet(quote.outAmount, outDecimals, outMultiplier) : null
+  const minReceived = quote
+    ? formatWallet(quote.otherAmountThreshold, outDecimals, outMultiplier)
+    : null
   // Jupiter may omit priceImpactPct entirely, or send something that doesn't
   // parse. Both collapse to null here — via Number.isFinite, so NaN and
   // Infinity land in the same place instead of sneaking past a `>= 5` test
@@ -206,7 +354,19 @@ export default function SwapSheet({ asset, onClose }) {
         // What the user asked for, scaled from what they typed — NOT read
         // back off the quote. Stating it independently is what lets the
         // service check one against the other.
-        intent: { side, mint, amountRaw, ticker: asset.ticker },
+        // `typedAmount` and `multiplier` are carried for the audit record,
+        // not for sizing: amountRaw is already the only figure that sizes
+        // anything. They are what makes the record answerable later — the
+        // ratio moves on the issuer's schedule, so reading it back afterwards
+        // gives a different number than the one this trade used.
+        intent: {
+          side,
+          mint,
+          amountRaw,
+          ticker: asset.ticker,
+          typedAmount: amount,
+          multiplier,
+        },
       })
       setSig(signature)
       setStatus('done')

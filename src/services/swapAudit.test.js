@@ -77,3 +77,73 @@ describe('recordSwap', () => {
     expect(readSwapAudit()).toEqual([])
   })
 })
+
+/*
+ * The repeat guard has to survive the ratio moving underneath it.
+ *
+ * A sell is sized by the issuer's share-per-token ratio, which the sheet reads
+ * live and falls back to the pin for. One typed amount therefore has two
+ * possible raw sizes — CRMx's real pair is 99455809 off the pin and 99333694
+ * off the live read. Keyed on raw units, the same trade tapped twice across a
+ * flip in the ratio source looks like two different trades.
+ */
+describe('swapKey identifies the trade the user asked for', () => {
+  const base = { wallet: 'W', side: 'sell', mint: 'M' }
+
+  it('is the same key for one typed amount sized two different ways', () => {
+    const viaPin = swapKey({ ...base, amountRaw: '99455809', typedAmount: '1' })
+    const viaLive = swapKey({ ...base, amountRaw: '99333694', typedAmount: '1' })
+    expect(viaPin).toBe(viaLive)
+  })
+
+  it('still separates genuinely different amounts', () => {
+    expect(swapKey({ ...base, amountRaw: '1', typedAmount: '1' })).not.toBe(
+      swapKey({ ...base, amountRaw: '2', typedAmount: '2' })
+    )
+  })
+
+  it('still separates wallet, side and mint', () => {
+    const k = swapKey({ ...base, typedAmount: '1' })
+    expect(k).not.toBe(swapKey({ ...base, wallet: 'W2', typedAmount: '1' }))
+    expect(k).not.toBe(swapKey({ ...base, side: 'buy', typedAmount: '1' }))
+    expect(k).not.toBe(swapKey({ ...base, mint: 'M2', typedAmount: '1' }))
+  })
+
+  it('falls back to raw units for a caller that states no typed amount', () => {
+    expect(swapKey({ ...base, amountRaw: '99455809' })).toBe('W:sell:M:99455809')
+  })
+})
+
+/*
+ * One number, one key. A user retyping after a lost swap does not reproduce
+ * their keystrokes character for character, and a differently spelled retype
+ * that walks past the unresolved guard is the double spend the guard exists
+ * to stop.
+ */
+describe('swapKey normalises how the amount was spelled', () => {
+  const base = { wallet: 'W', side: 'sell', mint: 'M' }
+  const key = (typedAmount) => swapKey({ ...base, amountRaw: '10000000', typedAmount })
+
+  it('gives one key for "1", "1.0" and "01"', () => {
+    expect(new Set([key('1'), key('1.0'), key('01')]).size).toBe(1)
+  })
+
+  it('also folds whitespace and trailing zeros', () => {
+    expect(key(' 1 ')).toBe(key('1'))
+    expect(key('1.500')).toBe(key('1.5'))
+  })
+
+  it('accepts a number as readily as a string', () => {
+    expect(key(1)).toBe(key('1'))
+  })
+
+  it('still separates genuinely different amounts', () => {
+    expect(key('1')).not.toBe(key('10'))
+    expect(key('1.5')).not.toBe(key('1.05'))
+  })
+
+  it('keeps an unparseable amount as typed rather than collapsing it', () => {
+    expect(key('abc')).not.toBe(key('1'))
+    expect(key('abc')).toBe(key('abc'))
+  })
+})

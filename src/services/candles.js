@@ -9,6 +9,13 @@
 // ascending, time in unix seconds, or null when there is nothing to draw —
 // callers render nothing rather than an error.
 //
+// UNITS. Both series come out priced PER SHARE, so they can be drawn against
+// each other and against the gap. The stock side already is. The token side
+// is not: GeckoTerminal serves pool OHLCV and a pool trades base tokens, one
+// of which is `multiplier` shares. getTokenCandles converts, using the ratio
+// pinned in data/verifiedMints.json. Without that step NFLXx's candles read
+// around 757 beside a 76 price line.
+//
 // Budget: GeckoTerminal's free tier is roughly 30 requests a minute for
 // everyone put together, so pool resolution is cached here per asset for a
 // day and candle series for the timeframe's TTL (which mirrors the proxy's
@@ -35,6 +42,8 @@ import {
   normalizeYahooCandles,
   isStockRequest,
 } from '../lib/candles'
+import { candlesPerShare, ratioFor } from '../lib/multiplier'
+import { verifiedToken } from '../data/verifiedMints'
 
 const IS_PROD = import.meta.env.PROD
 
@@ -142,7 +151,20 @@ export async function getTokenCandles(asset, timeframeId) {
         candles = normalizeOhlcv(await fetchJson(`/gt${GT_API_PREFIX}${path}`))
       }
       if (candles.length === 0) return null
-      const data = { network, pool, timeframe: timeframe.id, candles }
+      // UNIT BOUNDARY. Everything above this line is per BASE token, because
+      // that is what a DEX pool trades; everything below is per SHARE, which
+      // is what the rest of the app means by a price. For 66 of the 103
+      // pinned mints those differ, and for NFLXx they differ by ten times.
+      // Scaled here rather than in api/candles.js so the proxy stays a dumb
+      // relay: its responses are shared and edge-cached across every user,
+      // and the ratio is a per-asset fact the client already holds pinned.
+      // A mint with no pin refuses rather than assuming 1.0 — see ratioFor.
+      // An unverified Solana token drawn at a ratio of 1 puts NFLXx candles at
+      // 757 under a $76 share, which is the bug this whole conversion exists
+      // to remove.
+      const perShareCandles = candlesPerShare(candles, ratioFor(verifiedToken(asset), asset?.mint))
+      if (perShareCandles == null) return null
+      const data = { network, pool, timeframe: timeframe.id, candles: perShareCandles }
       candleCache.set(key, { at: Date.now(), data })
       return data
     } catch {

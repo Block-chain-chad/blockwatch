@@ -55,5 +55,13 @@ jobs:
       - name: Test
         run: npm test
 
+      # Separate from Test on purpose. A stale pin is a maintenance task, not a
+      # broken build, and it should say so by name rather than hiding inside a
+      # thousand assertions. src/data/verifiedMints.json decides how a sell is
+      # sized; .github/workflows/repin-mints.yml refreshes it weekly, and this
+      # is the tripwire for when that has not happened.
+      - name: Pin freshness
+        run: npm run check:pin
+
       - name: Build
         run: npm run build

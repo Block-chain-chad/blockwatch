@@ -2,6 +2,9 @@ import { timeAgo, EM_DASH } from '../../lib/format'
 import { isThinlyTraded, premiumPct } from '../../lib/prices'
 import { formatPrice, formatPct, GapBar, changeColor } from '../shared'
 import { shareFreshness } from '../../lib/provenance'
+import { multiplierLine } from '../../lib/multiplier'
+import { verifiedToken } from '../../data/verifiedMints'
+import { useFlag, RATIO_LINE_FLAG } from '../../services/featureFlags'
 import PriceText from '../PriceText'
 
 /*
@@ -40,6 +43,25 @@ export default function GapPanel({ asset, scrub, session, lastFetchAt }) {
   // is never the fetch time: the quote carries its own.
   const tokenAge = lastFetchAt ? timeAgo(lastFetchAt) : EM_DASH
   const share = shareFreshness({ quote: asset.stockQuote, session })
+
+  // The issuer's share-per-token ratio, in words, or null at 1:1. A pending
+  // change is deliberately NOT shown: it is the issuer's routine dividend
+  // accrual, it moves the ratio by a fraction of a percent, and announcing a
+  // date beside a trade affordance reads as a reason to act before it. The
+  // line switches to the new ratio by itself the moment it takes effect.
+  //
+  // GATED, and NOT because it is swap functionality — this panel renders for
+  // every visitor on the asset screen and the desktop readout. The sentence
+  // describes what a tokenized security represents, and the Compliance
+  // Reviewer has asked that a lawyer rule on the noun before it ships.
+  //
+  // Its own flag, not the swap's. Borrowing the swap flag meant enabling the
+  // swap would have shipped this sentence with it, and the two decisions are
+  // not the same decision or the same reviewer. Ships OFF and fails closed.
+  const ratioAllowed = useFlag(RATIO_LINE_FLAG)
+  const ratioLine = ratioAllowed
+    ? multiplierLine(verifiedToken(asset), { underlying: asset.underlying })
+    : null
 
   return (
     <div
@@ -110,6 +132,22 @@ export default function GapPanel({ asset, scrub, session, lastFetchAt }) {
           </div>
         )}
       </div>
+
+      {/* The issuer's ratio, but only when it is not 1:1 and so actually
+          changes what the two legs above are comparing. "Issuer ratio: 1 token
+          tracks the value of 10 NFLX shares." is what makes them comparable;
+          without it a reader who knows NFLX split has no way to tell whether
+          this screen knows. Silent for the 37 mints still at 1.0, where there
+          is nothing to say. Wording is compliance-reviewed: see
+          lib/multiplier.js's multiplierLine before changing a word of it. */}
+      {ratioLine && (
+        <div
+          className="border-t px-4 py-2.5"
+          style={{ borderColor: 'var(--border-subtle)' }}
+        >
+          <p className="t-caption text-zinc-500">{ratioLine}</p>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { judgeMint } from './verify-mints.mjs'
+import { judgeMint, readMultiplier } from './verify-mints.mjs'
 
 /*
  * judgeMint is the rule that decides which token addresses the app will spend
@@ -91,5 +91,88 @@ describe('judgeMint', () => {
         false
       )
     }
+  })
+})
+
+/*
+ * readMultiplier — the issuer's share-per-token ratio, off the mint account.
+ *
+ * This decides the number that later sizes a sell. Its guards used to fail
+ * silently: an unreadable multiplier wrote an entry with no ratio, which the
+ * client reads as 1.0, and a bad effective timestamp dropped the scheduled
+ * value. All 66 scaled mints take their ratio from newMultiplier — NFLXx's
+ * standing field still says "1" while the real ratio is 10 — so either
+ * silence would have pinned NFLXx as one token per share and oversold every
+ * holder tenfold. Both now throw, which stops the run and leaves the good
+ * file in place.
+ */
+const scaled = (state) => ({
+  data: { parsed: { info: { extensions: [{ extension: 'scaledUiAmountConfig', state }] } } },
+})
+
+describe('readMultiplier', () => {
+  it('pins both values and the effective time for a scheduled change', () => {
+    // NFLXx's real shape: standing 1, scheduled 10, effective in the past.
+    expect(
+      readMultiplier(
+        scaled({ multiplier: '1', newMultiplier: '10', newMultiplierEffectiveTimestamp: 1763337300 })
+      )
+    ).toEqual({
+      multiplier: '1',
+      nextMultiplier: '10',
+      nextMultiplierAt: '2025-11-16T23:55:00.000Z',
+    })
+  })
+
+  it('pins the scheduled value as the standing one when it is already in force', () => {
+    // TSLAx's real shape: a zero timestamp means the scheduled value applies
+    // now, so there is no future change worth recording and no 1970 date.
+    expect(
+      readMultiplier(
+        scaled({ multiplier: '1', newMultiplier: '1', newMultiplierEffectiveTimestamp: 0 })
+      )
+    ).toEqual({ multiplier: '1' })
+  })
+
+  it('pins the standing value alone when nothing is scheduled', () => {
+    expect(readMultiplier(scaled({ multiplier: '1.05' }))).toEqual({ multiplier: '1.05' })
+  })
+
+  it('returns nothing for a mint that carries no such extension', () => {
+    // Not an error: a plain Token-2022 mint the issuer never scaled. One token
+    // is one share and the client's default is right.
+    expect(readMultiplier({ data: { parsed: { info: { extensions: [] } } } })).toBeNull()
+    expect(readMultiplier(null)).toBeNull()
+  })
+
+  it('THROWS on an unreadable multiplier rather than pinning a silent 1.0', () => {
+    for (const bad of ['', 'abc', '-1', '0', null, undefined, NaN, {}]) {
+      expect(() => readMultiplier(scaled({ multiplier: bad })), `accepted ${JSON.stringify(bad)}`).toThrow(
+        /multiplier is unreadable/
+      )
+    }
+  })
+
+  it('THROWS on an unreadable scheduled value', () => {
+    expect(() =>
+      readMultiplier(
+        scaled({ multiplier: '1', newMultiplier: 'abc', newMultiplierEffectiveTimestamp: 1763337300 })
+      )
+    ).toThrow(/newMultiplier is unreadable/)
+  })
+
+  it('THROWS on an unreadable effective timestamp rather than dropping the change', () => {
+    // This is the one that would have pinned NFLXx as 1.0.
+    for (const bad of ['soon', null, undefined, NaN]) {
+      expect(() =>
+        readMultiplier(
+          scaled({ multiplier: '1', newMultiplier: '10', newMultiplierEffectiveTimestamp: bad })
+        )
+      ).toThrow(/effective timestamp is unreadable/)
+    }
+  })
+
+  it('refuses exponent notation, which the client cannot read as a fraction', () => {
+    expect(() => readMultiplier(scaled({ multiplier: '1e-7' }))).toThrow(/multiplier is unreadable/)
   })
 })

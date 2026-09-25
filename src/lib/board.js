@@ -11,7 +11,27 @@ import { premiumPct, isThinlyTraded } from './prices'
 import { isPlausiblePct } from './format'
 import { isStockDelayed } from './provenance'
 
-/** Past this the number is a stale print, not a mispricing (Screener's rule). */
+/**
+ * Past this the number is a stale print, not a mispricing (Screener's rule).
+ *
+ * Left at 25 deliberately, and worth revisiting once rather than drifting.
+ * Six xStocks carry an issuer ratio of 2x or more — NFLXx and PPLTx at 10,
+ * PALLx at 5, CRWDx at 4, TQQQx at 2.0090, AZNx at 0.5111 — and any surface
+ * that priced them per BASE token instead of per share produced gaps of -90%
+ * to +96%, which this threshold quietly swallowed as "not credible". That was
+ * masking a unit bug rather than catching a stale print.
+ *
+ * The unit bug is now fixed at its sources: services/candles.js converts pool
+ * candles, services/jupiter.js converts quote-derived bid and ask, and the
+ * CoinGecko feed that actually drives premiumPct was already per share (see
+ * hooks/useChartData.js for the measurement). So this threshold is no longer
+ * load-bearing for those six names, and their gaps should now sit in single
+ * digits like everything else.
+ *
+ * Nothing here changes in this round: the threshold still earns its keep
+ * against genuinely stale quotes on thin wrappers, and lowering it is a
+ * product judgement about how much of the tail to hide, not a bug fix.
+ */
 export const MAX_CREDIBLE_GAP = 25
 
 export const BOARD_SORTS = Object.freeze([

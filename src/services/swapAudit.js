@@ -32,9 +32,33 @@ const MAX_RECORDS = 200
  * The idempotency key for a swap attempt: same wallet, same direction, same
  * token, same amount. Two records sharing one are the same intended trade —
  * which is what makes an accidental double submit visible after the fact.
+ *
+ * The amount is the figure the user TYPED when there is one, not the raw units
+ * it was scaled to. Those are no longer the same question. A sell is sized by
+ * the issuer's ratio, which the sheet reads live and falls back to the pin
+ * for, so one typed amount produces different raw sizes depending on which
+ * source answered — CRMx sizes "1" as 99455809 off the pin and 99333694 off
+ * the live read. Keyed on raw, a user who taps Confirm, loses the connection,
+ * and taps again after the ratio source flips looks like a different trade and
+ * sails straight past the repeat guard. Keyed on what they typed, it does not.
  */
-export function swapKey({ wallet, side, mint, amountRaw }) {
-  return `${wallet}:${side}:${mint}:${amountRaw}`
+export function swapKey({ wallet, side, mint, amountRaw, typedAmount }) {
+  return `${wallet}:${side}:${mint}:${normalizeTyped(typedAmount) ?? amountRaw}`
+}
+
+/**
+ * One number, one spelling. "1", "1.0" and "01" are the same trade, and a
+ * user who retypes after a lost swap will not reproduce their keystrokes
+ * character for character — a differently spelled retype walking past the
+ * unresolved guard is exactly the double spend the guard exists to stop.
+ *
+ * Only for the KEY. The audit record keeps the raw string the user typed,
+ * because that is what they saw.
+ */
+function normalizeTyped(typedAmount) {
+  if (typedAmount == null) return null
+  const n = Number(String(typedAmount).trim())
+  return Number.isFinite(n) && n > 0 ? String(n) : String(typedAmount)
 }
 
 function read() {
