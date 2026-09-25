@@ -3,6 +3,7 @@ import Header from '../components/Header'
 import UpdatedAgo from '../components/UpdatedAgo'
 import OnboardingTip from '../components/OnboardingTip'
 import TreasuryYields from '../components/TreasuryYields'
+import LearnCards from '../components/LearnCards'
 import { usePrices, useAssetSubscription } from '../state/PricesContext'
 import { useFolders } from '../state/FoldersContext'
 import { useSparklines } from '../hooks/useSparklines'
@@ -182,6 +183,12 @@ export default function Home({ onOpenProfile, onOpenAsset, onOpenSearch }) {
       )}
 
       <UpdatedAgo className="px-4 pt-3 text-center" />
+
+      {/* Below the list, never above it: nothing may push the first price row
+          down (see the note on SessionLine above). This is here so someone who
+          meets "gap", "1:1" or "basis point" on a row can look it up without
+          first finding the News tab, where the same list also lives. */}
+      <LearnCards source="home" />
 
       <Disclaimer />
     </div>

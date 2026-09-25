@@ -28,6 +28,8 @@
 //     search_miss             { query }                   SearchOverlay, SymbolSearch
 //     chart_mode              { mode, ticker }            ChartWorkspace, AssetDetail
 //     share                   { ticker, action }          ShareSheet.jsx
+//     learn_open              { source: 'home' | 'news' | 'desktop', lesson }
+//                                                         LearnCards.jsx
 //
 //   Coming back — the actions that give someone a reason to (2026-09-16)
 //     folder_created          {}                          state/FoldersContext.jsx

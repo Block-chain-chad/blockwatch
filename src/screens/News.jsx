@@ -116,7 +116,7 @@ export default function News({ onOpenProfile, onOpenAsset }) {
         )}
       </div>
 
-      <LearnCards />
+      <LearnCards source="news" />
     </div>
   )
 }

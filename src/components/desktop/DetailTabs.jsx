@@ -161,7 +161,7 @@ export default function DetailTabs({
           ))}
         {tab === 'learn' && (
           <div className="-mx-0">
-            <LearnCards />
+            <LearnCards source="desktop" />
           </div>
         )}
       </div>
