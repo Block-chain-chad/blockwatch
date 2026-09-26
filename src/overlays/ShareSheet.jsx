@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { premiumPct } from '../lib/prices'
+import { priceFooter } from '../lib/gapCheck'
 import { formatPrice, formatPct } from '../lib/format'
 import { track } from '../services/analytics'
 import Sheet, { SheetTitle } from '../components/Sheet'
@@ -70,10 +71,9 @@ async function makeCardBlob(asset) {
   // price footer
   ctx.fillStyle = '#71717a'
   ctx.font = '400 42px sans-serif'
-  const parts = []
-  if (asset.tokenPrice != null) parts.push(`Token ${formatPrice(asset.tokenPrice)}`)
-  if (asset.stockPrice != null) parts.push(`Stock ${formatPrice(asset.stockPrice)}`)
-  ctx.fillText(parts.join('   ·   '), 84, 920)
+  // Per share where a token tracks more or less than one, and the reason
+  // when there is no gap to compare (lib/gapCheck.js).
+  ctx.fillText(priceFooter(asset, formatPrice).join('   ·   '), 84, 920)
   ctx.fillStyle = '#52525b'
   ctx.font = '400 36px sans-serif'
   const date = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })

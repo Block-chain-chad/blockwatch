@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { ASSETS, BY_ID, CORE_IDS } from '../data/universe'
 import { mergeAssets } from '../lib/prices'
-import { liveAgrees } from '../lib/gapCheck'
+import { acceptLive } from '../lib/gapCheck'
 import { quoteCycle, withRetries } from '../lib/quoteRotation'
 import { isUsMarketOpen, getMarketSession } from '../lib/market'
 import { fetchTokenMarkets, loadPriceCache, savePriceCache, POLL_MS } from '../services/coingecko'
@@ -160,9 +160,9 @@ export function PricesProvider({ children }) {
           const seenAt = fastFedRef.current.get(id)
           const kept =
             seenAt != null && now - seenAt < FAST_POLL_MS * 6 ? s.prices[id]?.tokenPrice : null
-          // Kept only while it still agrees with CoinGecko's fresh number;
-          // see liveAgrees in lib/gapCheck.js.
-          const livePrice = kept != null && liveAgrees(kept, row.feedPrice) ? kept : null
+          // Kept only while CoinGecko, freshly fetched and itself current,
+          // still agrees with it; see acceptLive in lib/gapCheck.js.
+          const livePrice = kept != null && acceptLive(kept, row, now) ? kept : null
           prices[id] = livePrice != null ? { ...row, tokenPrice: livePrice, priceUpdatedAt: seenAt } : row
         }
         pricesRef.current = prices
@@ -322,7 +322,11 @@ export function PricesProvider({ children }) {
         // mid-window) and simply age out of the window on their own.
         const now = Date.now()
         for (const { id, mint } of pairs) {
-          if (live[mint] != null) fastFedRef.current.set(id, now)
+          // Only a price that will actually be used shields the row; a
+          // refused one must not keep CoinGecko's next number out.
+          if (live[mint] != null && acceptLive(live[mint], pricesRef.current[id], now)) {
+            fastFedRef.current.set(id, now)
+          }
         }
         // Opportunistic prune so a long session can't grow the map without
         // bound as the user browses hundreds of assets.
@@ -346,8 +350,9 @@ export function PricesProvider({ children }) {
             if (row == null) continue
             // A thin pool quotes nonsense, and this price used to reach the
             // gap unchecked (AMDx at -17.75% in the header on 2026-09-26).
-            // Only a price CoinGecko agrees with may replace its own.
-            if (!liveAgrees(px, row.feedPrice)) continue
+            // Only a price that a current CoinGecko price agrees with may
+            // replace it (acceptLive in lib/gapCheck.js).
+            if (!acceptLive(px, row, now)) continue
             const prev = row.tokenPrice
             // Ignore sub-display-precision moves (~0.005%): no visible digit
             // changes, so an update would only burn renders and fake flashes.

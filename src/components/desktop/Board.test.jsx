@@ -35,6 +35,7 @@ const A = (over) => ({
   venues: ['Jupiter'],
   stockQuote: null,
   sharesPerToken: 1, // verified 1:1; see lib/gapCheck.js
+  priceUpdatedAt: Date.now(),
   ...over,
 })
 

@@ -7,7 +7,7 @@ import { useAssetWorkspace, alertLabelFor } from '../../hooks/useAssetWorkspace'
 import { useLocalState } from '../../hooks/useLocalState'
 import { useNow } from '../../hooks/useNow'
 import { premiumPct, isThinlyTraded } from '../../lib/prices'
-import { gapCheck, GAP_STATUS_LABEL } from '../../lib/gapCheck'
+import { gapCheck, GAP_STATUS_LABEL, tokenUnitsNote } from '../../lib/gapCheck'
 import { formatPct, formatPrice, EM_DASH } from '../../lib/format'
 import {
   SIZES, RANGE_WORDS, formatSize, gapDollars, readingSentence, roundTrip, gapPercentile, percentileCaption,
@@ -143,6 +143,9 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
         {/* The percentile sits under the number it describes (spec 2026-09-15
             §3.2), not three sections down under the history pane. */}
         {percentileLine && <p className="t-caption text-zinc-500">{percentileLine}</p>}
+        {/* The gap and its history are in share units; say so when one token
+            is not one share (lib/gapCheck.js). */}
+        {tokenUnitsNote(asset) && <p className="t-caption text-zinc-400">{tokenUnitsNote(asset)}</p>}
         <div className="num t-label flex flex-col gap-1 text-zinc-300">
           <div>{tokenLegLine({ price: asset.tokenPrice, ageSeconds: tokenAgeSeconds, source: asset.mint ? 'Jupiter and CoinGecko' : 'CoinGecko' })}</div>
           {asset.underlying && (

@@ -3,6 +3,9 @@ import {
   gapCheck,
   sharesPerToken,
   liveAgrees,
+  acceptLive,
+  tokenUnitsNote,
+  priceFooter,
   gapStatusLabel,
   MAX_PLAUSIBLE_GAP_PCT,
   TOKEN_PRICE_MAX_AGE_MS,
@@ -72,10 +75,17 @@ describe('the live cases, category (a): split ratios on Ondo', () => {
 })
 
 describe('the live cases, category (b): stale token prices', () => {
-  it('PLx, last updated three months earlier, is a failed price check', () => {
+  it('PLx, last updated three months earlier, is not confirmed as a gap', () => {
     const plx = live('planet-labs-xstock', 25.95, 17.43, { priceUpdatedAt: Date.parse('2026-06-26T16:57:10Z') })
     expect(gapCheck(plx, NOW).status).toBe('price-check-failed')
-    expect(gapStatusLabel(plx, NOW)).toBe('Price check failed')
+    expect(gapStatusLabel(plx, NOW)).toBe('Gap not confirmed')
+  })
+
+  it('a price with no time on it is not a gap yet (old caches carry none)', () => {
+    const a = live('netflix-xstock', 71.2, 71.145, { priceUpdatedAt: null })
+    expect(gapCheck(a, NOW).status).toBe('pending')
+    expect(gapCheck({ ...a, priceUpdatedAt: NaN }, NOW).status).toBe('pending')
+    expect(gapStatusLabel(a, NOW)).toBeNull()
   })
 
   it('a price just inside a day old still counts', () => {
@@ -100,6 +110,16 @@ describe('the live cases, category (c): thin pools from the live Jupiter layer',
 
   it('a healthy live price is used (NFLXx 71.29 against 70.97)', () => {
     expect(liveAgrees(71.294, 70.97)).toBe(true)
+  })
+
+  it('does not let a thin pool re-stamp a stale CoinGecko price as fresh', () => {
+    // PLx: CoinGecko's 25.95 is three months old. A pool echoing it agrees,
+    // but agreement with a stale number proves nothing.
+    const stale = { feedPrice: 25.95, feedUpdatedAt: Date.parse('2026-06-26T16:57:10Z') }
+    expect(liveAgrees(25.9, stale.feedPrice)).toBe(true)
+    expect(acceptLive(25.9, stale, NOW)).toBe(false)
+    expect(acceptLive(71.294, { feedPrice: 70.97, feedUpdatedAt: NOW - 120_000 }, NOW)).toBe(true)
+    expect(acceptLive(71.294, { feedPrice: 70.97, feedUpdatedAt: null }, NOW)).toBe(false)
   })
 
   it('refuses a live price with nothing to check it against', () => {
@@ -152,5 +172,37 @@ describe('what everything downstream sees', () => {
     expect(top.asset.ticker).toBe('ADBEx')
     const withoutAdobe = widestCredibleGap(assets.slice(0, 3), 'closed')
     expect(withoutAdobe.asset.ticker).toBe('NFLXx')
+  })
+})
+
+describe('units copy', () => {
+  const fmt = (n) => `$${n.toFixed(2)}`
+
+  it('labels a token drawn per share, and a token with no line', () => {
+    expect(tokenUnitsNote(live('netflix-ondo-tokenized-stock', 711.12, 71.145))).toBe(
+      'Token drawn per share (1 NFLXon = 10 shares)',
+    )
+    expect(tokenUnitsNote(live('netflix-xstock', 71.2, 71.145))).toBeNull()
+    const bstock = Object.values(BY_ID).find((a) => a.issuer === 'bStocks' && a.underlying)
+    expect(tokenUnitsNote(live(bstock.id, 100, 100))).toBe('Token not drawn: ratio unverified')
+    expect(tokenUnitsNote({ underlying: null })).toBeNull()
+  })
+
+  it('never prints raw token and share prices side by side without the unit or the reason', () => {
+    expect(priceFooter(live('netflix-ondo-tokenized-stock', 711.12, 71.145, realFresh()), fmt)).toEqual([
+      'Token $711.12 ($71.11 per share)',
+      'Stock $71.14',
+    ])
+    const bstock = Object.values(BY_ID).find((a) => a.issuer === 'bStocks' && a.underlying)
+    expect(priceFooter(live(bstock.id, 1014.6, 252.13, realFresh()), fmt)).toEqual([
+      'Token $1014.60',
+      'Stock $252.13',
+      'Ratio unverified',
+    ])
+    expect(priceFooter(live('netflix-xstock', 150, 100, realFresh()), fmt)).toEqual([
+      'Token $150.00',
+      'Stock $100.00',
+      'Gap not confirmed',
+    ])
   })
 })

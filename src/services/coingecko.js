@@ -3,6 +3,8 @@
 // ONE /coins/markets request per poll cycle and caching the last good response
 // in localStorage (survives reloads; powers the "last updated X ago" fallback).
 
+import { TOKEN_PRICE_MAX_AGE_MS } from '../lib/gapCheck'
+
 const API_BASE = 'https://api.coingecko.com/api/v3'
 const DEMO_KEY = import.meta.env.VITE_COINGECKO_API_KEY // optional; raises rate limits
 const CACHE_KEY = 'bw.priceCache.v1'
@@ -70,6 +72,7 @@ async function fetchMarketsChunk(ids) {
       // layer can be checked against a second source (state/PricesContext),
       // and when CoinGecko last saw it trade (lib/gapCheck.js).
       feedPrice: row.current_price,
+      feedUpdatedAt: Number.isFinite(updated) ? updated : null,
       priceUpdatedAt: Number.isFinite(updated) ? updated : null,
       change24h: row.price_change_percentage_24h ?? null,
       marketCap: row.market_cap ?? null,
@@ -210,6 +213,9 @@ export function loadPriceCache() {
     if (!raw) return null
     const parsed = JSON.parse(raw)
     if (!parsed?.at || !parsed?.data) return null
+    // Instant paint on reload is worth a few minutes' lag, not a week's: a
+    // cache older than a token price may be is dropped (lib/gapCheck.js).
+    if (!(Date.now() - parsed.at <= TOKEN_PRICE_MAX_AGE_MS)) return null
     return parsed
   } catch {
     return null

@@ -33,9 +33,9 @@ describe('gap status in rows', () => {
     expect(html).not.toContain('10.00')
   })
 
-  it('says "Price check failed" for an implausible gap', () => {
+  it('says "Gap not confirmed" for an implausible gap', () => {
     const html = renderToStaticMarkup(<PremiumPill asset={{ ...base, sharesPerToken: 1, tokenPrice: 150 }} />)
-    expect(html).toContain('Price check failed')
+    expect(html).toContain('Gap not confirmed')
   })
 
   it('shows the gap as a number when it checks out', () => {

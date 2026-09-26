@@ -41,6 +41,7 @@ const liquid = (id, tokenPrice, stockPrice, over = {}) => ({
   stockPrice,
   volume24h: THIN_VOLUME_USD * 10,
   sharesPerToken: 1, // verified 1:1; see lib/gapCheck.js
+  priceUpdatedAt: Date.now(),
   ...over,
 })
 

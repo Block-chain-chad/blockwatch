@@ -18,6 +18,7 @@ const A = (over) => ({
   volume24h: over.volume24h ?? 1_000_000,
   // Verified 1:1 unless a test says otherwise (see lib/gapCheck.js).
   sharesPerToken: 'sharesPerToken' in over ? over.sharesPerToken : 1,
+  priceUpdatedAt: Date.now(),
 })
 
 const NVDAX = A({ id: 'nvdax', ticker: 'NVDAx', name: 'NVIDIA', underlying: 'NVDA', tokenPrice: 218.49, stockPrice: 218.29 })

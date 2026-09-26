@@ -22,7 +22,7 @@ export { formatPrice, formatPct, changeColor }
 function usePremium(asset) {
   const p = premiumPct(asset)
   const thin = isThinlyTraded(asset)
-  // "Ratio unverified" or "Price check failed" (lib/gapCheck.js): said in
+  // "Ratio unverified" or "Gap not confirmed" (lib/gapCheck.js): said in
   // words, and never replaced by the 24h change, which would read as a gap.
   const label = gapStatusLabel(asset)
   const value = label ? null : (p ?? asset.dayChange)

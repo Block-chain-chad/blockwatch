@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchTokenHistory } from '../services/coingecko'
 import { getStockHistory } from '../services/stocks'
-import { sharesPerToken } from '../lib/gapCheck'
+import { gapCheck, sharesPerToken, MAX_PLAUSIBLE_GAP_PCT } from '../lib/gapCheck'
 
 // Range → CoinGecko days + Yahoo interval/range. For 1D we ask Yahoo for 5d
 // and clip: on weekends "1d" would return only Friday's session, entirely
@@ -36,7 +36,7 @@ export const CHART_RANGES = {
  * tracks sValue shares (10 on NFLXon). The hook below divides by the verified
  * sValue before this runs; see sharesPerToken in lib/gapCheck.js.
  */
-function buildPremiumSeries(token, stockRaw, fallbackStockPrice) {
+export function buildPremiumSeries(token, stockRaw, fallbackStockPrice) {
   const src =
     stockRaw.length > 0
       ? stockRaw
@@ -49,9 +49,24 @@ function buildPremiumSeries(token, stockRaw, fallbackStockPrice) {
   for (const p of token) {
     while (i + 1 < src.length && src[i + 1].t <= p.t) i++
     if (src[i].t > p.t) continue // token point precedes all stock data
-    out.push({ t: p.t, v: ((p.v - src[i].v) / src[i].v) * 100 })
+    const v = ((p.v - src[i].v) / src[i].v) * 100
+    // The same bound the live gap is held to (lib/gapCheck.js): a point past
+    // it is a bad print, not history worth drawing or ranking against.
+    if (!Number.isFinite(v) || Math.abs(v) > MAX_PLAUSIBLE_GAP_PCT) continue
+    out.push({ t: p.t, v })
   }
   return out
+}
+
+/**
+ * The gap history is shown only while the live gap is: an asset whose ratio
+ * is unverified, whose token price is stale, or whose gap is not confirmed
+ * gets no history either, on the phone chart, the desktop gap chart or the
+ * Readout's percentile. Applied when read, not when fetched, so it follows
+ * the live verdict as prices arrive.
+ */
+export function gatedPremium(asset, premium, now) {
+  return gapCheck(asset, now).status === 'ok' ? premium : []
 }
 
 /**
@@ -124,5 +139,5 @@ export function useChartData(asset, range, retryKey = 0) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [asset.id, range, retryKey])
 
-  return state
+  return { ...state, premium: gatedPremium(asset, state.premium) }
 }

@@ -9,6 +9,7 @@ import { chartTitle, DEFAULT_TITLE } from '../../lib/pageTitle'
 import { legendStatus, delayTooltip, isStockDelayed, chartHistoryCredit } from '../../lib/provenance'
 import { STOCK_QUOTE_SOURCE } from '../../services/stocks'
 import { premiumPct } from '../../lib/prices'
+import { tokenUnitsNote } from '../../lib/gapCheck'
 import { candleSeconds } from '../../lib/candles'
 import { coerceTimeframe, isIntraday, networkName, timeframeLabel, cleanCandles } from '../../lib/candleSeries'
 import { computePlots, describeKey } from '../../lib/indicatorCatalog'
@@ -329,6 +330,9 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef, dri
   const stockDelayed = isStockDelayed(session, stockAge)
   const tokenVenue = networkName(candleData?.network) ?? asset.chain ?? 'DEX'
   const tokenStatus = legendStatus('token', session, null, { venue: tokenVenue })
+  // The token line and candles are in share units (lib/gapCheck.js); say so
+  // when that differs from one token, and say why when there is no line.
+  const unitsNote = tokenUnitsNote(asset)
   // Two sources on the stock side, named for what each one provides. This line
   // reports the age of the share QUOTE, which is Finnhub's in production and
   // Yahoo's only in the keyless dev fallback — hence STOCK_QUOTE_SOURCE rather
@@ -444,6 +448,7 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef, dri
                   <span className="t-caption text-zinc-500">vs {asset.underlying}</span>
                 )}
                 <span className="t-caption text-zinc-500">{tokenStatus}</span>
+                {unitsNote && <span className="t-caption text-zinc-400">{unitsNote}</span>}
                 {asset.underlying && (
                   <>
                     <span className="t-caption flex items-center gap-1 text-zinc-500">
@@ -560,6 +565,9 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef, dri
                       status line are both GeckoTerminal's. */}
                   {side === 'stock' && (
                     <span className="t-caption text-zinc-600">{stockHistory}</span>
+                  )}
+                  {side !== 'stock' && unitsNote && (
+                    <span className="t-caption text-zinc-400">{unitsNote}</span>
                   )}
                 </div>
               )}
