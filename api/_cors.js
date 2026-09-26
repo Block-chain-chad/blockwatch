@@ -136,7 +136,10 @@ export function applyCors(req, res) {
 
 function setCorsMethodHeaders(res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  // Authorization: api/delete-account.js is called with the user's own access
+  // token. Allowing the header grants nothing by itself; that endpoint checks
+  // the token with Supabase, and no endpoint here uses cookies.
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
   res.setHeader('Access-Control-Max-Age', '86400')
 }
 
