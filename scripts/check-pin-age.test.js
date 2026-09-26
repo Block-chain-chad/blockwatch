@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { judgePinAge } from './check-pin-age.mjs'
+import { judgePinAge, PIN_FILES } from './check-pin-age.mjs'
 import { MAX_PIN_AGE_DAYS } from '../src/lib/multiplier'
 
 /*
@@ -36,5 +36,15 @@ describe('judgePinAge', () => {
 
   it('fails a timestamp from the future, which means a broken write', () => {
     expect(judgePinAge(daysBefore(-1), NOW).ok).toBe(false)
+  })
+})
+
+describe('which pins are checked', () => {
+  it('checks the Ondo multipliers as well as the xStocks mints', () => {
+    expect(PIN_FILES.map((p) => p.file)).toEqual(['verifiedMints.json', 'verifiedOndo.json'])
+  })
+
+  it('names the file whose timestamp it could not read', () => {
+    expect(judgePinAge(undefined, NOW, 'verifiedOndo.json').reason).toMatch(/verifiedOndo\.json/)
   })
 })

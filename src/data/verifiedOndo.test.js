@@ -1,7 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import { VERIFIED_ONDO, ONDO_VERIFIED_AT, ONDO_ORACLE, ondoSharesPerToken } from './verifiedOndo'
 import { BY_ID } from './universe'
-import { encodeAddress, decodeString, decodeSValue, formatFixed18 } from '../../scripts/verify-ondo.mjs'
+import {
+  encodeAddress,
+  decodeString,
+  decodeSValue,
+  formatFixed18,
+  oracleDisagreement,
+  MAX_ORACLE_DISAGREEMENT,
+} from '../../scripts/verify-ondo.mjs'
 
 /*
  * The pinned Ondo multipliers. What is guarded: every pin is well formed and
@@ -65,5 +72,14 @@ describe('verify-ondo decoders', () => {
   it('formats 18-decimal fixed point exactly', () => {
     expect(formatFixed18(1_018_588_387_568_579_396n)).toBe('1.018588387568579396')
     expect(formatFixed18(66_667_000_000_000_000n)).toBe('0.066667')
+  })
+})
+
+describe('the Ethereum oracle cross-check', () => {
+  it('accepts the update lag measured on 2026-09-26 and refuses a missed split', () => {
+    expect(oracleDisagreement('1.007720910150127119', '1.0094730727840429')).toBeLessThan(MAX_ORACLE_DISAGREEMENT)
+    expect(oracleDisagreement('1', '1')).toBe(0)
+    expect(oracleDisagreement('10', '1')).toBeGreaterThan(MAX_ORACLE_DISAGREEMENT)
+    expect(oracleDisagreement('0', '1')).toBeNull()
   })
 })

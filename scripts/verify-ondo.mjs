@@ -35,6 +35,23 @@ export const ORACLE = Object.freeze({
   source: 'https://docs.ondo.finance/addresses (SyntheticSharesOracle, BNB Chain)',
 })
 const RPC = process.env.BSC_RPC_URL || 'https://bsc-rpc.publicnode.com'
+
+// A second opinion. Ondo also runs the oracle on Ethereum, for a handful of
+// assets. Where both carry a token they should agree up to their update lag
+// (measured 2026-09-26: 0.07% on QQQon, 0.17% on SPYon, exact on TSLAon and
+// SGOVon). More than 1% apart means one side missed a split or is wrong, and
+// the run stops without writing.
+export const ETH_ORACLE = '0x9BC39DB6fbB44B91a48b8D5A6C208B82B1741bE6'
+const ETH_RPC = process.env.ETH_RPC_URL || 'https://ethereum-rpc.publicnode.com'
+export const MAX_ORACLE_DISAGREEMENT = 0.01
+
+/** Relative difference between two sValues, or null when either is unusable. */
+export function oracleDisagreement(a, b) {
+  const x = Number(a)
+  const y = Number(b)
+  if (!(x > 0) || !(y > 0)) return null
+  return Math.abs(x / y - 1)
+}
 const COINGECKO_LIST = 'https://api.coingecko.com/api/v3/coins/list?include_platform=true'
 
 // Function selectors: keccak256 of the signature, first four bytes.
@@ -77,8 +94,8 @@ export function formatFixed18(raw) {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 /** One JSON-RPC batch, retried with backoff when the public endpoint throttles. */
-async function rpcBatch(calls, attempt = 0) {
-  const res = await fetch(RPC, {
+async function rpcBatch(calls, attempt = 0, url = RPC) {
+  const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(
@@ -87,7 +104,7 @@ async function rpcBatch(calls, attempt = 0) {
   })
   if (res.status === 429 && attempt < 5) {
     await sleep(2000 * 2 ** attempt + Math.random() * 500)
-    return rpcBatch(calls, attempt + 1)
+    return rpcBatch(calls, attempt + 1, url)
   }
   if (!res.ok) throw new Error(`rpc ${res.status}`)
   const out = await res.json()
@@ -128,6 +145,33 @@ async function main() {
 
   const count = Object.keys(tokens).length
   if (count === 0) throw new Error('no Ondo token verified; refusing to write an empty list')
+
+  // Cross-check against the Ethereum oracle wherever it knows the token.
+  const onEth = Object.entries(tokens)
+    .map(([id, pin]) => ({ id, pin, eth: byId.get(id)?.platforms?.ethereum }))
+    .filter((c) => typeof c.eth === 'string' && /^0x[0-9a-fA-F]{40}$/.test(c.eth))
+  let compared = 0
+  for (let i = 0; i < onEth.length; i += BATCH) {
+    const chunk = onEth.slice(i, i + BATCH)
+    const answers = await rpcBatch(
+      chunk.map((c) => ({ to: ETH_ORACLE, data: SEL_GET_SVALUE + encodeAddress(c.eth) })),
+      0,
+      ETH_RPC,
+    )
+    await sleep(400)
+    chunk.forEach((c, j) => {
+      const eth = answers[j]?.error ? null : decodeSValue(answers[j]?.result)
+      if (!eth) return // not on the Ethereum oracle: nothing to compare
+      compared++
+      const off = oracleDisagreement(c.pin.sValue, eth.sValue)
+      if (off == null || off > MAX_ORACLE_DISAGREEMENT) {
+        throw new Error(
+          `${c.pin.ticker}: BNB Chain oracle says ${c.pin.sValue}, Ethereum oracle says ${eth.sValue}; not writing`,
+        )
+      }
+    })
+  }
+  console.log(`cross-checked ${compared} against Ondo's Ethereum oracle, all within ${MAX_ORACLE_DISAGREEMENT * 100}%`)
   const out = { checkedAt: new Date().toISOString(), oracle: ORACLE, tokens }
   writeFileSync(OUT_PATH, `${JSON.stringify(out, null, 2)}\n`)
   console.log(`verified ${count} of ${ondo.length} Ondo tokens (${candidates.length} had a BNB Chain address)`)
