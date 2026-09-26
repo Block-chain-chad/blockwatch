@@ -1,6 +1,7 @@
 import { timeAgo, EM_DASH } from '../../lib/format'
 import { isThinlyTraded, premiumPct } from '../../lib/prices'
 import { gapCheck, GAP_STATUS_LABEL } from '../../lib/gapCheck'
+import { ONDO_VERIFIED_AT } from '../../data/verifiedOndo'
 import { formatPrice, formatPct, GapBar, changeColor } from '../shared'
 import { shareFreshness } from '../../lib/provenance'
 import { multiplierLine } from '../../lib/multiplier'
@@ -27,6 +28,13 @@ import PriceText from '../PriceText'
   under it come from lib/provenance's one verdict, computed from THIS
   quote's own timestamp, so the panel can never call a stale price live.
 */
+const dayFmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+/** "Sep 26, 2026" (the pin's UTC date), or "an unknown date". */
+function formatDay(iso) {
+  const t = Date.parse(iso ?? '')
+  return Number.isFinite(t) ? dayFmt.format(t) : 'an unknown date'
+}
+
 export default function GapPanel({ asset, scrub, session, lastFetchAt }) {
   const gap = premiumPct(asset)
   const check = gapCheck(asset)
@@ -43,10 +51,16 @@ export default function GapPanel({ asset, scrub, session, lastFetchAt }) {
   const perShareNote = !splitUnits
     ? null
     : scrub
-      ? 'per share'
+      ? 'per share tracked'
       : check.tokenPerShare != null
-        ? `${formatPrice(check.tokenPerShare)} per share`
+        ? `${formatPrice(check.tokenPerShare)} per share tracked`
         : null
+  // Where the ratio came from, for Ondo: the issuer's own oracle, and when
+  // it was read (data/verifiedOndo.json).
+  const ratioSource =
+    asset.issuer === 'Ondo' && asset.sharesPerToken > 0
+      ? `Ratio from Ondo's on-chain oracle, read ${formatDay(ONDO_VERIFIED_AT)}`
+      : null
 
   // Per-leg freshness. The two sides of this comparison have different
   // ages: the token trades continuously while the share can be hours
@@ -127,6 +141,7 @@ export default function GapPanel({ asset, scrub, session, lastFetchAt }) {
               share units, so the unit is stated. The chart line under a
               finger is already per share. */}
           {perShareNote && <div className="num t-caption mt-0.5 text-zinc-400">{perShareNote}</div>}
+          {ratioSource && <div className="t-caption mt-0.5 text-zinc-500">{ratioSource}</div>}
           <div className="t-caption mt-0.5 text-zinc-500">{tokenAge}</div>
         </div>
         {asset.underlying && (

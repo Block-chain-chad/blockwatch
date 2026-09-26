@@ -13,6 +13,7 @@ import {
 import { premiumPct, mergeAssets } from './prices'
 import { widestCredibleGap } from './sessionCopy'
 import { BY_ID } from '../data/universe'
+import { networksFor } from './candles'
 
 /*
  * The broken gaps seen on the live site on 2026-09-26, each replayed with the
@@ -180,7 +181,7 @@ describe('units copy', () => {
 
   it('labels a token drawn per share, and a token with no line', () => {
     expect(tokenUnitsNote(live('netflix-ondo-tokenized-stock', 711.12, 71.145))).toBe(
-      'Token drawn per share (1 NFLXon = 10 shares)',
+      'Token scaled per share (1 NFLXon tracks 10 shares)',
     )
     expect(tokenUnitsNote(live('netflix-xstock', 71.2, 71.145))).toBeNull()
     const bstock = Object.values(BY_ID).find((a) => a.issuer === 'bStocks' && a.underlying)
@@ -190,7 +191,7 @@ describe('units copy', () => {
 
   it('never prints raw token and share prices side by side without the unit or the reason', () => {
     expect(priceFooter(live('netflix-ondo-tokenized-stock', 711.12, 71.145, realFresh()), fmt)).toEqual([
-      'Token $711.12 ($71.11 per share)',
+      'Token $711.12 ($71.11 per share tracked)',
       'Stock $71.14',
     ])
     const bstock = Object.values(BY_ID).find((a) => a.issuer === 'bStocks' && a.underlying)
@@ -204,5 +205,38 @@ describe('units copy', () => {
       'Stock $100.00',
       'Gap not confirmed',
     ])
+  })
+})
+
+/*
+ * One division, never two. Ondo's docs describe "display scaling" on some
+ * chains: the balance is shown multiplied by sValue and the price divided by
+ * it. Measured 2026-09-26 for NFLXon (sValue 10):
+ *   - Solana (Token-2022 scaled UI, g4Kn...ondo): Jupiter quotes 75.99 per
+ *     displayed unit, 759.88 "prescaled". Display-scaled.
+ *   - CoinGecko 711.12, built from exchange tickers (LBank 720.32, MEXC
+ *     710.60, Gate 721.61), all per whole token. Not display-scaled.
+ *   - GeckoTerminal's Ethereum pool: 785.53 per ERC-20 token. Not scaled.
+ * The app prices Ondo only from CoinGecko and draws Ondo candles only from
+ * Ethereum pools, both per whole token, so dividing by sValue once is right.
+ * These tests pin the two facts that keep it that way.
+ */
+describe('Ondo prices arrive per whole token, so sValue is applied once', () => {
+  it('an Ondo token has no Solana mint in the universe, so the Jupiter layer never prices it', () => {
+    const ondo = Object.values(BY_ID).filter((a) => a.issuer === 'Ondo')
+    expect(ondo.length).toBeGreaterThan(400)
+    expect(ondo.filter((a) => a.mint)).toEqual([])
+  })
+
+  it('Ondo candles come from Ethereum pools only', () => {
+    expect(networksFor(BY_ID['netflix-ondo-tokenized-stock'])).toEqual(['eth'])
+  })
+
+  it("the measured CoinGecko price over the share is NFLXon's sValue, not 1", () => {
+    const ratio = 711.12 / 71.145
+    expect(ratio).toBeCloseTo(sharesPerToken(BY_ID['netflix-ondo-tokenized-stock']), 0)
+    // A double division would read about -90%, which the bound refuses.
+    const twice = gapCheck(live('netflix-ondo-tokenized-stock', 711.12 / 10, 71.145), NOW)
+    expect(twice.status).toBe('price-check-failed')
   })
 })

@@ -43,3 +43,18 @@ describe('gap status in rows', () => {
     expect(html).toContain('+1.00%')
   })
 })
+
+describe('a row still waiting', () => {
+  it('shows the loading placeholder, not the 24h change, when its price has no timestamp', () => {
+    const html = renderToStaticMarkup(
+      <PremiumValue asset={{ ...base, sharesPerToken: 1, tokenPrice: 101, priceUpdatedAt: null }} />,
+    )
+    expect(html).toContain('animate-pulse')
+    expect(html).not.toContain('3.2')
+  })
+
+  it('still shows the 24h change for a NAV fund, which has no share to compare with', () => {
+    const html = renderToStaticMarkup(<PremiumValue asset={{ ...base, underlying: null, sharesPerToken: null }} />)
+    expect(html).toContain('3.20%')
+  })
+})

@@ -133,7 +133,7 @@ function shareCount(n) {
 
 /**
  * The chart's units note, or null when there is nothing to say:
- *   "Token drawn per share (1 NFLXon = 10 shares)" when one token tracks more
+ *   "Token scaled per share (1 NFLXon tracks 10 shares)" when one token tracks more
  *     or less than one share, so the reader knows the token line is scaled;
  *   "Token not drawn: ratio unverified" when there is no verified ratio, so
  *     the missing line is explained.
@@ -144,7 +144,7 @@ export function tokenUnitsNote(asset) {
   const shares = asset.sharesPerToken
   if (!(shares > 0)) return 'Token not drawn: ratio unverified'
   if (shares === 1) return null
-  return `Token drawn per share (1 ${asset.ticker} = ${shareCount(shares)} shares)`
+  return `Token scaled per share (1 ${asset.ticker} tracks ${shareCount(shares)} shares)`
 }
 
 /**
@@ -159,7 +159,7 @@ export function priceFooter(asset, formatPrice) {
   const shares = asset?.sharesPerToken
   if (asset?.tokenPrice != null) {
     const perShare =
-      asset.underlying && shares > 0 && shares !== 1 ? ` (${formatPrice(asset.tokenPrice / shares)} per share)` : ''
+      asset.underlying && shares > 0 && shares !== 1 ? ` (${formatPrice(asset.tokenPrice / shares)} per share tracked)` : ''
     parts.push(`Token ${formatPrice(asset.tokenPrice)}${perShare}`)
   }
   if (asset?.stockPrice != null) parts.push(`Stock ${formatPrice(asset.stockPrice)}`)

@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { premiumPct, PARITY_BAND, isThinlyTraded } from '../lib/prices'
-import { gapStatusLabel } from '../lib/gapCheck'
+import { gapCheck, GAP_STATUS_LABEL } from '../lib/gapCheck'
 import { SearchIcon, ChevronRight } from './Icons'
 import PriceText from './PriceText'
 import AssetLogo from './AssetLogo'
@@ -23,9 +23,13 @@ function usePremium(asset) {
   const p = premiumPct(asset)
   const thin = isThinlyTraded(asset)
   // "Ratio unverified" or "Gap not confirmed" (lib/gapCheck.js): said in
-  // words, and never replaced by the 24h change, which would read as a gap.
-  const label = gapStatusLabel(asset)
-  const value = label ? null : (p ?? asset.dayChange)
+  // words. The 24h change stands in only for NAV funds, which have no share
+  // to compare with; anything still waiting for a price or its timestamp
+  // shows the loading placeholder, because a 24h change in this slot reads
+  // as a gap.
+  const check = gapCheck(asset)
+  const label = GAP_STATUS_LABEL[check.status] ?? null
+  const value = check.status === 'ok' ? p : check.status === 'none' ? asset.dayChange : null
   // Parity hysteresis: with 2.5s live ticks a premium wobbling around the band
   // edge would flip presentation every tick. Enter the signal state only
   // clearly outside the band (1.2x), return to noise only clearly inside
