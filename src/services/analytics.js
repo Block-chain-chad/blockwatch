@@ -40,16 +40,24 @@
 //     notification_permission { result: 'granted' | 'denied' | 'default' }
 //                                                         services/notifications.js
 //     notification_shown      {}                          hooks/useAlertNotifications.js
-//     sign_in_completed       { method: 'password' | 'signup' | 'link' }
-//                                                         state/AuthContext.jsx, services/authLinks.js
+//     sign_in_completed       { method: 'password' | 'signup' | 'link' | 'apple' | 'google' | 'passkey' }
+//                                                         state/AuthContext.jsx, services/authLinks.js,
+//                                                         services/socialSignIn.js, services/passkeys.js
 //     install_prompt_shown    {}   once per page load      InstallPrompt.jsx
 //     install_prompt_dismissed {}                         InstallPrompt.jsx
+//
+//   Accounts (2026-09-25). Nothing about the passkey or the provider account.
+//     passkey_added           {}                          services/passkeys.js
+//     account_deleted         {}                          state/AuthContext.jsx
 //
 //   Money
 //     trade_out               { ticker?, venue }          TradeButton, GapHeader, Trade
 //     swap_sent               {}                          services/swap.js
 //     wallet_connect          {}                          state/WalletContext.jsx
 //     waitlist_join           {}                          state/WaitlistContext.jsx
+//     ratio_unreadable        { source: 'jupiter_price_v3' }
+//                                                         services/jupiter.js
+//     ratio_refused           { reason }                  overlays/SwapSheet.jsx
 
 import { appEnvironment, telemetryEnabled } from '../lib/environment'
 

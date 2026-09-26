@@ -5,7 +5,7 @@ import App from './App.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import { initTheme } from './lib/theme'
 import { isNativeApp } from './lib/platform'
-import { handleAuthLink } from './services/authLinks'
+import { handleAuthLink, handleOAuthCallback } from './services/authLinks'
 import { initMonitoring } from './services/monitoring'
 import { startFeatureFlags } from './services/featureFlags'
 
@@ -26,6 +26,14 @@ if (!isNativeApp() && window.location.pathname === '/auth/confirm') {
   const link = window.location.href
   window.history.replaceState(null, '', '/')
   handleAuthLink(link) // result surfaces via AuthContext once mounted
+}
+
+// Sign in with Apple or Google on the web returns to /auth/callback with a
+// one-time code. Same treatment: scrub the address bar, then redeem it.
+if (!isNativeApp() && window.location.pathname === '/auth/callback') {
+  const link = window.location.href
+  window.history.replaceState(null, '', '/')
+  handleOAuthCallback(link)
 }
 
 // Native: cold-start launch URL + warm appUrlOpen events. Dynamic import so

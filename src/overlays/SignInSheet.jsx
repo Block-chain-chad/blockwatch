@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../state/AuthContext'
 import { useWaitlist } from '../state/WaitlistContext'
 import { isNativeApp } from '../lib/platform'
@@ -6,11 +6,26 @@ import { passwordStrength } from '../lib/passwordStrength'
 import { mapAuthError } from '../lib/authErrors'
 import { EyeIcon, EyeOffIcon } from '../components/Icons'
 import Sheet, { SheetTitle } from '../components/Sheet'
+import { AppleSignInButton, GoogleSignInButton } from '../components/SocialSignInButtons'
+import {
+  useFlag,
+  SIGN_IN_APPLE_FLAG,
+  SIGN_IN_GOOGLE_FLAG,
+  SIGN_IN_PASSKEY_FLAG,
+} from '../services/featureFlags'
+import { isCancelled, signInOptions } from '../services/socialSignIn'
+import { isPasskeyCancel, passkeysSupported, startPasskeyAutofill } from '../services/passkeys'
 
 const MIN_PASSWORD = 8
 
+const PROVIDER_NAME = { apple: 'Apple', google: 'Google' }
+
 /*
- * Sign in / create account with email + password (the familiar path), with a
+ * Sign in with Apple, Google or a passkey where each is switched on (see
+ * services/featureFlags.js and signInOptions in services/socialSignIn.js),
+ * and always with email.
+ *
+ * Email + password is the familiar path, with a
  * one-time email link as the passwordless fallback. Forgot-password sends a
  * recovery link; opening it prompts for a new password (see PasswordSheet).
  *
@@ -19,8 +34,16 @@ const MIN_PASSWORD = 8
  * therefore available everywhere.
  */
 export default function SignInSheet({ onClose }) {
-  const { signIn, signInPassword, signUpPassword, resetPassword, showWelcome, resendConfirmation } =
-    useAuth()
+  const {
+    signIn,
+    signInPassword,
+    signUpPassword,
+    resetPassword,
+    showWelcome,
+    resendConfirmation,
+    signInWithProvider,
+    signInPasskey,
+  } = useAuth()
   const { entry } = useWaitlist()
   const [mode, setMode] = useState('signin') // signin | signup | forgot
   const [email, setEmail] = useState(entry?.email ?? '')
@@ -34,6 +57,69 @@ export default function SignInSheet({ onClose }) {
   // Evaluated once per render; false in every browser, so the web UI is
   // byte-identical to what it was.
   const native = isNativeApp()
+  const options = signInOptions({
+    native,
+    appleOn: useFlag(SIGN_IN_APPLE_FLAG),
+    googleOn: useFlag(SIGN_IN_GOOGLE_FLAG),
+    passkeyOn: useFlag(SIGN_IN_PASSKEY_FLAG),
+    passkeySupported: passkeysSupported(),
+  })
+  const anyQuick = options.apple || options.google || options.passkey
+  // Passkey autofill: while the sign-in tab is open, the browser may list
+  // saved passkeys in the email field's suggestions. Aborted when the sheet
+  // closes, the tab changes, or the passkey button takes over.
+  const autofill = useRef(null)
+  const autofillOn = options.passkey && mode === 'signin'
+
+  useEffect(() => {
+    if (!autofillOn) return undefined
+    const controller = new AbortController()
+    autofill.current = controller
+    startPasskeyAutofill(controller.signal).then((signedIn) => {
+      if (!signedIn || controller.signal.aborted) return
+      onClose()
+      showWelcome()
+    })
+    return () => controller.abort()
+    // onClose and showWelcome are stable for the life of the sheet.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autofillOn])
+
+  async function withProvider(provider) {
+    if (busy) return
+    setBusy(true)
+    setNote(null)
+    try {
+      await signInWithProvider(provider)
+      // The web flow has left the page by now; only the app gets here.
+      if (native) {
+        onClose()
+        showWelcome()
+      }
+    } catch (err) {
+      if (!isCancelled(err)) {
+        setNote({ kind: 'error', text: `Couldn't sign in with ${PROVIDER_NAME[provider]}. Try again, or use your email.` })
+      }
+      setBusy(false)
+    }
+  }
+
+  async function withPasskey() {
+    if (busy) return
+    autofill.current?.abort()
+    setBusy(true)
+    setNote(null)
+    try {
+      await signInPasskey()
+      onClose()
+      showWelcome()
+    } catch (err) {
+      if (!isPasskeyCancel(err)) {
+        setNote({ kind: 'error', text: "Couldn't sign in with a passkey. Try again, or use your email." })
+      }
+      setBusy(false)
+    }
+  }
 
   async function submit(e) {
     e.preventDefault()
@@ -161,11 +247,33 @@ export default function SignInSheet({ onClose }) {
         </p>
       )}
 
+      {mode !== 'forgot' && anyQuick && (
+        <div className="mt-3 space-y-2">
+          {options.apple && <AppleSignInButton onClick={() => withProvider('apple')} disabled={busy} />}
+          {options.google && <GoogleSignInButton onClick={() => withProvider('google')} disabled={busy} />}
+          {options.passkey && (
+            <button
+              type="button"
+              onClick={withPasskey}
+              disabled={busy}
+              className="h-11 w-full rounded-xl bg-zinc-900 text-sm font-medium text-zinc-200 transition-colors active:bg-zinc-800 disabled:opacity-50"
+            >
+              Sign in with Face ID or passkey
+            </button>
+          )}
+          <div className="flex items-center gap-3 pt-1 text-[11px] text-zinc-500">
+            <span className="h-px flex-1 bg-zinc-800" />
+            or with email
+            <span className="h-px flex-1 bg-zinc-800" />
+          </div>
+        </div>
+      )}
+
       <form onSubmit={mode === 'forgot' ? submitForgot : submit}>
         <input
           type="email"
           required
-          autoComplete="email"
+          autoComplete={autofillOn ? 'username webauthn' : 'email'}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@email.com"

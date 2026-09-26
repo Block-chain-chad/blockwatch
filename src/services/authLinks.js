@@ -93,3 +93,63 @@ export async function handleAuthLink(url) {
   }
   return true
 }
+
+// Sign in with Apple and Google on the web come back to /auth/callback (see
+// services/socialSignIn.js): ?code=… on success, ?error=… when the person
+// declined or the provider failed. Web only: the iOS app signs in with the
+// providers' native sheets and never receives this URL.
+const OAUTH_PROVIDERS = new Set(['apple', 'google'])
+
+/** Parse an OAuth callback URL: { code }, { error }, or null. Never throws. */
+export function parseOAuthCallback(url) {
+  let parsed
+  try {
+    parsed = new URL(url)
+  } catch {
+    return null
+  }
+  if (parsed.pathname !== '/auth/callback') return null
+  const error = parsed.searchParams.get('error')
+  if (error) return { error }
+  const code = parsed.searchParams.get('code')
+  return code ? { code } : null
+}
+
+const handledCodes = new Set()
+
+/**
+ * Redeem an OAuth callback. Returns true when the URL was one (consumed),
+ * false otherwise. Outcomes surface the same way as emailed links: 'welcome'
+ * on success, 'failed' when the exchange did not produce a session, and
+ * nothing at all when the person simply said no at the provider.
+ */
+export async function handleOAuthCallback(url) {
+  const cb = parseOAuthCallback(url)
+  if (!cb) return false
+  if (cb.error) {
+    if (cb.error !== 'access_denied') emit({ kind: 'failed' })
+    return true
+  }
+  if (handledCodes.has(cb.code)) return true
+  handledCodes.add(cb.code)
+  if (!supabase) {
+    emit({ kind: 'failed' })
+    return true
+  }
+  try {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(cb.code)
+    if (error || !data?.session) {
+      emit({ kind: 'failed' })
+      return true
+    }
+    // The provider name comes from Supabase's record of the account, checked
+    // against the two this path serves, so nothing from the URL reaches
+    // analytics.
+    const provider = data.user?.app_metadata?.provider
+    if (OAUTH_PROVIDERS.has(provider)) track('sign_in_completed', { method: provider })
+    emit({ kind: 'welcome' })
+  } catch {
+    emit({ kind: 'failed' })
+  }
+  return true
+}

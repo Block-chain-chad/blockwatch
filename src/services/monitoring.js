@@ -3,8 +3,9 @@
 //      so the initial bundle carries zero Sentry bytes.
 //   2. Fail-open — no DSN, failed import, failed init: the app neither knows
 //      nor cares. Same null-object pattern as services/supabase.js.
-//   3. Never ship a live auth token — an error thrown while /auth/confirm is
-//      being handled could carry token_hash in a URL; scrub it everywhere.
+//   3. Never ship a live auth token. An error thrown while /auth/confirm or
+//      /auth/callback is being handled could carry token_hash or an OAuth
+//      code in a URL; scrub them everywhere.
 //   4. Every event says where it came from. The environment is resolved once
 //      in lib/environment.js, and development is excluded by default so the
 //      issue list is only what real users hit.
@@ -13,8 +14,10 @@
 
 import { appEnvironment, telemetryEnabled } from '../lib/environment'
 
-const TOKEN_RE = /token_hash=[^&#\s]+/g
-const scrub = (s) => (typeof s === 'string' ? s.replace(TOKEN_RE, 'token_hash=[redacted]') : s)
+// token_hash from emailed links (/auth/confirm) and the one-time OAuth code
+// from /auth/callback.
+const TOKEN_RE = /\b(token_hash|code)=[^&#\s]+/g
+export const scrub = (s) => (typeof s === 'string' ? s.replace(TOKEN_RE, '$1=[redacted]') : s)
 
 export function initMonitoring() {
   const dsn = import.meta.env.VITE_SENTRY_DSN

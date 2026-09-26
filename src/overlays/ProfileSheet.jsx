@@ -6,6 +6,10 @@ import SignInSheet from './SignInSheet'
 import AppearanceSheet from './AppearanceSheet'
 import PasswordSheet from './PasswordSheet'
 import AboutSheet from './AboutSheet'
+import PasskeysSheet from './PasskeysSheet'
+import DeleteAccountSheet from './DeleteAccountSheet'
+import { useFlag, SIGN_IN_PASSKEY_FLAG } from '../services/featureFlags'
+import { passkeysSupported } from '../services/passkeys'
 import { getThemePref } from '../lib/theme'
 import { isNativeApp } from '../lib/platform'
 import {
@@ -17,6 +21,7 @@ import {
   LockIcon,
   LogoutIcon,
   PersonIcon,
+  TrashIcon,
 } from '../components/Icons'
 import { ListRow } from '../components/shared'
 import { WEB_BASE } from '../services/apiBase'
@@ -34,6 +39,9 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
   const [appearanceOpen, setAppearanceOpen] = useState(false)
   const [aboutOpen, setAboutOpen] = useState(false)
   const [passwordOpen, setPasswordOpen] = useState(false)
+  const [passkeysOpen, setPasskeysOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const passkeysOn = useFlag(SIGN_IN_PASSKEY_FLAG) && passkeysSupported()
   const themeLabel = { dark: 'Dark', light: 'Light', system: 'System' }[getThemePref()]
   return (
     <>
@@ -41,10 +49,10 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
         <div className="flex items-center justify-between px-4 pt-4">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-base font-semibold text-zinc-300">
-              {user ? user.email[0].toUpperCase() : <PersonIcon size={20} />}
+              {user?.email ? user.email[0].toUpperCase() : <PersonIcon size={20} />}
             </div>
             <div className="min-w-0">
-              <SheetTitle className="truncate font-semibold">{user ? user.email : 'Guest'}</SheetTitle>
+              <SheetTitle className="truncate font-semibold">{user ? user.email || 'Signed in' : 'Guest'}</SheetTitle>
               <div className="text-xs text-zinc-500">
                 {user ? 'Folders & alerts synced across devices' : 'No account needed to track'}
               </div>
@@ -156,8 +164,22 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
               onClick={() => setPasswordOpen(true)}
             />
           )}
+          {user && passkeysOn && (
+            <ListRow
+              icon={<LockIcon size={20} />}
+              label="Face ID and passkeys"
+              onClick={() => setPasskeysOpen(true)}
+            />
+          )}
           {user && (
             <ListRow icon={<LogoutIcon size={20} />} label="Sign out" onClick={() => signOut()} />
+          )}
+          {user && (
+            <ListRow
+              icon={<TrashIcon size={20} />}
+              label="Delete account"
+              onClick={() => setDeleteOpen(true)}
+            />
           )}
         </div>
 
@@ -171,6 +193,8 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
       {aboutOpen && <AboutSheet onClose={() => setAboutOpen(false)} />}
       {passwordOpen && <PasswordSheet onClose={() => setPasswordOpen(false)} />}
       {walletOpen && <WalletSheet onClose={() => setWalletOpen(false)} />}
+      {passkeysOpen && <PasskeysSheet onClose={() => setPasskeysOpen(false)} />}
+      {deleteOpen && <DeleteAccountSheet onClose={() => setDeleteOpen(false)} />}
     </>
   )
 }
