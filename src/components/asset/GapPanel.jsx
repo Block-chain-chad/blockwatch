@@ -1,5 +1,6 @@
 import { timeAgo, EM_DASH } from '../../lib/format'
 import { isThinlyTraded, premiumPct } from '../../lib/prices'
+import { gapCheck, GAP_STATUS_LABEL } from '../../lib/gapCheck'
 import { formatPrice, formatPct, GapBar, changeColor } from '../shared'
 import { shareFreshness } from '../../lib/provenance'
 import { multiplierLine } from '../../lib/multiplier'
@@ -28,10 +29,24 @@ import PriceText from '../PriceText'
 */
 export default function GapPanel({ asset, scrub, session, lastFetchAt }) {
   const gap = premiumPct(asset)
-  const tokenNow = scrub?.price ?? asset.tokenPrice
+  const check = gapCheck(asset)
+  const statusLabel = GAP_STATUS_LABEL[check.status] ?? null
+  // Money difference in share units: a token that tracks ten shares is not
+  // "$640 above the share". The scrubbed chart price is already per share.
+  const tokenNow = scrub?.price ?? check.tokenPerShare
   const diff =
-    tokenNow != null && asset.stockPrice != null ? tokenNow - asset.stockPrice : null
+    check.status === 'ok' && tokenNow != null && asset.stockPrice != null
+      ? tokenNow - asset.stockPrice
+      : null
   const thin = isThinlyTraded(asset)
+  const splitUnits = asset.sharesPerToken > 0 && asset.sharesPerToken !== 1
+  const perShareNote = !splitUnits
+    ? null
+    : scrub
+      ? 'per share'
+      : check.tokenPerShare != null
+        ? `${formatPrice(check.tokenPerShare)} per share`
+        : null
 
   // Per-leg freshness. The two sides of this comparison have different
   // ages: the token trades continuously while the share can be hours
@@ -81,11 +96,15 @@ export default function GapPanel({ asset, scrub, session, lastFetchAt }) {
           )}
         </div>
         <div className="mt-1.5 flex items-center justify-between gap-3">
-          <span
-            className={`num t-display ${thin ? 'text-zinc-500' : changeColor(gap)}`}
-          >
-            {gap != null ? formatPct(gap) : EM_DASH}
-          </span>
+          {statusLabel ? (
+            <span className="t-title text-zinc-500">{statusLabel}</span>
+          ) : (
+            <span
+              className={`num t-display ${thin ? 'text-zinc-500' : changeColor(gap)}`}
+            >
+              {gap != null ? formatPct(gap) : EM_DASH}
+            </span>
+          )}
           {/* Capped, not full-bleed. Stretched across the panel the
               track read as a progress meter — a long empty left half
               looks unfilled rather than "below zero". At row width it
@@ -103,6 +122,11 @@ export default function GapPanel({ asset, scrub, session, lastFetchAt }) {
           <div className="num t-title mt-0.5 text-zinc-100">
             {scrub ? formatPrice(scrub.price) : <PriceText value={asset.tokenPrice} />}
           </div>
+          {/* A token that does not track exactly one share (every Ondo token
+              once dividends are reinvested, and NFLXon at 10) is compared in
+              share units, so the unit is stated. The chart line under a
+              finger is already per share. */}
+          {perShareNote && <div className="num t-caption mt-0.5 text-zinc-400">{perShareNote}</div>}
           <div className="t-caption mt-0.5 text-zinc-500">{tokenAge}</div>
         </div>
         {asset.underlying && (

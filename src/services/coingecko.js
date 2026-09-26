@@ -63,8 +63,14 @@ async function fetchMarketsChunk(ids) {
 
   const map = {}
   for (const row of rows) {
+    const updated = row.last_updated ? Date.parse(row.last_updated) : NaN
     map[row.id] = {
       tokenPrice: row.current_price,
+      // CoinGecko's own price, kept beside tokenPrice so the live Jupiter
+      // layer can be checked against a second source (state/PricesContext),
+      // and when CoinGecko last saw it trade (lib/gapCheck.js).
+      feedPrice: row.current_price,
+      priceUpdatedAt: Number.isFinite(updated) ? updated : null,
       change24h: row.price_change_percentage_24h ?? null,
       marketCap: row.market_cap ?? null,
       volume24h: row.total_volume ?? null,

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchTokenHistory } from '../services/coingecko'
 import { getStockHistory } from '../services/stocks'
+import { sharesPerToken } from '../lib/gapCheck'
 
 // Range → CoinGecko days + Yahoo interval/range. For 1D we ask Yahoo for 5d
 // and clip: on weekends "1d" would return only Friday's session, entirely
@@ -26,10 +27,14 @@ export const CHART_RANGES = {
  * CoinGecko applies the issuer's scaled-amount multiplier itself: checked
  * against mainnet on 2026-09-16, NFLXx (ratio 10) came back at 76.98 while
  * its DEX pool priced a base token at 757 and the real NFLX share was 76.41.
- * So nothing is converted here, and nothing should be — dividing this series
- * by the multiplier would invent a 90% discount on a screen with a Buy
- * button. The pool-sourced candles in services/candles.js are the ones that
- * do need converting; they arrive per base token.
+ * So nothing is converted here for xStocks, and nothing should be: dividing
+ * this series by the multiplier would invent a 90% discount on a screen with
+ * a Buy button. The pool-sourced candles in services/candles.js are the ones
+ * that do need converting; they arrive per base token.
+ *
+ * Ondo is different: CoinGecko quotes an Ondo token per token, and one token
+ * tracks sValue shares (10 on NFLXon). The hook below divides by the verified
+ * sValue before this runs; see sharesPerToken in lib/gapCheck.js.
  */
 function buildPremiumSeries(token, stockRaw, fallbackStockPrice) {
   const src =
@@ -77,7 +82,7 @@ export function useChartData(asset, range, retryKey = 0) {
     async function go() {
       setState((s) => ({ ...s, loading: true, error: false }))
       try {
-        const [token, stockRaw] = await Promise.all([
+        const [tokenRaw, stockRaw] = await Promise.all([
           fetchTokenHistory(asset.id, cfg.days),
           asset.underlying
             ? getStockHistory(asset.underlying, cfg).catch(() => [])
@@ -85,6 +90,13 @@ export function useChartData(asset, range, retryKey = 0) {
         ])
         if (cancelled) return
 
+        // Share units for the token line, like the live gap: an Ondo token
+        // that tracks ten shares is divided by ten (lib/gapCheck.js). With no
+        // verified ratio there is no token line and no gap history; drawing
+        // it at an assumed 1:1 is how NFLXon came to be charted at 711.
+        const shares = asset.underlying ? sharesPerToken(asset) : 1
+        const token =
+          shares == null ? [] : shares === 1 ? tokenRaw : tokenRaw.map((p) => ({ t: p.t, v: p.v / shares }))
         const windowStart = token[0]?.t ?? 0
         let stock = stockRaw.filter((p) => p.t >= windowStart)
         let stockIsFlat = false

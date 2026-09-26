@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   groupCompanies, BOARD_SORTS, BOARD_LENSES, MAX_CREDIBLE_GAP,
-  boundCandidates, CANDIDATE_CAP, freezeOrder, flattenRows, visibleWindow, headerLine,
+  boundCandidates, CANDIDATE_CAP, lensCandidates, lensHasNoShares, freezeOrder, flattenRows, visibleWindow, headerLine,
   quoteAges,
   COMPANY_ROW_H, WRAPPER_ROW_H,
 } from './board'
@@ -16,6 +16,8 @@ const A = (over) => ({
   tokenPrice: over.tokenPrice ?? null,
   stockPrice: over.stockPrice ?? null,
   volume24h: over.volume24h ?? 1_000_000,
+  // Verified 1:1 unless a test says otherwise (see lib/gapCheck.js).
+  sharesPerToken: 'sharesPerToken' in over ? over.sharesPerToken : 1,
 })
 
 const NVDAX = A({ id: 'nvdax', ticker: 'NVDAx', name: 'NVIDIA', underlying: 'NVDA', tokenPrice: 218.49, stockPrice: 218.29 })
@@ -25,7 +27,7 @@ const TSLAX = A({ id: 'tslax', ticker: 'TSLAx', name: 'Tesla', underlying: 'TSLA
 const HOODX = A({ id: 'hoodx', ticker: 'HOODx', name: 'Robinhood', underlying: 'HOOD', tokenPrice: 118.03, stockPrice: 118.4 })
 const SPYX = A({ id: 'spyx', ticker: 'SPYx', name: 'SPDR S&P 500', underlying: 'SPY', type: 'etf', tokenPrice: 766.73, stockPrice: 764.29 })
 const NAV = A({ id: 'tbill', ticker: 'TBILL', name: 'T-bill fund', tokenPrice: 1.0 })
-const THIN = A({ id: 'wmkt', ticker: 'WMKTx', name: 'Walmart', underlying: 'WMT', tokenPrice: 50, stockPrice: 100, volume24h: 1_000 })
+const THIN = A({ id: 'wmkt', ticker: 'WMKTx', name: 'Walmart', underlying: 'WMT', tokenPrice: 90, stockPrice: 100, volume24h: 1_000 })
 const NOQUOTE = A({ id: 'aaplx', ticker: 'AAPLx', name: 'Apple', underlying: 'AAPL', tokenPrice: 332.27 })
 
 const ALL = [NVDAX, NVDAON, NVDAB, TSLAX, HOODX, SPYX, NAV, THIN, NOQUOTE]
@@ -67,6 +69,28 @@ describe('groupCompanies', () => {
     expect(wmt.muted).toBe(true)
     expect(wmt.wrappers[0].muted).toBe(true)
     expect(MAX_CREDIBLE_GAP).toBe(25)
+  })
+
+  it('lists a wrapper whose gap cannot be vouched for, with its status and no number', () => {
+    const bad = A({ id: 'crwdx', ticker: 'CRWDx', name: 'CrowdStrike', underlying: 'CRWD', tokenPrice: 131.19, stockPrice: 252.13 })
+    const unverified = A({ id: 'crwdb', ticker: 'CRWDb', name: 'CrowdStrike', underlying: 'CRWD', issuer: 'bStocks', tokenPrice: 1014.6, stockPrice: 252.13, sharesPerToken: null })
+    for (const credibleOnly of [true, false]) {
+      const crwd = groupCompanies([bad, unverified], { credibleOnly }).find((r) => r.underlying === 'CRWD')
+      expect(crwd.wrappers.map((w) => [w.asset.ticker, w.status, w.gap])).toEqual([
+        ['CRWDx', 'price-check-failed', null],
+        ['CRWDb', 'ratio-unverified', null],
+      ])
+      expect(crwd.lead).toBeNull()
+      expect(crwd.muted).toBe(true)
+      expect(crwd.spreadBp).toBeNull()
+    }
+  })
+
+  it('compares a token that tracks ten shares per share, in percent and in dollars', () => {
+    const nflxon = A({ id: 'nflxon', ticker: 'NFLXon', name: 'Netflix', underlying: 'NFLX', issuer: 'Ondo', tokenPrice: 711.12, stockPrice: 71.145, sharesPerToken: 10 })
+    const [row] = groupCompanies([nflxon])
+    expect(row.lead).toBeCloseTo(-0.0464, 3)
+    expect(row.wrappers[0].diffUsd).toBeCloseTo(-0.033, 4)
   })
 
   it('with credibleOnly off, a muted wrapper still counts toward the lead', () => {
@@ -270,5 +294,28 @@ describe('quoteAges', () => {
   it('has no age to give when nothing is dated', () => {
     expect(quoteAges([co(null), co(null)], now)).toEqual({ oldest: null, undated: 2 })
     expect(quoteAges([], now)).toEqual({ oldest: null, undated: 0 })
+  })
+})
+
+describe('lensCandidates', () => {
+  // Enough stocks to fill the cap on their own, and one bond with a share at
+  // the bottom of the volume order: the shape of the real universe, where
+  // USFRon never made the cut and the Bonds lens never loaded.
+  const stocks = Array.from({ length: 5 }, (_, i) =>
+    A({ id: `s${i}`, ticker: `S${i}x`, underlying: `S${i}`, type: 'stock' }),
+  ).map((a, i) => ({ ...a, vol: 1_000_000 - i }))
+  const bond = { ...A({ id: 'usfron', ticker: 'USFRon', underlying: 'USFR', type: 'bond', issuer: 'Ondo' }), vol: 10 }
+  const navBond = { ...A({ id: 'usdy', ticker: 'USDY', type: 'bond', issuer: 'Ondo' }), vol: 1_000_000_000 }
+  const all = [...stocks, bond, navBond]
+
+  it('spends the cap on the lens on screen', () => {
+    expect(lensCandidates(all, 'all', { cap: 3 })).not.toContain('usfron')
+    expect(lensCandidates(all, 'bond', { cap: 3 })).toEqual(['usfron'])
+  })
+
+  it('knows when a lens has nothing to compare at all', () => {
+    expect(lensHasNoShares(all, 'bond')).toBe(false)
+    expect(lensHasNoShares([navBond], 'bond')).toBe(true)
+    expect(lensHasNoShares([navBond], 'all')).toBe(false)
   })
 })

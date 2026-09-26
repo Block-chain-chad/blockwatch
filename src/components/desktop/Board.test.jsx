@@ -34,6 +34,7 @@ const A = (over) => ({
   volume24h: 1_000_000,
   venues: ['Jupiter'],
   stockQuote: null,
+  sharesPerToken: 1, // verified 1:1; see lib/gapCheck.js
   ...over,
 })
 

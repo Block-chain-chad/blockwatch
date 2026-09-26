@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import { premiumPct, PARITY_BAND, isThinlyTraded } from '../lib/prices'
+import { gapStatusLabel } from '../lib/gapCheck'
 import { SearchIcon, ChevronRight } from './Icons'
 import PriceText from './PriceText'
 import AssetLogo from './AssetLogo'
@@ -21,7 +22,10 @@ export { formatPrice, formatPct, changeColor }
 function usePremium(asset) {
   const p = premiumPct(asset)
   const thin = isThinlyTraded(asset)
-  const value = p ?? asset.dayChange
+  // "Ratio unverified" or "Price check failed" (lib/gapCheck.js): said in
+  // words, and never replaced by the 24h change, which would read as a gap.
+  const label = gapStatusLabel(asset)
+  const value = label ? null : (p ?? asset.dayChange)
   // Parity hysteresis: with 2.5s live ticks a premium wobbling around the band
   // edge would flip presentation every tick. Enter the signal state only
   // clearly outside the band (1.2x), return to noise only clearly inside
@@ -43,11 +47,16 @@ function usePremium(asset) {
   // parity row showed "1:1" while its neighbours showed "+0.65%", which put
   // two different units in one column and made it unscannable.
   const muted = parity || thin || value == null
-  return { value, muted, thin, color: muted ? 'text-zinc-500' : changeColor(value) }
+  return { value, label, muted, thin, color: muted ? 'text-zinc-500' : changeColor(value) }
+}
+
+function StatusLabel({ text }) {
+  return <span className="t-caption whitespace-nowrap text-zinc-500">{text}</span>
 }
 
 export function PremiumValue({ asset, size = 'row' }) {
-  const { value, color } = usePremium(asset)
+  const { value, label, color } = usePremium(asset)
+  if (label) return <StatusLabel text={label} />
   if (value == null) {
     return <span className="inline-block h-4 w-14 animate-pulse rounded bg-zinc-800 align-middle" />
   }
@@ -125,7 +134,8 @@ export function GapBar({ pct, thin = false, width = 104, scale = 2, tone = 'dire
 
 /* Kept for surfaces that still want the enclosed form (search results). */
 export function PremiumPill({ asset }) {
-  const { value, muted, color } = usePremium(asset)
+  const { value, label, muted, color } = usePremium(asset)
+  if (label) return <StatusLabel text={label} />
   if (value == null) {
     return <span className="inline-block h-3.5 w-12 animate-pulse rounded-full bg-zinc-800 align-middle" />
   }

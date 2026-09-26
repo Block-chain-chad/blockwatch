@@ -7,6 +7,7 @@ import { useAssetWorkspace, alertLabelFor } from '../../hooks/useAssetWorkspace'
 import { useLocalState } from '../../hooks/useLocalState'
 import { useNow } from '../../hooks/useNow'
 import { premiumPct, isThinlyTraded } from '../../lib/prices'
+import { gapCheck, GAP_STATUS_LABEL } from '../../lib/gapCheck'
 import { formatPct, formatPrice, EM_DASH } from '../../lib/format'
 import {
   SIZES, RANGE_WORDS, formatSize, gapDollars, readingSentence, roundTrip, gapPercentile, percentileCaption,
@@ -55,7 +56,9 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
 
   const gap = premiumPct(asset)
   const thin = isThinlyTraded(asset)
-  const diff = asset.tokenPrice != null && asset.stockPrice != null ? asset.tokenPrice - asset.stockPrice : null
+  // In share units, and only when the gap itself can be vouched for.
+  const check = gapCheck(asset)
+  const diff = check.status === 'ok' ? check.tokenPerShare - asset.stockPrice : null
   const companyName = asset.underlying ? asset.name : asset.ticker
   const sentence = readingSentence({ ticker: asset.ticker, companyName, gapPct: gap, size, thin, volume24h: asset.volume24h })
   const trip = roundTrip({ gapPct: gap, spreadPct: spread?.spreadPct ?? null, size })
@@ -114,9 +117,13 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
 
       <div className="flex flex-col gap-2">
         <div className="flex items-baseline justify-between">
-          <span className={`num t-display ${thin ? 'text-zinc-500' : 'text-zinc-100'}`}>
-            {gap != null ? formatPct(gap) : EM_DASH}
-          </span>
+          {GAP_STATUS_LABEL[check.status] ? (
+            <span className="t-title text-zinc-500">{GAP_STATUS_LABEL[check.status]}</span>
+          ) : (
+            <span className={`num t-display ${thin ? 'text-zinc-500' : 'text-zinc-100'}`}>
+              {gap != null ? formatPct(gap) : EM_DASH}
+            </span>
+          )}
           {diff != null && (
             <span className="t-caption text-zinc-500">
               <span className="num">{formatPrice(Math.abs(diff))}</span> {diff >= 0 ? 'above the share' : 'below the share'}

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { ASSETS, BY_ID, CORE_IDS } from '../data/universe'
 import { mergeAssets } from '../lib/prices'
+import { liveAgrees } from '../lib/gapCheck'
 import { quoteCycle, withRetries } from '../lib/quoteRotation'
 import { isUsMarketOpen, getMarketSession } from '../lib/market'
 import { fetchTokenMarkets, loadPriceCache, savePriceCache, POLL_MS } from '../services/coingecko'
@@ -157,9 +158,12 @@ export function PricesProvider({ children }) {
           // keep their live price. Same ~15s semantics as before, just no
           // longer shared across every id the fast layer ever touched.
           const seenAt = fastFedRef.current.get(id)
-          const livePrice =
+          const kept =
             seenAt != null && now - seenAt < FAST_POLL_MS * 6 ? s.prices[id]?.tokenPrice : null
-          prices[id] = livePrice != null ? { ...row, tokenPrice: livePrice } : row
+          // Kept only while it still agrees with CoinGecko's fresh number;
+          // see liveAgrees in lib/gapCheck.js.
+          const livePrice = kept != null && liveAgrees(kept, row.feedPrice) ? kept : null
+          prices[id] = livePrice != null ? { ...row, tokenPrice: livePrice, priceUpdatedAt: seenAt } : row
         }
         pricesRef.current = prices
         savePriceCache(at, prices)
@@ -340,11 +344,15 @@ export function PricesProvider({ children }) {
             // Never fabricate a price-only row: a tokenPrice without volume/cap
             // would flash a false "thin trading" tag until the poll fills it in.
             if (row == null) continue
+            // A thin pool quotes nonsense, and this price used to reach the
+            // gap unchecked (AMDx at -17.75% in the header on 2026-09-26).
+            // Only a price CoinGecko agrees with may replace its own.
+            if (!liveAgrees(px, row.feedPrice)) continue
             const prev = row.tokenPrice
             // Ignore sub-display-precision moves (~0.005%): no visible digit
             // changes, so an update would only burn renders and fake flashes.
             if (prev != null && Math.abs(px - prev) / prev < 0.00005) continue
-            prices[id] = { ...row, tokenPrice: px }
+            prices[id] = { ...row, tokenPrice: px, priceUpdatedAt: now }
             changed = true
           }
           if (!changed) return s // same reference → React skips the render
