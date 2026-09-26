@@ -66,8 +66,13 @@ jobs:
       # split. Read from Ondo's own oracle on BNB Chain through a public RPC;
       # set BSC_RPC_URL to a dedicated endpoint if throttling becomes routine.
       # Like verify-mints, a failed run exits non-zero and leaves the file.
+      # It must not block the xStocks re-pin: a throttled RPC, or the two Ondo
+      # oracles disagreeing during a split window, leaves the Ondo file as it
+      # was, and the freshness step below reports it once it is too old.
       - name: Read the Ondo multipliers off BNB Chain
-        run: node scripts/verify-ondo.mjs
+        id: ondo
+        continue-on-error: true
+        run: node scripts/verify-ondo.mjs 2>&1 | tee ondo.txt; exit ${PIPESTATUS[0]}
 
       # After the re-pin, so a run that was throttled or failed in a way that
       # left the file untouched is reported as the stale pin it is, instead of
@@ -83,6 +88,15 @@ jobs:
         continue-on-error: true
         run: |
           node scripts/check-multiplier-units.mjs 2>&1 | tee reconcile.txt
+
+      - name: Note a skipped Ondo re-pin in the pull request
+        if: steps.ondo.outcome == 'failure'
+        run: |
+          {
+            echo ''
+            echo 'The Ondo re-pin did not run to completion this week; src/data/verifiedOndo.json is unchanged:'
+            tail -n 5 ondo.txt
+          } >> reconcile.txt
 
       - name: Confirm the tests still pass against the new pins
         run: npm test
