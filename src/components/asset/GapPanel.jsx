@@ -1,5 +1,7 @@
 import { timeAgo, EM_DASH } from '../../lib/format'
 import { isThinlyTraded, premiumPct } from '../../lib/prices'
+import { gapCheck, GAP_STATUS_LABEL } from '../../lib/gapCheck'
+import { ONDO_VERIFIED_AT } from '../../data/verifiedOndo'
 import { formatPrice, formatPct, GapBar, changeColor } from '../shared'
 import { shareFreshness } from '../../lib/provenance'
 import { multiplierLine } from '../../lib/multiplier'
@@ -26,12 +28,39 @@ import PriceText from '../PriceText'
   under it come from lib/provenance's one verdict, computed from THIS
   quote's own timestamp, so the panel can never call a stale price live.
 */
+const dayFmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+/** "Sep 26, 2026" (the pin's UTC date), or "an unknown date". */
+function formatDay(iso) {
+  const t = Date.parse(iso ?? '')
+  return Number.isFinite(t) ? dayFmt.format(t) : 'an unknown date'
+}
+
 export default function GapPanel({ asset, scrub, session, lastFetchAt }) {
   const gap = premiumPct(asset)
-  const tokenNow = scrub?.price ?? asset.tokenPrice
+  const check = gapCheck(asset)
+  const statusLabel = GAP_STATUS_LABEL[check.status] ?? null
+  // Money difference in share units: a token that tracks ten shares is not
+  // "$640 above the share". The scrubbed chart price is already per share.
+  const tokenNow = scrub?.price ?? check.tokenPerShare
   const diff =
-    tokenNow != null && asset.stockPrice != null ? tokenNow - asset.stockPrice : null
+    check.status === 'ok' && tokenNow != null && asset.stockPrice != null
+      ? tokenNow - asset.stockPrice
+      : null
   const thin = isThinlyTraded(asset)
+  const splitUnits = asset.sharesPerToken > 0 && asset.sharesPerToken !== 1
+  const perShareNote = !splitUnits
+    ? null
+    : scrub
+      ? 'per share tracked'
+      : check.tokenPerShare != null
+        ? `${formatPrice(check.tokenPerShare)} per share tracked`
+        : null
+  // Where the ratio came from, for Ondo: the issuer's own oracle, and when
+  // it was read (data/verifiedOndo.json).
+  const ratioSource =
+    asset.issuer === 'Ondo' && asset.sharesPerToken > 0
+      ? `Ratio from Ondo's on-chain oracle, read ${formatDay(ONDO_VERIFIED_AT)}`
+      : null
 
   // Per-leg freshness. The two sides of this comparison have different
   // ages: the token trades continuously while the share can be hours
@@ -81,11 +110,15 @@ export default function GapPanel({ asset, scrub, session, lastFetchAt }) {
           )}
         </div>
         <div className="mt-1.5 flex items-center justify-between gap-3">
-          <span
-            className={`num t-display ${thin ? 'text-zinc-500' : changeColor(gap)}`}
-          >
-            {gap != null ? formatPct(gap) : EM_DASH}
-          </span>
+          {statusLabel ? (
+            <span className="t-title text-zinc-500">{statusLabel}</span>
+          ) : (
+            <span
+              className={`num t-display ${thin ? 'text-zinc-500' : changeColor(gap)}`}
+            >
+              {gap != null ? formatPct(gap) : EM_DASH}
+            </span>
+          )}
           {/* Capped, not full-bleed. Stretched across the panel the
               track read as a progress meter — a long empty left half
               looks unfilled rather than "below zero". At row width it
@@ -103,6 +136,12 @@ export default function GapPanel({ asset, scrub, session, lastFetchAt }) {
           <div className="num t-title mt-0.5 text-zinc-100">
             {scrub ? formatPrice(scrub.price) : <PriceText value={asset.tokenPrice} />}
           </div>
+          {/* A token that does not track exactly one share (every Ondo token
+              once dividends are reinvested, and NFLXon at 10) is compared in
+              share units, so the unit is stated. The chart line under a
+              finger is already per share. */}
+          {perShareNote && <div className="num t-caption mt-0.5 text-zinc-400">{perShareNote}</div>}
+          {ratioSource && <div className="t-caption mt-0.5 text-zinc-500">{ratioSource}</div>}
           <div className="t-caption mt-0.5 text-zinc-500">{tokenAge}</div>
         </div>
         {asset.underlying && (

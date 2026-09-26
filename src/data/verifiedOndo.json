@@ -1,0 +1,1600 @@
+{
+  "checkedAt": "2026-09-26T01:47:18.943Z",
+  "oracle": {
+    "chain": "bsc",
+    "address": "0xF4Fd8a1B412633e10527454137A29Db7Aa35F15e",
+    "source": "https://docs.ondo.finance/addresses (SyntheticSharesOracle, BNB Chain)"
+  },
+  "tokens": {
+    "nvidia-ondo-tokenized-stock": {
+      "ticker": "NVDAon",
+      "address": "0xa9ee28c80f960b889dfbd1902055218cba016f75",
+      "sValue": "1.000932054247057497",
+      "paused": false
+    },
+    "alphabet-class-a-ondo-tokenized-stock": {
+      "ticker": "GOOGLon",
+      "address": "0x091fc7778e6932d4009b087b191d1ee3bac5729a",
+      "sValue": "1.002009966030854085",
+      "paused": false
+    },
+    "micron-technology-ondo-tokenized-stock": {
+      "ticker": "MUon",
+      "address": "0x8b6acf6041a81567f012ff6a4c6d96d5818d74bf",
+      "sValue": "1.001121237525844732",
+      "paused": false
+    },
+    "amd-ondo-tokenized-stock": {
+      "ticker": "AMDon",
+      "address": "0x9f16e46c73b43bdb70861247d537bee4ea18f639",
+      "sValue": "1",
+      "paused": false
+    },
+    "tesla-ondo-tokenized-stock": {
+      "ticker": "TSLAon",
+      "address": "0x2494b603319d4d9f9715c9f4496d9e0364b59d93",
+      "sValue": "1",
+      "paused": false
+    },
+    "costco-ondo-tokenized-stock": {
+      "ticker": "COSTon",
+      "address": "0x34375f826fd3dd4e15f883d4f4786bb45eb705ac",
+      "sValue": "1.005056215448151263",
+      "paused": false
+    },
+    "ishares-silver-trust-ondo-tokenized-stock": {
+      "ticker": "SLVon",
+      "address": "0x8b872732b07be325a8803cdb480d9d20b6f8d11b",
+      "sValue": "1",
+      "paused": false
+    },
+    "chevron-ondo-tokenized-stock": {
+      "ticker": "CVXon",
+      "address": "0xd3113a0ad20a46f6a662c63fe8e637f7713e59c7",
+      "sValue": "1.027471414431826772",
+      "paused": false
+    },
+    "circle-internet-group-ondo-tokenized-stock": {
+      "ticker": "CRCLon",
+      "address": "0x992879cd8ce0c312d98648875b5a8d6d042cbf34",
+      "sValue": "1",
+      "paused": false
+    },
+    "nebius-group-ondo-tokenized": {
+      "ticker": "NBISon",
+      "address": "0xee268780473e7a0e47bac41547c6e01512555a16",
+      "sValue": "1",
+      "paused": false
+    },
+    "spacex-ondo-tokenized-stock": {
+      "ticker": "SPCXon",
+      "address": "0xd0a58bc9d88d3ff48c0294cb7e45937d0e41a928",
+      "sValue": "1",
+      "paused": false
+    },
+    "broadcom-ondo-tokenized-stock": {
+      "ticker": "AVGOon",
+      "address": "0x0ed2e3180edf393e6bf8db124bd15ddd54de150a",
+      "sValue": "1.005138064669851499",
+      "paused": false
+    },
+    "shopify-ondo-tokenized-stock": {
+      "ticker": "SHOPon",
+      "address": "0x43d0b380c33cd004a6a69abd61843881a2de4113",
+      "sValue": "1",
+      "paused": false
+    },
+    "coinbase-ondo-tokenized-stock": {
+      "ticker": "COINon",
+      "address": "0xf8589b526fdd65f7f301c605a6e04f0f1b4b3620",
+      "sValue": "1",
+      "paused": false
+    },
+    "invesco-qqq-etf-ondo-tokenized-etf": {
+      "ticker": "QQQon",
+      "address": "0x0cde6936d305d5b34667fc46425e852efd73559a",
+      "sValue": "1.003352854155083837",
+      "paused": false
+    },
+    "sandisk-ondo-tokenized": {
+      "ticker": "SNDKon",
+      "address": "0x4fd67cb8cfedc718bac984b5936abe3330d0a2a4",
+      "sValue": "1",
+      "paused": false
+    },
+    "netflix-ondo-tokenized-stock": {
+      "ticker": "NFLXon",
+      "address": "0x7048f5227b032326cc8dbc53cf3fddd947a2c757",
+      "sValue": "10",
+      "paused": false
+    },
+    "iren-ondo-tokenized-stock": {
+      "ticker": "IRENon",
+      "address": "0x8fd70ee385f470c8d6fda2d93a4e49c849bac6a6",
+      "sValue": "1",
+      "paused": false
+    },
+    "taiwan-semiconductor-manufacturing-ondo-tokenized-stock": {
+      "ticker": "TSMon",
+      "address": "0xc37042a7a4fa510d8884a433762ab87257b91965",
+      "sValue": "1.009320746408453452",
+      "paused": false
+    },
+    "exxon-mobil-ondo-tokenized-stocks": {
+      "ticker": "XOMon",
+      "address": "0x4d209d275e3492ac08497a7a42915899c4dd5e86",
+      "sValue": "1.013993393629342042",
+      "paused": false
+    },
+    "microstrategy-ondo-tokenized-stock": {
+      "ticker": "MSTRon",
+      "address": "0x7313ea16493b2f55054df0131a3a14b043ec8992",
+      "sValue": "1",
+      "paused": false
+    },
+    "mara-holdings-ondo-tokenized-stock": {
+      "ticker": "MARAon",
+      "address": "0xd226d8170ee38793430c7dec6903df4b818bb74c",
+      "sValue": "1",
+      "paused": false
+    },
+    "spdr-gold-shares-ondo-tokenized": {
+      "ticker": "GLDon",
+      "address": "0xfa9a1e901085e269f6d428f79cd5252d8b919344",
+      "sValue": "1",
+      "paused": false
+    },
+    "coca-cola-ondo-tokenized-stock": {
+      "ticker": "KOon",
+      "address": "0x405f38b90bebf1259062cf29da299f3398662bcb",
+      "sValue": "1.019645319400414202",
+      "paused": false
+    },
+    "asml-holding-nv-ondo-tokenized-stock": {
+      "ticker": "ASMLon",
+      "address": "0xb034f6cb52b7f2fd5a7eeeffca6b9adcd6b9a6f6",
+      "sValue": "1.005342942673895318",
+      "paused": false
+    },
+    "ibm-ondo-tokenized-stock": {
+      "ticker": "IBMon",
+      "address": "0xe8ff70859ce4cbd72e4352b4fb45f5bf39d07464",
+      "sValue": "1.022792376444627581",
+      "paused": false
+    },
+    "vertiv-ondo-tokenized": {
+      "ticker": "VRTon",
+      "address": "0x9cea8a7be1ab0320b709d368ad60d8500f55995f",
+      "sValue": "1.000306920878999038",
+      "paused": false
+    },
+    "marvell-technology-ondo-tokenized-stock": {
+      "ticker": "MRVLon",
+      "address": "0x1501ec83ffef405b4331cc4f73277a40fb0c627d",
+      "sValue": "1.001483825466955279",
+      "paused": false
+    },
+    "robinhood-markets-ondo-tokenized-stock": {
+      "ticker": "HOODon",
+      "address": "0x19601179a60f55ff6636f5d1a8b6671053bd60a8",
+      "sValue": "1",
+      "paused": false
+    },
+    "eli-lilly-ondo-tokenized-stock": {
+      "ticker": "LLYon",
+      "address": "0x341d31b2be1fee9c00e395a62ba41837f4322eed",
+      "sValue": "1.004407717014765177",
+      "paused": false
+    },
+    "palantir-technologies-ondo-tokenized-stock": {
+      "ticker": "PLTRon",
+      "address": "0x9351abd19f42101dd36025e495b98e910b255d78",
+      "sValue": "1",
+      "paused": false
+    },
+    "alibaba-ondo-tokenized-stock": {
+      "ticker": "BABAon",
+      "address": "0xd5964f3fcee8d649995ab88f04b8982539c282d2",
+      "sValue": "1.00891343515435611",
+      "paused": false
+    },
+    "microsoft-ondo-tokenized-stock": {
+      "ticker": "MSFTon",
+      "address": "0x6bfe75d1ad432050ea973c3a3dcd88f02e2444c3",
+      "sValue": "1.005730856892783903",
+      "paused": false
+    },
+    "amazon-ondo-tokenized-stock": {
+      "ticker": "AMZNon",
+      "address": "0x4553cfe1c09f37f38b12dc509f676964e392f8fc",
+      "sValue": "1",
+      "paused": false
+    },
+    "proshares-ultrapro-qqq-ondo-tokenized": {
+      "ticker": "TQQQon",
+      "address": "0xe42cfb20e00912409b77a602b5bdcff3c7acc5f4",
+      "sValue": "1.002676844904705856",
+      "paused": false
+    },
+    "ishares-0-3-month-treasury-bond-etf-ondo-tokenized-etf": {
+      "ticker": "SGOVon",
+      "address": "0xc008c5f579ec1450f20099c39f587547e27c7523",
+      "sValue": "1.018457360313098676",
+      "paused": false
+    },
+    "apple-ondo-tokenized-stock": {
+      "ticker": "AAPLon",
+      "address": "0x390a684ef9cade28a7ad0dfa61ab1eb3842618c4",
+      "sValue": "1.003376073740221058",
+      "paused": false
+    },
+    "ishares-20-year-treasury-bond-etf-ondo-tokenized-etf": {
+      "ticker": "TLTon",
+      "address": "0xf69e40069ac227c11459e3f4e8a446b3401616b6",
+      "sValue": "1.044151396974226011",
+      "paused": false
+    },
+    "meta-platforms-ondo-tokenized-stock": {
+      "ticker": "METAon",
+      "address": "0xd7df5863a3e742f0c767768cdfcb63f09e0422f6",
+      "sValue": "1.002279106693300137",
+      "paused": false
+    },
+    "ishares-core-msci-eafe-etf-ondo-tokenized-etf": {
+      "ticker": "IEFAon",
+      "address": "0x918008c3d29496c37b478b611967beaca365af36",
+      "sValue": "1.0249977347338618",
+      "paused": false
+    },
+    "lockheed-ondo-tokenized-stock": {
+      "ticker": "LMTon",
+      "address": "0xd09f7b75b9659b864c6f82bb00ff096f9d277998",
+      "sValue": "1.022808839790325072",
+      "paused": false
+    },
+    "mastercard-ondo-tokenized-stock": {
+      "ticker": "MAon",
+      "address": "0x25ffda07f585c39848db6573e533d7585679c52d",
+      "sValue": "1.00433226330961485",
+      "paused": false
+    },
+    "ondas-holdings-ondo-tokenized": {
+      "ticker": "ONDSon",
+      "address": "0xd85d4ce29b4ca361ff72ef0e53d6236e334c5db6",
+      "sValue": "1",
+      "paused": false
+    },
+    "hims-hers-health-ondo-tokenized-stock": {
+      "ticker": "HIMSon",
+      "address": "0x4693f6f5ef257381a28afd0673e64d8b32d5c6ad",
+      "sValue": "1",
+      "paused": false
+    },
+    "sk-hynix-ondo-tokenized": {
+      "ticker": "SKHYon",
+      "address": "0x4268f2bfb23a7496504aa5ed1ee325248586299f",
+      "sValue": "1",
+      "paused": false
+    },
+    "coherent-ondo-tokenized": {
+      "ticker": "COHRon",
+      "address": "0x0585756aafb241b0f8a9df62db26c566091bde0b",
+      "sValue": "1",
+      "paused": false
+    },
+    "ishares-core-msci-emerging-markets-etf-ondo-tokenized-etf": {
+      "ticker": "IEMGon",
+      "address": "0x22092c94a91d019ad15536725598b0a6be0a73c0",
+      "sValue": "1.017768390166729392",
+      "paused": false
+    },
+    "spdr-s-p-500-etf-ondo-tokenized-etf": {
+      "ticker": "SPYon",
+      "address": "0x6a708ead771238919d85930b5a0f10454e1c331a",
+      "sValue": "1.007720910150127119",
+      "paused": false
+    },
+    "coreweave-ondo-tokenized": {
+      "ticker": "CRWVon",
+      "address": "0x76e39171cb665a35981e744e2ceb7012f76caeac",
+      "sValue": "1",
+      "paused": false
+    },
+    "bilibili-ondo-tokenized-stocks": {
+      "ticker": "BILIon",
+      "address": "0x91fc7371d6de682a1e8cfcb4eb7da693312a03a4",
+      "sValue": "1",
+      "paused": false
+    },
+    "uber-ondo-tokenized-stock": {
+      "ticker": "UBERon",
+      "address": "0xde9d6036fca870f7efc5a82722ae694c371ac909",
+      "sValue": "1",
+      "paused": false
+    },
+    "d-wave-quantum-ondo-tokenized-stock": {
+      "ticker": "QBTSon",
+      "address": "0x8c7bf0ed6bc778bde1489de1592c1aad3e66371d",
+      "sValue": "1",
+      "paused": false
+    },
+    "baidu-ondo-tokenized-stock": {
+      "ticker": "BIDUon",
+      "address": "0x467e59ce5d5fe01686d4a80dd1e1dae13549aa6c",
+      "sValue": "1",
+      "paused": false
+    },
+    "adobe-ondo-tokenized-stock": {
+      "ticker": "ADBEon",
+      "address": "0xcb22db0ecb6fe58b7b47db443dcfdfdfbf729cef",
+      "sValue": "1",
+      "paused": false
+    },
+    "proshares-short-qqq-ondo-tokenized": {
+      "ticker": "PSQon",
+      "address": "0x3802dc739ef9e226f36421a9c15efa519153bbbe",
+      "sValue": "1.009619527519920407",
+      "paused": false
+    },
+    "pfizer-ondo-tokenized-stock": {
+      "ticker": "PFEon",
+      "address": "0x8a83c31d6751833b4940b6e871c48d9a15a07b46",
+      "sValue": "1.060931676944711313",
+      "paused": false
+    },
+    "mp-materials-ondo-tokenized": {
+      "ticker": "MPon",
+      "address": "0x4baf4dc56cf6a525a0874e25cc6372a6a8915135",
+      "sValue": "1",
+      "paused": false
+    },
+    "accenture-ondo-tokenized-stock": {
+      "ticker": "ACNon",
+      "address": "0x7af44d51d1fb88c5b74fc71d3cba649bb8099d14",
+      "sValue": "1.030852839739623902",
+      "paused": false
+    },
+    "constellation-energy-ondo-tokenized-stock": {
+      "ticker": "CEGon",
+      "address": "0x65d84f0990b7394209d591380c2952c83d778aa3",
+      "sValue": "1.003106294412029421",
+      "paused": false
+    },
+    "super-micro-computer-ondo-tokenized-stock": {
+      "ticker": "SMCIon",
+      "address": "0xc142ba8ccd36d80c3a001342fb83e4c3d218a873",
+      "sValue": "1",
+      "paused": false
+    },
+    "spotify-ondo-tokenized-stock": {
+      "ticker": "SPOTon",
+      "address": "0x50356167a4dbc38bea6779c045e24e25facedfdc",
+      "sValue": "1",
+      "paused": false
+    },
+    "crowdstrike-ondo-tokenized-stocks": {
+      "ticker": "CRWDon",
+      "address": "0xe6837794fbc6dd024733a1a31f86061296fa2752",
+      "sValue": "4",
+      "paused": false
+    },
+    "ishares-core-s-p-total-us-stock-market-etf-ondo-tokenized-etf": {
+      "ticker": "ITOTon",
+      "address": "0xcf9caf83053213c44dd7027db3e1e4ac98e55f8f",
+      "sValue": "1.007696305925400671",
+      "paused": false
+    },
+    "unitedhealth-ondo-tokenized-stock": {
+      "ticker": "UNHon",
+      "address": "0x3385cb29cca0ac66f5d2354d13ef977b49a2510f",
+      "sValue": "1.018660886372236111",
+      "paused": false
+    },
+    "intel-ondo-tokenized-stock": {
+      "ticker": "INTCon",
+      "address": "0xa528caaa2f96090e379d43f90834c75df54d6e74",
+      "sValue": "1",
+      "paused": false
+    },
+    "united-states-oil-fund-ondo-tokenized": {
+      "ticker": "USOon",
+      "address": "0x94174e3d1335db402dd03a092f7aa7ac2cb32be4",
+      "sValue": "1",
+      "paused": false
+    },
+    "jpmorgan-chase-ondo-tokenized-stock": {
+      "ticker": "JPMon",
+      "address": "0x317bf42b43a394860718266dec445dcc9fd9da49",
+      "sValue": "1.013353010767603273",
+      "paused": false
+    },
+    "moderna-ondo-tokenized": {
+      "ticker": "MRNAon",
+      "address": "0x01486675da0764ee780ea7cb65c33062e9b2d28c",
+      "sValue": "1",
+      "paused": false
+    },
+    "bitmine-immersion-technologies-ondo-tokenized-stocks": {
+      "ticker": "BMNRon",
+      "address": "0x52ad57a7ea642e99a892afc79e937b383f1b59e9",
+      "sValue": "1",
+      "paused": false
+    },
+    "ishares-gold-trust-ondo-tokenized-stock": {
+      "ticker": "IAUon",
+      "address": "0xcb2a0f46f67dc4c58a316f1c008edef5c2311795",
+      "sValue": "1",
+      "paused": false
+    },
+    "oracle-ondo-tokenized-stock": {
+      "ticker": "ORCLon",
+      "address": "0x03e4bd1ea53f1da84513da0319d1f03dd1bbcf93",
+      "sValue": "1.0079328914586566",
+      "paused": false
+    },
+    "pdd-holdings-ondo-tokenized": {
+      "ticker": "PDDon",
+      "address": "0xf3e82ea164cb344b2b11bad4c24b0ea4f7ba4714",
+      "sValue": "1",
+      "paused": false
+    },
+    "lam-research-ondo-tokenized": {
+      "ticker": "LRCXon",
+      "address": "0x35895a1fa1aff7fb3204fb01257409fd75acb24c",
+      "sValue": "1.001333404904182601",
+      "paused": false
+    },
+    "global-x-copper-miners-etf-ondo-tokenized-etf": {
+      "ticker": "COPXon",
+      "address": "0xec93fe7ff4b09ca3ccafbc4cc9615e62be412780",
+      "sValue": "1.002369858267716535",
+      "paused": false
+    },
+    "ishares-tips-bond-etf-ondo-tokenized-etf": {
+      "ticker": "TIPon",
+      "address": "0x2ac26ec236df5d1d2ad1a6dd4e448a90e45dc35d",
+      "sValue": "1.039903672884955792",
+      "paused": false
+    },
+    "oklo-ondo-tokenized": {
+      "ticker": "OKLOon",
+      "address": "0xaf6c03acf72355ce98d0741302b78870b376428c",
+      "sValue": "1",
+      "paused": false
+    },
+    "walmart-ondo-tokenized-stock": {
+      "ticker": "WMTon",
+      "address": "0xa7d1e886acf66ec0656df2decb4b7c893a3bab4c",
+      "sValue": "1.005855614984698629",
+      "paused": false
+    },
+    "qualcomm-ondo-tokenized-stock": {
+      "ticker": "QCOMon",
+      "address": "0xfbd4d681c92ead6af0e49950c8b2e47eeacbb2db",
+      "sValue": "1.018536802088982624",
+      "paused": false
+    },
+    "arm-holdings-plc-ondo-tokenized-stock": {
+      "ticker": "ARMon",
+      "address": "0x527c6436e1eaa4f2065cde4090f798cb5d031dd6",
+      "sValue": "1",
+      "paused": false
+    },
+    "applied-materials-ondo-tokenized-stocks": {
+      "ticker": "AMATon",
+      "address": "0x5ecc352c4640f1d26bd231dbbd171f40f7d0eec6",
+      "sValue": "1.002501637568568532",
+      "paused": false
+    },
+    "snowflake-ondo-tokenized-stock": {
+      "ticker": "SNOWon",
+      "address": "0x138ed6833ff4e8811e1fea0d005e13726c8886f9",
+      "sValue": "1",
+      "paused": false
+    },
+    "ishares-core-s-p-500-etf-ondo-tokenized-etf": {
+      "ticker": "IVVon",
+      "address": "0x1104eb7e85e25eb45f88e638b0c27a06c1a91cb2",
+      "sValue": "1.008340641965494227",
+      "paused": false
+    },
+    "petrobras-ondo-tokenized-stock": {
+      "ticker": "PBRon",
+      "address": "0x2b1d5cdecc356530a746c5754231efaeaca64022",
+      "sValue": "1.032800438461393472",
+      "paused": false
+    },
+    "conocophillips-ondo-tokenized-stocks": {
+      "ticker": "COPon",
+      "address": "0x0d586b51a90dc999f9bb6a0506da7f034a1d3a2e",
+      "sValue": "1.015212108391859592",
+      "paused": false
+    },
+    "visa-ondo-tokenized-stock": {
+      "ticker": "Von",
+      "address": "0x1cde419fae0ef7f7931ae3e29e5f411c8c5e5fa1",
+      "sValue": "1.00681694330219382",
+      "paused": false
+    },
+    "rivian-automotive-ondo-tokenized": {
+      "ticker": "RIVNon",
+      "address": "0x277e1fa8704c5511fed7e30bc691f922aa30101b",
+      "sValue": "1",
+      "paused": false
+    },
+    "ishares-msci-eafe-etf-ondo-tokenized-etf": {
+      "ticker": "EFAon",
+      "address": "0x38b9a53bfdc5dba58a29bd6992341927c2fca637",
+      "sValue": "1.023822468085707436",
+      "paused": false
+    },
+    "arista-networks-ondo-tokenized-stocks": {
+      "ticker": "ANETon",
+      "address": "0x538e2838f9ebc9b891399df4a8dcc42890d9dc20",
+      "sValue": "1",
+      "paused": false
+    },
+    "abrdn-physical-palladium-shares-etf-ondo-tokenized-stocks": {
+      "ticker": "PALLon",
+      "address": "0x3fcd741646a9790635b938cdb69af5df356cbaab",
+      "sValue": "5",
+      "paused": false
+    },
+    "occidental-petroleum-ondo-tokenized": {
+      "ticker": "OXYon",
+      "address": "0x01b5a4ac600be98448dbefbb78bcdf38262552cc",
+      "sValue": "1.006669194500855163",
+      "paused": false
+    },
+    "salesforce-ondo-tokenized-stock": {
+      "ticker": "CRMon",
+      "address": "0xd04a2bb053277721a8321d7441eed5b42fdf7250",
+      "sValue": "1.005894625750096811",
+      "paused": false
+    },
+    "novo-nordisk-ondo-tokenized-stock": {
+      "ticker": "NVOon",
+      "address": "0x08a513779f46ffb7a34f16094a94016d010128a8",
+      "sValue": "1.030267091960948431",
+      "paused": false
+    },
+    "ishares-msci-emerging-markets-etf-ondo-tokenized-etf": {
+      "ticker": "EEMon",
+      "address": "0x00c81d35eddf44c75d4db9e07bdcdc236eb0ebcf",
+      "sValue": "1.013664147460543285",
+      "paused": false
+    },
+    "gamestop-ondo-tokenized-stock": {
+      "ticker": "GMEon",
+      "address": "0xdabb9aff4cf02f26d2014e4ca9f94ac6fe6572a3",
+      "sValue": "1.017138313418943429",
+      "paused": false
+    },
+    "boeing-ondo-tokenized-stock": {
+      "ticker": "BAon",
+      "address": "0xf21132a811ad1a878e21af60f64d4e690c9daa42",
+      "sValue": "1",
+      "paused": false
+    },
+    "mcdonald-s-ondo-tokenized-stock": {
+      "ticker": "MCDon",
+      "address": "0x995add4ba29a628a57930a8a185c62ca044ec090",
+      "sValue": "1.021904049306145317",
+      "paused": false
+    },
+    "atnt-ondo-tokenized-stock": {
+      "ticker": "Ton",
+      "address": "0x4255279af47cf10efb9a5c8839f90170f4ef759f",
+      "sValue": "1.024891883026981672",
+      "paused": false
+    },
+    "cisco-systems-ondo-tokenized-stock": {
+      "ticker": "CSCOon",
+      "address": "0x34304f2f7cc487eb4186e6d69f5905a613474aa2",
+      "sValue": "1.014270362303804718",
+      "paused": false
+    },
+    "rocket-lab-ondo-tokenized": {
+      "ticker": "RKLBon",
+      "address": "0xb4d695569236273745b4cd54b539b1b9cc1513af",
+      "sValue": "1",
+      "paused": false
+    },
+    "pepsico-ondo-tokenized-stock": {
+      "ticker": "PEPon",
+      "address": "0xf99f8f3a95257d82006183bd524efa7aacc9ef7a",
+      "sValue": "1.027472956214093214",
+      "paused": false
+    },
+    "starbucks-ondo-tokenized-stock": {
+      "ticker": "SBUXon",
+      "address": "0x94d7754541b829a87321d56121bc544167ac490d",
+      "sValue": "1.017764658966079924",
+      "paused": false
+    },
+    "abbott-ondo-tokenized-stock": {
+      "ticker": "ABTon",
+      "address": "0x5a20886b575058dd7299785f0ea9b1172942a3e0",
+      "sValue": "1.016057851422025191",
+      "paused": false
+    },
+    "procter-gamble-ondo-tokenized-stock": {
+      "ticker": "PGon",
+      "address": "0x400f1e257f86d25578a0928c94dc95115f09d5c9",
+      "sValue": "1.025304000727182209",
+      "paused": false
+    },
+    "rigetti-computing-ondo-tokenized": {
+      "ticker": "RGTIon",
+      "address": "0xed2a500eb2b66679e0bbd76e51a60049ae5f3271",
+      "sValue": "1",
+      "paused": false
+    },
+    "sofi-technologies-ondo-tokenized-stock": {
+      "ticker": "SOFIon",
+      "address": "0x71507068e98049cba81e9bbc8d901e4a2f4222eb",
+      "sValue": "1",
+      "paused": false
+    },
+    "ishares-core-us-aggregate-bond-etf-ondo-tokenized-etf": {
+      "ticker": "AGGon",
+      "address": "0x08ce97f3d5cf11e577d091ab048bc5e2eae3fabb",
+      "sValue": "1.038180908059290589",
+      "paused": false
+    },
+    "carvana-ondo-tokenized-stocks": {
+      "ticker": "CVNAon",
+      "address": "0xc145dc2ebdbe8ead1fecdebf46c76eb1fdd0104d",
+      "sValue": "5",
+      "paused": false
+    },
+    "sharplink-gaming-inc-ondo-tokenized-stock": {
+      "ticker": "SBETon",
+      "address": "0x99e01f02d66455bb106d91d469c9eaf6ab4904f6",
+      "sValue": "1",
+      "paused": false
+    },
+    "ishares-msci-south-korea-etf-ondo-tokenized": {
+      "ticker": "EWYon",
+      "address": "0x12b7adc48416a103f63e7e6210f62c81dfb91fd0",
+      "sValue": "1",
+      "paused": false
+    },
+    "soundhound-ai-ondo-tokenized": {
+      "ticker": "SOUNon",
+      "address": "0xedcf71b2e2217064038adcb54a3c3a5fc3488ef1",
+      "sValue": "1",
+      "paused": false
+    },
+    "abrdn-physical-platinum-shares-etf-ondo-tokenized": {
+      "ticker": "PPLTon",
+      "address": "0x3ec23f52f6573fc0587a0631dd8c3b107f6bcb35",
+      "sValue": "10",
+      "paused": false
+    },
+    "kla-ondo-tokenized": {
+      "ticker": "KLACon",
+      "address": "0xfc263946439b0d802bf4c5a6fcd34e2885259f91",
+      "sValue": "10.026064925604903975",
+      "paused": false
+    },
+    "ionq-ondo-tokenized": {
+      "ticker": "IONQon",
+      "address": "0x40d8e1fbaf69173c47fa493feb50a84eec6b57ee",
+      "sValue": "1",
+      "paused": false
+    },
+    "reddit-ondo-tokenized-stock": {
+      "ticker": "RDDTon",
+      "address": "0x4da12f47578ef89c76179b760c778e70b668f80b",
+      "sValue": "1",
+      "paused": false
+    },
+    "western-digital-ondo-tokenized": {
+      "ticker": "WDCon",
+      "address": "0xceb29848d04ad3cb46e1fe8e45b82ffac39d797d",
+      "sValue": "1.000182995870996193",
+      "paused": false
+    },
+    "vistra-ondo-tokenized": {
+      "ticker": "VSTon",
+      "address": "0xf2c24c47805f4f72d3919c8674bfdd401505794b",
+      "sValue": "1.001933442809101629",
+      "paused": false
+    },
+    "ge-vernova-ondo-tokenized": {
+      "ticker": "GEVon",
+      "address": "0x2aea1d415d45ccf3eabe565d45dcaf4ea2035b9c",
+      "sValue": "1.000784237112149539",
+      "paused": false
+    },
+    "figma-ord-shs-ondo-tokenized-stock": {
+      "ticker": "FIGon",
+      "address": "0x93fac02b22b6743423381d163aec418178019b7a",
+      "sValue": "1",
+      "paused": false
+    },
+    "seagate-ondo-tokenized": {
+      "ticker": "STXon",
+      "address": "0x966ebcba3c51e81f5cf159a1eabefd2327ab5e8d",
+      "sValue": "1.001913198476905088",
+      "paused": false
+    },
+    "ast-spacemobile-ondo-tokenized": {
+      "ticker": "ASTSon",
+      "address": "0x45abf29515bc23f8c0ed2a06584444ce473a75fb",
+      "sValue": "1",
+      "paused": false
+    },
+    "futu-holdings-ondo-tokenized-stock": {
+      "ticker": "FUTUon",
+      "address": "0x5acf40056ed51c8bbcd1b125ef803581ac89a627",
+      "sValue": "1.015720479662535676",
+      "paused": false
+    },
+    "riot-platforms-ondo-tokenized-stock": {
+      "ticker": "RIOTon",
+      "address": "0xc4a88a72b848255fd24da3c1ad6755d980535fb1",
+      "sValue": "1",
+      "paused": false
+    },
+    "verizon-ondo-tokenized": {
+      "ticker": "VZon",
+      "address": "0xa3b089c886e6d721f49def8e050f3b9d4362560b",
+      "sValue": "1.034801484107482426",
+      "paused": false
+    },
+    "texas-instruments-ondo-tokenized": {
+      "ticker": "TXNon",
+      "address": "0xca3a5c955f1f01f20aacf9501b03e4aa235e478b",
+      "sValue": "1.011683272013645206",
+      "paused": false
+    },
+    "redwire-ondo-tokenized": {
+      "ticker": "RDWon",
+      "address": "0x23e39d94807a8bb7e3f8294b4911d04ee26dce39",
+      "sValue": "1",
+      "paused": false
+    },
+    "american-airlines-group-ondo-tokenized-stocks": {
+      "ticker": "AALon",
+      "address": "0x02d608506ca0048d0d991a11f1e7fb8cad1e44f8",
+      "sValue": "1",
+      "paused": false
+    },
+    "intuitive-surgical-ondo-tokenized-stock": {
+      "ticker": "ISRGon",
+      "address": "0x784584933c2192caa062e90d8140d94768ce62d8",
+      "sValue": "1",
+      "paused": false
+    },
+    "eaton-ondo-tokenized": {
+      "ticker": "ETNon",
+      "address": "0x4697b2a050f7b5a8e1ebc27c325f9d78d094f041",
+      "sValue": "1.003880763533020335",
+      "paused": false
+    },
+    "enphase-energy-ondo-tokenized": {
+      "ticker": "ENPHon",
+      "address": "0x30938154e2697694f41592c2e48459287debe4bf",
+      "sValue": "1",
+      "paused": false
+    },
+    "union-pacific-corporation-ondo-tokenized": {
+      "ticker": "UNPon",
+      "address": "0xfe9aa194e3c4604f3872f220eb41c33a287fcd90",
+      "sValue": "1.006866989908180095",
+      "paused": false
+    },
+    "intuitive-machines-ondo-tokenized": {
+      "ticker": "LUNRon",
+      "address": "0xa3b7b7cfeb023a6c4f444f5ca9a3fc85809ece15",
+      "sValue": "1",
+      "paused": false
+    },
+    "archer-aviation-ondo-tokenized-stocks": {
+      "ticker": "ACHRon",
+      "address": "0x91c62325f901ee29da8e521cfe68980332a4ca06",
+      "sValue": "1",
+      "paused": false
+    },
+    "bigbear-ai-holdings-ondo-tokenized-stocks": {
+      "ticker": "BBAIon",
+      "address": "0x7ba995f1662a01f3be0dc299ce94bb7e9c7075f5",
+      "sValue": "1",
+      "paused": false
+    },
+    "servicenow-ondo-tokenized-stock": {
+      "ticker": "NOWon",
+      "address": "0xeb19c13c54b1cd48afc62f6503375e92d5f1e856",
+      "sValue": "5",
+      "paused": false
+    },
+    "southern-copper-ondo-tokenized": {
+      "ticker": "SCCOon",
+      "address": "0xf15b8f7465b92799f6ee440f86b3cab5a4dbc65a",
+      "sValue": "1.026785459208234421",
+      "paused": false
+    },
+    "blackrock-inc-ondo-tokenized-stock": {
+      "ticker": "BLKon",
+      "address": "0x24f5471183ea549987f245d6ce236b6108869c92",
+      "sValue": "1.014572694302155958",
+      "paused": false
+    },
+    "global-x-uranium-etf-ondo-tokenized": {
+      "ticker": "URAon",
+      "address": "0xc7806943663158d68740a14ab0b270bd60bde87d",
+      "sValue": "1",
+      "paused": false
+    },
+    "equinix-ondo-tokenized-stock": {
+      "ticker": "EQIXon",
+      "address": "0xe4e12c9cec3e8cae405202a97f66afa695075fa0",
+      "sValue": "1.015011450200885668",
+      "paused": false
+    },
+    "waste-management-ondo-tokenized": {
+      "ticker": "WMon",
+      "address": "0xce0466bae0e867239719dc386ca84b1f3efe6914",
+      "sValue": "1.005761184213116937",
+      "paused": false
+    },
+    "newmont-ondo-tokenized": {
+      "ticker": "NEMon",
+      "address": "0x5e63232993789601ce362e0240a299c1dfcbfbec",
+      "sValue": "1.003091949609185442",
+      "paused": false
+    },
+    "palo-alto-networks-ondo-tokenized-stock": {
+      "ticker": "PANWon",
+      "address": "0x0eaa1a75bd682a5669ab2371a559fbd039c6b9eb",
+      "sValue": "1",
+      "paused": false
+    },
+    "strategy-stretch-preferred-ondo-tokenized": {
+      "ticker": "STRCon",
+      "address": "0x71e9dc9debc18650bd2342b93623b88c2ad00c89",
+      "sValue": "1.048030553751355939",
+      "paused": false
+    },
+    "caterpillar-ondo-tokenized-stock": {
+      "ticker": "CATon",
+      "address": "0x274b0cb6db9473245a31cdea9b789786f4108e4b",
+      "sValue": "1.004290909865719845",
+      "paused": false
+    },
+    "merck-ondo-tokenized": {
+      "ticker": "MRKon",
+      "address": "0x869027261075c3c239d6a26842579b93802606f4",
+      "sValue": "1.010078097945535623",
+      "paused": false
+    },
+    "ishares-msci-india-etf-ondo-tokenized": {
+      "ticker": "INDAon",
+      "address": "0xdb0748297fbef0b33df89e86519a0bd3adaf6459",
+      "sValue": "1",
+      "paused": false
+    },
+    "amgen-ondo-tokenized-stocks": {
+      "ticker": "AMGNon",
+      "address": "0xfbdf0366f800cc79d6663da26bc0bf21fb455aa6",
+      "sValue": "1.014242845562430826",
+      "paused": false
+    },
+    "s-p-global-ondo-tokenized-stock": {
+      "ticker": "SPGIon",
+      "address": "0x55b370b704240a914f42b5bbb3195431c031f9f8",
+      "sValue": "1.053475954992204636",
+      "paused": false
+    },
+    "paypal-ondo-tokenized-stock": {
+      "ticker": "PYPLon",
+      "address": "0x374d03a6c0d5bd4be0a5117ebe1b49d52ac8a53f",
+      "sValue": "1.006041581742540573",
+      "paused": false
+    },
+    "regeneron-pharmaceuticals-ondo-tokenized": {
+      "ticker": "REGNon",
+      "address": "0x30bd85fd4286c5c9857679f5b188f737b4a7b8c0",
+      "sValue": "1.001873288448163851",
+      "paused": false
+    },
+    "ishares-russell-2000-value-etf-ondo-tokenized-etf": {
+      "ticker": "IWNon",
+      "address": "0xf54b94ea21e1da5d51ef00fd4502225e5394f874",
+      "sValue": "1.011741107418575866",
+      "paused": false
+    },
+    "abbvie-ondo-tokenized-stock": {
+      "ticker": "ABBVon",
+      "address": "0x8677abad7b458bf16a0fb2676dfc7d3f55ac202a",
+      "sValue": "1.016546279555654879",
+      "paused": false
+    },
+    "albemarle-ondo-tokenized": {
+      "ticker": "ALBon",
+      "address": "0x0b790abd6594918de1022233b7cc79badb84d92a",
+      "sValue": "1.003522592452445556",
+      "paused": false
+    },
+    "bank-of-america-ondo-tokenized-stocks": {
+      "ticker": "BACon",
+      "address": "0xd615468088b19fb9d4f03cb3ce9e33876ff3db99",
+      "sValue": "1.007583981186817945",
+      "paused": false
+    },
+    "ishares-russell-1000-growth-etf-ondo-tokenized-etf": {
+      "ticker": "IWFon",
+      "address": "0x40755f06ab7f8de1ab3a9413b1ef562d63de19b1",
+      "sValue": "4.010350767183862505",
+      "paused": false
+    },
+    "plug-power-ondo-tokenized": {
+      "ticker": "PLUGon",
+      "address": "0x4752ae8f910b25e64e4406eaad50c1b4e8de7e6d",
+      "sValue": "1",
+      "paused": false
+    },
+    "disney-ondo-tokenized-stock": {
+      "ticker": "DISon",
+      "address": "0xeee9eee593cb8f7946260b4066cba7907f40acfa",
+      "sValue": "1.010066831424328193",
+      "paused": false
+    },
+    "general-electric-ondo-tokenized-stock": {
+      "ticker": "GEon",
+      "address": "0x5151a22421ed4277f1e4ca4785a07b035d548a36",
+      "sValue": "1.003558931850101452",
+      "paused": false
+    },
+    "ishares-core-s-p-midcap-etf-ondo-tokenized-etf": {
+      "ticker": "IJHon",
+      "address": "0x167e93a849a0cc479769132552b99aa1cfa0948c",
+      "sValue": "1.009126235519381087",
+      "paused": false
+    },
+    "ishares-semiconductor-etf-ondo-tokenized": {
+      "ticker": "SOXXon",
+      "address": "0x2a3cbf64c8181db4a25d41d4d7a7db9984c59dac",
+      "sValue": "1.000332449687655546",
+      "paused": false
+    },
+    "freeport-mcmoran-ondo-tokenized": {
+      "ticker": "FCXon",
+      "address": "0xe3b17e6d290a0f28bd32af4064637057627004d5",
+      "sValue": "1.003248158416538125",
+      "paused": false
+    },
+    "airbnb-ondo-tokenized-stock": {
+      "ticker": "ABNBon",
+      "address": "0xef80743f78d98fc2b47a2253b293152ce8b879ba",
+      "sValue": "1",
+      "paused": false
+    },
+    "vertex-pharmaceuticals-ondo-tokenized": {
+      "ticker": "VRTXon",
+      "address": "0x8c9979dc208f74a5602c38691aa920f121e2f863",
+      "sValue": "1",
+      "paused": false
+    },
+    "goldman-sachs-ondo-tokenized-stock": {
+      "ticker": "GSon",
+      "address": "0x0d4f9b25f81163fb4840ba4f434672543823000c",
+      "sValue": "1.013764315605746387",
+      "paused": false
+    },
+    "analog-devices-ondo-tokenized-stocks": {
+      "ticker": "ADIon",
+      "address": "0x0e246e05212dbbd78a354c072a92b4e5723b2fa0",
+      "sValue": "1.006251588366643087",
+      "paused": false
+    },
+    "northrop-grumman-ondo-tokenized": {
+      "ticker": "NOCon",
+      "address": "0x4d3442d884202584f1729bca20db05472b886b52",
+      "sValue": "1.006226353314046476",
+      "paused": false
+    },
+    "franklin-us-large-cap-multifactor-index-etf-ondo-tokenized": {
+      "ticker": "FLQLon",
+      "address": "0x48187890d16aee64798e02c5bed510f4db5694a9",
+      "sValue": "1.003635347217318545",
+      "paused": false
+    },
+    "jd-com-ondo-tokenized-stock": {
+      "ticker": "JDon",
+      "address": "0xe92be960ae64f6a914ca77014cac9e56de7f36c1",
+      "sValue": "1.034507042253521127",
+      "paused": false
+    },
+    "rtx-ondo-tokenized": {
+      "ticker": "RTXon",
+      "address": "0x44fde2c6bc2c2b54962c69fcef57a2a50121dbd7",
+      "sValue": "1.007544306866908764",
+      "paused": false
+    },
+    "ishares-russell-2000-etf-ondo-tokenized-etf": {
+      "ticker": "IWMon",
+      "address": "0x500eafc69b68acd6f27064f9b75f1c7d91cc4d9f",
+      "sValue": "1.00724100589360549",
+      "paused": false
+    },
+    "intuit-ondo-tokenized-stock": {
+      "ticker": "INTUon",
+      "address": "0x6e3e077a6c0e3c27fd6d00b97387d9b7bd451bab",
+      "sValue": "1.007827614227082215",
+      "paused": false
+    },
+    "wisdomtree-floating-rate-treasury-fund-ondo-tokenized": {
+      "ticker": "USFRon",
+      "address": "0xf4fd75764a5c086fb12f822be2ca318b3a362dc3",
+      "sValue": "1.018588387568579396",
+      "paused": false
+    },
+    "american-express-ondo-tokenized-stock": {
+      "ticker": "AXPon",
+      "address": "0xd803f8777187d6dee1ea57854aeb957043fb1675",
+      "sValue": "1.0074362936565311",
+      "paused": false
+    },
+    "chipotle-ondo-tokenized-stock": {
+      "ticker": "CMGon",
+      "address": "0xaed5985afc12aa09d87f55b4b1e6bc3b8f7b0208",
+      "sValue": "1",
+      "paused": false
+    },
+    "nike-ondo-tokenized-stock": {
+      "ticker": "NKEon",
+      "address": "0x04b5e199f2ec84f78b111035f57b16bee448db6f",
+      "sValue": "1.026577066356554817",
+      "paused": false
+    },
+    "mercadolibre-ondo-tokenized-stock": {
+      "ticker": "MELIon",
+      "address": "0x60a8f8e05200ff73afde9e2cae819bf1605f0bdd",
+      "sValue": "1",
+      "paused": false
+    },
+    "capital-one-ondo-tokenized-stock": {
+      "ticker": "COFon",
+      "address": "0x53a8c5fc5643b437779742f494691e6b7c660a8b",
+      "sValue": "1.008133280098686719",
+      "paused": false
+    },
+    "coupang-ondo-tokenized-stocks": {
+      "ticker": "CPNGon",
+      "address": "0x19904bc04c09e5d29ed216ddd105bdf103a0ba2d",
+      "sValue": "1",
+      "paused": false
+    },
+    "thermo-fisher-scientific-ondo-tokenized-stock": {
+      "ticker": "TMOon",
+      "address": "0xbcf7d958791152128710565a5fc6f68342ed71c8",
+      "sValue": "1.001392464342853652",
+      "paused": false
+    },
+    "t-mobile-us-ondo-tokenized-stock": {
+      "ticker": "TMUSon",
+      "address": "0x2588f20bad92da8dcce7fac8311b5f8ab4690e43",
+      "sValue": "1.011188221625670751",
+      "paused": false
+    },
+    "wells-fargo-ondo-tokenized-stock": {
+      "ticker": "WFCon",
+      "address": "0x629520dee1620def11596f84e85de9f1ff653012",
+      "sValue": "1.019332243332157395",
+      "paused": false
+    },
+    "ishares-msci-japan-etf-ondo-tokenized": {
+      "ticker": "EWJon",
+      "address": "0x82715299f3f132fb85f3de1f7e8fafd3d79f3eb5",
+      "sValue": "1.003759352633542927",
+      "paused": false
+    },
+    "johnson-johnson-ondo-tokenized-stock": {
+      "ticker": "JNJon",
+      "address": "0xd1f799cb9f5d0a02951b0755beced6c43882712f",
+      "sValue": "1.0111997233056816",
+      "paused": false
+    },
+    "us-natural-gas-fund-ondo-tokenized": {
+      "ticker": "UNGon",
+      "address": "0xa5351c9bf08055e03642b6b8649a0f7e895501bf",
+      "sValue": "1",
+      "paused": false
+    },
+    "ishares-us-aerospace-and-defense-etf-ondo-tokenized": {
+      "ticker": "ITAon",
+      "address": "0x88b90f45bd6a4f97f7d85d280ed64a40880e4935",
+      "sValue": "1.000945065103628887",
+      "paused": false
+    },
+    "proshares-ultrapro-short-qqq-ondo-tokenized": {
+      "ticker": "SQQQon",
+      "address": "0x17515b68378d86c38f394c666e79907da05dcba9",
+      "sValue": "1.017573915668307372",
+      "paused": false
+    },
+    "cipher-mining-ondo-tokenized-stock": {
+      "ticker": "CIFRon",
+      "address": "0xdad07d0ca26ed4109bc00893dbee3ed4ce8ce2a4",
+      "sValue": "1",
+      "paused": false
+    },
+    "applied-digital-ondo-tokenized": {
+      "ticker": "APLDon",
+      "address": "0x18de24acb876c0b8392d9c55583bb21c0355980b",
+      "sValue": "1",
+      "paused": false
+    },
+    "terawulf-ondo-tokenized": {
+      "ticker": "WULFon",
+      "address": "0xad56701d9e57957e28e546db7db508a16d4f86cc",
+      "sValue": "1",
+      "paused": false
+    },
+    "bitgo-holdings-ondo-tokenized-stock": {
+      "ticker": "BTGOon",
+      "address": "0x5fa699c0c1319b8d86489af77dfde4fa97b47df8",
+      "sValue": "1",
+      "paused": false
+    },
+    "bullish-ondo-tokenized-stocks": {
+      "ticker": "BLSHon",
+      "address": "0xfbe22d27b6e153244882fd7bdfe7c6109918281b",
+      "sValue": "1",
+      "paused": false
+    },
+    "amc-entertainment-ondo-tokenized-stocks": {
+      "ticker": "AMCon",
+      "address": "0x1d7b5e06fdbe4fd33f5c64c081e32b5d539751d0",
+      "sValue": "1",
+      "paused": false
+    },
+    "pinterest-ondo-tokenized": {
+      "ticker": "PINSon",
+      "address": "0xcfd1f0df84300ea1a4e2ba5238043a2fa5a7237c",
+      "sValue": "1",
+      "paused": false
+    },
+    "charles-schwab-ondo-tokenized-stocks": {
+      "ticker": "SCHWon",
+      "address": "0xe5ba472c98b7e4695bd856290de66bdedaffc123",
+      "sValue": "1.006965419399731114",
+      "paused": false
+    },
+    "on-semiconductor-ondo-tokenized": {
+      "ticker": "ONon",
+      "address": "0xb35a9eab5d25282f4e668798b629a9294e9a47aa",
+      "sValue": "1",
+      "paused": false
+    },
+    "doordash-ondo-tokenized-stock": {
+      "ticker": "DASHon",
+      "address": "0x7567c2a46bce46373b454682f3d95e6535bde144",
+      "sValue": "1",
+      "paused": false
+    },
+    "grab-holdings-ondo-tokenized-stock": {
+      "ticker": "GRABon",
+      "address": "0xab2f74804c022c5249d52e743af4340e42f5f3b6",
+      "sValue": "1",
+      "paused": false
+    },
+    "kraneshares-csi-china-internet-etf-ondo-tokenized": {
+      "ticker": "KWEBon",
+      "address": "0x7437203800140ba7d9081dde8cef09ee40e3bf03",
+      "sValue": "1",
+      "paused": false
+    },
+    "li-auto-ondo-tokenized": {
+      "ticker": "LIon",
+      "address": "0x9810beac9af3c30d14cfb61cdd557e160f60fd50",
+      "sValue": "1",
+      "paused": false
+    },
+    "applovin-ondo-tokenized-stock": {
+      "ticker": "APPon",
+      "address": "0xedb3124e96c64c177eb709cbc64f9977db40ea74",
+      "sValue": "1",
+      "paused": false
+    },
+    "nio-ondo-tokenized": {
+      "ticker": "NIOon",
+      "address": "0xc6f9edbee6042a237d72493bbda3ee2c3c62f708",
+      "sValue": "1",
+      "paused": false
+    },
+    "netease-ondo-tokenized": {
+      "ticker": "NTESon",
+      "address": "0x282973969118f9fe39bf2ff3d8dd1efee82ccb11",
+      "sValue": "1.012055034894123165",
+      "paused": false
+    },
+    "galaxy-digital-ondo-tokenized": {
+      "ticker": "GLXYon",
+      "address": "0xf98b89825233808cd37706a53d2b4ae3e359d442",
+      "sValue": "1",
+      "paused": false
+    },
+    "talen-energy-ondo-tokenized-stock": {
+      "ticker": "TLNon",
+      "address": "0xbbe4dfe7a349fb72aec6f52d5cd9bdd78ae8f313",
+      "sValue": "1",
+      "paused": false
+    },
+    "trip-com-group-ondo-tokenized-stock": {
+      "ticker": "TCOMon",
+      "address": "0x6459303f58244ff1e7a42b90aa3782dfb6ca6969",
+      "sValue": "1",
+      "paused": false
+    },
+    "fidelity-solana-fund-ondo-tokenized": {
+      "ticker": "FSOLon",
+      "address": "0x54b92fd77229269ff6484942c123cca72f2d6fec",
+      "sValue": "1.01002670023654138",
+      "paused": false
+    },
+    "us-brent-oil-fund-ondo-tokenized": {
+      "ticker": "BNOon",
+      "address": "0x5f2d37192576a6804f44722eb828e280d5fb43dc",
+      "sValue": "1",
+      "paused": false
+    },
+    "snap-ondo-tokenized": {
+      "ticker": "SNAPon",
+      "address": "0xf325884d9bcac457271fe7f7b6be1765348fcca2",
+      "sValue": "1",
+      "paused": false
+    },
+    "vaneck-oil-services-etf-ondo-tokenized": {
+      "ticker": "OIHon",
+      "address": "0x31d6011023d6c7695efc29bb016830f3f36de40a",
+      "sValue": "1",
+      "paused": false
+    },
+    "vaneck-rare-earth-and-strategic-metals-etf-ondo-tokenized": {
+      "ticker": "REMXon",
+      "address": "0xc16f47c4a7ed39372b9a0e3e2016cede9b4cb83a",
+      "sValue": "1",
+      "paused": false
+    },
+    "pimco-0-5-year-high-yield-corporate-bond-index-etf-ondo-tokenized": {
+      "ticker": "HYSon",
+      "address": "0x75e9d68e99e76714ed1a7663ab48ba3aabd7a6c5",
+      "sValue": "1.024818297796627038",
+      "paused": false
+    },
+    "franklin-focused-growth-etf-ondo-tokenized": {
+      "ticker": "FFOGon",
+      "address": "0xea130432a9fee9ca1a7eda84028650d38bd0e232",
+      "sValue": "1",
+      "paused": false
+    },
+    "franklin-income-equity-focus-etf-ondo-tokenized": {
+      "ticker": "INCEon",
+      "address": "0x5e24db6de4c21e2c8f9e81bacfcedfbac2dee4aa",
+      "sValue": "1.018899798127190993",
+      "paused": false
+    },
+    "vanguard-value-etf-ondo-tokenized": {
+      "ticker": "VTVon",
+      "address": "0xc2dd31b1b3a2f515ce0d48de712c6744c3475170",
+      "sValue": "1.010945763138782217",
+      "paused": false
+    },
+    "grindr-ondo-tokenized-stock": {
+      "ticker": "GRNDon",
+      "address": "0x20cce48d767ed68cbba7727c4c504efe5bcb626c",
+      "sValue": "1",
+      "paused": false
+    },
+    "vinfast-auto-ondo-tokenized": {
+      "ticker": "VFSon",
+      "address": "0x1d2eaaf0ae00382893aa4318bd88d1cd0e9b858a",
+      "sValue": "1",
+      "paused": false
+    },
+    "wisdomtree-us-quality-dividend-growth-fund-ondo-tokenized": {
+      "ticker": "DGRWon",
+      "address": "0x1cd89241b26fcdc421fd02907d6504c8abbfe1bc",
+      "sValue": "1.006644333988455013",
+      "paused": false
+    },
+    "ishares-china-large-cap-etf-ondo-tokenized": {
+      "ticker": "FXIon",
+      "address": "0x9b8e987e6fec8cf1380c4dca7071e2c7853aeea1",
+      "sValue": "1.005231412765957447",
+      "paused": false
+    },
+    "ishares-msci-chile-etf-ondo-tokenized": {
+      "ticker": "ECHon",
+      "address": "0x551f8db0da800c910e12cf991eac306714481685",
+      "sValue": "1.010881845661695347",
+      "paused": false
+    },
+    "figure-technology-solutions-ondo-tokenized-stock": {
+      "ticker": "FIGRon",
+      "address": "0x620477782cea4c4171165396f8014edef83a13da",
+      "sValue": "1",
+      "paused": false
+    },
+    "oscar-health-ondo-tokenized": {
+      "ticker": "OSCRon",
+      "address": "0xb0752aa50b089ee6ea9acd51373207fa460e87bb",
+      "sValue": "1",
+      "paused": false
+    },
+    "first-trust-global-tactical-commodity-strategy-fund-ondo-tokenized-stock": {
+      "ticker": "FTGCon",
+      "address": "0xe96f94e10f1265dcc15f83d251f1f6758d2cd67d",
+      "sValue": "1.014506097573268871",
+      "paused": false
+    },
+    "capricor-therapeutics-ondo-tokenized": {
+      "ticker": "CAPRon",
+      "address": "0x812fc2943371c952c6c8daf99fe665eb0e40cd27",
+      "sValue": "1",
+      "paused": false
+    },
+    "citigroup-ondo-tokenized-stock": {
+      "ticker": "Con",
+      "address": "0x8ddb97556f6ae98b4d408c56b167139fe1cbe3e8",
+      "sValue": "1.010521230925402007",
+      "paused": false
+    },
+    "vaneck-clo-etf-ondo-tokenized-stock": {
+      "ticker": "CLOIon",
+      "address": "0xd7e3317d54473dab04135fb0676623f237ff5ca9",
+      "sValue": "1.023321113815687412",
+      "paused": false
+    },
+    "deere-ondo-tokenized-stocks": {
+      "ticker": "DEon",
+      "address": "0x90ccbb75d61cb65cd73a3abb5df04a75961612b7",
+      "sValue": "1.006303215739585013",
+      "paused": false
+    },
+    "kanzhun-ondo-tokenized-stock": {
+      "ticker": "BZon",
+      "address": "0xc2c7fcddc37f6737ca2481ebda6b81ee279fe20c",
+      "sValue": "1",
+      "paused": false
+    },
+    "ishares-bitcoin-trust-ondo-tokenized": {
+      "ticker": "IBITon",
+      "address": "0x68b07cef227cea1b2b6683921c8c825cd5c69ec7",
+      "sValue": "1",
+      "paused": false
+    },
+    "denison-mines-ondo-tokenized-stocks": {
+      "ticker": "DNNon",
+      "address": "0x70bd780076e25d087ed9c35f4e4a540522abe8cf",
+      "sValue": "1",
+      "paused": false
+    },
+    "vanguard-total-stock-market-etf-ondo-tokenized": {
+      "ticker": "VTIon",
+      "address": "0x158734153f354cb326ee690c3d55f810dcb0fc90",
+      "sValue": "1.00617805439277805",
+      "paused": false
+    },
+    "ishares-flexible-income-active-etf-ondo-tokenized-etf": {
+      "ticker": "BINCon",
+      "address": "0x940f442746d9ae699e63c378d52c4494ea02684f",
+      "sValue": "1.025789045256870842",
+      "paused": false
+    },
+    "janus-henderson-aaa-clo-etf-ondo-tokenized-etf": {
+      "ticker": "JAAAon",
+      "address": "0x84719a1082ed487c7eeac7d69885e3cc2009ea78",
+      "sValue": "1.022114995405944103",
+      "paused": false
+    },
+    "enlivex-therapeutics-ondo-tokenized": {
+      "ticker": "ENLVon",
+      "address": "0x5a9d924fc336a5ec8cf3b1909aa660533b50b015",
+      "sValue": "0.066667",
+      "paused": false
+    },
+    "solaredge-technologies-ondo-tokenized": {
+      "ticker": "SEDGon",
+      "address": "0x8755c5c39b1aa9053a83ac731242a2cf4d04b0fe",
+      "sValue": "1",
+      "paused": false
+    },
+    "lowe-s-ondo-tokenized": {
+      "ticker": "LOWon",
+      "address": "0x2ec46eed30c94caa5979e6a0395abe824138335f",
+      "sValue": "1.010811781817516253",
+      "paused": false
+    },
+    "uranium-energy-ondo-tokenized": {
+      "ticker": "UECon",
+      "address": "0xe7ddf606841ee278a30e5c90486681e68ddd8cbf",
+      "sValue": "1",
+      "paused": false
+    },
+    "vanguard-real-estate-etf-ondo-tokenized": {
+      "ticker": "VNQon",
+      "address": "0x10b58a3d9dcec59bb1c3bf6b9c9414eafce711c9",
+      "sValue": "1.013683408763924449",
+      "paused": false
+    },
+    "toyota-ondo-tokenized-stock": {
+      "ticker": "TMon",
+      "address": "0xecc1299f183b6a720a6f4729bf24f82cd8d50828",
+      "sValue": "1.015073673229886556",
+      "paused": false
+    },
+    "sprott-nickel-miners-etf-ondo-tokenized": {
+      "ticker": "NIKLon",
+      "address": "0xe23f03d2907cdc38a10f6ccdc1a157bf1afe51de",
+      "sValue": "1",
+      "paused": false
+    },
+    "exodus-movement-ondo-tokenized": {
+      "ticker": "EXODon",
+      "address": "0x92d504158a8dc69de989db5ede3230d958fb8630",
+      "sValue": "1",
+      "paused": false
+    },
+    "franklin-high-yield-corporate-etf-ondo-tokenized": {
+      "ticker": "FLHYon",
+      "address": "0x240eb4859b4537d250cf784cc758c404da5fe4bd",
+      "sValue": "1.025737606570354183",
+      "paused": false
+    },
+    "invesco-db-commodity-index-tracking-fund-ondo-tokenized-etf": {
+      "ticker": "DBCon",
+      "address": "0xfc2067e3e6a289c205151d96ef67a032f339566d",
+      "sValue": "1",
+      "paused": false
+    },
+    "quantum-computing-ondo-tokenized": {
+      "ticker": "QUBTon",
+      "address": "0x82e07c1017032cfd889b1ca81ebe722c4d4de825",
+      "sValue": "1",
+      "paused": false
+    },
+    "home-depot-ondo-tokenized-stock": {
+      "ticker": "HDon",
+      "address": "0x31dabf49e4bc1af1456c1819cb6a2562154e92f3",
+      "sValue": "1.009883465367102087",
+      "paused": false
+    },
+    "ishares-1-3-year-treasury-bond-etf-ondo-tokenized": {
+      "ticker": "SHYon",
+      "address": "0xf95e50be5efc96117c28775f80c7cdb41ebc4888",
+      "sValue": "1.014284920758270432",
+      "paused": false
+    },
+    "invesco-optimum-yld-dvsfd-cmd-str-no-k-1-etf-ondo-tokenized-etf": {
+      "ticker": "PDBCon",
+      "address": "0xcf3e84e62002ca459db81b2032d7fe13715bad51",
+      "sValue": "1",
+      "paused": false
+    },
+    "ford-motor-ondo-tokenized-stock": {
+      "ticker": "Fon",
+      "address": "0xb1aba049c42b6fe811766eba61f51f11c57acc4b",
+      "sValue": "1.024077607301221741",
+      "paused": false
+    },
+    "opendoor-technologies-ondo-tokenized": {
+      "ticker": "OPENon",
+      "address": "0xa09699fc0cbb1f85128450a0ff6a3c4d3a7e7b9b",
+      "sValue": "1",
+      "paused": false
+    },
+    "mastec-ondo-tokenized": {
+      "ticker": "MTZon",
+      "address": "0xf49046aae76eaeb7ffd3ef116ce0f7cd0f52d93e",
+      "sValue": "1",
+      "paused": false
+    },
+    "opera-ondo-tokenized": {
+      "ticker": "OPRAon",
+      "address": "0x88672043905bdd272df55a5a7bb1b7e1e693cbc5",
+      "sValue": "1.013721657238430532",
+      "paused": false
+    },
+    "southern-ondo-tokenized-stock": {
+      "ticker": "SOon",
+      "address": "0xd7a6353a23ed2c4fcac29a63cbbe3f65ffef41f5",
+      "sValue": "1.017031692015107002",
+      "paused": false
+    },
+    "block-ondo-tokenized-stocks": {
+      "ticker": "XYZon",
+      "address": "0xe778a2e5d953c82eb9475cf3b87654226a867344",
+      "sValue": "1",
+      "paused": false
+    },
+    "nextera-energy-ondo-tokenized": {
+      "ticker": "NEEon",
+      "address": "0xe9d43f7e6b2237e8873a7003b3f43c6b03160be5",
+      "sValue": "1.015136722587082798",
+      "paused": false
+    },
+    "ishares-aaa-clo-active-etf-ondo-tokenized-stock": {
+      "ticker": "CLOAon",
+      "address": "0x4ef383f521e803863a33fca8f3f861e53ef9ef9b",
+      "sValue": "1.021845977251840632",
+      "paused": false
+    },
+    "abrdn-physical-precious-metals-basket-shares-etf-ondo-tokenized": {
+      "ticker": "GLTRon",
+      "address": "0x15580092796f69825cff4738cac55d05d41eaa42",
+      "sValue": "1",
+      "paused": false
+    },
+    "pg-e-ondo-tokenized": {
+      "ticker": "PCGon",
+      "address": "0x47b36ddb9dd12a8411f78226f55e8c3f0d65481f",
+      "sValue": "1.006221747576109137",
+      "paused": false
+    },
+    "iboxx-high-yield-corporate-bond-etf-ondo-tokenized-etf": {
+      "ticker": "HYGon",
+      "address": "0x0dae81a905b645a3d1e67129b89cd0acda224e9a",
+      "sValue": "1.056102791299602965",
+      "paused": false
+    },
+    "b2gold-ondo-tokenized-stocks": {
+      "ticker": "BTGon",
+      "address": "0xe2ac868f2fd097086d83bc939248e5ae08d35da4",
+      "sValue": "1.005294552952043508",
+      "paused": false
+    },
+    "franklin-responsibly-sourced-gold-etf-ondo-tokenized": {
+      "ticker": "FGDLon",
+      "address": "0xee0d57462f20434030b8262204c00c0ea0399c41",
+      "sValue": "1",
+      "paused": false
+    },
+    "gemini-space-station-ondo-tokenized-stock": {
+      "ticker": "GEMIon",
+      "address": "0x817942d5de16092656568e9f67f54ccb462f8989",
+      "sValue": "1",
+      "paused": false
+    },
+    "first-trust-nasdaq-cybersecurity-etf-ondo-tokenized": {
+      "ticker": "CIBRon",
+      "address": "0xdcd4536508060dab8f43c334b3a6c72c39528da5",
+      "sValue": "1.001877709100958987",
+      "paused": false
+    },
+    "ishares-ethereum-trust-ondo-tokenized": {
+      "ticker": "ETHAon",
+      "address": "0x04b16ff1f9673146f68aa5d5f57aa45adcf068e1",
+      "sValue": "1",
+      "paused": false
+    },
+    "ishares-msci-brazil-etf-ondo-tokenized": {
+      "ticker": "EWZon",
+      "address": "0x9876f4b879cde9aa49ffd260034a0698b7b33a49",
+      "sValue": "1.006600878243512974",
+      "paused": false
+    },
+    "apollo-global-management-ondo-tokenized-stock": {
+      "ticker": "APOon",
+      "address": "0x5630b5741a33371d9d935283849a16dc808f7f3a",
+      "sValue": "1.011618480311991279",
+      "paused": false
+    },
+    "ishares-7-10-year-treasury-bond-etf-ondo-tokenized": {
+      "ticker": "IEFon",
+      "address": "0xa486a0a05250e8621ba3b26c3bbc517145eba619",
+      "sValue": "1.016280993227644106",
+      "paused": false
+    },
+    "global-x-us-infrastructure-development-etf-ondo-tokenized": {
+      "ticker": "PAVEon",
+      "address": "0x6f28cb07790c1049ecd7482d09fd13b977b47201",
+      "sValue": "1.001228665699798068",
+      "paused": false
+    }
+  }
+}

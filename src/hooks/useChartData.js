@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchTokenHistory } from '../services/coingecko'
 import { getStockHistory } from '../services/stocks'
+import { gapCheck, sharesPerToken, MAX_PLAUSIBLE_GAP_PCT } from '../lib/gapCheck'
 
 // Range → CoinGecko days + Yahoo interval/range. For 1D we ask Yahoo for 5d
 // and clip: on weekends "1d" would return only Friday's session, entirely
@@ -26,12 +27,16 @@ export const CHART_RANGES = {
  * CoinGecko applies the issuer's scaled-amount multiplier itself: checked
  * against mainnet on 2026-09-16, NFLXx (ratio 10) came back at 76.98 while
  * its DEX pool priced a base token at 757 and the real NFLX share was 76.41.
- * So nothing is converted here, and nothing should be — dividing this series
- * by the multiplier would invent a 90% discount on a screen with a Buy
- * button. The pool-sourced candles in services/candles.js are the ones that
- * do need converting; they arrive per base token.
+ * So nothing is converted here for xStocks, and nothing should be: dividing
+ * this series by the multiplier would invent a 90% discount on a screen with
+ * a Buy button. The pool-sourced candles in services/candles.js are the ones
+ * that do need converting; they arrive per base token.
+ *
+ * Ondo is different: CoinGecko quotes an Ondo token per token, and one token
+ * tracks sValue shares (10 on NFLXon). The hook below divides by the verified
+ * sValue before this runs; see sharesPerToken in lib/gapCheck.js.
  */
-function buildPremiumSeries(token, stockRaw, fallbackStockPrice) {
+export function buildPremiumSeries(token, stockRaw, fallbackStockPrice) {
   const src =
     stockRaw.length > 0
       ? stockRaw
@@ -44,9 +49,24 @@ function buildPremiumSeries(token, stockRaw, fallbackStockPrice) {
   for (const p of token) {
     while (i + 1 < src.length && src[i + 1].t <= p.t) i++
     if (src[i].t > p.t) continue // token point precedes all stock data
-    out.push({ t: p.t, v: ((p.v - src[i].v) / src[i].v) * 100 })
+    const v = ((p.v - src[i].v) / src[i].v) * 100
+    // The same bound the live gap is held to (lib/gapCheck.js): a point past
+    // it is a bad print, not history worth drawing or ranking against.
+    if (!Number.isFinite(v) || Math.abs(v) > MAX_PLAUSIBLE_GAP_PCT) continue
+    out.push({ t: p.t, v })
   }
   return out
+}
+
+/**
+ * The gap history is shown only while the live gap is: an asset whose ratio
+ * is unverified, whose token price is stale, or whose gap is not confirmed
+ * gets no history either, on the phone chart, the desktop gap chart or the
+ * Readout's percentile. Applied when read, not when fetched, so it follows
+ * the live verdict as prices arrive.
+ */
+export function gatedPremium(asset, premium, now) {
+  return gapCheck(asset, now).status === 'ok' ? premium : []
 }
 
 /**
@@ -77,7 +97,7 @@ export function useChartData(asset, range, retryKey = 0) {
     async function go() {
       setState((s) => ({ ...s, loading: true, error: false }))
       try {
-        const [token, stockRaw] = await Promise.all([
+        const [tokenRaw, stockRaw] = await Promise.all([
           fetchTokenHistory(asset.id, cfg.days),
           asset.underlying
             ? getStockHistory(asset.underlying, cfg).catch(() => [])
@@ -85,6 +105,13 @@ export function useChartData(asset, range, retryKey = 0) {
         ])
         if (cancelled) return
 
+        // Share units for the token line, like the live gap: an Ondo token
+        // that tracks ten shares is divided by ten (lib/gapCheck.js). With no
+        // verified ratio there is no token line and no gap history; drawing
+        // it at an assumed 1:1 is how NFLXon came to be charted at 711.
+        const shares = asset.underlying ? sharesPerToken(asset) : 1
+        const token =
+          shares == null ? [] : shares === 1 ? tokenRaw : tokenRaw.map((p) => ({ t: p.t, v: p.v / shares }))
         const windowStart = token[0]?.t ?? 0
         let stock = stockRaw.filter((p) => p.t >= windowStart)
         let stockIsFlat = false
@@ -112,5 +139,5 @@ export function useChartData(asset, range, retryKey = 0) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [asset.id, range, retryKey])
 
-  return state
+  return { ...state, premium: gatedPremium(asset, state.premium) }
 }

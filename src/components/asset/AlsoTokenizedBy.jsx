@@ -1,6 +1,7 @@
 import { ChevronDown } from '../Icons'
 import { formatPct } from '../shared'
 import PriceText from '../PriceText'
+import { gapCheck } from '../../lib/gapCheck'
 
 /* Same underlying, different issuer — the cross-issuer comparison. Renders
    nothing when there are no siblings. */
@@ -11,9 +12,13 @@ export default function AlsoTokenizedBy({ asset, siblings, onSwitchAsset }) {
       <h3 className="text-sm font-semibold text-zinc-300">Also tokenized by</h3>
       <div className="mt-1 divide-y divide-zinc-900 rounded-2xl bg-zinc-900/60">
         {siblings.map((s) => {
+          // Per share on both sides: NFLXon tracks ten shares and NFLXx one,
+          // so comparing their token prices directly reads as +900%.
+          const mine = gapCheck(asset)
+          const theirs = gapCheck(s)
           const diff =
-            s.tokenPrice != null && asset.tokenPrice != null
-              ? ((s.tokenPrice - asset.tokenPrice) / asset.tokenPrice) * 100
+            mine.status === 'ok' && theirs.status === 'ok'
+              ? ((theirs.tokenPerShare - mine.tokenPerShare) / mine.tokenPerShare) * 100
               : null
           return (
             <button

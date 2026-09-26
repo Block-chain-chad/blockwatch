@@ -73,8 +73,8 @@ export default function DailyDigest({ onOpenAsset }) {
   }
 
   const rows = [
-    { label: 'Priciest vs stock', asset: priciest.asset, value: formatPct(priciest.p), cls: changeColor(priciest.p) },
-    { label: 'Cheapest vs stock', asset: cheapest.asset, value: formatPct(cheapest.p), cls: changeColor(cheapest.p) },
+    { label: 'Furthest above its share', asset: priciest.asset, value: formatPct(priciest.p), cls: changeColor(priciest.p) },
+    { label: 'Furthest below its share', asset: cheapest.asset, value: formatPct(cheapest.p), cls: changeColor(cheapest.p) },
   ]
   if (spread) {
     rows.push({

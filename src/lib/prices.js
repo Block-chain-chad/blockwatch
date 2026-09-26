@@ -1,5 +1,7 @@
 // Pure helpers for combining the static seed universe with live market data.
 
+import { gapCheck, sharesPerToken } from './gapCheck'
+
 // Within ±0.05% we call it 1:1 parity.
 export const PARITY_BAND = 0.05
 
@@ -17,11 +19,15 @@ export function isThinlyTraded(asset) {
   return asset.underlying != null && (asset.volume24h == null || asset.volume24h < THIN_VOLUME_USD)
 }
 
-// Premium/discount = (tokenPrice − stockPrice) / stockPrice, as a percent.
-// Null when either side is missing (e.g. stock feed not wired yet, or NAV-based token).
+// Premium/discount: the token's price in share units against the share, as a
+// percent. Null whenever lib/gapCheck.js will not vouch for it: a price still
+// loading, a NAV-based token, a ratio nobody has verified, a stale token
+// price, or a result too wide to be a real gap. Every ranking, header,
+// alert and chart reads the gap through here, so none of them can rank a
+// units error.
 export function premiumPct(asset) {
-  if (asset.tokenPrice == null || asset.stockPrice == null) return null
-  return ((asset.tokenPrice - asset.stockPrice) / asset.stockPrice) * 100
+  const check = gapCheck(asset)
+  return check.status === 'ok' ? check.gap : null
 }
 
 /**
@@ -44,6 +50,12 @@ export function mergeAssets(seed, priceMap, stockMap) {
       dayChange: p?.change24h ?? null,
       marketCap: p?.marketCap ?? null,
       volume24h: p?.volume24h ?? null,
+      // When the token price was last set by a feed (ms). lib/gapCheck.js
+      // refuses a gap on a price older than a day.
+      priceUpdatedAt: p?.priceUpdatedAt ?? null,
+      // How many shares one token tracks, from a verified source, or null
+      // when nobody has verified it (lib/gapCheck.js).
+      sharesPerToken: sharesPerToken(s),
     }
   })
 }
