@@ -37,8 +37,8 @@ export const MAX_CREDIBLE_GAP = 25
 
 export const BOARD_SORTS = Object.freeze([
   { id: 'widest', label: 'Widest gap', hint: 'Furthest from the share price, either direction' },
-  { id: 'premium', label: 'Most expensive', hint: 'Token costs the most above its share' },
-  { id: 'discount', label: 'Cheapest', hint: 'Token costs the least against its share' },
+  { id: 'premium', label: 'Highest gap', hint: 'Token furthest above its share, or least below' },
+  { id: 'discount', label: 'Lowest gap', hint: 'Token furthest below its share, or least above' },
   { id: 'traded', label: 'Most traded', hint: 'Most token volume in 24 hours, all wrappers' },
 ])
 

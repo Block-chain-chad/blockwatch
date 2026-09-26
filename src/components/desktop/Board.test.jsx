@@ -40,7 +40,7 @@ const A = (over) => ({
 })
 
 // NVDA has three wrappers (so the company row carries a spread and a
-// cheapest chip); TSLA has one. NVDA's quote is dated, TSLA's is not, so the
+// lowest-gap pointer); TSLA has one. NVDA's quote is dated, TSLA's is not, so the
 // header has to speak for both.
 const ASSETS = [
   A({ id: 'nvdax', ticker: 'NVDAx', name: 'NVIDIA', underlying: 'NVDA', tokenPrice: 218.49, stockPrice: 218.29, stockQuote: { price: 218.29, basis: 'trade', asOf: NOW - 12_000 } }),
@@ -109,6 +109,13 @@ describe('Board renders', () => {
     expect(html).toContain('TSLAx')
     expect(html).toContain('Ondo')
     expect(html).toContain('7 s ago')
+  })
+
+  it('names the lowest gap neutrally and never marks a wrapper as the one to buy', () => {
+    const html = render()
+    expect(html).toContain('Lowest gap')
+    expect(html.toLowerCase()).not.toContain('cheapest')
+    expect(html).not.toContain('text-accent')
   })
 
   it('dates the share leg from the quote, and says so when it cannot', () => {

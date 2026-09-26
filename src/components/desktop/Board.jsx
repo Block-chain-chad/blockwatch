@@ -23,14 +23,14 @@ import PriceText from '../PriceText'
 /*
  * The Gap Board (spec §3.2 region B, §3.4 #1): one row per company, its
  * widest wrapper's gap as a rule on a shared zero axis, the share price with
- * its age, how many issuers and how far apart, and the cheapest. A company
+ * its age, how many issuers and how far apart, and which has the lowest gap. A company
  * expands into one sub-row per wrapper on the same column grid, so the zero
  * tick lines up. Rows past the viewport are not rendered (lib/board.js's
  * visibleWindow); order is frozen once every company is in.
  *
  * Column grid: company flexes (min 160px) · share 120 · gap (the rule plus
  * 80: 12 gap, the 56 px signed label, 12 trailing; 224 at 1440 and below,
- * lib/bigScreen.js decides above that) · wrappers 104 · cheapest 80 ·
+ * lib/bigScreen.js decides above that) · wrappers 104 · lowest gap 80 ·
  * chevron 24, inside 24 px gutters.
  */
 const gridFor = (gapColumn) => `minmax(160px, 1fr) 120px ${gapColumn}px 104px 80px 24px`
@@ -232,7 +232,7 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, 
           <span className="t-micro text-zinc-500">Gap vs share · widest wrapper</span>
         )}
         <span className="t-micro text-zinc-500">Wrappers</span>
-        <span className="t-micro text-zinc-500">Cheapest</span>
+        <span className="t-micro text-zinc-500">Lowest gap</span>
         <span />
       </div>
 
@@ -371,13 +371,10 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, 
                 {w.diffUsd != null && `${formatPrice(Math.abs(w.diffUsd))} ${w.diffUsd >= 0 ? 'above' : 'below'}`}
               </div>
               <div>
-                {w.cheapest ? (
-                  <span className="t-caption rounded-md border px-2 py-0.5 text-accent" style={{ borderColor: 'color-mix(in oklab, var(--color-accent) 40%, transparent)' }}>
-                    cheapest
-                  </span>
-                ) : (
-                  <span className="t-caption text-zinc-500">{a.venues?.[0] ?? ''}</span>
-                )}
+                {/* The venue, for every wrapper. The row above names the
+                    lowest gap in neutral text; nothing here points at one
+                    wrapper as the one to buy. */}
+                <span className="t-caption text-zinc-500">{a.venues?.[0] ?? ''}</span>
               </div>
               <span />
             </div>
