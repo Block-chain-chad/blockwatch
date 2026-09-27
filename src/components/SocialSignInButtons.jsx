@@ -1,18 +1,25 @@
 /*
- * The Sign in with Apple and Sign in with Google buttons, drawn to each
- * company's rules rather than the app's own button style:
+ * The sign-in buttons at the top of the sign-in sheet: Apple, Google and
+ * passkey. All three share one height and one white fill, because Apple's
+ * rules only allow a white button on a dark background, and the other two
+ * match it so the stack reads as one set.
  *
- *   Apple (Human Interface Guidelines): the Apple logo and "Sign in with
+ *   Apple (Human Interface Guidelines): the Apple logo and "Continue with
  *   Apple", black on white. The white-with-outline style is allowed on both
  *   light and dark backgrounds, so one style serves both themes. Same height
  *   as the other sign-in buttons, and never smaller than Google's.
  *
  *   Google (Sign in with Google branding guidelines): the standard light
  *   button. White fill, #747775 outline, the full-colour "G", and
- *   "Sign in with Google" in #1F1F1F.
+ *   "Continue with Google" in #1F1F1F.
+ *
+ *   Passkey: not a brand, so it borrows Google's neutral light colours and
+ *   the system font.
  *
  * The logos are the companies' published marks, unaltered.
  */
+
+import { PasskeyIcon } from './Icons'
 
 function AppleLogo() {
   return (
@@ -37,7 +44,7 @@ function GoogleLogo() {
 }
 
 const BASE =
-  'flex h-11 w-full items-center justify-center gap-2 rounded-xl text-[15px] font-medium transition-opacity disabled:opacity-50 active:opacity-80'
+  'flex h-12 w-full items-center justify-center gap-2 rounded-xl text-[15px] font-medium transition-opacity disabled:opacity-50 active:opacity-80'
 
 export function AppleSignInButton({ onClick, disabled }) {
   return (
@@ -49,10 +56,12 @@ export function AppleSignInButton({ onClick, disabled }) {
       style={{ fontFamily: '-apple-system, BlinkMacSystemFont, system-ui, sans-serif' }}
     >
       <AppleLogo />
-      Sign in with Apple
+      Continue with Apple
     </button>
   )
 }
+
+const NEUTRAL = { background: '#FFFFFF', color: '#1F1F1F', border: '1px solid #747775' }
 
 export function GoogleSignInButton({ onClick, disabled }) {
   return (
@@ -61,15 +70,25 @@ export function GoogleSignInButton({ onClick, disabled }) {
       onClick={onClick}
       disabled={disabled}
       className={BASE}
-      style={{
-        background: '#FFFFFF',
-        color: '#1F1F1F',
-        border: '1px solid #747775',
-        fontFamily: 'Roboto, Arial, sans-serif',
-      }}
+      style={{ ...NEUTRAL, fontFamily: 'Roboto, Arial, sans-serif' }}
     >
       <GoogleLogo />
-      Sign in with Google
+      Continue with Google
+    </button>
+  )
+}
+
+export function PasskeySignInButton({ onClick, disabled }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={BASE}
+      style={{ ...NEUTRAL, fontFamily: '-apple-system, BlinkMacSystemFont, system-ui, sans-serif' }}
+    >
+      <PasskeyIcon size={20} />
+      Continue with Face ID or passkey
     </button>
   )
 }

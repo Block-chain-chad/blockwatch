@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useAuth } from '../state/AuthContext'
 import { useWaitlist } from '../state/WaitlistContext'
 import { isNativeApp } from '../lib/platform'
 import { passwordStrength } from '../lib/passwordStrength'
-import { mapAuthError } from '../lib/authErrors'
-import { EyeIcon, EyeOffIcon } from '../components/Icons'
+import { mapAuthError, retryAfterSeconds, RESEND_COOLDOWN_SECONDS } from '../lib/authErrors'
+import { EnvelopeIcon, EyeIcon, EyeOffIcon } from '../components/Icons'
 import Sheet, { SheetTitle } from '../components/Sheet'
-import { AppleSignInButton, GoogleSignInButton } from '../components/SocialSignInButtons'
+import { AppleSignInButton, GoogleSignInButton, PasskeySignInButton } from '../components/SocialSignInButtons'
 import {
   useFlag,
   SIGN_IN_APPLE_FLAG,
@@ -20,18 +20,31 @@ const MIN_PASSWORD = 8
 
 const PROVIDER_NAME = { apple: 'Apple', google: 'Google' }
 
+const seconds = (n) => `${n} ${n === 1 ? 'second' : 'seconds'}`
+
+const LINK =
+  'inline-flex min-h-11 items-center px-1 text-[13px] text-zinc-400 transition-colors active:text-zinc-200'
+const FIELD =
+  'h-12 w-full rounded-xl bg-zinc-900 px-4 text-sm text-zinc-100 placeholder-zinc-500 outline-none ring-accent/60 focus:ring-2'
+
 /*
- * Sign in with Apple, Google or a passkey where each is switched on (see
- * services/featureFlags.js and signInOptions in services/socialSignIn.js),
- * and always with email.
+ * One screen for signing in and creating an account, email first.
  *
- * Email + password is the familiar path, with a
- * one-time email link as the passwordless fallback. Forgot-password sends a
- * recovery link; opening it prompts for a new password (see PasswordSheet).
+ *   email     Apple, Google and passkey where each is switched on (see
+ *             services/featureFlags.js and signInOptions in
+ *             services/socialSignIn.js), then one email field and Continue.
+ *             Continue emails a one-time link that signs the person in, and
+ *             creates the account if the address is new.
+ *   sent      "Check your email", with a resend that waits out Supabase's
+ *             limit, and a way back to fix a mistyped address.
+ *   password  The same email field plus a password, for people who have one.
+ *   signup    Create an account with a password instead of a link.
+ *   forgot    Send a recovery link; opening it asks for a new password (see
+ *             PasswordSheet).
  *
- * NATIVE: emailed links (magic, confirm, reset) open the app directly via
- * Universal Links — see services/authLinks.js. The magic-link option is
- * therefore available everywhere.
+ * NATIVE: every emailed link (sign-in, confirm, reset) points straight at
+ * /auth/confirm with a one-time token hash, so it works on any device and
+ * opens the iOS app through Universal Links. See services/authLinks.js.
  */
 export default function SignInSheet({ onClose }) {
   const {
@@ -45,17 +58,20 @@ export default function SignInSheet({ onClose }) {
     signInPasskey,
   } = useAuth()
   const { entry } = useWaitlist()
-  const [mode, setMode] = useState('signin') // signin | signup | forgot
+  const [view, setView] = useState('email') // email | sent | password | signup | forgot
   const [email, setEmail] = useState(entry?.email ?? '')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
-  const [note, setNote] = useState(null) // { kind: 'error' | 'sent', text }
+  const [note, setNote] = useState(null) // { kind: 'error' | 'sent', text, action? }
   const [showPw, setShowPw] = useState(false)
+  // Resend cooldown, as a deadline so a backgrounded tab still counts true.
+  const [resendAt, setResendAt] = useState(0)
+  const [now, setNow] = useState(0)
+  const emailId = useId()
+  const passwordId = useId()
 
   const emailOk = /\S+@\S+\.\S+/.test(email)
   const passwordOk = password.length >= MIN_PASSWORD
-  // Evaluated once per render; false in every browser, so the web UI is
-  // byte-identical to what it was.
   const native = isNativeApp()
   const options = signInOptions({
     native,
@@ -65,11 +81,14 @@ export default function SignInSheet({ onClose }) {
     passkeySupported: passkeysSupported(),
   })
   const anyQuick = options.apple || options.google || options.passkey
-  // Passkey autofill: while the sign-in tab is open, the browser may list
+  // Passkey autofill: while a sign-in view is open, the browser may list
   // saved passkeys in the email field's suggestions. Aborted when the sheet
-  // closes, the tab changes, or the passkey button takes over.
+  // closes, the view changes, or the passkey button takes over.
   const autofill = useRef(null)
-  const autofillOn = options.passkey && mode === 'signin'
+  const autofillOn = options.passkey && (view === 'email' || view === 'password')
+
+  const waitSeconds = Math.max(0, Math.ceil((resendAt - now) / 1000))
+  const cooling = view === 'sent' && waitSeconds > 0
 
   useEffect(() => {
     if (!autofillOn) return undefined
@@ -84,6 +103,23 @@ export default function SignInSheet({ onClose }) {
     // onClose and showWelcome are stable for the life of the sheet.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autofillOn])
+
+  useEffect(() => {
+    if (!cooling) return undefined
+    const timer = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(timer)
+  }, [cooling])
+
+  function startCooldown(wait) {
+    const t = Date.now()
+    setNow(t)
+    setResendAt(t + wait * 1000)
+  }
+
+  function go(next) {
+    setView(next)
+    setNote(null)
+  }
 
   async function withProvider(provider) {
     if (busy) return
@@ -121,13 +157,40 @@ export default function SignInSheet({ onClose }) {
     }
   }
 
-  async function submit(e) {
+  /** Email a one-time sign-in link. Supabase creates the account if the address is new. */
+  async function sendLink({ resend }) {
+    if (!emailOk || busy) return
+    setBusy(true)
+    setNote(null)
+    try {
+      await signIn(email)
+      startCooldown(RESEND_COOLDOWN_SECONDS)
+      setView('sent')
+      if (resend) setNote({ kind: 'sent', text: 'A new link is on its way.' })
+    } catch (err) {
+      const wait = retryAfterSeconds(err?.message)
+      if (wait) {
+        startCooldown(wait)
+        setNote({
+          kind: 'error',
+          text: resend
+            ? `You can ask for another link in ${seconds(wait)}.`
+            : `We sent a link to this address a moment ago. Check your email, or ask for another in ${seconds(wait)}.`,
+        })
+      } else {
+        setNote({ kind: 'error', text: "Couldn't send the link. Sign-in emails are limited, so wait a minute and try again." })
+      }
+    }
+    setBusy(false)
+  }
+
+  async function submitPassword(e) {
     e.preventDefault()
     if (!emailOk || !passwordOk || busy) return
     setBusy(true)
     setNote(null)
     try {
-      if (mode === 'signin') {
+      if (view === 'password') {
         await signInPassword(email, password)
         onClose()
         showWelcome()
@@ -137,17 +200,17 @@ export default function SignInSheet({ onClose }) {
           onClose()
           showWelcome()
         } else if (result === 'exists') {
-          setMode('signin')
+          setView('password')
           setNote({
             kind: 'error',
-            text: 'That email already has an account — sign in with its password, or use “Forgot password?” to set one.',
+            text: 'That email already has an account. Sign in with its password, or use “Forgot password?” to set one.',
           })
         } else {
           setNote({
             kind: 'sent',
             text: native
-              ? `Almost there — we emailed ${email.trim()}. Tap the link on this phone and the app will open with you signed in.`
-              : `Almost there — we emailed ${email.trim()}. Click the link inside to confirm your account and you'll be signed in.`,
+              ? `Almost there. We emailed ${email.trim()}. Tap the link on this phone and the app will open with you signed in.`
+              : `Almost there. We emailed ${email.trim()}. Open the link inside to confirm your account and you'll be signed in.`,
           })
         }
       }
@@ -168,139 +231,183 @@ export default function SignInSheet({ onClose }) {
       setNote({
         kind: 'sent',
         text: native
-          ? `If ${email.trim()} has an account, a reset link is on its way. Tap it on this phone — the app opens and asks for your new password.`
-          : `If ${email.trim()} has an account, a reset link is on its way — open it and you'll be asked to set a new password.`,
+          ? `If ${email.trim()} has an account, a reset link is on its way. Tap it on this phone and the app will ask for your new password.`
+          : `If ${email.trim()} has an account, a reset link is on its way. Open it and you'll be asked to set a new password.`,
       })
     } catch {
-      setNote({ kind: 'error', text: "Couldn't send the reset email — wait a minute and try again." })
+      setNote({ kind: 'error', text: "Couldn't send the reset email. Wait a minute and try again." })
     }
     setBusy(false)
   }
 
-  async function magicLink() {
-    if (!emailOk || busy) {
-      setNote({ kind: 'error', text: 'Type your email above first.' })
-      return
-    }
+  async function resendConfirmationEmail() {
     setBusy(true)
-    setNote(null)
     try {
-      await signIn(email)
-      setNote({ kind: 'sent', text: `Sign-in link sent to ${email.trim()} — open it on this device and you're in, no password needed.` })
+      await resendConfirmation(email)
+      setNote({ kind: 'sent', text: `A fresh link is on its way to ${email.trim()}.` })
     } catch {
-      setNote({ kind: 'error', text: "Couldn't send the link — wait a minute and try again (sign-in emails are rate-limited)." })
+      setNote({
+        kind: 'error',
+        text: "Couldn't resend just now. Confirmation emails are limited, so wait a minute and try again.",
+      })
     }
     setBusy(false)
   }
 
-  return (
-    <Sheet
-      onClose={onClose}
-      className="z-[55]"
-      // Only the forgot view has a heading; the other two are named by their tab.
-      label={mode === 'forgot' ? undefined : mode === 'signin' ? 'Sign in' : 'Create account'}
-    >
-      {mode === 'forgot' ? (
+  const noteView = note && (
+    <div className="mt-2 px-1" aria-live="polite">
+      <p className={`text-xs leading-relaxed ${note.kind === 'sent' ? 'text-accent' : 'text-zinc-400'}`}>{note.text}</p>
+      {note.action === 'resend' && (
         <button
-          onClick={() => {
-            setMode('signin')
-            setNote(null)
-          }}
-          className="text-xs text-zinc-400 transition-colors active:text-zinc-200"
+          type="button"
+          disabled={busy}
+          onClick={resendConfirmationEmail}
+          className="inline-flex min-h-11 items-center text-xs font-medium text-accent disabled:opacity-40"
         >
+          Resend the email
+        </button>
+      )}
+    </div>
+  )
+
+  const emailField = (
+    <>
+      <label htmlFor={emailId} className="block px-1 text-xs font-medium text-zinc-400">
+        Email
+      </label>
+      <input
+        id={emailId}
+        type="email"
+        required
+        autoComplete={autofillOn ? 'username webauthn' : 'email'}
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="you@email.com"
+        className={`mt-1.5 ${FIELD}`}
+      />
+    </>
+  )
+
+  if (view === 'sent') {
+    return (
+      <Sheet onClose={onClose} className="z-[55]">
+        <div className="flex flex-col items-center px-2 pt-4 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-zinc-900 text-accent">
+            <EnvelopeIcon size={26} />
+          </div>
+          <SheetTitle className="mt-4 text-2xl font-semibold text-zinc-100">Check your email</SheetTitle>
+          <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+            We sent a sign-in link to <span className="font-medium text-zinc-200">{email.trim()}</span>. Open it on{' '}
+            {native ? 'this phone' : 'this device'} to finish.
+          </p>
+          {noteView}
+          <button
+            type="button"
+            onClick={() => sendLink({ resend: true })}
+            disabled={busy || cooling}
+            className="mt-5 h-12 w-full rounded-xl bg-zinc-900 text-sm font-medium text-zinc-200 transition-colors active:bg-zinc-800 disabled:opacity-50"
+          >
+            {busy ? 'Sending…' : cooling ? `Resend link in ${seconds(waitSeconds)}` : 'Resend link'}
+          </button>
+          <button type="button" onClick={() => go('email')} className={`mt-1 ${LINK}`}>
+            Wrong email? Re-enter it
+          </button>
+        </div>
+      </Sheet>
+    )
+  }
+
+  if (view === 'forgot') {
+    return (
+      <Sheet onClose={onClose} className="z-[55]">
+        <button type="button" onClick={() => go('password')} className={LINK}>
           ← Back to sign in
         </button>
-      ) : (
-        <div className="flex rounded-xl bg-zinc-900 p-1">
-          {[
-            { id: 'signin', label: 'Sign in' },
-            { id: 'signup', label: 'Create account' },
-          ].map((t) => (
-            <button
-              key={t.id}
-              onClick={() => {
-                setMode(t.id)
-                setNote(null)
-              }}
-              className={`flex-1 rounded-lg py-2 text-[13px] font-medium transition-colors ${
-                mode === t.id ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {mode === 'forgot' ? (
-        <>
-          <SheetTitle className="mt-3 px-1 text-base font-semibold">Reset your password</SheetTitle>
-          <p className="mt-0.5 px-1 text-xs text-zinc-500">
-            Enter your account email and we'll send a link to set a new password.
-          </p>
-        </>
-      ) : (
-        <p className="mt-3 px-1 text-xs leading-relaxed text-zinc-500">
-          {mode === 'signin'
-            ? 'Your folders and alerts sync to every device you sign in on.'
-            : 'One account, every device — your folders and alerts follow you.'}
+        <SheetTitle className="mt-1 px-1 text-lg font-semibold text-zinc-100">Reset your password</SheetTitle>
+        <p className="mt-1 px-1 text-xs text-zinc-500">
+          Enter your account email and we'll send a link to set a new password.
         </p>
-      )}
+        <form onSubmit={submitForgot} className="mt-4">
+          {emailField}
+          {noteView}
+          <button
+            type="submit"
+            disabled={!emailOk || busy}
+            className="mt-3 h-12 w-full rounded-xl bg-accent text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim disabled:opacity-40"
+          >
+            {busy ? 'Sending…' : 'Send reset link'}
+          </button>
+        </form>
+      </Sheet>
+    )
+  }
 
-      {mode !== 'forgot' && anyQuick && (
-        <div className="mt-3 space-y-2">
+  const signup = view === 'signup'
+  const primary = {
+    email: busy ? 'Sending…' : 'Continue',
+    password: busy ? 'Signing in…' : 'Sign in',
+    signup: busy ? 'Creating…' : 'Create account',
+  }[view]
+
+  return (
+    <Sheet onClose={onClose} className="z-[55]">
+      <SheetTitle className="px-1 text-lg font-semibold text-zinc-100">
+        {signup ? 'Create an account with a password' : 'Sign in or create an account'}
+      </SheetTitle>
+      <p className="mt-1 px-1 text-xs leading-relaxed text-zinc-500">
+        Your folders and alerts sync to every device you sign in on.
+      </p>
+
+      {anyQuick && (
+        <div className="mt-4 space-y-2">
           {options.apple && <AppleSignInButton onClick={() => withProvider('apple')} disabled={busy} />}
           {options.google && <GoogleSignInButton onClick={() => withProvider('google')} disabled={busy} />}
-          {options.passkey && (
-            <button
-              type="button"
-              onClick={withPasskey}
-              disabled={busy}
-              className="h-11 w-full rounded-xl bg-zinc-900 text-sm font-medium text-zinc-200 transition-colors active:bg-zinc-800 disabled:opacity-50"
-            >
-              Sign in with Face ID or passkey
-            </button>
-          )}
-          <div className="flex items-center gap-3 pt-1 text-[11px] text-zinc-500">
+          {options.passkey && <PasskeySignInButton onClick={withPasskey} disabled={busy} />}
+          <div className="flex items-center gap-3 pt-2 text-xs text-zinc-500">
             <span className="h-px flex-1 bg-zinc-800" />
-            or with email
+            Or continue with email
             <span className="h-px flex-1 bg-zinc-800" />
           </div>
         </div>
       )}
 
-      <form onSubmit={mode === 'forgot' ? submitForgot : submit}>
-        <input
-          type="email"
-          required
-          autoComplete={autofillOn ? 'username webauthn' : 'email'}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@email.com"
-          className="mt-3 w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none ring-accent/60 focus:ring-2"
-        />
-        {mode !== 'forgot' && (
-          <div className="relative mt-2">
-            <input
-              type={showPw ? 'text' : 'password'}
-              required
-              autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={mode === 'signin' ? 'Password' : `Password (at least ${MIN_PASSWORD} characters)`}
-              className="w-full rounded-xl bg-zinc-900 px-4 py-3 pr-12 text-sm text-zinc-100 placeholder-zinc-500 outline-none ring-accent/60 focus:ring-2"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPw((v) => !v)}
-              aria-label={showPw ? 'Hide password' : 'Show password'}
-              className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-zinc-500 active:text-zinc-300"
-            >
-              {showPw ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
-            </button>
-          </div>
+      <form
+        onSubmit={(e) => {
+          if (view !== 'email') return submitPassword(e)
+          e.preventDefault()
+          return sendLink({ resend: false })
+        }}
+        className="mt-4"
+      >
+        {emailField}
+        {view !== 'email' && (
+          <>
+            <label htmlFor={passwordId} className="mt-3 block px-1 text-xs font-medium text-zinc-400">
+              Password
+            </label>
+            <div className="relative mt-1.5">
+              <input
+                id={passwordId}
+                type={showPw ? 'text' : 'password'}
+                required
+                autoComplete={signup ? 'new-password' : 'current-password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={signup ? `At least ${MIN_PASSWORD} characters` : ''}
+                className={`${FIELD} pr-12`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw((v) => !v)}
+                aria-label={showPw ? 'Hide password' : 'Show password'}
+                className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-zinc-500 active:text-zinc-300"
+              >
+                {showPw ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
+              </button>
+            </div>
+          </>
         )}
-        {mode === 'signup' && password.length > 0 && (
+        {signup && password.length > 0 && (
           <p
             className={`mt-1.5 px-1 text-xs ${
               {
@@ -315,70 +422,48 @@ export default function SignInSheet({ onClose }) {
           </p>
         )}
 
-        {note && (
-          <div className="mt-2 px-1">
-            <p className={`text-xs leading-relaxed ${note.kind === 'sent' ? 'text-accent' : 'text-zinc-400'}`}>
-              {note.text}
-            </p>
-            {note.action === 'resend' && (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={async () => {
-                  setBusy(true)
-                  try {
-                    await resendConfirmation(email)
-                    setNote({ kind: 'sent', text: `A fresh link is on its way to ${email.trim()}.` })
-                  } catch {
-                    setNote({
-                      kind: 'error',
-                      text: "Couldn't resend just now — confirmation emails are rate-limited, wait a minute and try again.",
-                    })
-                  }
-                  setBusy(false)
-                }}
-                className="mt-1 text-xs font-medium text-accent disabled:opacity-40"
-              >
-                Resend the email
-              </button>
-            )}
-          </div>
-        )}
+        {noteView}
 
         <button
           type="submit"
-          disabled={mode === 'forgot' ? !emailOk || busy : !emailOk || !passwordOk || busy}
-          className="mt-3 w-full rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim disabled:opacity-40"
+          disabled={view === 'email' ? !emailOk || busy : !emailOk || !passwordOk || busy}
+          className="mt-3 h-12 w-full rounded-xl bg-accent text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim disabled:opacity-40"
         >
-          {mode === 'forgot'
-            ? busy
-              ? 'Sending…'
-              : 'Send reset link'
-            : busy
-              ? 'Working…'
-              : mode === 'signin'
-                ? 'Sign in'
-                : 'Create account'}
+          {primary}
         </button>
       </form>
 
-      {mode !== 'forgot' && (
-        <div className="mt-3 flex items-center justify-between px-1 text-xs">
-          {mode === 'signin' ? (
-            <button
-              onClick={() => {
-                setMode('forgot')
-                setNote(null)
-              }}
-              className="text-zinc-400 transition-colors active:text-zinc-200"
-            >
+      {view === 'email' && (
+        <div className="mt-1 flex justify-center">
+          <button type="button" onClick={() => go('password')} className={LINK}>
+            Use a password instead
+          </button>
+        </div>
+      )}
+      {view === 'password' && (
+        <>
+          <div className="mt-1 flex items-center justify-between">
+            <button type="button" onClick={() => go('forgot')} className={LINK}>
               Forgot password?
             </button>
-          ) : (
-            <span />
-          )}
-          <button onClick={magicLink} className="text-zinc-400 transition-colors active:text-zinc-200">
-            Email me a sign-in link instead
+            <button type="button" onClick={() => go('email')} className={LINK}>
+              Email me a link instead
+            </button>
+          </div>
+          <div className="flex justify-center">
+            <button type="button" onClick={() => go('signup')} className={LINK}>
+              New here? Create an account with a password
+            </button>
+          </div>
+        </>
+      )}
+      {signup && (
+        <div className="mt-1 flex items-center justify-between">
+          <button type="button" onClick={() => go('password')} className={LINK}>
+            Have a password? Sign in
+          </button>
+          <button type="button" onClick={() => go('email')} className={LINK}>
+            Email me a link instead
           </button>
         </div>
       )}

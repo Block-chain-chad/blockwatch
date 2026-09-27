@@ -14,3 +14,14 @@ export function mapAuthError(message) {
   }
   return { text: "That didn't work. Give it another try in a moment.", action: null }
 }
+
+// Supabase refuses a second auth email to the same address inside 60 seconds
+// (its default minimum interval per user). The sign-in sheet's resend button
+// waits that long, and when Supabase's refusal names a wait, that number wins.
+export const RESEND_COOLDOWN_SECONDS = 60
+
+/** The wait in Supabase's "you can only request this after N seconds" refusal, or null. */
+export function retryAfterSeconds(message) {
+  const m = /after (\d+) seconds?/i.exec(String(message ?? ''))
+  return m ? Number(m[1]) : null
+}

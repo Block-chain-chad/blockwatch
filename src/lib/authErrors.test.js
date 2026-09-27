@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mapAuthError } from './authErrors'
+import { mapAuthError, retryAfterSeconds } from './authErrors'
 
 /*
  * Supabase error messages → honest user copy. The one that motivated this
@@ -31,5 +31,14 @@ describe('mapAuthError', () => {
       expect(r.text).toBe("That didn't work. Give it another try in a moment.")
       expect(r.action).toBeNull()
     }
+  })
+})
+
+describe('retryAfterSeconds', () => {
+  it("reads the wait out of Supabase's refusal, and nothing else", () => {
+    expect(retryAfterSeconds('For security purposes, you can only request this after 57 seconds.')).toBe(57)
+    expect(retryAfterSeconds('you can only request this after 1 second')).toBe(1)
+    expect(retryAfterSeconds('Email rate limit exceeded')).toBeNull()
+    expect(retryAfterSeconds(undefined)).toBeNull()
   })
 })
