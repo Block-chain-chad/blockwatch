@@ -7,11 +7,12 @@ import { useNow } from '../../hooks/useNow'
 import { track } from '../../services/analytics'
 import { ASSETS } from '../../data/universe'
 import {
-  BOARD_LENSES, BOARD_SORTS, groupCompanies, boundCandidates, freezeOrder, flattenRows,
+  BOARD_LENSES, BOARD_SORTS, groupCompanies, lensCandidates, lensHasNoShares, freezeOrder, flattenRows,
   visibleWindow, headerLine, quoteAges,
 } from '../../lib/board'
 import { ageWords, shareFreshness } from '../../lib/provenance'
 import { formatPct, formatPrice } from '../../lib/format'
+import { GAP_STATUS_LABEL } from '../../lib/gapCheck'
 import { GapBar } from '../shared'
 import { BIG_SCREEN_BASE } from '../../lib/bigScreen'
 import RuleTicks from './RuleTicks'
@@ -22,14 +23,14 @@ import PriceText from '../PriceText'
 /*
  * The Gap Board (spec §3.2 region B, §3.4 #1): one row per company, its
  * widest wrapper's gap as a rule on a shared zero axis, the share price with
- * its age, how many issuers and how far apart, and the cheapest. A company
+ * its age, how many issuers and how far apart, and which has the lowest gap. A company
  * expands into one sub-row per wrapper on the same column grid, so the zero
  * tick lines up. Rows past the viewport are not rendered (lib/board.js's
  * visibleWindow); order is frozen once every company is in.
  *
  * Column grid: company flexes (min 160px) · share 120 · gap (the rule plus
  * 80: 12 gap, the 56 px signed label, 12 trailing; 224 at 1440 and below,
- * lib/bigScreen.js decides above that) · wrappers 104 · cheapest 80 ·
+ * lib/bigScreen.js decides above that) · wrappers 104 · lowest gap 80 ·
  * chevron 24, inside 24 px gutters.
  */
 const gridFor = (gapColumn) => `minmax(160px, 1fr) 120px ${gapColumn}px 104px 80px 24px`
@@ -60,8 +61,8 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, 
   // set does not churn with every price tick.
   const watchKey = watchlistIds.join('|')
   const candidateIds = useMemo(
-    () => boundCandidates(ASSETS, { watchlistIds: watchKey ? watchKey.split('|') : [] }),
-    [watchKey]
+    () => lensCandidates(ASSETS, lens, { watchlistIds: watchKey ? watchKey.split('|') : [] }),
+    [watchKey, lens]
   )
   useAssetSubscription('meter-board', candidateIds)
 
@@ -231,7 +232,7 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, 
           <span className="t-micro text-zinc-500">Gap vs share · widest wrapper</span>
         )}
         <span className="t-micro text-zinc-500">Wrappers</span>
-        <span className="t-micro text-zinc-500">Cheapest</span>
+        <span className="t-micro text-zinc-500">Lowest gap</span>
         <span />
       </div>
 
@@ -247,8 +248,10 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, 
       >
         {rows.length === 0 && (
           <p className="t-body px-6 py-12 text-center text-zinc-400">
-            {lens !== 'watching'
-              ? 'No gaps to rank yet — prices are still loading.'
+            {lensHasNoShares(ASSETS, lens)
+              ? 'Nothing here tracks a listed share, so there is no gap to rank.'
+              : lens !== 'watching'
+              ? 'No gaps to rank yet. Prices are still loading.'
               : watchlistIds.length > 0
                 ? 'Your Watching list is loading its share prices.'
                 : 'Nothing on your Watching list yet — switch to All and press W on any row to add it.'}
@@ -293,9 +296,13 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, 
                 </div>
                 <div className="flex items-center gap-3">
                   <GapBar pct={c.lead} thin={c.muted} width={big.rule} height={6} tone="accent" />
-                  <span className={`num t-label w-14 text-right ${c.muted ? 'text-zinc-500' : 'text-zinc-100'}`}>
-                    {formatPct(c.lead)}
-                  </span>
+                  {c.lead == null && GAP_STATUS_LABEL[c.wrappers[0].status] ? (
+                    <span className="t-caption text-right text-zinc-500">{GAP_STATUS_LABEL[c.wrappers[0].status]}</span>
+                  ) : (
+                    <span className={`num t-label w-14 text-right ${c.muted ? 'text-zinc-500' : 'text-zinc-100'}`}>
+                      {formatPct(c.lead)}
+                    </span>
+                  )}
                 </div>
                 <div className="num t-caption text-zinc-400">{wrappersCell(c)}</div>
                 <div>
@@ -352,21 +359,22 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, 
               </div>
               <div className="flex items-center gap-3">
                 <GapBar pct={w.gap} thin={w.muted} width={big.rule} height={6} tone="accent" />
-                <span className={`num t-label w-14 text-right ${w.muted ? 'text-zinc-500' : 'text-zinc-100'}`}>
-                  {formatPct(w.gap)}
-                </span>
+                {GAP_STATUS_LABEL[w.status] ? (
+                  <span className="t-caption text-right text-zinc-500">{GAP_STATUS_LABEL[w.status]}</span>
+                ) : (
+                  <span className={`num t-label w-14 text-right ${w.muted ? 'text-zinc-500' : 'text-zinc-100'}`}>
+                    {formatPct(w.gap)}
+                  </span>
+                )}
               </div>
               <div className="num t-caption text-zinc-400">
-                {formatPrice(Math.abs(w.diffUsd))} {w.diffUsd >= 0 ? 'above' : 'below'}
+                {w.diffUsd != null && `${formatPrice(Math.abs(w.diffUsd))} ${w.diffUsd >= 0 ? 'above' : 'below'}`}
               </div>
               <div>
-                {w.cheapest ? (
-                  <span className="t-caption rounded-md border px-2 py-0.5 text-accent" style={{ borderColor: 'color-mix(in oklab, var(--color-accent) 40%, transparent)' }}>
-                    cheapest
-                  </span>
-                ) : (
-                  <span className="t-caption text-zinc-500">{a.venues?.[0] ?? ''}</span>
-                )}
+                {/* The venue, for every wrapper. The row above names the
+                    lowest gap in neutral text; nothing here points at one
+                    wrapper as the one to buy. */}
+                <span className="t-caption text-zinc-500">{a.venues?.[0] ?? ''}</span>
               </div>
               <span />
             </div>

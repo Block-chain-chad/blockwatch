@@ -195,3 +195,38 @@ describe('GapPanel issuer ratio line is gated', () => {
     expect(html).toContain('Gap vs NFLX')
   })
 })
+
+describe('GapPanel units for a token that tracks more than one share', () => {
+  const ondo = {
+    id: 'netflix-ondo-tokenized-stock',
+    ticker: 'NFLXon',
+    issuer: 'Ondo',
+    underlying: 'NFLX',
+    tokenPrice: 711.12,
+    stockPrice: 71.145,
+    stockQuote: { price: 71.145, basis: 'trade', asOf: NOW - 12_000 },
+    volume24h: 2_000_000,
+    sharesPerToken: 10,
+    priceUpdatedAt: NOW,
+  }
+  const html = (over = {}, scrub = null) =>
+    renderToStaticMarkup(<GapPanel asset={{ ...ondo, ...over }} scrub={scrub} session="regular" lastFetchAt={NOW} />)
+
+  it('states the price per share tracked, and where the ratio came from', () => {
+    const out = html()
+    expect(out).toContain('$71.11 per share tracked')
+    expect(out).toMatch(/Ratio from Ondo&#x27;s on-chain oracle, read [A-Z][a-z]{2} \d{1,2}, \d{4}/)
+  })
+
+  it('says per share tracked under a scrubbed chart price', () => {
+    expect(html({}, { price: 71.2 })).toContain('per share tracked')
+  })
+
+  it('says nothing about units or source for a one-to-one xStocks token', () => {
+    const out = renderToStaticMarkup(
+      <GapPanel asset={{ ...asset(traded(12)), issuer: 'xStocks', sharesPerToken: 1, priceUpdatedAt: NOW }} scrub={null} session="regular" lastFetchAt={NOW} />,
+    )
+    expect(out).not.toContain('per share tracked')
+    expect(out).not.toContain('Ratio from')
+  })
+})

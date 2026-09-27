@@ -44,6 +44,7 @@ import {
 } from '../lib/candles'
 import { candlesPerShare, ratioFor } from '../lib/multiplier'
 import { verifiedToken } from '../data/verifiedMints'
+import { VERIFIED_ONDO, ondoSharesPerToken } from '../data/verifiedOndo'
 
 const IS_PROD = import.meta.env.PROD
 
@@ -136,6 +137,20 @@ export async function resolvePool(asset) {
 }
 
 /**
+ * Shares per pool token, as a decimal string, or null to refuse the series.
+ * xStocks pools trade base tokens, converted by the issuer's pinned
+ * multiplier (ratioFor). An Ondo pool trades whole tokens, each tracking the
+ * pinned sValue in shares (data/verifiedOndo.json): NFLXon's pool prints
+ * around 711 for a 71 share. Anyone else has no verified ratio, and a chart
+ * drawn at an assumed 1:1 is exactly the error this refuses.
+ */
+function poolRatio(asset) {
+  if (asset?.issuer === 'Ondo') return VERIFIED_ONDO[asset.id] && ondoSharesPerToken(asset) != null ? VERIFIED_ONDO[asset.id].sValue : null
+  if (asset?.issuer === 'xStocks') return ratioFor(verifiedToken(asset), asset?.mint)
+  return null
+}
+
+/**
  * Token candles for an asset at a timeframe id from lib/candles.js:
  * { network, pool, timeframe, candles } or null.
  */
@@ -177,7 +192,7 @@ export async function getTokenCandles(asset, timeframeId) {
       // An unverified Solana token drawn at a ratio of 1 puts NFLXx candles at
       // 757 under a $76 share, which is the bug this whole conversion exists
       // to remove.
-      const perShareCandles = candlesPerShare(candles, ratioFor(verifiedToken(asset), asset?.mint))
+      const perShareCandles = candlesPerShare(candles, poolRatio(asset))
       if (perShareCandles == null) return null
       const data = { network, pool, timeframe: timeframe.id, candles: perShareCandles }
       candleCache.set(key, { at: Date.now(), data })

@@ -149,14 +149,36 @@ describe('getTokenCandles — an unpinned mint draws nothing', () => {
     expect(await getTokenCandles(UNPINNED, '5m')).toBeNull()
   })
 
-  it('still draws for an asset with no mint, where 1.0 is the issuer fact', async () => {
-    // Ondo trades on Ethereum and has no Token-2022 extension to carry a
-    // ratio, so there is nothing to refuse.
-    const ONDO = { id: 'nvidia-ondo-tokenized-stock', ticker: 'NVDAon', issuer: 'Ondo', underlying: 'NVDA' }
-    const getTokenCandles = await freshService(ONDO)
-    const out = await getTokenCandles(ONDO, '5m')
-    expect(out).not.toBeNull()
-    expect(out.candles[0].open).toBe(757.45)
+})
+
+/*
+ * Ondo. An Ondo token tracks sValue shares, pinned from Ondo's own oracle in
+ * data/verifiedOndo.json: NFLXon is 10 after Netflix's 10-for-1 split, which
+ * is why its pool printed around 711 beside a 71 share and the chart drew
+ * candles from 700 to 2,000. The ids below are real pins; the pool prices are
+ * fixtures.
+ */
+describe('getTokenCandles: Ondo pools, per share', () => {
+  it("divides NFLXon's pool candles by its pinned sValue of 10", async () => {
+    const NFLXON = { id: 'netflix-ondo-tokenized-stock', ticker: 'NFLXon', issuer: 'Ondo', underlying: 'NFLX' }
+    const getTokenCandles = await freshService(NFLXON)
+    const out = await getTokenCandles(NFLXON, '5m')
+    expect(out.candles[0].open).toBeCloseTo(75.745, 4)
+    expect(out.candles[0].close).toBeCloseTo(76.0, 4)
+  })
+
+  it('applies a dividend-sized sValue too', async () => {
+    const NVDAON = { id: 'nvidia-ondo-tokenized-stock', ticker: 'NVDAon', issuer: 'Ondo', underlying: 'NVDA' }
+    const getTokenCandles = await freshService(NVDAON)
+    const out = await getTokenCandles(NVDAON, '5m')
+    expect(out.candles[0].open).toBeCloseTo(757.45 / 1.000932054247057, 6)
+  })
+
+  it('refuses an Ondo token with no verified sValue, and any other issuer', async () => {
+    const UNPINNED = { id: 'not-pinned-ondo', ticker: 'XYZon', issuer: 'Ondo', underlying: 'XYZ' }
+    expect(await (await freshService(UNPINNED))(UNPINNED, '5m')).toBeNull()
+    const BSTOCK = { id: 'some-bstock', ticker: 'XYZb', issuer: 'bStocks', underlying: 'XYZ' }
+    expect(await (await freshService(BSTOCK))(BSTOCK, '5m')).toBeNull()
   })
 })
 

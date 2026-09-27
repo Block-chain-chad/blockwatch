@@ -7,7 +7,8 @@
 // (NAV-based funds) have no share to compare against and are not on the
 // Board; the Readout still opens them from search.
 
-import { premiumPct, isThinlyTraded } from './prices'
+import { isThinlyTraded } from './prices'
+import { gapCheck } from './gapCheck'
 import { isPlausiblePct } from './format'
 import { isStockDelayed } from './provenance'
 
@@ -36,8 +37,8 @@ export const MAX_CREDIBLE_GAP = 25
 
 export const BOARD_SORTS = Object.freeze([
   { id: 'widest', label: 'Widest gap', hint: 'Furthest from the share price, either direction' },
-  { id: 'premium', label: 'Most expensive', hint: 'Token costs the most above its share' },
-  { id: 'discount', label: 'Cheapest', hint: 'Token costs the least against its share' },
+  { id: 'premium', label: 'Highest gap', hint: 'Token furthest above its share, or least below' },
+  { id: 'discount', label: 'Lowest gap', hint: 'Token furthest below its share, or least above' },
   { id: 'traded', label: 'Most traded', hint: 'Most token volume in 24 hours, all wrappers' },
 ])
 
@@ -65,11 +66,16 @@ function pickLead(wrappers, sort) {
   return [...wrappers].sort(by)[0]
 }
 
+/** A wrapper's gap size for sorting; one with no gap sorts last. */
+const absGap = (w) => (w.gap == null ? -1 : Math.abs(w.gap))
+
 /**
  * groupCompanies(assets, { lens, sort, credibleOnly, watchlistIds })
  *
  * One row per underlying, wrappers sorted widest-first inside it. A wrapper
- * is `muted` when its market is thin or its gap is outside ±MAX_CREDIBLE_GAP.
+ * is `muted` when its market is thin, its gap is outside ±MAX_CREDIBLE_GAP, or
+ * lib/gapCheck.js will not vouch for its gap at all (then `gap` is null and
+ * `status` says why).
  * With `credibleOnly` (the default) muted wrappers are shown but do not
  * decide the row's lead, cheapest or spread; a row with no credible wrapper
  * is itself muted and sorts after every credible row. With it off, every
@@ -83,13 +89,20 @@ export function groupCompanies(
   for (const asset of assets ?? []) {
     if (!asset.underlying) continue
     if (!inLens(asset, lens, watchlistIds)) continue
-    const gap = premiumPct(asset)
-    if (gap == null) continue
-    const muted = isThinlyTraded(asset) || !isPlausiblePct(gap, MAX_CREDIBLE_GAP)
+    // A wrapper whose gap cannot be vouched for (lib/gapCheck.js) is still
+    // listed, with its status instead of a number, and never counts toward
+    // the row's lead, cheapest or spread, whatever credibleOnly says.
+    const check = gapCheck(asset)
+    if (check.status === 'pending' || check.status === 'none') continue
+    const ok = check.status === 'ok'
+    const gap = ok ? check.gap : null
+    const muted = !ok || isThinlyTraded(asset) || !isPlausiblePct(gap, MAX_CREDIBLE_GAP)
     const wrapper = {
       asset,
       gap,
-      diffUsd: asset.tokenPrice - asset.stockPrice,
+      status: check.status,
+      // In share units, so a token that tracks ten shares is not "$640 above".
+      diffUsd: ok ? check.tokenPerShare - asset.stockPrice : null,
       muted,
       cheapest: false,
     }
@@ -99,8 +112,8 @@ export function groupCompanies(
 
   const rows = []
   for (const [underlying, wrappers] of byUnderlying) {
-    wrappers.sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap))
-    const counted = credibleOnly ? wrappers.filter((w) => !w.muted) : wrappers
+    wrappers.sort((a, b) => absGap(b) - absGap(a))
+    const counted = wrappers.filter((w) => w.gap != null && (!credibleOnly || !w.muted))
     const lead = pickLead(counted, sort)
     let cheapest = null
     let spreadBp = null
@@ -134,7 +147,7 @@ export function groupCompanies(
 
   return rows.sort((a, b) => {
     if (a.muted !== b.muted) return a.muted ? 1 : -1
-    if (a.muted && b.muted) return Math.abs(b.wrappers[0].gap) - Math.abs(a.wrappers[0].gap)
+    if (a.muted && b.muted) return absGap(b.wrappers[0]) - absGap(a.wrappers[0])
     return cmp(a, b)
   })
 }
@@ -174,6 +187,25 @@ export function boundCandidates(staticAssets, { watchlistIds = [], cap = CANDIDA
     .sort(([, a], [, b]) => (b[0].vol ?? 0) - (a[0].vol ?? 0))
   for (const [u] of rest) take(u)
   return ids
+}
+
+/**
+ * The quote set for the lens on screen. Under All and Watching it is
+ * boundCandidates as is. Under a type lens the cap is spent on that type
+ * first: the one bond with a listed share (USFRon, $56k a day) ranked below
+ * the 150-underlying cap on the whole universe, so its share was never
+ * quoted and the Bonds lens sat on "still loading" for good.
+ */
+export function lensCandidates(staticAssets, lens, { watchlistIds = [], cap = CANDIDATE_CAP } = {}) {
+  if (lens === 'all' || lens === 'watching') return boundCandidates(staticAssets, { watchlistIds, cap })
+  const inLens = (staticAssets ?? []).filter((a) => a.type === lens)
+  return boundCandidates(inLens, { watchlistIds, cap })
+}
+
+/** True when nothing under this lens has a listed share, so no gap can ever rank. */
+export function lensHasNoShares(staticAssets, lens) {
+  if (lens === 'all' || lens === 'watching') return false
+  return !(staticAssets ?? []).some((a) => a.type === lens && a.underlying)
 }
 
 /**

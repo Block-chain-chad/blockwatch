@@ -27,8 +27,8 @@ import { Disclaimer, filterAssets, FilterChips, GapBar } from '../components/sha
 
 const SORTS = [
   { id: 'widest', label: 'Widest gap', hint: 'Furthest from the share price, either direction' },
-  { id: 'premium', label: 'Most expensive', hint: 'Token costs the most vs its share' },
-  { id: 'discount', label: 'Cheapest', hint: 'Token costs the least vs its share' },
+  { id: 'premium', label: 'Highest gap', hint: 'Token furthest above its share, or least below' },
+  { id: 'discount', label: 'Lowest gap', hint: 'Token furthest below its share, or least above' },
 ]
 
 // A screener is a ranking, so it has to be honest about what it ranks. Thin
@@ -192,13 +192,12 @@ export default function Screener({ onOpenProfile, onOpenAsset }) {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
                         <span className="t-label text-zinc-100">{m.a.ticker}</span>
-                        {/* The cheapest member is the whole reason to open this
-                            row, so it sits beside the ticker where it cannot be
-                            truncated — inside the issuer line it was competing
-                            with the chain name and getting cut to "chea…". */}
+                        {/* The member with the lowest gap, named neutrally: a
+                            ranking of gaps, not a pointer to what to buy. Beside
+                            the ticker so it is never truncated. */}
                         {i === g.members.length - 1 && g.members.length > 1 && (
                           <span className="t-micro shrink-0 rounded-full bg-zinc-800 px-1.5 py-0.5 text-zinc-300">
-                            Cheapest
+                            Lowest gap
                           </span>
                         )}
                       </div>

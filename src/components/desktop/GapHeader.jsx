@@ -2,6 +2,7 @@
 import { track } from '../../services/analytics'
 import { useNow } from '../../hooks/useNow'
 import { premiumPct, isThinlyTraded } from '../../lib/prices'
+import { gapCheck, GAP_STATUS_LABEL } from '../../lib/gapCheck'
 import { formatPct, formatPrice, EM_DASH } from '../../lib/format'
 import { tokenLegLine, shareLegLine } from '../../lib/provenance'
 import { STOCK_QUOTE_SOURCE } from '../../services/stocks'
@@ -31,7 +32,9 @@ export default function GapHeader({ asset, session, lastFetchAt, onExit, onSheet
   const token = verifiedToken(asset)
   const gap = premiumPct(asset)
   const thin = isThinlyTraded(asset)
-  const diff = asset.tokenPrice != null && asset.stockPrice != null ? asset.tokenPrice - asset.stockPrice : null
+  // In share units, and only when the gap itself can be vouched for.
+  const check = gapCheck(asset)
+  const diff = check.status === 'ok' ? check.tokenPerShare - asset.stockPrice : null
   const tokenAge = lastFetchAt ? (now - lastFetchAt) / 1000 : null
   const tokenLine = tokenLegLine({
     price: asset.tokenPrice,
@@ -56,7 +59,11 @@ export default function GapHeader({ asset, session, lastFetchAt, onExit, onSheet
       </button>
       <div className="flex shrink-0 items-baseline gap-2.5">
         <span className="t-body font-medium text-zinc-100">{asset.ticker}</span>
-        <span className={`num t-title ${thin ? 'text-zinc-500' : 'text-zinc-100'}`}>{gap != null ? formatPct(gap) : EM_DASH}</span>
+        {GAP_STATUS_LABEL[check.status] ? (
+          <span className="t-body text-zinc-500">{GAP_STATUS_LABEL[check.status]}</span>
+        ) : (
+          <span className={`num t-title ${thin ? 'text-zinc-500' : 'text-zinc-100'}`}>{gap != null ? formatPct(gap) : EM_DASH}</span>
+        )}
         {asset.underlying && (
           <span className="t-caption text-zinc-500">
             vs {asset.underlying}
