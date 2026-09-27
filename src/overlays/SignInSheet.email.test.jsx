@@ -144,7 +144,7 @@ describe('email step', () => {
     mount()
     await sendLinkTo('person@example.com')
     expect(text()).toContain("Couldn't send the link. Sign-in emails are limited, so wait a minute and try again.")
-    expect(text()).not.toMatch(/[–—]/)
+    expect(text()).not.toMatch(/[\u2013\u2014]/)
   })
 })
 
@@ -298,6 +298,6 @@ describe('create an account with a password', () => {
     await submit()
     expect(button('Sign in')).toBeTruthy()
     expect(text()).toContain('That email already has an account. Sign in with its password')
-    expect(text()).not.toMatch(/[–—]/)
+    expect(text()).not.toMatch(/[\u2013\u2014]/)
   })
 })
