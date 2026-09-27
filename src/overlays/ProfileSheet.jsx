@@ -8,7 +8,7 @@ import PasswordSheet from './PasswordSheet'
 import AboutSheet from './AboutSheet'
 import PasskeysSheet from './PasskeysSheet'
 import DeleteAccountSheet from './DeleteAccountSheet'
-import { useFlag, SIGN_IN_PASSKEY_FLAG } from '../services/featureFlags'
+import { useFlag, SIGN_IN_PASSKEY_FLAG, ACCOUNT_DELETION_FLAG } from '../services/featureFlags'
 import { passkeysSupported } from '../services/passkeys'
 import { getThemePref } from '../lib/theme'
 import { isNativeApp } from '../lib/platform'
@@ -42,6 +42,7 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
   const [passkeysOpen, setPasskeysOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const passkeysOn = useFlag(SIGN_IN_PASSKEY_FLAG) && passkeysSupported()
+  const deletionOn = useFlag(ACCOUNT_DELETION_FLAG)
   const themeLabel = { dark: 'Dark', light: 'Light', system: 'System' }[getThemePref()]
   return (
     <>
@@ -174,7 +175,7 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
           {user && (
             <ListRow icon={<LogoutIcon size={20} />} label="Sign out" onClick={() => signOut()} />
           )}
-          {user && (
+          {user && deletionOn && (
             <ListRow
               icon={<TrashIcon size={20} />}
               label="Delete account"

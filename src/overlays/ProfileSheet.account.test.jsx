@@ -2,9 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 /*
- * Settings rows for accounts: Delete account for anyone signed in (Apple
- * requires it wherever accounts can be made), Face ID and passkeys only where
- * passkeys work and the switch is on, and neither for a guest.
+ * Settings rows for accounts: Delete account for anyone signed in while its
+ * switch is on (the server answers 503 until it is configured), Face ID and
+ * passkeys only where passkeys work and their switch is on, and neither for a
+ * guest.
  */
 
 vi.hoisted(() => {
@@ -28,7 +29,7 @@ beforeEach(() => {
   vi.stubGlobal('document', { activeElement: null })
   h.user = { id: 'u1', email: 'a@b.c' }
   h.supported = true
-  flags.applyFlags({ 'sign-in-passkey': true })
+  flags.applyFlags({ 'sign-in-passkey': true, 'account-deletion': true })
 })
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -52,11 +53,20 @@ describe('ProfileSheet account rows', () => {
   })
 
   it('hides passkeys while the switch is off or where they do not work', () => {
-    flags.applyFlags(null)
+    flags.applyFlags({ 'account-deletion': true })
     expect(render()).not.toContain('Face ID and passkeys')
-    flags.applyFlags({ 'sign-in-passkey': true })
+    flags.applyFlags({ 'sign-in-passkey': true, 'account-deletion': true })
     h.supported = false
     expect(render()).not.toContain('Face ID and passkeys')
+    expect(render()).toContain('Delete account')
+  })
+
+  it('hides Delete account until its switch is on, including before PostHog answers', () => {
+    flags.applyFlags(null)
+    expect(render()).not.toContain('Delete account')
+    flags.applyFlags({ 'account-deletion': false })
+    expect(render()).not.toContain('Delete account')
+    flags.applyFlags({ 'account-deletion': true })
     expect(render()).toContain('Delete account')
   })
 
