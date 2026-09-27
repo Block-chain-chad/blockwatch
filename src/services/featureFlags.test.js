@@ -8,6 +8,7 @@ import {
   loadFeatureFlags,
   SWAP_FLAG,
   LINK_OUT_FLAG,
+  ACCOUNT_DELETION_FLAG,
 } from './featureFlags'
 
 /*
@@ -150,5 +151,23 @@ describe('loadFeatureFlags fails closed', () => {
       })
     ).resolves.toBeUndefined()
     expect(flagEnabled(SWAP_FLAG)).toBe(false)
+  })
+})
+
+describe('account deletion switch', () => {
+  it('uses the PostHog key account-deletion', () => {
+    expect(ACCOUNT_DELETION_FLAG).toBe('account-deletion')
+  })
+
+  it('is off until PostHog says on, and off again when PostHog cannot be reached', async () => {
+    expect(flagEnabled(ACCOUNT_DELETION_FLAG)).toBe(false)
+    applyFlags({ [ACCOUNT_DELETION_FLAG]: true })
+    expect(flagEnabled(ACCOUNT_DELETION_FLAG)).toBe(true)
+    await loadFeatureFlags({
+      fetchImpl: async () => {
+        throw new Error('network down')
+      },
+    })
+    expect(flagEnabled(ACCOUNT_DELETION_FLAG)).toBe(false)
   })
 })

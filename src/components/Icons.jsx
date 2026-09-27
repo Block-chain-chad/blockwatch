@@ -263,3 +263,20 @@ export const IndicatorsIcon = (p) => (
     <path d="M3 19h18" opacity="0.45" />
   </Base>
 )
+
+export const EnvelopeIcon = (p) => (
+  <Base {...p}>
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <path d="m3.5 6.5 8.5 6.5 8.5-6.5" />
+  </Base>
+)
+
+// A person with a key: the common passkey mark.
+export const PasskeyIcon = (p) => (
+  <Base {...p}>
+    <circle cx="9" cy="8" r="3.5" />
+    <path d="M3 20a6 6 0 0 1 10.5-4" />
+    <circle cx="18" cy="11.5" r="2.5" />
+    <path d="M18 14v6.5M18 18h2" />
+  </Base>
+)

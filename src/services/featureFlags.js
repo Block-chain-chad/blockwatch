@@ -31,6 +31,17 @@ export const LINK_OUT_FLAG = 'jupiter-link-out'
 // lawyer has not ruled on the noun. It borrowed the swap flag at first, which
 // meant enabling the swap would have shipped the sentence with it.
 export const RATIO_LINE_FLAG = 'issuer-ratio-line'
+// The three new ways to sign in. Each one only works once its provider is set
+// up in the Supabase, Apple or Google dashboard, so each has its own switch
+// and ships OFF: a button that fails on every tap is worse than no button.
+export const SIGN_IN_APPLE_FLAG = 'sign-in-apple'
+export const SIGN_IN_GOOGLE_FLAG = 'sign-in-google'
+export const SIGN_IN_PASSKEY_FLAG = 'sign-in-passkey'
+// The Delete account row in Profile. api/delete-account.js answers 503 until
+// SUPABASE_SECRET_KEY is set in Vercel, so the row ships OFF: a delete button
+// that always fails is worse than none. Apple requires in-app deletion wherever
+// accounts can be made, so it must be ON before an iOS build goes to review.
+export const ACCOUNT_DELETION_FLAG = 'account-deletion'
 
 /* The user-facing meaning of each flag, kept here rather than at the four
    places that render it, so the three entry points cannot drift into saying
@@ -84,6 +95,12 @@ const FALLBACK = {
   [LINK_OUT_FLAG]: envEnabled(import.meta.env.VITE_JUPITER_LINK_OUT_ENABLED, true),
   // Off until a lawyer has read the sentence. Fails closed like the swap.
   [RATIO_LINE_FLAG]: envEnabled(import.meta.env.VITE_ISSUER_RATIO_LINE_ENABLED, false),
+  // Off until each provider is configured; see SIGN_IN_*_FLAG above.
+  [SIGN_IN_APPLE_FLAG]: envEnabled(import.meta.env.VITE_SIGN_IN_APPLE_ENABLED, false),
+  [SIGN_IN_GOOGLE_FLAG]: envEnabled(import.meta.env.VITE_SIGN_IN_GOOGLE_ENABLED, false),
+  [SIGN_IN_PASSKEY_FLAG]: envEnabled(import.meta.env.VITE_SIGN_IN_PASSKEY_ENABLED, false),
+  // Off until the server side is configured; see ACCOUNT_DELETION_FLAG above.
+  [ACCOUNT_DELETION_FLAG]: envEnabled(import.meta.env.VITE_ACCOUNT_DELETION_ENABLED, false),
 }
 
 /** PostHog's answer, or null while there is none. */

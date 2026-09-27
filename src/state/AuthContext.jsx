@@ -2,6 +2,10 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase, pendingRecovery } from '../services/supabase'
 import { consumePendingAuthResult, subscribeAuthLinks } from '../services/authLinks'
 import { track } from '../services/analytics'
+import { signInNative, startWebSignIn } from '../services/socialSignIn'
+import { signInWithPasskey } from '../services/passkeys'
+import { clearAccountStorage, requestAccountDeletion } from '../services/accountDeletion'
+import { isNativeApp } from '../lib/platform'
 
 const AuthContext = createContext({ session: null, ready: true, available: false })
 
@@ -38,6 +42,7 @@ export function AuthProvider({ children }) {
     if (result.kind === 'recovery') setRecovery(true)
     else if (result.kind === 'welcome') setWelcome('success')
     else if (result.kind === 'expired') setWelcome('expired')
+    else if (result.kind === 'failed') setWelcome('failed')
   }
 
   useEffect(() => {
@@ -134,6 +139,44 @@ export function AuthProvider({ children }) {
     if (supabase) await supabase.auth.signOut()
   }
 
+  /**
+   * Sign in with Apple or Google. On the web this leaves the page and comes
+   * back through /auth/callback (services/authLinks.js shows the welcome); in
+   * the iOS app it completes here and resolves once signed in.
+   */
+  async function signInWithProvider(provider) {
+    if (!supabase) throw new Error('auth not configured')
+    if (isNativeApp()) await signInNative(provider)
+    else await startWebSignIn(provider)
+  }
+
+  async function signInPasskey() {
+    if (!supabase) throw new Error('auth not configured')
+    await signInWithPasskey()
+  }
+
+  /**
+   * Delete the account on the server, then sign out on this device and clear
+   * what it kept for the account. `appleAuthorizationCode` is passed when the
+   * iOS app has one, so the server can revoke Sign in with Apple as well.
+   */
+  async function deleteAccount({ appleAuthorizationCode } = {}) {
+    if (!supabase) throw new Error('auth not configured')
+    const { data } = await supabase.auth.getSession()
+    const current = data?.session
+    if (!current) throw new Error('not signed in')
+    const result = await requestAccountDeletion({
+      accessToken: current.access_token,
+      appleAuthorizationCode,
+    })
+    // Local only: the account no longer exists, so there is no server
+    // session left to end.
+    await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
+    clearAccountStorage(current.user.id)
+    track('account_deleted')
+    return result
+  }
+
   const value = {
     session,
     user: session?.user ?? null,
@@ -151,6 +194,9 @@ export function AuthProvider({ children }) {
     resetPassword,
     updatePassword,
     signOut,
+    signInWithProvider,
+    signInPasskey,
+    deleteAccount,
   }
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

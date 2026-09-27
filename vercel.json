@@ -43,6 +43,10 @@
     {
       "source": "/auth/confirm",
       "destination": "/index.html"
+    },
+    {
+      "source": "/auth/callback",
+      "destination": "/index.html"
     }
   ],
   "redirects": [

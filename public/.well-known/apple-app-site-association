@@ -4,7 +4,10 @@
     "details": [
       {
         "appIDs": ["92Y88BW5VC.app.blockwatch"],
-        "components": [{ "/": "/auth/*" }]
+        "components": [
+          { "/": "/auth/callback", "exclude": true, "comment": "Web sign-in with Apple or Google; only the browser that started it can finish it" },
+          { "/": "/auth/*" }
+        ]
       }
     ]
   }
