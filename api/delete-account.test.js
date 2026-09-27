@@ -19,6 +19,7 @@ const TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.signature-part'
 const USER = {
   id: '11111111-2222-4333-8444-555555555555',
   email: 'Someone_Name@Example.com',
+  email_confirmed_at: '2026-09-01T12:00:00Z',
   identities: [{ provider: 'email' }],
   app_metadata: { providers: ['email'] },
 }
@@ -233,6 +234,21 @@ describe('api/delete-account: Sign in with Apple', () => {
   })
 })
 
+describe('api/delete-account: unconfirmed email', () => {
+  it("deletes an unconfirmed account without touching someone else's waitlist or feedback rows", async () => {
+    fetchMock = upstream({ user: { ...USER, email_confirmed_at: null } })
+    vi.stubGlobal('fetch', fetchMock)
+    const res = await call()
+    expect(res.statusCode).toBe(200)
+    expect(urls()).toEqual([
+      `GET ${URL_}/auth/v1/user`,
+      `DELETE ${URL_}/rest/v1/user_folders?user_id=eq.${USER.id}`,
+      `DELETE ${URL_}/rest/v1/user_alerts?user_id=eq.${USER.id}`,
+      `DELETE ${URL_}/auth/v1/admin/users/${USER.id}`,
+    ])
+  })
+})
+
 describe('helpers', () => {
   it('escapes pattern characters so feedback matches the exact address', () => {
     expect(exactIlike('a_b%c*d\\e@x.com')).toBe('a\\_b\\%c\\*d\\\\e@x.com')
@@ -240,5 +256,11 @@ describe('helpers', () => {
 
   it('skips the email-keyed tables for an account with no email', () => {
     expect(rowDeletions({ id: USER.id }).map(([label]) => label)).toEqual(['folders', 'alerts'])
+  })
+
+  it('skips the email-keyed tables when the email was never confirmed', () => {
+    const unconfirmed = { ...USER, email_confirmed_at: null }
+    expect(rowDeletions(unconfirmed).map(([label]) => label)).toEqual(['folders', 'alerts'])
+    expect(rowDeletions({ ...USER, email_confirmed_at: undefined }).map(([label]) => label)).toEqual(['folders', 'alerts'])
   })
 })

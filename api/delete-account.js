@@ -14,7 +14,10 @@
 //      stop the deletion; the answer says so and the person can remove
 //      OnStock from their Apple ID settings.
 //   2. The account's rows: folders and alerts (keyed by user id), and the
-//      waitlist entry and feedback sent from the account's email. Folders and
+//      waitlist entry and feedback sent from the account's email, but only
+//      when that email was confirmed. Anyone can sign up with an address they
+//      do not own, so an unconfirmed address proves nothing and must not reach
+//      rows that belong to whoever does own it. Folders and
 //      alerts would also go with the user through their foreign keys; they are
 //      deleted by name so a future table without that cascade cannot keep
 //      data behind.
@@ -89,7 +92,7 @@ export function rowDeletions(user) {
     ['alerts', `/rest/v1/user_alerts?user_id=eq.${id}`],
   ]
   const email = typeof user.email === 'string' ? user.email.trim() : ''
-  if (email) {
+  if (email && user.email_confirmed_at) {
     // The waitlist stores addresses lowercased (supabase/waitlist.sql);
     // feedback stores them as typed, so it is matched without regard to case.
     steps.push(['waitlist', `/rest/v1/waitlist?email=eq.${encodeURIComponent(email.toLowerCase())}`])
