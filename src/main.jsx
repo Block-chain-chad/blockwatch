@@ -5,7 +5,13 @@ import App from './App.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import { initTheme } from './lib/theme'
 import { isNativeApp } from './lib/platform'
-import { handleAuthLink, handleOAuthCallback } from './services/authLinks'
+import {
+  handleAuthLink,
+  handleEmailCode,
+  handleOAuthCallback,
+  parseEmailCode,
+  withoutEmailLinkParams,
+} from './services/authLinks'
 import { initMonitoring } from './services/monitoring'
 import { startFeatureFlags } from './services/featureFlags'
 
@@ -34,6 +40,16 @@ if (!isNativeApp() && window.location.pathname === '/auth/callback') {
   const link = window.location.href
   window.history.replaceState(null, '', '/')
   handleOAuthCallback(link)
+}
+
+// Emailed links that go through Supabase's verify page (signup confirmation,
+// magic link, password reset) come back with a one-time ?code= on whatever
+// path Supabase chose, usually the root. Scrub it, then redeem it; the result
+// waits for AuthContext exactly like the two cases above.
+if (!isNativeApp() && parseEmailCode(window.location.href)) {
+  const link = window.location.href
+  window.history.replaceState(null, '', withoutEmailLinkParams(link))
+  handleEmailCode(link)
 }
 
 // Native: cold-start launch URL + warm appUrlOpen events. Dynamic import so

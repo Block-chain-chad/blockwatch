@@ -15,7 +15,9 @@ import { passkeyName } from '../services/passkeys'
  * password sign-in, magic link, Apple, Google, passkey). variant 'expired':
  * the emailed link was dead, so say so honestly and point at the fix, never
  * a blank screen. variant 'failed': a web sign-in with Apple or Google came
- * back without a session.
+ * back without a session. variant 'other-browser': an emailed link was opened
+ * in a different browser from the one that asked for it, so its one-time code
+ * cannot be redeemed here.
  *
  * After a success it also carries the one-time offer to add Face ID (a
  * passkey) for next time; see hooks/usePasskeyOffer.js.
@@ -31,6 +33,7 @@ export default function WelcomeSheet({ variant, onClose, onOpenSignIn }) {
 
   const expired = variant === 'expired'
   const failed = variant === 'failed'
+  const otherBrowser = variant === 'other-browser'
   const offer = usePasskeyOffer(user, variant === 'success')
   const unlock = passkeyName(
     typeof navigator === 'undefined' ? '' : navigator.userAgent,
@@ -38,7 +41,24 @@ export default function WelcomeSheet({ variant, onClose, onOpenSignIn }) {
   )
   return (
     <Sheet onClose={onClose} className="z-[60]">
-      {failed ? (
+      {otherBrowser ? (
+        <div className="px-1 py-4 text-center">
+          <SheetTitle className="text-base font-semibold">Open the link where you asked for it</SheetTitle>
+          <p className="mt-1 text-sm text-zinc-500">
+            For your security, a sign-in link only works in the browser that requested it. Send a new
+            link from here and open it on this device.
+          </p>
+          <button
+            onClick={() => {
+              onClose()
+              onOpenSignIn()
+            }}
+            className="mt-4 w-full rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim"
+          >
+            Send a new link
+          </button>
+        </div>
+      ) : failed ? (
         <div className="px-1 py-4 text-center">
           <SheetTitle className="text-base font-semibold">Sign-in didn't finish</SheetTitle>
           <p className="mt-1 text-sm text-zinc-500">

@@ -43,6 +43,7 @@ export function AuthProvider({ children }) {
     else if (result.kind === 'welcome') setWelcome('success')
     else if (result.kind === 'expired') setWelcome('expired')
     else if (result.kind === 'failed') setWelcome('failed')
+    else if (result.kind === 'other-browser') setWelcome('other-browser')
   }
 
   useEffect(() => {
