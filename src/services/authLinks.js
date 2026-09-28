@@ -153,3 +153,84 @@ export async function handleOAuthCallback(url) {
   }
   return true
 }
+
+// Emailed links (signup confirmation, magic link, password reset) that go
+// through Supabase's own verify page come back to the site with a one-time
+// ?code=. Under the PKCE flow nothing redeems that code on its own
+// (detectSessionInUrl is off in ./supabase.js), and Supabase sends it to the
+// Site URL root, not to /auth/callback, whenever the requested redirect is not
+// on its allow list. So a code can land on any path. Supabase's own failures
+// (an expired or reused link) arrive the same way, as error parameters in the
+// query or the hash.
+const AUTH_CODE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const EMAIL_LINK_PARAMS = ['code', 'error', 'error_code', 'error_description', 'sb']
+
+/**
+ * Parse an emailed-link landing anywhere except the two paths that have their
+ * own handlers. Returns { code }, { error }, or null. Never throws. The code
+ * must look like a Supabase auth code, so an unrelated ?code= is left alone.
+ */
+export function parseEmailCode(url) {
+  let parsed
+  try {
+    parsed = new URL(url)
+  } catch {
+    return null
+  }
+  if (parsed.pathname === '/auth/callback' || parsed.pathname === '/auth/confirm') return null
+  const query = parsed.searchParams
+  const hash = new URLSearchParams(parsed.hash.replace(/^#/, ''))
+  const errorCode = query.get('error_code') || hash.get('error_code')
+  const described = query.get('error_description') || hash.get('error_description')
+  const error = errorCode || (described ? query.get('error') || hash.get('error') : null)
+  if (error) return { error }
+  const code = query.get('code')
+  return code && AUTH_CODE.test(code) ? { code } : null
+}
+
+/** The same URL without the emailed-link parameters, for the address bar. */
+export function withoutEmailLinkParams(url) {
+  const parsed = new URL(url)
+  for (const key of EMAIL_LINK_PARAMS) parsed.searchParams.delete(key)
+  const hash = new URLSearchParams(parsed.hash.replace(/^#/, ''))
+  if (hash.has('error') || hash.has('error_code')) parsed.hash = ''
+  return parsed.pathname + parsed.search + parsed.hash
+}
+
+/**
+ * Redeem an emailed link's one-time code. Returns true when the URL was one
+ * (consumed), false otherwise. Outcomes: 'welcome' after a signup
+ * confirmation or magic link, 'recovery' after a password reset link,
+ * 'other-browser' when this browser never asked for the link (the code can
+ * only be redeemed where it was requested), and 'expired' for everything else.
+ */
+export async function handleEmailCode(url) {
+  const link = parseEmailCode(url)
+  if (!link) return false
+  if (link.error) {
+    emit({ kind: 'expired' })
+    return true
+  }
+  if (handledCodes.has(link.code)) return true
+  handledCodes.add(link.code)
+  if (!supabase) {
+    emit({ kind: 'expired' })
+    return true
+  }
+  try {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(link.code)
+    if (error?.name === 'AuthPKCECodeVerifierMissingError') {
+      emit({ kind: 'other-browser' })
+    } else if (error || !data?.session) {
+      emit({ kind: 'expired' })
+    } else if (data.redirectType === 'recovery') {
+      emit({ kind: 'recovery' })
+    } else {
+      track('sign_in_completed', { method: 'link' })
+      emit({ kind: 'welcome' })
+    }
+  } catch {
+    emit({ kind: 'expired' })
+  }
+  return true
+}
