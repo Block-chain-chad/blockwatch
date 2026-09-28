@@ -1,0 +1,5 @@
+# Test files must not ship. Vercel turns every file in api/ into a serverless
+# function unless its name starts with an underscore, and the Hobby plan allows
+# at most 12 functions per deployment. Tests are for local runs only.
+api/**/*.test.js
+api/**/*.test.mjs
