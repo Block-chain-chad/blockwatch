@@ -27,7 +27,7 @@ describe('alertNotification', () => {
   it('titles a price target with the crossing and says where it trades', () => {
     expect(alertNotification(PRICE)).toEqual({
       title: 'NVDAx crossed $220.00',
-      body: 'Your price target hit — trading at $220.50.',
+      body: 'Your price target hit. Trading at $220.50.',
       tag: 'nvdax',
     })
   })

@@ -136,7 +136,7 @@ export default function SymbolSearch({ ref, onSelectAsset }) {
   const showMiss = open && q.length > 0 && rows.length === 0
 
   return (
-    <div ref={rootRef} className="relative w-[240px] shrink-0 xl:w-[320px]">
+    <div ref={rootRef} className="relative w-[240px] shrink-0 min-[1440px]:w-[320px]">
       <div className="flex items-center gap-2.5 rounded-xl bg-zinc-900 px-3.5 py-2">
         <SearchIcon size={18} className="shrink-0 text-zinc-500" />
         <input

@@ -8,6 +8,8 @@ import { premiumPct, isThinlyTraded } from '../lib/prices'
 import { formatPct, changeColor, EM_DASH } from '../lib/format'
 import { ChevronRight, ChevronDown } from '../components/Icons'
 import { Disclaimer, filterAssets, FilterChips, GapBar } from '../components/shared'
+import ClosedGapMark from '../components/ClosedGapMark'
+import { closedGapLabel, closedGapLabelFor } from '../lib/sessionCopy'
 
 /*
  * The screener — "which companies are mispriced right now?"
@@ -95,6 +97,9 @@ export default function Screener({ onOpenProfile, onOpenAsset }) {
   )
 
   const active = SORTS.find((s) => s.id === sort)
+  // While the share legs are closes every gap below is measured against one;
+  // the header says which, and each figure carries the mark too.
+  const closedHeader = closedGapLabel()
 
   return (
     <div className="pb-24">
@@ -124,7 +129,10 @@ export default function Screener({ onOpenProfile, onOpenAsset }) {
         style={{ borderColor: 'var(--border-subtle)' }}
       >
         <span className="t-micro text-zinc-500">{groups.length} companies</span>
-        <span className="t-micro text-zinc-500">Gap vs share</span>
+        <span className="flex items-center gap-2">
+          <span className="t-micro text-zinc-500">Gap vs share</span>
+          <ClosedGapMark label={closedHeader} />
+        </span>
       </div>
 
       <div>
@@ -155,8 +163,10 @@ export default function Screener({ onOpenProfile, onOpenAsset }) {
                 </div>
                 <div className="shrink-0 text-right">
                   <div className="flex items-center justify-end gap-2">
-                    <GapBar pct={g.lead} width={88} />
+                    {/* The closed-market mark needs the room; the bar gives it up. */}
+                    <GapBar pct={g.lead} width={closedHeader ? 48 : 88} />
                     <span className={`num t-label ${changeColor(g.lead)}`}>{formatPct(g.lead)}</span>
+                    <ClosedGapMark label={closedGapLabelFor(g.logoAsset)} stacked />
                   </div>
                   {/* The reason grouping is worth doing: identical exposure,
                       different price, depending on the issuer. */}
@@ -211,8 +221,11 @@ export default function Screener({ onOpenProfile, onOpenAsset }) {
                       <span className="mx-1 text-zinc-600">/</span>
                       {m.a.stockPrice != null ? <PriceText value={m.a.stockPrice} /> : EM_DASH}
                     </span>
-                    <span className={`num t-label w-16 text-right ${changeColor(m.p)}`}>
-                      {formatPct(m.p)}
+                    <span className="flex shrink-0 flex-col items-end gap-1">
+                      <span className={`num t-label w-16 text-right ${changeColor(m.p)}`}>
+                        {formatPct(m.p)}
+                      </span>
+                      <ClosedGapMark label={closedGapLabelFor(m.a)} stacked alignEnd />
                     </span>
                   </button>
                 ))}
@@ -223,7 +236,7 @@ export default function Screener({ onOpenProfile, onOpenAsset }) {
 
       {groups.length === 0 && (
         <p className="t-body px-6 py-12 text-center text-zinc-400">
-          No gaps to rank yet — prices are still loading.
+          No gaps to rank yet. Prices are still loading.
         </p>
       )}
 

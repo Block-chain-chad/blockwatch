@@ -94,5 +94,5 @@ export function driftStep({ premium, threshold, state = 'inside', lastFiredAt = 
  */
 export function driftWindowNote(underlying) {
   const name = underlying ? `${underlying} quote` : 'share quote'
-  return `These only fire while the US market is open and the ${name} is live — outside those hours the gap is not a real spread, so we stay quiet.`
+  return `These only fire while the US market is open and the ${name} is live. Outside those hours the gap is not a real spread, so we stay quiet.`
 }

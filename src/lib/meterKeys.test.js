@@ -114,3 +114,12 @@ describe('meterShortcutRows', () => {
     expect(new Set(win.map((r) => r.action)).size).toBe(win.length)
   })
 })
+
+describe('meterShortcutRows copy', () => {
+  it('calls each tokenized version a token, never a wrapper', async () => {
+    const { meterShortcutRows } = await import('./meterKeys')
+    const text = JSON.stringify(meterShortcutRows(false))
+    expect(text).toContain("company's tokens")
+    expect(text.toLowerCase()).not.toContain('wrapper')
+  })
+})

@@ -79,12 +79,12 @@ export default function TradeButton({ asset, onSwap }) {
         )}
         <p className="mt-1.5 text-center text-[11px] leading-relaxed text-zinc-400">
           {showSwap
-            ? 'Swaps run from your own wallet — OnStock never holds funds.'
+            ? 'Swaps run from your own wallet. OnStock never holds funds.'
             : showLinkOut
               ? // With a wallet connected, rung two is where the button used
                 // to be, so say why it isn't rather than letting the change
                 // read as a bug.
-                `${wallet.publicKey ? `${SWAP_PAUSED_LINE} ` : ''}Opens Jupiter, an external venue — you swap from your own wallet. Availability depends on your region. Not investment advice.`
+                `${wallet.publicKey ? `${SWAP_PAUSED_LINE} ` : ''}Opens Jupiter, an external venue. You swap from your own wallet. Availability depends on your region. Not investment advice.`
               : `${SWAP_PAUSED_LINE} You can still track ${asset.ticker} here.`}
         </p>
       </div>

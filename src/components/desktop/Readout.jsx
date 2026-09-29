@@ -15,10 +15,15 @@ import {
 import { tokenLegLine, shareLegLine } from '../../lib/provenance'
 import { STOCK_QUOTE_SOURCE } from '../../services/stocks'
 import { GapBar } from '../shared'
+import ClosedGapMark from '../ClosedGapMark'
+import { closedGapLabelFor } from '../../lib/sessionCopy'
 import { BIG_SCREEN_BASE } from '../../lib/bigScreen'
 import RuleTicks from './RuleTicks'
 import { ShareIcon, PlusIcon, BellIcon, StarIcon, ChevronRight } from '../Icons'
 import PremiumChart from '../PremiumChart'
+import HistoryProblem from '../HistoryProblem'
+import { poolSourceNote } from '../../lib/historyStatus'
+import { CHART_RANGES } from '../../hooks/useChartData'
 import TradeButton from '../asset/TradeButton'
 import DetailTabs from './DetailTabs'
 import AddToFolderSheet from '../../overlays/AddToFolderSheet'
@@ -60,11 +65,16 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
   const check = gapCheck(asset)
   const diff = check.status === 'ok' ? check.tokenPerShare - asset.stockPrice : null
   const companyName = asset.underlying ? asset.name : asset.ticker
-  const sentence = readingSentence({ ticker: asset.ticker, companyName, gapPct: gap, size, thin, volume24h: asset.volume24h })
+  // While the share leg is a close, the number and the sentence both say which.
+  const closed = gap != null ? closedGapLabelFor(asset, now) : null
+  const sentence = readingSentence({
+    ticker: asset.ticker, companyName, gapPct: gap, size, thin, volume24h: asset.volume24h, close: closed?.close,
+  })
   const trip = roundTrip({ gapPct: gap, spreadPct: spread?.spreadPct ?? null, size })
   // useChartData keeps the previous range's series while a new one loads, so
-  // the percentile must not be computed from stale data mid-fetch.
-  const pct = chart.loading ? null : gapPercentile(chart.premium, gap)
+  // the percentile must not be computed from stale data mid-fetch. Nor from
+  // the pool fallback, whose candle sizes are not the grain the caption names.
+  const pct = chart.loading || chart.tokenSource === 'pool' ? null : gapPercentile(chart.premium, gap)
   const percentileLine = percentileCaption(range, pct)
   const tokenAgeSeconds = lastFetchAt ? (now - lastFetchAt) / 1000 : null
   const inWatchlist = watchlistIds.includes(asset.id)
@@ -77,10 +87,10 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
   // for a wrapper that will never resolve (no mint, or a spread fetch that
   // already failed).
   const tripCopy = !asset.mint
-    ? 'No DEX quote for this wrapper.'
+    ? 'No decentralized exchange quote for this token.'
     : gap == null
       ? 'No share price to price a round trip yet.'
-      : 'No DEX quote right now.'
+      : 'No decentralized exchange quote right now.'
 
   return (
     <section aria-label={`${asset.ticker} readout`} className="flex flex-col gap-3 px-6 pb-8 pt-5">
@@ -120,8 +130,11 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
           {GAP_STATUS_LABEL[check.status] ? (
             <span className="t-title text-zinc-500">{GAP_STATUS_LABEL[check.status]}</span>
           ) : (
-            <span className={`num t-display ${thin ? 'text-zinc-500' : 'text-zinc-100'}`}>
-              {gap != null ? formatPct(gap) : EM_DASH}
+            <span className="flex items-center gap-3">
+              <span className={`num t-display ${thin ? 'text-zinc-500' : 'text-zinc-100'}`}>
+                {gap != null ? formatPct(gap) : EM_DASH}
+              </span>
+              <ClosedGapMark label={closed} stacked />
             </span>
           )}
           {diff != null && (
@@ -155,7 +168,7 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
       </div>
 
       <div className="flex flex-col gap-1.5 border-t pt-3" style={{ borderColor: 'var(--border-subtle)' }}>
-        <span className="t-micro text-zinc-500">At your size</span>
+        <span className="t-micro text-zinc-500">At your size{closed ? `, ${closed.vs}` : ''}</span>
         <div className="grid grid-cols-3 gap-3">
           {SIZES.map((s) => {
             const d = gapDollars(gap, s)
@@ -170,10 +183,10 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
           {trip ? (
             <>
               Round trip on <span className="num">{formatSize(size)}</span>: gap{' '}
-              <span className="num">{formatPrice(trip.gapUsd)}</span> + DEX spread{' '}
+              <span className="num">{formatPrice(trip.gapUsd)}</span> + decentralized exchange spread{' '}
               <span className="num">{formatPrice(trip.spreadUsd)}</span> ={' '}
-              <span className="num text-zinc-300">{formatPrice(trip.total)}</span> · spread measured on a{' '}
-              {formatPrice(spread.refUsd)} trade
+              <span className="num text-zinc-300">{formatPrice(trip.total)}</span>. The spread was measured on a{' '}
+              <span className="num">{formatPrice(spread.refUsd)}</span> trade.
             </>
           ) : (
             tripCopy
@@ -186,17 +199,22 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
           {chart.loading ? (
             <div className="h-full animate-pulse rounded-xl bg-zinc-900" />
           ) : chart.error ? (
-            <button type="button" onClick={() => setChartRetry((n) => n + 1)} className="t-caption text-zinc-400">
-              The history could not load. Try again.
-            </button>
+            <HistoryProblem problem={chart.problem} onRetry={() => setChartRetry((n) => n + 1)} className="h-full justify-center" />
           ) : chart.premium.length >= 2 ? (
             <PremiumChart fill premium={chart.premium} tone="accent" />
           ) : (
             <p className="t-caption text-zinc-500">
-              {asset.underlying ? 'No stored history yet.' : 'No share to compare against, so no gap history.'}
+              {!asset.underlying
+                ? 'No share to compare against, so no gap history.'
+                : check.status === 'ok'
+                  ? 'This token has no price history for this range yet.'
+                  : 'No gap history while the gap itself cannot be confirmed.'}
             </p>
           )}
         </div>
+        {chart.tokenSource === 'pool' && chart.premium.length >= 2 && (
+          <p className="t-caption text-zinc-500">{poolSourceNote(chart.token, CHART_RANGES[range]?.days)}</p>
+        )}
         <div className="flex items-center gap-3">
           {RANGES.map((r) => (
             <button

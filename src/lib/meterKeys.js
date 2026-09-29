@@ -83,7 +83,7 @@ export function meterShortcutRows(mac = false) {
   return [
     { keys: [mod, 'K'], action: 'Search tickers or companies' },
     { keys: ['↓', '↑'], action: 'Move down or up the Board' },
-    { keys: ['→', '←'], action: 'Show or hide a company\'s wrappers' },
+    { keys: ['→', '←'], action: 'Show or hide a company\'s tokens' },
     { keys: ['Enter'], action: 'Read the focused row' },
     { keys: ['W'], action: 'Watch or unwatch' },
     { keys: ['A'], action: 'Set an alert' },

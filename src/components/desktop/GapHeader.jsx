@@ -9,6 +9,8 @@ import { STOCK_QUOTE_SOURCE } from '../../services/stocks'
 import { verifiedToken } from '../../data/verifiedMints'
 import { useFlag, LINK_OUT_FLAG, TRADE_PAUSED_SHORT } from '../../services/featureFlags'
 import { GapBar } from '../shared'
+import ClosedGapMark from '../ClosedGapMark'
+import { closedGapLabelFor } from '../../lib/sessionCopy'
 import { ChevronLeft, StarIcon, BellIcon, PlusIcon, ShareIcon } from '../Icons'
 
 /*
@@ -62,7 +64,10 @@ export default function GapHeader({ asset, session, lastFetchAt, onExit, onSheet
         {GAP_STATUS_LABEL[check.status] ? (
           <span className="t-body text-zinc-500">{GAP_STATUS_LABEL[check.status]}</span>
         ) : (
-          <span className={`num t-title ${thin ? 'text-zinc-500' : 'text-zinc-100'}`}>{gap != null ? formatPct(gap) : EM_DASH}</span>
+          <>
+            <span className={`num t-title ${thin ? 'text-zinc-500' : 'text-zinc-100'}`}>{gap != null ? formatPct(gap) : EM_DASH}</span>
+            {gap != null && <ClosedGapMark label={closedGapLabelFor(asset, now)} stacked className="self-center" />}
+          </>
         )}
         {asset.underlying && (
           <span className="t-caption text-zinc-500">

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { formatPrice, formatPct, changeColor } from '../lib/format'
 import { useFillSize } from '../hooks/useFillSize'
+import HistoryProblem from './HistoryProblem'
 
 // The phone draws a fixed viewBox scaled to the column; desktop `fill` mode
 // swaps these for the measured pixel size of the box the chart sits in.
@@ -52,6 +53,7 @@ export default function DualLineChart({
   premium = [],
   loading,
   error,
+  problem = null,
   onRetry,
   onScrub,
   showToken = true,
@@ -75,16 +77,8 @@ export default function DualLineChart({
 
   if (error) {
     return (
-      <div className={`mx-1 flex ${boxH} flex-col items-center justify-center rounded-2xl bg-zinc-900/60 px-6 text-center`}>
-        <p className="text-sm text-zinc-400">
-          We couldn't load the chart right now — prices above are still live.
-        </p>
-        <button
-          onClick={onRetry}
-          className="mt-3 rounded-full bg-zinc-800 px-4 py-1.5 text-sm font-medium text-zinc-200 active:bg-zinc-700"
-        >
-          Try again
-        </button>
+      <div className={`mx-1 flex ${boxH} flex-col justify-center rounded-2xl bg-zinc-900/60 px-6`}>
+        <HistoryProblem problem={problem} onRetry={onRetry} />
       </div>
     )
   }
@@ -96,8 +90,7 @@ export default function DualLineChart({
     return (
       <div className={`mx-1 flex ${boxH} flex-col items-center justify-center rounded-2xl bg-zinc-900/60 px-6 text-center`}>
         <p className="text-sm text-zinc-400">
-          Not enough trading activity to chart this range — this token trades
-          thinly. Try a longer range below.
+          Not enough price history to chart this range. Try a longer range below.
         </p>
       </div>
     )

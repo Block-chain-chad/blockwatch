@@ -7,6 +7,8 @@ import { useLocalState } from '../hooks/useLocalState'
 import { NOTIFY_KEY, NOTIFY_OFFER_COPY, notifyOfferVisible } from '../lib/alertNotify'
 import { requestNotificationPermission } from '../services/notifications'
 import { driftWindowNote } from '../lib/alertRules'
+import { closedGapLabelFor } from '../lib/sessionCopy'
+import ClosedGapMark from '../components/ClosedGapMark'
 
 const THRESHOLDS = [0.5, 1, 2, 5]
 
@@ -28,6 +30,7 @@ export default function SetAlertSheet({ asset, onClose, notify = false }) {
         : ''
   )
   const p = premiumPct(asset)
+  const closed = p != null ? closedGapLabelFor(asset) : null
 
   const targetNum = parseFloat(target)
   const targetValid = Number.isFinite(targetNum) && targetNum > 0
@@ -63,7 +66,9 @@ export default function SetAlertSheet({ asset, onClose, notify = false }) {
             {p != null && (
               <>
                 {' '}
-                Right now it's at <span className="tabular-nums text-zinc-300">{formatPct(p)}</span>.
+                Right now it's at <span className="tabular-nums text-zinc-300">{formatPct(p)}</span>
+                {closed ? ` ${closed.vs}. ` : '. '}
+                <ClosedGapMark label={closed} />
               </>
             )}
           </p>
@@ -78,7 +83,7 @@ export default function SetAlertSheet({ asset, onClose, notify = false }) {
           {isThinlyTraded(asset) && (
             <p className="mt-2 px-1 text-xs text-zinc-500">
               Heads up: {asset.ticker} trades thinly, so its price jumps around on small
-              trades — tight thresholds here will fire often.
+              trades. Tight thresholds here will fire often.
             </p>
           )}
           <div className="mt-4 flex gap-2 px-1">

@@ -6,6 +6,8 @@ import PriceText from './PriceText'
 import AssetLogo from './AssetLogo'
 import { formatPrice, formatPct, changeColor, EM_DASH } from '../lib/format'
 import { delayTooltip } from '../lib/provenance'
+import { closedGapLabelFor } from '../lib/sessionCopy'
+import ClosedGapMark from './ClosedGapMark'
 import { WEB_BASE } from '../services/apiBase'
 
 export { formatPrice, formatPct, changeColor }
@@ -51,15 +53,17 @@ function usePremium(asset) {
   // parity row showed "1:1" while its neighbours showed "+0.65%", which put
   // two different units in one column and made it unscannable.
   const muted = parity || thin || value == null
-  return { value, label, muted, thin, color: muted ? 'text-zinc-500' : changeColor(value) }
+  // Only a gap gets the closed-market mark; a NAV fund's 24h change is not one.
+  const closed = check.status === 'ok' ? closedGapLabelFor(asset) : null
+  return { value, label, muted, thin, closed, color: muted ? 'text-zinc-500' : changeColor(value) }
 }
 
 function StatusLabel({ text }) {
   return <span className="t-caption whitespace-nowrap text-zinc-500">{text}</span>
 }
 
-export function PremiumValue({ asset, size = 'row' }) {
-  const { value, label, color } = usePremium(asset)
+export function PremiumValue({ asset, size = 'row', mark = true }) {
+  const { value, label, color, closed } = usePremium(asset)
   if (label) return <StatusLabel text={label} />
   if (value == null) {
     return <span className="inline-block h-4 w-14 animate-pulse rounded bg-zinc-800 align-middle" />
@@ -68,7 +72,14 @@ export function PremiumValue({ asset, size = 'row' }) {
   // only cell heavier than the row's base weight.
   const cls =
     size === 'lead' ? 't-title' : size === 'table' ? 'text-[15px] font-semibold' : 't-label'
-  return <span className={`num ${cls} ${color}`}>{formatPct(value)}</span>
+  const figure = <span className={`num ${cls} ${color}`}>{formatPct(value)}</span>
+  if (!mark || !closed) return figure
+  return (
+    <span className="inline-flex items-center gap-2">
+      {figure}
+      <ClosedGapMark label={closed} stacked />
+    </span>
+  )
 }
 
 /*
@@ -138,15 +149,22 @@ export function GapBar({ pct, thin = false, width = 104, scale = 2, tone = 'dire
 
 /* Kept for surfaces that still want the enclosed form (search results). */
 export function PremiumPill({ asset }) {
-  const { value, label, muted, color } = usePremium(asset)
+  const { value, label, muted, color, closed } = usePremium(asset)
   if (label) return <StatusLabel text={label} />
   if (value == null) {
     return <span className="inline-block h-3.5 w-12 animate-pulse rounded-full bg-zinc-800 align-middle" />
   }
   const bg = muted ? 'bg-zinc-800' : value > 0 ? 'bg-gain/10' : value < 0 ? 'bg-loss/10' : 'bg-zinc-800'
-  return (
+  const pill = (
     <span className={`num inline-block rounded-full px-2 py-0.5 text-xs font-medium ${bg} ${color}`}>
       {formatPct(value)}
+    </span>
+  )
+  if (!closed) return pill
+  return (
+    <span className="inline-flex items-center gap-2">
+      {pill}
+      <ClosedGapMark label={closed} stacked />
     </span>
   )
 }
@@ -209,7 +227,7 @@ export function AssetRow({
   delayed = false,
 }) {
   const thin = isThinlyTraded(asset)
-  const { value } = usePremium(asset)
+  const { value, closed } = usePremium(asset)
   return (
     <button
       onClick={() => onOpen(asset)}
@@ -234,7 +252,8 @@ export function AssetRow({
       )}
       <div className="shrink-0 text-right">
         <div className="flex items-center justify-end gap-2">
-          <GapBar pct={value} thin={thin} width={barWidth} />
+          {/* The closed-market mark needs the room; the bar gives it up. */}
+          <GapBar pct={value} thin={thin} width={closed ? Math.min(barWidth, 48) : barWidth} />
           <PremiumValue asset={asset} />
         </div>
         <div className="num t-caption mt-1 text-zinc-500">

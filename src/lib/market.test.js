@@ -146,3 +146,16 @@ describe('holidays and early closes', () => {
     expect(CALENDAR_THROUGH >= horizon).toBe(true)
   })
 })
+
+describe('lastCloseDay', () => {
+  it('is today after the close and the prior trading day before it', async () => {
+    const { lastCloseDay } = await import('./market')
+    expect(lastCloseDay(new Date('2026-09-15T21:00:00Z'))).toEqual({ date: '2026-09-15', weekday: 'Tuesday', today: true })
+    expect(lastCloseDay(new Date('2026-09-15T17:30:00Z'))).toEqual({ date: '2026-09-14', weekday: 'Monday', today: false })
+  })
+
+  it('is null where the calendar cannot vouch for the day', async () => {
+    const { lastCloseDay } = await import('./market')
+    expect(lastCloseDay(new Date('2028-01-05T21:00:00Z'))).toBeNull()
+  })
+})

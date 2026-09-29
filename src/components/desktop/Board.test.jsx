@@ -138,6 +138,40 @@ describe('Board renders', () => {
     }
   })
 
+  it('calls each tokenized version a token, never a wrapper', () => {
+    const html = render()
+    expect(html).toContain('Gap vs share · widest token')
+    expect(html).toContain('>Tokens<')
+    expect(html.toLowerCase()).not.toContain('wrapper')
+  })
+
+  it('adds no closed-market mark during regular hours', () => {
+    const html = render()
+    expect(html).not.toContain('Market closed')
+    expect(html).not.toContain('data-closed-mark')
+  })
+
+  it('tags every gap figure against Friday’s close on a Saturday', () => {
+    const saturday = Date.parse('2026-09-19T16:00:00Z')
+    const fridayClose = Date.parse('2026-09-18T20:00:00Z')
+    const saved = priceState.assets
+    vi.spyOn(Date, 'now').mockReturnValue(saturday)
+    priceState.session = 'closed'
+    priceState.assets = saved.map((a) =>
+      a.stockQuote?.asOf ? { ...a, priceUpdatedAt: saturday, stockQuote: { ...a.stockQuote, asOf: fridayClose } } : { ...a, priceUpdatedAt: saturday }
+    )
+    try {
+      const html = render()
+      // NVDA's company row and its three token rows each print a gap.
+      expect(html.match(/data-closed-mark/g)?.length).toBeGreaterThanOrEqual(4)
+      expect(html).toContain('Market closed')
+      expect(html).toContain('vs Friday’s close')
+    } finally {
+      priceState.assets = saved
+      priceState.session = 'regular'
+    }
+  })
+
   it('renders with no token fetch time yet, rather than throwing', () => {
     priceState.lastFetchAt = null
     try {

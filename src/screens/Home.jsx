@@ -9,7 +9,8 @@ import { usePrices, useAssetSubscription } from '../state/PricesContext'
 import { useFolders } from '../state/FoldersContext'
 import { useSparklines } from '../hooks/useSparklines'
 import { premiumPct, isThinlyTraded } from '../lib/prices'
-import { SESSION_DOT, SESSION_NOTE } from '../lib/sessionCopy'
+import { SESSION_DOT, SESSION_NOTE, closedGapLabelFor } from '../lib/sessionCopy'
+import ClosedGapMark from '../components/ClosedGapMark'
 import {
   AssetRow,
   AssetTableHeader,
@@ -79,10 +80,13 @@ function SessionLine({ onOpenAsset }) {
       {dot}
       <span className="t-caption flex-1 text-zinc-400">{SESSION_NOTE[session]}</span>
       {top && (
-        <button onClick={() => onOpenAsset(top.asset)} className="t-caption shrink-0 text-right">
-          <span className="text-zinc-500">Widest gap </span>
-          <span className="font-medium text-zinc-300">{top.asset.ticker}</span>{' '}
-          <span className={`num font-medium ${changeColor(top.p)}`}>{formatPct(top.p)}</span>
+        <button onClick={() => onOpenAsset(top.asset)} className="t-caption flex shrink-0 flex-col items-end gap-1 text-right">
+          <span>
+            <span className="text-zinc-500">Widest gap </span>
+            <span className="font-medium text-zinc-300">{top.asset.ticker}</span>{' '}
+            <span className={`num font-medium ${changeColor(top.p)}`}>{formatPct(top.p)}</span>
+          </span>
+          <ClosedGapMark label={closedGapLabelFor(top.asset)} />
         </button>
       )}
     </div>

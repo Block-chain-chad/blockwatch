@@ -28,6 +28,7 @@ import AnalystRatings from '../components/asset/AnalystRatings'
 import EarningsSection from '../components/asset/EarningsSection'
 import AssetNews from '../components/asset/AssetNews'
 import DetailsSection from '../components/asset/DetailsSection'
+import { poolSourceNote, daysShortOfRange } from '../lib/historyStatus'
 
 const RANGES = Object.keys(CHART_RANGES)
 const RANGE_WORDS = { '1D': 'today', '1W': 'past week', '1M': 'past month', '3M': 'past 3 months', '1Y': 'past year' }
@@ -205,6 +206,8 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
           const ref = scrub?.price ?? chart.token[chart.token.length - 1].v
           const pct = ((ref - first) / first) * 100
           const intraday = range === '1D' || range === '1W'
+          // A pool-drawn 1Y spans about 300 days; say that, not "past year".
+          const short = chart.tokenSource === 'pool' ? daysShortOfRange(chart.token, CHART_RANGES[range]?.days) : null
           const suffix = scrub
             ? new Date(Math.round(scrub.t / 300_000) * 300_000).toLocaleString(
                 'en-US',
@@ -212,7 +215,9 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
                   ? { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }
                   : { month: 'short', day: 'numeric', year: 'numeric' }
               )
-            : RANGE_WORDS[range]
+            : short != null
+              ? `past ${short} days`
+              : RANGE_WORDS[range]
           return (
             <div className="num t-caption mt-2.5 text-zinc-500">
               Token {formatPct(pct)} ({formatPrice(Math.abs(ref - first))}){' '}
@@ -285,11 +290,15 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
             premium={chart.premium}
             loading={chart.loading}
             error={chart.error}
+            problem={chart.problem}
             onRetry={() => setChartRetry((n) => n + 1)}
             onScrub={setScrub}
             showToken={visibleLines.token}
             showStock={visibleLines.stock}
           />
+          {chart.tokenSource === 'pool' && !chart.loading && (
+            <p className="t-caption mt-2 px-2 text-zinc-500">{poolSourceNote(chart.token, CHART_RANGES[range]?.days)}</p>
+          )}
           {/* These are controls, not a caption, and they used to read as one:
               swatch + label with no persistent affordance, press feedback that
               only appeared once you were already pressing, and rounded-full —
