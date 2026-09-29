@@ -30,7 +30,7 @@ export default function SessionStrip({ onSelectAsset }) {
             <span className="font-medium text-zinc-300">{top.asset.ticker}</span>{' '}
             <span className={`num font-medium ${changeColor(top.p)}`}>{formatPct(top.p)}</span>
           </span>
-          <ClosedGapMark label={closedGapLabelFor(top.asset)} />
+          <ClosedGapMark label={closedGapLabelFor(top.asset)} vsClassName="hidden min-[1440px]:inline" />
         </button>
       )}
     </div>

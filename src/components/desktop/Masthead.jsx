@@ -14,6 +14,11 @@ import SymbolSearch from './SymbolSearch'
  * the session sentence as visible prose (not a tooltip), the widest
  * credible gap, named during the open session too (spec 2026-09-15 §3.1),
  * the bell, the avatar.
+ *
+ * Fitting 1024 to 1439 px: the session sentence gives way first (it
+ * truncates), the search field stays at 240 px until 1440, the widest gap
+ * readout appears from 1280, and its closed-market mark drops the "vs"
+ * line below 1440 (the tag stays, the full sentence is its tooltip).
  */
 const WORDS = [
   { id: 'home', label: 'Board' },
@@ -63,13 +68,13 @@ export default function Masthead({ active, onTab, searchRef, onSelectAsset, onOp
         </span>
       </div>
       {top && (
-        <button type="button" onClick={() => onSelectAsset(top.asset.id)} className="t-caption flex shrink-0 items-center gap-2 whitespace-nowrap">
+        <button type="button" onClick={() => onSelectAsset(top.asset.id)} className="t-caption hidden shrink-0 items-center gap-2 whitespace-nowrap xl:flex">
           <span>
             <span className="text-zinc-500">{widestGapLabel(session)} · </span>
             <span className="font-medium text-zinc-300">{top.asset.ticker}</span>{' '}
             <span className="num font-medium text-zinc-100">{formatPct(top.p)}</span>
           </span>
-          <ClosedGapMark label={closedGapLabelFor(top.asset)} />
+          <ClosedGapMark label={closedGapLabelFor(top.asset)} vsClassName="hidden min-[1440px]:inline" />
         </button>
       )}
       <button

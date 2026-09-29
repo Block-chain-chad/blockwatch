@@ -5,10 +5,11 @@
  * short lines for narrow rows (`alignEnd` right-aligns them); otherwise they
  * sit side by side. `maxWidth` (px) caps a stacked mark for a fixed grid
  * track: the "vs" line then wraps inside it rather than spilling into the
- * next column. The sentence behind both is the tooltip. Renders nothing
- * during regular hours.
+ * next column. `vsClassName` lets a crowded bar hide the "vs" line at
+ * narrower widths and keep the tag. The sentence behind both is the
+ * tooltip. Renders nothing during regular hours.
  */
-export default function ClosedGapMark({ label, stacked = false, alignEnd = false, maxWidth = null, className = '' }) {
+export default function ClosedGapMark({ label, stacked = false, alignEnd = false, maxWidth = null, vsClassName = '', className = '' }) {
   if (!label) return null
   return (
     <span
@@ -23,7 +24,7 @@ export default function ClosedGapMark({ label, stacked = false, alignEnd = false
       >
         {label.tag}
       </span>
-      <span className={`text-[11px] font-normal leading-tight text-zinc-500 ${maxWidth ? '' : 'whitespace-nowrap'}`}>
+      <span className={`text-[11px] font-normal leading-tight text-zinc-500 ${maxWidth ? '' : 'whitespace-nowrap'} ${vsClassName}`}>
         {label.vs}
       </span>
     </span>
