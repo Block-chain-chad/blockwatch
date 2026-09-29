@@ -21,6 +21,8 @@ import { BIG_SCREEN_BASE } from '../../lib/bigScreen'
 import RuleTicks from './RuleTicks'
 import { ShareIcon, PlusIcon, BellIcon, StarIcon, ChevronRight } from '../Icons'
 import PremiumChart from '../PremiumChart'
+import HistoryProblem from '../HistoryProblem'
+import { POOL_SOURCE_NOTE } from '../../lib/historyStatus'
 import TradeButton from '../asset/TradeButton'
 import DetailTabs from './DetailTabs'
 import AddToFolderSheet from '../../overlays/AddToFolderSheet'
@@ -69,8 +71,9 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
   })
   const trip = roundTrip({ gapPct: gap, spreadPct: spread?.spreadPct ?? null, size })
   // useChartData keeps the previous range's series while a new one loads, so
-  // the percentile must not be computed from stale data mid-fetch.
-  const pct = chart.loading ? null : gapPercentile(chart.premium, gap)
+  // the percentile must not be computed from stale data mid-fetch. Nor from
+  // the pool fallback, whose candle sizes are not the grain the caption names.
+  const pct = chart.loading || chart.tokenSource === 'pool' ? null : gapPercentile(chart.premium, gap)
   const percentileLine = percentileCaption(range, pct)
   const tokenAgeSeconds = lastFetchAt ? (now - lastFetchAt) / 1000 : null
   const inWatchlist = watchlistIds.includes(asset.id)
@@ -195,17 +198,22 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
           {chart.loading ? (
             <div className="h-full animate-pulse rounded-xl bg-zinc-900" />
           ) : chart.error ? (
-            <button type="button" onClick={() => setChartRetry((n) => n + 1)} className="t-caption text-zinc-400">
-              The history could not load. Try again.
-            </button>
+            <HistoryProblem problem={chart.problem} onRetry={() => setChartRetry((n) => n + 1)} className="h-full justify-center" />
           ) : chart.premium.length >= 2 ? (
             <PremiumChart fill premium={chart.premium} tone="accent" />
           ) : (
             <p className="t-caption text-zinc-500">
-              {asset.underlying ? 'No stored history yet.' : 'No share to compare against, so no gap history.'}
+              {!asset.underlying
+                ? 'No share to compare against, so no gap history.'
+                : check.status === 'ok'
+                  ? 'This token has no price history for this range yet.'
+                  : 'No gap history while the gap itself cannot be confirmed.'}
             </p>
           )}
         </div>
+        {chart.tokenSource === 'pool' && chart.premium.length >= 2 && (
+          <p className="t-caption text-zinc-500">{POOL_SOURCE_NOTE}</p>
+        )}
         <div className="flex items-center gap-3">
           {RANGES.map((r) => (
             <button

@@ -28,6 +28,7 @@ import AnalystRatings from '../components/asset/AnalystRatings'
 import EarningsSection from '../components/asset/EarningsSection'
 import AssetNews from '../components/asset/AssetNews'
 import DetailsSection from '../components/asset/DetailsSection'
+import { POOL_SOURCE_NOTE } from '../lib/historyStatus'
 
 const RANGES = Object.keys(CHART_RANGES)
 const RANGE_WORDS = { '1D': 'today', '1W': 'past week', '1M': 'past month', '3M': 'past 3 months', '1Y': 'past year' }
@@ -285,11 +286,15 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
             premium={chart.premium}
             loading={chart.loading}
             error={chart.error}
+            problem={chart.problem}
             onRetry={() => setChartRetry((n) => n + 1)}
             onScrub={setScrub}
             showToken={visibleLines.token}
             showStock={visibleLines.stock}
           />
+          {chart.tokenSource === 'pool' && !chart.loading && (
+            <p className="t-caption mt-2 px-2 text-zinc-500">{POOL_SOURCE_NOTE}</p>
+          )}
           {/* These are controls, not a caption, and they used to read as one:
               swatch + label with no persistent affordance, press feedback that
               only appeared once you were already pressing, and rounded-full —

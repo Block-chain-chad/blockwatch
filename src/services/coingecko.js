@@ -124,25 +124,85 @@ export async function fetchSparklines(ids) {
 // Cached in memory for 5 minutes per (coin, range) so flipping ranges doesn't
 // burn rate limit.
 const historyCache = new Map()
+const historyInflight = new Map()
 const HISTORY_TTL = 5 * 60_000
 
-/** Fetch token price history. Returns [{ t: msEpoch, v: usd }]. */
+/*
+ * The keyless API allows only a few calls a minute per visitor, and a fresh
+ * desktop visit already spends three on /coins/markets (the core ids, then
+ * the Board's 261 ids in two chunks) before the Readout asks for history.
+ * The history call is the one refused. CoinGecko's 429 carries no
+ * Access-Control-Allow-Origin header, so the browser reports it as a network
+ * error and Retry-After cannot be read (it said 58 s when checked on
+ * 2026-09-29). Any refusal or network failure therefore opens a cooldown
+ * with jitter, during which history calls fail at once instead of spending
+ * more of the budget the price poll needs.
+ */
+export const HISTORY_COOLDOWN_MS = 60_000
+let historyBusyUntil = 0
+
+/**
+ * Why token history is missing: 'busy' (a 429 we could read, or a cooldown
+ * still running), 'unreachable' (no readable answer, which in a browser is
+ * usually that same 429), or 'missing' (CoinGecko has no such coin).
+ * `retryAt` is when asking again is worth it, or null for never.
+ */
+export class HistoryUnavailable extends Error {
+  constructor(kind, retryAt) {
+    super(`token history ${kind}`)
+    this.kind = kind
+    this.retryAt = retryAt
+  }
+}
+
+function coolDown() {
+  historyBusyUntil = Date.now() + HISTORY_COOLDOWN_MS + Math.round(Math.random() * 10_000)
+  return historyBusyUntil
+}
+
+/** Test seam: forget the cooldown and the cache between cases. */
+export function resetHistoryState() {
+  historyBusyUntil = 0
+  historyCache.clear()
+  historyInflight.clear()
+}
+
+/**
+ * Fetch token price history. Returns [{ t: msEpoch, v: usd }]. Throws
+ * HistoryUnavailable. Concurrent callers for one series share a request.
+ */
 export async function fetchTokenHistory(id, days) {
   const key = `${id}|${days}`
   const hit = historyCache.get(key)
   if (hit && Date.now() - hit.at < HISTORY_TTL) return hit.data
+  if (historyInflight.has(key)) return historyInflight.get(key)
+  if (Date.now() < historyBusyUntil) throw new HistoryUnavailable('busy', historyBusyUntil)
 
-  const headers = { accept: 'application/json' }
-  if (DEMO_KEY) headers['x-cg-demo-api-key'] = DEMO_KEY
-  const res = await fetch(
-    `${API_BASE}/coins/${encodeURIComponent(id)}/market_chart?vs_currency=usd&days=${days}`,
-    { headers }
-  )
-  if (!res.ok) throw new Error(`CoinGecko history ${res.status}`)
-  const json = await res.json()
-  const data = (json.prices ?? []).map(([t, v]) => ({ t, v }))
-  historyCache.set(key, { at: Date.now(), data })
-  return data
+  const promise = (async () => {
+    const headers = { accept: 'application/json' }
+    if (DEMO_KEY) headers['x-cg-demo-api-key'] = DEMO_KEY
+    let res
+    try {
+      res = await fetch(`${API_BASE}/coins/${encodeURIComponent(id)}/market_chart?vs_currency=usd&days=${days}`, {
+        headers,
+      })
+    } catch {
+      throw new HistoryUnavailable('unreachable', coolDown())
+    }
+    if (res.status === 404) throw new HistoryUnavailable('missing', null)
+    if (res.status === 429) throw new HistoryUnavailable('busy', coolDown())
+    if (!res.ok) throw new HistoryUnavailable('unreachable', coolDown())
+    const json = await res.json()
+    const data = (json.prices ?? []).map(([t, v]) => ({ t, v }))
+    historyCache.set(key, { at: Date.now(), data })
+    return data
+  })()
+  historyInflight.set(key, promise)
+  try {
+    return await promise
+  } finally {
+    historyInflight.delete(key)
+  }
 }
 
 // --- New listings discovery -------------------------------------------------

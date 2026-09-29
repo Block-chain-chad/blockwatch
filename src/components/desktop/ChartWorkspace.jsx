@@ -10,6 +10,7 @@ import { legendStatus, delayTooltip, isStockDelayed, chartHistoryCredit } from '
 import { STOCK_QUOTE_SOURCE } from '../../services/stocks'
 import { premiumPct } from '../../lib/prices'
 import { closedGapLabelFor } from '../../lib/sessionCopy'
+import { POOL_SOURCE_NOTE } from '../../lib/historyStatus'
 import { tokenUnitsNote } from '../../lib/gapCheck'
 import { candleSeconds } from '../../lib/candles'
 import { coerceTimeframe, isIntraday, networkName, timeframeLabel, cleanCandles } from '../../lib/candleSeries'
@@ -463,6 +464,7 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef, dri
                     <span className="t-caption text-zinc-600">{stockHistory}</span>
                   </>
                 )}
+                {chart.tokenSource === 'pool' && <span className="t-caption text-zinc-600">{POOL_SOURCE_NOTE}</span>}
               </div>
             )}
             <div className="flex flex-col" style={{ height: drillIn ? DRILL_GAP_HEIGHT : GAP_HEIGHT }}>
@@ -473,6 +475,7 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef, dri
                 premium={chart.premium}
                 loading={chart.loading}
                 error={chart.error}
+                problem={chart.problem}
                 onRetry={() => setChartRetry((n) => n + 1)}
                 onScrub={onScrub}
                 onScrubT={setScrubT}

@@ -55,3 +55,70 @@ describe('fetchTokenMarkets', () => {
     expect(map.undated.priceUpdatedAt).toBeNull()
   })
 })
+
+/*
+ * Token history when CoinGecko refuses. On 2026-09-29 the keyless API
+ * answered a burst with 429 and Retry-After 58, and no CORS header, so a
+ * browser sees a network error. The Readout's retry used to fire straight
+ * back into that limit.
+ */
+describe('fetchTokenHistory', () => {
+  const ok = (prices) => ({ ok: true, status: 200, json: async () => ({ prices }) })
+  const status = (code) => ({ ok: false, status: code, json: async () => ({}) })
+
+  beforeEach(async () => {
+    const { resetHistoryState } = await import('./coingecko')
+    resetHistoryState()
+  })
+
+  it('returns the series and serves a repeat from the cache', async () => {
+    const { fetchTokenHistory } = await import('./coingecko')
+    const fetch = vi.fn(async () => ok([[1, 10], [2, 11]]))
+    vi.stubGlobal('fetch', fetch)
+    expect(await fetchTokenHistory('nvidia-xstock', 7)).toEqual([{ t: 1, v: 10 }, { t: 2, v: 11 }])
+    await fetchTokenHistory('nvidia-xstock', 7)
+    expect(fetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('shares one request between concurrent callers', async () => {
+    const { fetchTokenHistory } = await import('./coingecko')
+    const fetch = vi.fn(async () => ok([[1, 10], [2, 11]]))
+    vi.stubGlobal('fetch', fetch)
+    await Promise.all([fetchTokenHistory('nvidia-xstock', 1), fetchTokenHistory('nvidia-xstock', 1)])
+    expect(fetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('reads a network failure as unreachable and cools down before asking again', async () => {
+    const { fetchTokenHistory, HISTORY_COOLDOWN_MS } = await import('./coingecko')
+    const fetch = vi.fn(async () => {
+      throw new TypeError('Failed to fetch')
+    })
+    vi.stubGlobal('fetch', fetch)
+    const before = Date.now()
+    const first = await fetchTokenHistory('nvidia-xstock', 7).catch((e) => e)
+    expect(first).toMatchObject({ kind: 'unreachable' })
+    expect(first.retryAt).toBeGreaterThanOrEqual(before + HISTORY_COOLDOWN_MS)
+    // A retry inside the cooldown fails at once and spends nothing.
+    const second = await fetchTokenHistory('nvidia-xstock', 30).catch((e) => e)
+    expect(second).toMatchObject({ kind: 'busy', retryAt: first.retryAt })
+    expect(fetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('reads a 429 as busy', async () => {
+    const { fetchTokenHistory } = await import('./coingecko')
+    vi.stubGlobal('fetch', vi.fn(async () => status(429)))
+    const err = await fetchTokenHistory('nvidia-xstock', 7).catch((e) => e)
+    expect(err.kind).toBe('busy')
+    expect(err.retryAt).toBeGreaterThan(Date.now())
+  })
+
+  it('reads a 404 as missing, with no retry and no cooldown', async () => {
+    const { fetchTokenHistory } = await import('./coingecko')
+    const fetch = vi.fn(async () => status(404))
+    vi.stubGlobal('fetch', fetch)
+    const err = await fetchTokenHistory('no-such-coin', 7).catch((e) => e)
+    expect(err).toMatchObject({ kind: 'missing', retryAt: null })
+    await fetchTokenHistory('no-such-coin', 30).catch(() => {})
+    expect(fetch).toHaveBeenCalledTimes(2)
+  })
+})
