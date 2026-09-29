@@ -39,7 +39,7 @@ export const BOARD_SORTS = Object.freeze([
   { id: 'widest', label: 'Widest gap', hint: 'Furthest from the share price, either direction' },
   { id: 'premium', label: 'Highest gap', hint: 'Token furthest above its share, or least below' },
   { id: 'discount', label: 'Lowest gap', hint: 'Token furthest below its share, or least above' },
-  { id: 'traded', label: 'Most traded', hint: 'Most token volume in 24 hours, all wrappers' },
+  { id: 'traded', label: 'Most traded', hint: 'Most volume in 24 hours across all tokens' },
 ])
 
 export const BOARD_LENSES = Object.freeze([

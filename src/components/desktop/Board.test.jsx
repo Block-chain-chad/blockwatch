@@ -138,6 +138,13 @@ describe('Board renders', () => {
     }
   })
 
+  it('calls each tokenized version a token, never a wrapper', () => {
+    const html = render()
+    expect(html).toContain('Gap vs share · widest token')
+    expect(html).toContain('>Tokens<')
+    expect(html.toLowerCase()).not.toContain('wrapper')
+  })
+
   it('renders with no token fetch time yet, rather than throwing', () => {
     priceState.lastFetchAt = null
     try {

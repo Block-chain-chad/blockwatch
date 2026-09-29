@@ -225,13 +225,13 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, 
         <span className="t-micro text-zinc-500">Share · age</span>
         {big.boardTicks ? (
           <div className="flex flex-col gap-1">
-            <span className="t-micro text-zinc-500">Gap vs share · widest wrapper</span>
+            <span className="t-micro text-zinc-500">Gap vs share · widest token</span>
             <RuleTicks width={big.rule} />
           </div>
         ) : (
-          <span className="t-micro text-zinc-500">Gap vs share · widest wrapper</span>
+          <span className="t-micro text-zinc-500">Gap vs share · widest token</span>
         )}
-        <span className="t-micro text-zinc-500">Wrappers</span>
+        <span className="t-micro text-zinc-500">Tokens</span>
         <span className="t-micro text-zinc-500">Lowest gap</span>
         <span />
       </div>
@@ -386,7 +386,7 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, 
   )
 }
 
-/* The Wrappers cell's copy: one wrapper never claims a spread; several
+/* The Tokens cell's copy: one wrapper never claims a spread; several
    wrappers with only one credible leg can't claim "apart" either — the
    second (muted) wrapper isn't a real comparison point. */
 function wrappersCell(company) {

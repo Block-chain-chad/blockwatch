@@ -106,6 +106,7 @@ describe('groupCompanies', () => {
     expect(by('premium')).toEqual(['TSLA', 'SPY', 'NVDA', 'HOOD', 'WMT'])
     expect(by('discount')).toEqual(['HOOD', 'NVDA', 'SPY', 'TSLA', 'WMT'])
     expect(BOARD_SORTS.map((s) => s.id)).toEqual(['widest', 'premium', 'discount', 'traded'])
+    expect(JSON.stringify([BOARD_SORTS, BOARD_LENSES]).toLowerCase()).not.toContain('wrapper')
     // Named for the gap, not for what to buy (Compliance Reviewer).
     expect(BOARD_SORTS.map((s) => s.label)).toEqual(['Widest gap', 'Highest gap', 'Lowest gap', 'Most traded'])
   })

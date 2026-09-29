@@ -42,7 +42,7 @@ describe('readingSentence', () => {
       'The gap on NVDAx reads +18.00% but only $12k traded today; treat it as noise.'
     )
     expect(readingSentence({ ...base, gapPct: -40 })).toBe(
-      `The gap on NVDAx reads ${MINUS}40.00% and no real wrapper drifts that far; treat it as noise.`
+      `The gap on NVDAx reads ${MINUS}40.00% and no real token drifts that far; treat it as noise.`
     )
     expect(readingSentence({ ...base, gapPct: 18, thin: true, volume24h: null })).toBe(
       'The gap on NVDAx reads +18.00% but almost nothing traded today; treat it as noise.'

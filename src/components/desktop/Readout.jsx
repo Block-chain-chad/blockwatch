@@ -77,10 +77,10 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
   // for a wrapper that will never resolve (no mint, or a spread fetch that
   // already failed).
   const tripCopy = !asset.mint
-    ? 'No DEX quote for this wrapper.'
+    ? 'No decentralized exchange quote for this token.'
     : gap == null
       ? 'No share price to price a round trip yet.'
-      : 'No DEX quote right now.'
+      : 'No decentralized exchange quote right now.'
 
   return (
     <section aria-label={`${asset.ticker} readout`} className="flex flex-col gap-3 px-6 pb-8 pt-5">
