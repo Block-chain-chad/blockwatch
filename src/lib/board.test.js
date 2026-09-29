@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
+import { bigScreen, GAP_COLUMN_EXTRA } from './bigScreen'
 import {
-  groupCompanies, BOARD_SORTS, BOARD_LENSES, MAX_CREDIBLE_GAP,
+  groupCompanies, BOARD_SORTS, BOARD_LENSES, MAX_CREDIBLE_GAP, closedRuleWidth, CLOSED_MARK_WIDTH, CLOSED_COMPANY_MIN,
   boundCandidates, CANDIDATE_CAP, lensCandidates, lensHasNoShares, freezeOrder, flattenRows, visibleWindow, headerLine,
   quoteAges,
   COMPANY_ROW_H, WRAPPER_ROW_H,
@@ -321,5 +322,35 @@ describe('lensCandidates', () => {
     expect(lensHasNoShares(all, 'bond')).toBe(false)
     expect(lensHasNoShares([navBond], 'bond')).toBe(true)
     expect(lensHasNoShares([navBond], 'all')).toBe(false)
+  })
+})
+
+/*
+ * The closed-market Board must fit beside the Readout. The first cut widened
+ * the gap column by the mark and pushed "Lowest gap" under the Readout at
+ * 1440. Row widths below are the Board's scroller at each window width
+ * (window minus the Readout track minus a 15 px scrollbar), inside the 48 px
+ * of gutters.
+ */
+describe('closedRuleWidth', () => {
+  const FIXED = 120 + 104 + 80 + 24
+  const rowWidth = (windowWidth) => {
+    const big = bigScreen(windowWidth)
+    const readout = windowWidth < 1440 ? Math.min(560, windowWidth * 0.39) : parseInt(big.readout, 10)
+    return { big, width: windowWidth - readout - 15 - 48 }
+  }
+
+  it.each([1280, 1440, 1920])('fits every column at %i px wide', (w) => {
+    const { big, width } = rowWidth(w)
+    const rule = closedRuleWidth(big.rule, width, GAP_COLUMN_EXTRA)
+    const total = CLOSED_COMPANY_MIN + FIXED + rule + GAP_COLUMN_EXTRA + CLOSED_MARK_WIDTH
+    expect(total).toBeLessThanOrEqual(width)
+    expect(rule).toBeLessThanOrEqual(big.rule)
+    expect(rule).toBeGreaterThanOrEqual(48)
+  })
+
+  it('never grows the rule past the open width, and has a floor before the width is measured', () => {
+    expect(closedRuleWidth(240, 5000, GAP_COLUMN_EXTRA)).toBe(240)
+    expect(closedRuleWidth(240, 0, GAP_COLUMN_EXTRA)).toBe(48)
   })
 })

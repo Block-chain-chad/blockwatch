@@ -226,6 +226,27 @@ export function freezeOrder(prevKeys, companies) {
 export const COMPANY_ROW_H = 56
 export const WRAPPER_ROW_H = 40
 
+/*
+ * The Board's columns while the share legs are closes (components/desktop/
+ * Board.jsx). The "Market closed" mark needs CLOSED_MARK_WIDTH beside every
+ * gap figure, and the Board has no width to spare beside the Readout: at
+ * 1280 and 1440 the open layout already leaves only about 20 px. So the
+ * rule gives the room back, and the company column may narrow to
+ * CLOSED_COMPANY_MIN. The rule is sized from the measured row width, so the
+ * whole row always fits and nothing slides under the Readout.
+ */
+export const CLOSED_MARK_WIDTH = 120
+export const CLOSED_COMPANY_MIN = 128
+const BOARD_FIXED_COLUMNS = 120 + 104 + 80 + 24 // share, tokens, lowest gap, chevron
+const MIN_CLOSED_RULE = 48
+
+/** The gap rule's width in px while closed, for rows `rowWidth` px wide inside their gutters. */
+export function closedRuleWidth(openRule, rowWidth, gapColumnExtra) {
+  if (!Number.isFinite(rowWidth) || rowWidth <= 0) return Math.min(openRule, MIN_CLOSED_RULE)
+  const room = rowWidth - BOARD_FIXED_COLUMNS - CLOSED_COMPANY_MIN - gapColumnExtra - CLOSED_MARK_WIDTH
+  return Math.max(MIN_CLOSED_RULE, Math.min(openRule, Math.floor(room)))
+}
+
 /** The Board's rows in order: each company, and under the expanded one its wrappers. */
 export function flattenRows(companies, expandedKey) {
   const out = []

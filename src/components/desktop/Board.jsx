@@ -8,7 +8,7 @@ import { track } from '../../services/analytics'
 import { ASSETS } from '../../data/universe'
 import {
   BOARD_LENSES, BOARD_SORTS, groupCompanies, lensCandidates, lensHasNoShares, freezeOrder, flattenRows,
-  visibleWindow, headerLine, quoteAges,
+  visibleWindow, headerLine, quoteAges, closedRuleWidth, CLOSED_MARK_WIDTH, CLOSED_COMPANY_MIN,
 } from '../../lib/board'
 import { ageWords, shareFreshness } from '../../lib/provenance'
 import { formatPct, formatPrice } from '../../lib/format'
@@ -16,7 +16,7 @@ import { GAP_STATUS_LABEL } from '../../lib/gapCheck'
 import { GapBar } from '../shared'
 import ClosedGapMark from '../ClosedGapMark'
 import { closedGapLabel, closedGapLabelFor } from '../../lib/sessionCopy'
-import { BIG_SCREEN_BASE } from '../../lib/bigScreen'
+import { BIG_SCREEN_BASE, GAP_COLUMN_EXTRA } from '../../lib/bigScreen'
 import RuleTicks from './RuleTicks'
 import { ChevronRight, ChevronDown } from '../Icons'
 import AssetLogo from '../AssetLogo'
@@ -34,11 +34,12 @@ import PriceText from '../PriceText'
  * 80: 12 gap, the 56 px signed label, 12 trailing; 224 at 1440 and below,
  * lib/bigScreen.js decides above that) · tokens 104 · lowest gap 80 ·
  * chevron 24, inside 24 px gutters. While the share legs are closes the gap
- * column grows by CLOSED_MARK_WIDTH for the "Market closed" mark beside each
- * figure; the company column gives up the room.
+ * column adds CLOSED_MARK_WIDTH for the "Market closed" mark beside each
+ * figure, and the rule and the company column give that room back
+ * (closedRuleWidth in lib/board.js).
  */
-const CLOSED_MARK_WIDTH = 116
-const gridFor = (gapColumn) => `minmax(160px, 1fr) 120px ${gapColumn}px 104px 80px 24px`
+const GUTTERS = 48
+const gridFor = (gapColumn, companyMin = 160) => `minmax(${companyMin}px, 1fr) 120px ${gapColumn}px 104px 80px 24px`
 const CHIP = 't-label flex h-7 shrink-0 items-center rounded-md px-2.5 transition-colors'
 const CHIP_ON = 'bg-zinc-800 text-zinc-100'
 const CHIP_OFF = 'text-zinc-500 hover:text-zinc-300'
@@ -55,6 +56,7 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, 
   const [focusKey, setFocusKey] = useState(null)
   const [scrollTop, setScrollTop] = useState(0)
   const [viewportH, setViewportH] = useState(800)
+  const [rowsWidth, setRowsWidth] = useState(0)
   const now = useNow() // ages tick once a second, not only on a price re-render
   const scrollRef = useRef(null)
   const scrollTopRef = useRef(0)
@@ -92,6 +94,8 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, 
     if (!el) return undefined
     const measure = () => {
       setViewportH(el.clientHeight)
+      // Hidden behind the chart drill-in it reads 0; keep the last real width.
+      if (el.clientWidth > 0) setRowsWidth(el.clientWidth)
       // MeterShell hides the Board (display:none) behind the chart drill-in
       // rather than unmounting it. Browsers may drop a hidden scroller's
       // position, so on re-show put back the last one the reader had.
@@ -176,7 +180,12 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, 
   const tokenAge = lastFetchAt ? (now - lastFetchAt) / 1000 : null
   const activeSort = BOARD_SORTS.find((s) => s.id === sort) ?? BOARD_SORTS[0]
   const closedNow = closedGapLabel({ now }) != null
-  const grid = gridFor(big.gapColumn + (closedNow ? CLOSED_MARK_WIDTH : 0))
+  const rule = closedNow ? closedRuleWidth(big.rule, rowsWidth - GUTTERS, GAP_COLUMN_EXTRA) : big.rule
+  const grid = closedNow
+    ? gridFor(rule + GAP_COLUMN_EXTRA + CLOSED_MARK_WIDTH, CLOSED_COMPANY_MIN)
+    : gridFor(big.gapColumn)
+  // The mark sits after a 12 px gap inside its share of the track.
+  const markWidth = CLOSED_MARK_WIDTH - 12
   const header = headerLine({
     count: companies.length,
     session,
@@ -232,7 +241,7 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, 
         {big.boardTicks ? (
           <div className="flex flex-col gap-1">
             <span className="t-micro text-zinc-500">Gap vs share · widest token</span>
-            <RuleTicks width={big.rule} />
+            <RuleTicks width={rule} />
           </div>
         ) : (
           <span className="t-micro text-zinc-500">Gap vs share · widest token</span>
@@ -260,7 +269,7 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, 
               ? 'No gaps to rank yet. Prices are still loading.'
               : watchlistIds.length > 0
                 ? 'Your Watching list is loading its share prices.'
-                : 'Nothing on your Watching list yet — switch to All and press W on any row to add it.'}
+                : 'Nothing on your Watching list yet. Switch to All and press W on any row to add it.'}
           </p>
         )}
         <div style={{ height: win.top }} aria-hidden="true" />
@@ -301,7 +310,7 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, 
                   <div className="t-caption text-zinc-500">{shareFreshness({ quote: c.logoAsset.stockQuote, session, now }).words}</div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <GapBar pct={c.lead} thin={c.muted} width={big.rule} height={6} tone="accent" />
+                  <GapBar pct={c.lead} thin={c.muted} width={rule} height={6} tone="accent" />
                   {c.lead == null && GAP_STATUS_LABEL[c.wrappers[0].status] ? (
                     <span className="t-caption text-right text-zinc-500">{GAP_STATUS_LABEL[c.wrappers[0].status]}</span>
                   ) : (
@@ -309,7 +318,7 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, 
                       <span className={`num t-label w-14 text-right ${c.muted ? 'text-zinc-500' : 'text-zinc-100'}`}>
                         {formatPct(c.lead)}
                       </span>
-                      {c.lead != null && <ClosedGapMark label={closedGapLabelFor(c.logoAsset, now)} stacked />}
+                      {c.lead != null && <ClosedGapMark label={closedGapLabelFor(c.logoAsset, now)} stacked maxWidth={markWidth} />}
                     </>
                   )}
                 </div>
@@ -367,7 +376,7 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, 
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <GapBar pct={w.gap} thin={w.muted} width={big.rule} height={6} tone="accent" />
+                <GapBar pct={w.gap} thin={w.muted} width={rule} height={6} tone="accent" />
                 {GAP_STATUS_LABEL[w.status] ? (
                   <span className="t-caption text-right text-zinc-500">{GAP_STATUS_LABEL[w.status]}</span>
                 ) : (
@@ -375,7 +384,7 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, 
                     <span className={`num t-label w-14 text-right ${w.muted ? 'text-zinc-500' : 'text-zinc-100'}`}>
                       {formatPct(w.gap)}
                     </span>
-                    {w.gap != null && <ClosedGapMark label={closedGapLabelFor(a, now)} stacked />}
+                    {w.gap != null && <ClosedGapMark label={closedGapLabelFor(a, now)} stacked maxWidth={markWidth} />}
                   </>
                 )}
               </div>
