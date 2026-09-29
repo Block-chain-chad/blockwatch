@@ -3,6 +3,8 @@ import { isThinlyTraded, premiumPct } from '../../lib/prices'
 import { gapCheck, GAP_STATUS_LABEL } from '../../lib/gapCheck'
 import { ONDO_VERIFIED_AT } from '../../data/verifiedOndo'
 import { formatPrice, formatPct, GapBar, changeColor } from '../shared'
+import ClosedGapMark from '../ClosedGapMark'
+import { closedGapLabelFor } from '../../lib/sessionCopy'
 import { shareFreshness } from '../../lib/provenance'
 import { multiplierLine } from '../../lib/multiplier'
 import { verifiedToken } from '../../data/verifiedMints'
@@ -113,10 +115,13 @@ export default function GapPanel({ asset, scrub, session, lastFetchAt }) {
           {statusLabel ? (
             <span className="t-title text-zinc-500">{statusLabel}</span>
           ) : (
-            <span
-              className={`num t-display ${thin ? 'text-zinc-500' : changeColor(gap)}`}
-            >
-              {gap != null ? formatPct(gap) : EM_DASH}
+            <span className="flex items-center gap-2.5">
+              <span
+                className={`num t-display ${thin ? 'text-zinc-500' : changeColor(gap)}`}
+              >
+                {gap != null ? formatPct(gap) : EM_DASH}
+              </span>
+              {gap != null && <ClosedGapMark label={closedGapLabelFor(asset)} stacked />}
             </span>
           )}
           {/* Capped, not full-bleed. Stretched across the panel the

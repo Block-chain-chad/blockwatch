@@ -38,10 +38,10 @@ export function titlePrice(price) {
  * neither. In Gap mode without a gap (a NAV-based token) the title falls
  * back to the price form, and with no price at all to the ticker alone.
  */
-export function chartTitle({ ticker, price, changePct, mode = 'candles', gapPct } = {}) {
+export function chartTitle({ ticker, price, changePct, mode = 'candles', gapPct, closed = null } = {}) {
   if (!ticker) return DEFAULT_TITLE
   if (mode === 'gap' && Number.isFinite(gapPct)) {
-    return `${ticker} gap ${signedPct(gapPct)}${arrow(gapPct)}`
+    return `${ticker} gap ${signedPct(gapPct)}${arrow(gapPct)}${closedSuffix(closed)}`
   }
   const p = titlePrice(price)
   if (p == null) return ticker
@@ -79,10 +79,20 @@ export function meterHeadline({ ticker, gapPct } = {}) {
   return pct == null ? ticker : `${ticker} ${pct} gap`
 }
 
-/** The Meter's tab title: the headline, then the product. No triangle. */
-export function meterTitle({ ticker, gapPct } = {}) {
+/**
+ * The Meter's tab title: the headline, then the product. No triangle.
+ * `closed` is closedGapLabel's result while the share leg is a close; the
+ * title then names that close, as every other gap figure does.
+ */
+export function meterTitle({ ticker, gapPct, closed = null } = {}) {
   const head = meterHeadline({ ticker, gapPct })
-  return head == null ? boardTitle() : `${head} · OnStock`
+  if (head == null) return boardTitle()
+  return `${head}${Number.isFinite(gapPct) ? closedSuffix(closed) : ''} · OnStock`
+}
+
+/** ' vs Friday’s close · Market closed', or '' without a closed-market label. */
+function closedSuffix(closed) {
+  return closed ? ` ${closed.vs} · ${closed.tag}` : ''
 }
 
 export function boardTitle() {

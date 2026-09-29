@@ -116,3 +116,19 @@ describe('meterHeadline', () => {
     expect(meterTitle({})).toBe('Board · OnStock')
   })
 })
+
+describe('titles while the share leg is a close', () => {
+  const closed = { tag: 'Market closed', vs: 'vs Friday’s close' }
+
+  it('names the close in the Meter title', () => {
+    expect(meterTitle({ ticker: 'NVDAx', gapPct: 1.42, closed })).toBe(
+      'NVDAx +1.42% gap vs Friday’s close · Market closed · OnStock'
+    )
+    expect(meterTitle({ ticker: 'NVDAx', gapPct: null, closed })).toBe('NVDAx · OnStock')
+  })
+
+  it('names the close in the chart title in Gap mode only', () => {
+    expect(chartTitle({ ticker: 'NVDAx', mode: 'gap', gapPct: 1.42, closed })).toContain('vs Friday’s close · Market closed')
+    expect(chartTitle({ ticker: 'NVDAx', price: 12.34, changePct: 0.65, closed })).not.toContain('close')
+  })
+})

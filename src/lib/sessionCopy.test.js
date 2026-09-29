@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { SESSION_DOT, SESSION_NOTE, SESSION_SHORT, widestCredibleGap, widestGapLabel } from './sessionCopy'
+import {
+  SESSION_DOT, SESSION_NOTE, SESSION_SHORT, widestCredibleGap, widestGapLabel, closedGapLabel, closedGapLabelFor, shareGapLine,
+} from './sessionCopy'
 import { THIN_VOLUME_USD } from './prices'
 
 const SESSIONS = ['regular', 'pre', 'post', 'closed']
@@ -21,13 +23,17 @@ describe('session copy tables', () => {
       regular: 'Open',
       pre: 'Pre-market',
       post: 'After hours',
-      closed: 'Overnight',
+      closed: 'Market closed',
     })
+  })
+
+  it('are plain sentences with no dashes', () => {
+    for (const note of Object.values(SESSION_NOTE)) expect(note).not.toMatch(/[\u2013\u2014]/)
   })
 
   it('every short word opens its own sentence', () => {
     for (const s of SESSIONS) {
-      const head = SESSION_NOTE[s].split(' — ')[0]
+      const head = SESSION_NOTE[s].split('. ')[0]
       expect(head.toLowerCase()).toContain(SESSION_SHORT[s].toLowerCase())
     }
   })
@@ -108,5 +114,98 @@ describe('widestGapLabel', () => {
   it('says the number is live only in regular hours', () => {
     expect(widestGapLabel('regular')).toBe('Widest gap right now')
     for (const s of ['pre', 'post', 'closed']) expect(widestGapLabel(s)).toBe('Widest gap')
+  })
+})
+
+/*
+ * The label beside every gap figure while the share leg is a close. Times are
+ * UTC; the comments give New York time. September 2026 is EDT (UTC-4),
+ * November and December are EST (UTC-5).
+ */
+describe('closedGapLabel', () => {
+  const at = (iso) => ({ now: Date.parse(iso) })
+  const vs = (iso, quoteAsOf) => closedGapLabel({ now: Date.parse(iso), quoteAsOf })?.vs ?? null
+
+  it('adds nothing during regular hours', () => {
+    expect(closedGapLabel(at('2026-09-15T17:30:00Z'))).toBeNull() // Tue 13:30
+    expect(closedGapLabel(at('2026-09-15T13:30:00Z'))).toBeNull() // Tue 09:30, the open
+  })
+
+  it('names today’s close after hours on a weekday, and tags it Market closed', () => {
+    const label = closedGapLabel(at('2026-09-15T21:00:00Z')) // Tue 17:00
+    expect(label).toMatchObject({ tag: 'Market closed', vs: 'vs today’s close' })
+    expect(label.title).toContain('outside regular hours')
+    expect(vs('2026-09-15T20:00:00Z')).toBe('vs today’s close') // Tue 16:00, the close itself
+  })
+
+  it('still names today’s close overnight, after the extended session', () => {
+    const label = closedGapLabel(at('2026-09-16T02:00:00Z')) // Tue 22:00
+    expect(label.vs).toBe('vs today’s close')
+    expect(label.title).toContain('not a live spread')
+  })
+
+  it('names the previous trading day before the open', () => {
+    expect(vs('2026-09-16T07:00:00Z')).toBe('vs Tuesday’s close') // Wed 03:00, overnight
+    expect(vs('2026-09-16T12:00:00Z')).toBe('vs Tuesday’s close') // Wed 08:00, pre-market
+    expect(vs('2026-09-21T11:00:00Z')).toBe('vs Friday’s close') // Mon 07:00, after a weekend
+  })
+
+  it('names Friday’s close on Saturday and on Sunday', () => {
+    expect(vs('2026-09-19T16:00:00Z')).toBe('vs Friday’s close') // Sat noon
+    expect(vs('2026-09-20T23:00:00Z')).toBe('vs Friday’s close') // Sun 19:00
+  })
+
+  it('skips market holidays', () => {
+    expect(vs('2026-09-07T16:00:00Z')).toBe('vs Friday’s close') // Labor Day Monday
+    expect(vs('2026-09-08T11:00:00Z')).toBe('vs Friday’s close') // Tue 07:00 after Labor Day
+    expect(vs('2026-11-26T18:00:00Z')).toBe('vs Wednesday’s close') // Thanksgiving
+  })
+
+  it('counts an early close from 1:00 pm', () => {
+    expect(vs('2026-11-27T13:00:00Z')).toBe('vs Wednesday’s close') // Fri 08:00, before the open
+    expect(closedGapLabel(at('2026-11-27T17:30:00Z'))).toBeNull() // Fri 12:30, still open
+    expect(vs('2026-11-27T18:30:00Z')).toBe('vs today’s close') // Fri 13:30, after the early close
+    expect(vs('2026-12-24T19:00:00Z')).toBe('vs today’s close') // Christmas Eve 14:00
+    expect(vs('2026-12-25T15:00:00Z')).toBe('vs Thursday’s close') // Christmas Day
+  })
+
+  it('agrees with a quote stamped at that close', () => {
+    const fridayClose = Date.parse('2026-09-18T20:00:00Z') // Fri 16:00
+    expect(vs('2026-09-19T16:00:00Z', fridayClose)).toBe('vs Friday’s close')
+  })
+
+  it('says last close when the quote is from a different day than the close', () => {
+    const thursdayClose = Date.parse('2026-09-17T20:00:00Z')
+    const label = closedGapLabel({ now: Date.parse('2026-09-19T16:00:00Z'), quoteAsOf: thursdayClose })
+    expect(label.vs).toBe('vs last close')
+    expect(label.title).toContain('the share’s last close')
+  })
+
+  it('says last close past the end of the calendar', () => {
+    expect(vs('2028-01-08T16:00:00Z')).toBe('vs last close') // a Saturday in 2028
+  })
+
+  it('writes no dashes', () => {
+    const label = closedGapLabel(at('2026-09-19T16:00:00Z'))
+    expect(JSON.stringify(label)).not.toMatch(/[\u2013\u2014]/)
+  })
+})
+
+describe('closedGapLabelFor and shareGapLine', () => {
+  const saturday = Date.parse('2026-09-19T16:00:00Z')
+  const tuesdayOpen = Date.parse('2026-09-15T17:30:00Z')
+  const nvdax = { ticker: 'NVDAx', underlying: 'NVDA', stockQuote: { asOf: Date.parse('2026-09-18T20:00:00Z') } }
+
+  it('has no label for a product with no listed share', () => {
+    expect(closedGapLabelFor({ ticker: 'TBILL', underlying: null }, saturday)).toBeNull()
+  })
+
+  it('dates the label from the asset’s own quote', () => {
+    expect(closedGapLabelFor(nvdax, saturday).close).toBe('Friday’s close')
+  })
+
+  it('says which close a shared card measures against', () => {
+    expect(shareGapLine(nvdax, saturday)).toBe('vs NVDA at Friday’s close · Market closed')
+    expect(shareGapLine(nvdax, tuesdayOpen)).toBe('vs NVDA stock')
   })
 })

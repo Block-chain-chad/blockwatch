@@ -3,6 +3,8 @@ import { premiumPct, isThinlyTraded } from '../lib/prices'
 import { formatPct, formatCompact, changeColor, isPlausiblePct } from '../lib/format'
 import { ChevronRight } from './Icons'
 import AssetLogo from './AssetLogo'
+import ClosedGapMark from './ClosedGapMark'
+import { closedGapLabelFor } from '../lib/sessionCopy'
 
 /*
  * "Today in tokenized stocks" — the market's daily extremes, computed from
@@ -73,8 +75,8 @@ export default function DailyDigest({ onOpenAsset }) {
   }
 
   const rows = [
-    { label: 'Furthest above its share', asset: priciest.asset, value: formatPct(priciest.p), cls: changeColor(priciest.p) },
-    { label: 'Furthest below its share', asset: cheapest.asset, value: formatPct(cheapest.p), cls: changeColor(cheapest.p) },
+    { label: 'Furthest above its share', asset: priciest.asset, value: formatPct(priciest.p), cls: changeColor(priciest.p), closed: closedGapLabelFor(priciest.asset) },
+    { label: 'Furthest below its share', asset: cheapest.asset, value: formatPct(cheapest.p), cls: changeColor(cheapest.p), closed: closedGapLabelFor(cheapest.asset) },
   ]
   if (spread) {
     rows.push({
@@ -109,7 +111,10 @@ export default function DailyDigest({ onOpenAsset }) {
             className="hover-row flex w-full items-center gap-3 border-b px-4 py-2.5 text-left transition-colors active:bg-zinc-900"
             style={{ borderColor: 'var(--border-subtle)' }}
           >
-            <span className="t-caption flex-1 text-zinc-500">{r.label}</span>
+            <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
+              <span className="t-caption text-zinc-500">{r.label}</span>
+              <ClosedGapMark label={r.closed} />
+            </span>
             <AssetLogo asset={r.asset} size={18} />
             <span className="t-label w-20 text-zinc-100">{r.asset.ticker}</span>
             <span className={`num t-label w-20 text-right ${r.cls}`}>{r.value}</span>

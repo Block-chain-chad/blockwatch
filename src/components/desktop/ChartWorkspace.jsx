@@ -9,6 +9,7 @@ import { chartTitle, DEFAULT_TITLE } from '../../lib/pageTitle'
 import { legendStatus, delayTooltip, isStockDelayed, chartHistoryCredit } from '../../lib/provenance'
 import { STOCK_QUOTE_SOURCE } from '../../services/stocks'
 import { premiumPct } from '../../lib/prices'
+import { closedGapLabelFor } from '../../lib/sessionCopy'
 import { tokenUnitsNote } from '../../lib/gapCheck'
 import { candleSeconds } from '../../lib/candles'
 import { coerceTimeframe, isIntraday, networkName, timeframeLabel, cleanCandles } from '../../lib/candleSeries'
@@ -171,6 +172,7 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef, dri
   // The Meter's drill-in leaves the title to its shell, so both writes are
   // gated on `drillIn`; with it null they behave exactly as before.
   const gapPct = asset ? premiumPct(asset) : null
+  const closedVs = closedGapLabelFor(asset)?.vs ?? null
   useEffect(() => {
     if (!asset || drillIn) return
     document.title = chartTitle({
@@ -179,8 +181,9 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef, dri
       changePct: asset.dayChange,
       mode,
       gapPct,
+      closed: closedGapLabelFor(asset),
     })
-  }, [asset?.ticker, asset?.tokenPrice, asset?.dayChange, mode, gapPct, drillIn]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [asset?.ticker, asset?.tokenPrice, asset?.dayChange, mode, gapPct, closedVs, drillIn]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => {
     if (!drillIn) document.title = DEFAULT_TITLE
   }, []) // eslint-disable-line react-hooks/exhaustive-deps

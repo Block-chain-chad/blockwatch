@@ -1,8 +1,9 @@
 // src/components/desktop/Masthead.jsx
 import { usePrices } from '../../state/PricesContext'
 import { useAlerts } from '../../state/AlertsContext'
-import { SESSION_DOT, SESSION_NOTE, widestCredibleGap, widestGapLabel } from '../../lib/sessionCopy'
+import { SESSION_DOT, SESSION_NOTE, widestCredibleGap, widestGapLabel, closedGapLabelFor } from '../../lib/sessionCopy'
 import { formatPct } from '../../lib/format'
+import ClosedGapMark from '../ClosedGapMark'
 import { AvatarButton, Wordmark } from '../Header'
 import { BellIcon } from '../Icons'
 import SymbolSearch from './SymbolSearch'
@@ -62,10 +63,13 @@ export default function Masthead({ active, onTab, searchRef, onSelectAsset, onOp
         </span>
       </div>
       {top && (
-        <button type="button" onClick={() => onSelectAsset(top.asset.id)} className="t-caption shrink-0 whitespace-nowrap">
-          <span className="text-zinc-500">{widestGapLabel(session)} · </span>
-          <span className="font-medium text-zinc-300">{top.asset.ticker}</span>{' '}
-          <span className="num font-medium text-zinc-100">{formatPct(top.p)}</span>
+        <button type="button" onClick={() => onSelectAsset(top.asset.id)} className="t-caption flex shrink-0 items-center gap-2 whitespace-nowrap">
+          <span>
+            <span className="text-zinc-500">{widestGapLabel(session)} · </span>
+            <span className="font-medium text-zinc-300">{top.asset.ticker}</span>{' '}
+            <span className="num font-medium text-zinc-100">{formatPct(top.p)}</span>
+          </span>
+          <ClosedGapMark label={closedGapLabelFor(top.asset)} />
         </button>
       )}
       <button

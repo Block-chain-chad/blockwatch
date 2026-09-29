@@ -14,6 +14,8 @@ import { ageWords, shareFreshness } from '../../lib/provenance'
 import { formatPct, formatPrice } from '../../lib/format'
 import { GAP_STATUS_LABEL } from '../../lib/gapCheck'
 import { GapBar } from '../shared'
+import ClosedGapMark from '../ClosedGapMark'
+import { closedGapLabel, closedGapLabelFor } from '../../lib/sessionCopy'
 import { BIG_SCREEN_BASE } from '../../lib/bigScreen'
 import RuleTicks from './RuleTicks'
 import { ChevronRight, ChevronDown } from '../Icons'
@@ -30,9 +32,12 @@ import PriceText from '../PriceText'
  *
  * Column grid: company flexes (min 160px) · share 120 · gap (the rule plus
  * 80: 12 gap, the 56 px signed label, 12 trailing; 224 at 1440 and below,
- * lib/bigScreen.js decides above that) · wrappers 104 · lowest gap 80 ·
- * chevron 24, inside 24 px gutters.
+ * lib/bigScreen.js decides above that) · tokens 104 · lowest gap 80 ·
+ * chevron 24, inside 24 px gutters. While the share legs are closes the gap
+ * column grows by CLOSED_MARK_WIDTH for the "Market closed" mark beside each
+ * figure; the company column gives up the room.
  */
+const CLOSED_MARK_WIDTH = 116
 const gridFor = (gapColumn) => `minmax(160px, 1fr) 120px ${gapColumn}px 104px 80px 24px`
 const CHIP = 't-label flex h-7 shrink-0 items-center rounded-md px-2.5 transition-colors'
 const CHIP_ON = 'bg-zinc-800 text-zinc-100'
@@ -170,7 +175,8 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, 
   const { oldest: stockAge, undated: undatedCount } = quoteAges(companies, now)
   const tokenAge = lastFetchAt ? (now - lastFetchAt) / 1000 : null
   const activeSort = BOARD_SORTS.find((s) => s.id === sort) ?? BOARD_SORTS[0]
-  const grid = gridFor(big.gapColumn)
+  const closedNow = closedGapLabel({ now }) != null
+  const grid = gridFor(big.gapColumn + (closedNow ? CLOSED_MARK_WIDTH : 0))
   const header = headerLine({
     count: companies.length,
     session,
@@ -299,9 +305,12 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, 
                   {c.lead == null && GAP_STATUS_LABEL[c.wrappers[0].status] ? (
                     <span className="t-caption text-right text-zinc-500">{GAP_STATUS_LABEL[c.wrappers[0].status]}</span>
                   ) : (
-                    <span className={`num t-label w-14 text-right ${c.muted ? 'text-zinc-500' : 'text-zinc-100'}`}>
-                      {formatPct(c.lead)}
-                    </span>
+                    <>
+                      <span className={`num t-label w-14 text-right ${c.muted ? 'text-zinc-500' : 'text-zinc-100'}`}>
+                        {formatPct(c.lead)}
+                      </span>
+                      {c.lead != null && <ClosedGapMark label={closedGapLabelFor(c.logoAsset, now)} stacked />}
+                    </>
                   )}
                 </div>
                 <div className="num t-caption text-zinc-400">{wrappersCell(c)}</div>
@@ -362,9 +371,12 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, 
                 {GAP_STATUS_LABEL[w.status] ? (
                   <span className="t-caption text-right text-zinc-500">{GAP_STATUS_LABEL[w.status]}</span>
                 ) : (
-                  <span className={`num t-label w-14 text-right ${w.muted ? 'text-zinc-500' : 'text-zinc-100'}`}>
-                    {formatPct(w.gap)}
-                  </span>
+                  <>
+                    <span className={`num t-label w-14 text-right ${w.muted ? 'text-zinc-500' : 'text-zinc-100'}`}>
+                      {formatPct(w.gap)}
+                    </span>
+                    {w.gap != null && <ClosedGapMark label={closedGapLabelFor(a, now)} stacked />}
+                  </>
                 )}
               </div>
               <div className="num t-caption text-zinc-400">

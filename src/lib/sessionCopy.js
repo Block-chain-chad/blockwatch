@@ -11,6 +11,7 @@
 // someone is looking. See lib/market.js.
 
 import { premiumPct, isThinlyTraded } from './prices'
+import { getMarketSession, lastCloseDay, etDate } from './market'
 
 export const SESSION_DOT = {
   regular: 'var(--color-session-open)',
@@ -20,18 +21,61 @@ export const SESSION_DOT = {
 }
 
 export const SESSION_NOTE = {
-  regular: 'US market open — both sides live, so the gap is a real spread right now.',
-  pre: 'Pre-market — the stock is trading again, but our price is still the last close, so gaps read wider than they are.',
-  post: 'After hours — the stock is still trading, but our price is the 4pm close, so gaps read wider than they are.',
-  closed: 'Overnight — the market is shut, tokens still trade.',
+  regular: 'US market open. Both prices are live, so the gap is a real spread right now.',
+  pre: 'Pre-market. The share is trading again, but our share price is still the last close, so gaps read wider than they are.',
+  post: 'After hours. The share is still trading, but our share price is today’s close, so gaps read wider than they are.',
+  closed: 'US market closed. Tokens still trade, so each gap is measured against the last close.',
 }
 
 // The one- or two-word form for a 48px bar, where the sentence is a tooltip.
+// Closed says so rather than "Overnight", which was wrong all weekend.
 export const SESSION_SHORT = {
   regular: 'Open',
   pre: 'Pre-market',
   post: 'After hours',
-  closed: 'Overnight',
+  closed: 'Market closed',
+}
+
+/** The tag set beside a gap figure whenever its share leg is a close. */
+export const MARKET_CLOSED_TAG = 'Market closed'
+
+let labelCache = { bucket: null, value: null }
+
+/**
+ * How a gap figure is labelled while its share leg is a close rather than a
+ * live price, or null during the regular session, when nothing changes.
+ *
+ *   { tag: 'Market closed', vs: 'vs Friday’s close', close: 'Friday’s close', title }
+ *
+ * A reviewer read a large overnight gap as a live opportunity; the banner at
+ * the top was the only signal. So every surface that prints a gap in these
+ * hours prints this beside it. `vs` names the close the share leg holds:
+ * "today’s" after the close on a trading day, otherwise that day's weekday
+ * (Friday's on a weekend or a holiday Monday, Monday's before Tuesday's
+ * open), both from the exchange calendar in lib/market.js. It falls back to
+ * "last close" when the calendar cannot say, or when the quote's own stamp
+ * is from a different day than that close, because then the share leg is
+ * older than the calendar alone would claim.
+ *
+ * `quoteAsOf` is the share quote's timestamp in ms, when there is one.
+ */
+export function closedGapLabel({ now = Date.now(), quoteAsOf = null } = {}) {
+  const bucket = Math.floor(now / 60_000)
+  if (labelCache.bucket !== bucket) {
+    const at = new Date(now)
+    const session = getMarketSession(at)
+    labelCache = { bucket, value: session === 'regular' ? null : { session, close: lastCloseDay(at) } }
+  }
+  const state = labelCache.value
+  if (!state) return null
+  const { session, close } = state
+  const agrees = close != null && (!Number.isFinite(quoteAsOf) || etDate(quoteAsOf) === close.date)
+  const whose = !agrees ? 'last' : close.today ? 'today’s' : `${close.weekday}’s`
+  const title =
+    session === 'closed'
+      ? `The US market is closed. This gap compares the token’s price with the share’s ${whose} close, so it is not a live spread.`
+      : `The share is trading outside regular hours, but this gap compares the token with the share’s ${whose} close, so it can read wider than it is.`
+  return { tag: MARKET_CLOSED_TAG, vs: `vs ${whose} close`, close: agrees ? `${whose} close` : 'the last close', title }
 }
 
 /**
@@ -66,4 +110,23 @@ export function widestCredibleGap(assets, session, { includeRegular = false } = 
 /** The masthead pill's label: in the open session it says the number is live. */
 export function widestGapLabel(session) {
   return session === 'regular' ? 'Widest gap right now' : 'Widest gap'
+}
+
+/**
+ * closedGapLabel for one asset's gap: null for an asset with no listed share
+ * (there is no share leg to be a close), otherwise dated by its own quote.
+ */
+export function closedGapLabelFor(asset, now = Date.now()) {
+  if (!asset?.underlying) return null
+  return closedGapLabel({ now, quoteAsOf: asset.stockQuote?.asOf ?? null })
+}
+
+/**
+ * The line under the card's gap: which share it is measured against, and,
+ * while the share leg is a close, which close and that the market is shut,
+ * so a shared image never passes an overnight gap off as a live one.
+ */
+export function shareGapLine(asset, now = Date.now()) {
+  const closed = closedGapLabelFor(asset, now)
+  return closed ? `vs ${asset.underlying} at ${closed.close} · ${closed.tag}` : `vs ${asset.underlying} stock`
 }

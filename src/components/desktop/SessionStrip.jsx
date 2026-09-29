@@ -1,6 +1,7 @@
 import { usePrices } from '../../state/PricesContext'
-import { SESSION_DOT, SESSION_NOTE, SESSION_SHORT, widestCredibleGap } from '../../lib/sessionCopy'
+import { SESSION_DOT, SESSION_NOTE, SESSION_SHORT, widestCredibleGap, closedGapLabelFor } from '../../lib/sessionCopy'
 import { formatPct, changeColor } from '../../lib/format'
+import ClosedGapMark from '../ClosedGapMark'
 
 /*
  * The phone Home's session line, sized for a 48px bar (spec §6.6): the dot,
@@ -22,11 +23,14 @@ export default function SessionStrip({ onSelectAsset }) {
       {top && (
         <button
           onClick={() => onSelectAsset(top.asset.id)}
-          className="t-caption hidden shrink-0 xl:inline"
+          className="t-caption hidden shrink-0 items-center gap-2 xl:inline-flex"
         >
-          <span className="text-zinc-500">Widest gap </span>
-          <span className="font-medium text-zinc-300">{top.asset.ticker}</span>{' '}
-          <span className={`num font-medium ${changeColor(top.p)}`}>{formatPct(top.p)}</span>
+          <span>
+            <span className="text-zinc-500">Widest gap </span>
+            <span className="font-medium text-zinc-300">{top.asset.ticker}</span>{' '}
+            <span className={`num font-medium ${changeColor(top.p)}`}>{formatPct(top.p)}</span>
+          </span>
+          <ClosedGapMark label={closedGapLabelFor(top.asset)} />
         </button>
       )}
     </div>

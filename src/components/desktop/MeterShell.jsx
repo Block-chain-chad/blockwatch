@@ -12,6 +12,7 @@ import { ASSET_IDS } from '../../data/universe'
 import { pickInitialAsset } from '../../lib/desktopState'
 import { premiumPct } from '../../lib/prices'
 import { meterTitle, boardTitle, screenTitle, DEFAULT_TITLE } from '../../lib/pageTitle'
+import { closedGapLabelFor } from '../../lib/sessionCopy'
 import { meterShortcutRows, isMacPlatform } from '../../lib/meterKeys'
 import { classifyVisit } from '../../lib/returnVisit'
 import { DESKTOP_HOME_KEY } from '../../lib/desktopHome'
@@ -104,10 +105,11 @@ export default function MeterShell({ tab, onTab, assetId, onSelectAsset, openFol
   }, [tab])
 
   const gapPct = asset ? premiumPct(asset) : null
+  const closedVs = closedGapLabelFor(asset)?.vs ?? null
   useEffect(() => {
     if (tab !== 'home') document.title = screenTitle(tab)
-    else document.title = asset ? meterTitle({ ticker: asset.ticker, gapPct }) : boardTitle()
-  }, [tab, asset?.ticker, gapPct]) // eslint-disable-line react-hooks/exhaustive-deps
+    else document.title = asset ? meterTitle({ ticker: asset.ticker, gapPct, closed: closedGapLabelFor(asset) }) : boardTitle()
+  }, [tab, asset?.ticker, gapPct, closedVs]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => {
     document.title = DEFAULT_TITLE
   }, [])

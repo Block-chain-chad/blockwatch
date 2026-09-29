@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { premiumPct } from '../lib/prices'
 import { priceFooter } from '../lib/gapCheck'
 import { formatPrice, formatPct } from '../lib/format'
+import { shareGapLine } from '../lib/sessionCopy'
 import { track } from '../services/analytics'
 import Sheet, { SheetTitle } from '../components/Sheet'
 
@@ -61,7 +62,7 @@ async function makeCardBlob(asset) {
     ctx.fillText(formatPct(p), 84, 700)
     ctx.fillStyle = '#a1a1aa'
     ctx.font = '400 52px sans-serif'
-    ctx.fillText(`vs ${asset.underlying} stock`, 84, 776)
+    ctx.fillText(shareGapLine(asset), 84, 776)
   } else if (asset.tokenPrice != null) {
     ctx.fillStyle = '#f4f4f5'
     ctx.font = '700 190px sans-serif'
@@ -106,9 +107,9 @@ export default function ShareSheet({ asset, onClose }) {
     try {
       const blob = await makeCardBlob(asset)
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
-      setNote('Copied — paste it anywhere.')
+      setNote('Copied. Paste it anywhere.')
     } catch {
-      setNote("Couldn't copy here — use Save image instead.")
+      setNote("Couldn't copy here. Use Save image instead.")
     }
   }
 
@@ -146,7 +147,7 @@ export default function ShareSheet({ asset, onClose }) {
             <div className={`mt-1 text-4xl font-bold tabular-nums ${p > 0 ? 'text-gain' : p < 0 ? 'text-loss' : 'text-zinc-400'}`}>
               {formatPct(p)}
             </div>
-            <div className="mt-0.5 text-sm text-zinc-400">vs {asset.underlying} stock</div>
+            <div className="mt-0.5 text-sm text-zinc-400">{shareGapLine(asset)}</div>
           </>
         ) : (
           <div className="mt-1 text-4xl font-bold tabular-nums">

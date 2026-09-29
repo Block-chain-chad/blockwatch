@@ -33,7 +33,7 @@ export default function UpdatedAgo({ className = '' }) {
     return (
       <div className={`text-xs text-zinc-500 ${className}`}>
         {status === 'error'
-          ? "We can't reach the price feed — check your connection. Retrying automatically."
+          ? "We can't reach the price feed. Check your connection. Retrying automatically."
           : 'Fetching live prices…'}
       </div>
     )
@@ -43,15 +43,15 @@ export default function UpdatedAgo({ className = '' }) {
   // while the stock is actually trading and our quote is not following it.
   const SESSION_NOTE = {
     regular: '',
-    pre: ' · Pre-market — stock prices still at last close',
-    post: ' · After hours — stock prices at the 4pm close',
-    closed: ' · US market closed — stock prices at last close',
+    pre: ' · Pre-market, share prices still at the last close',
+    post: ' · After hours, share prices at today’s close',
+    closed: ' · US market closed, share prices at the last close',
   }
   const closedNote = SESSION_NOTE[session] ?? ''
   const label = refreshing
     ? 'Refreshing…'
     : status === 'stale'
-      ? `Connection hiccup — showing prices from ${ago(Date.now() - lastFetchAt)}. Retrying…`
+      ? `Connection hiccup. Showing prices from ${ago(Date.now() - lastFetchAt)}. Retrying…`
       : `Updated ${ago(Date.now() - lastFetchAt)}${closedNote} · tap to refresh`
 
   // Breathing dot: green while the feed is fresh, gray when it isn't.

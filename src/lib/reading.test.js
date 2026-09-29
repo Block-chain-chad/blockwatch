@@ -31,6 +31,15 @@ describe('readingSentence', () => {
     )
   })
 
+  it('names the close instead of "right now" while the share leg is a close', () => {
+    expect(readingSentence({ ...base, gapPct: 0.0916, close: 'Friday’s close' })).toBe(
+      'On $1,000 of NVIDIA, NVDAx costs $0.92 more than the shares at Friday’s close.'
+    )
+    expect(readingSentence({ ...base, gapPct: 0.02, close: 'the last close' })).toBe(
+      'On $1,000 of NVIDIA, NVDAx costs the same as the shares at the last close.'
+    )
+  })
+
   it('calls parity the same', () => {
     expect(readingSentence({ ...base, gapPct: 0.02 })).toBe(
       'On $1,000 of NVIDIA, NVDAx costs the same as the shares right now.'

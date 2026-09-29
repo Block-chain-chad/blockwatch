@@ -131,6 +131,69 @@ export function getMarketDay(date = new Date()) {
   return value
 }
 
+/** First date the calendar above speaks for. Before it we know no holidays. */
+export const CALENDAR_FROM = '2026-01-01'
+
+const WEEKDAY_NAME = { Sun: 'Sunday', Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday' }
+const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+/** The calendar day `delta` days from a 'YYYY-MM-DD' date, with its weekday. */
+function shiftDay(day, delta) {
+  const [y, m, d] = day.split('-').map(Number)
+  const t = new Date(Date.UTC(y, m - 1, d + delta))
+  return { day: t.toISOString().slice(0, 10), weekday: WEEKDAY_SHORT[t.getUTCDay()] }
+}
+
+let closeCache = { bucket: null, value: null }
+
+/**
+ * The trading day whose regular-session close is the most recent one at an
+ * instant: { date: 'YYYY-MM-DD', weekday: 'Friday', today: boolean }.
+ *
+ * After the close on a trading day it is that day (today: true). Before the
+ * open, and on weekends and holidays, it is the last trading day before, so
+ * a holiday Monday names Friday. Early closes count from 1:00 pm.
+ *
+ * Null when the answer depends on days outside the calendar: past
+ * CALENDAR_THROUGH an unknown holiday could move the close a day back, and
+ * a wrong weekday is worse than none. Callers then say "last close".
+ */
+export function lastCloseDay(date = new Date()) {
+  const bucket = Math.floor(date.getTime() / 60_000)
+  if (closeCache.bucket === bucket) return closeCache.value
+  const parts = etParts(date)
+  let value = null
+  let cursor = { day: parts.day, weekday: parts.weekday }
+  for (let back = 0; back < 10; back++) {
+    if (cursor.day > CALENDAR_THROUGH || cursor.day < CALENDAR_FROM) break
+    const day = dayFrom(cursor)
+    const closed = day.closeMinute != null && (back > 0 || parts.minutes >= day.closeMinute)
+    if (closed) {
+      value = { date: day.date, weekday: WEEKDAY_NAME[cursor.weekday], today: back === 0 }
+      break
+    }
+    cursor = shiftDay(cursor.day, -1)
+  }
+  closeCache = { bucket, value }
+  return value
+}
+
+const etDayCache = new Map()
+
+/** The America/New_York calendar date an instant falls on, 'YYYY-MM-DD'. */
+export function etDate(ms) {
+  const bucket = Math.floor(ms / 60_000)
+  let day = etDayCache.get(bucket)
+  if (day === undefined) {
+    // Quote stamps repeat (every close is stamped 16:00), so this stays tiny;
+    // the bound is only a guard against an unbounded stream of stamps.
+    if (etDayCache.size > 500) etDayCache.clear()
+    day = etParts(new Date(ms)).day
+    etDayCache.set(bucket, day)
+  }
+  return day
+}
+
 /** 'pre' | 'regular' | 'post' | 'closed' */
 export function getMarketSession(date = new Date()) {
   const parts = etParts(date)

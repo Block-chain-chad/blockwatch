@@ -37,14 +37,17 @@ export function gapDollars(gapPct, size) {
 }
 
 /**
- * readingSentence({ ticker, companyName, gapPct, size, thin, volume24h })
+ * readingSentence({ ticker, companyName, gapPct, size, thin, volume24h, close })
  *
  * "On $1,000 of NVIDIA, NVDAx costs $0.92 more than the shares right now."
+ * While the share leg is a close, `close` names it (closedGapLabel's
+ * `close`, such as "Friday’s close") and replaces "right now", which would
+ * otherwise sell an overnight gap as a live one.
  * Inside the parity band the tokens cost the same. When the market is thin
  * or the gap is outside ±MAX_CREDIBLE_GAP the sentence refuses to price it.
  * Without a gap at all (a NAV asset with no underlying share) it says so.
  */
-export function readingSentence({ ticker, companyName, gapPct, size, thin = false, volume24h = null }) {
+export function readingSentence({ ticker, companyName, gapPct, size, thin = false, volume24h = null, close = null }) {
   if (!Number.isFinite(gapPct)) return `${ticker} has no share to compare against.`
   if (thin) {
     const traded = Number.isFinite(volume24h) ? `only ${formatCompact(volume24h)} traded today` : 'almost nothing traded today'
@@ -54,9 +57,10 @@ export function readingSentence({ ticker, companyName, gapPct, size, thin = fals
     return `The gap on ${ticker} reads ${formatPct(gapPct)} and no real token drifts that far; treat it as noise.`
   }
   const lead = `On ${formatSize(size)} of ${companyName}, ${ticker} costs`
-  if (Math.abs(gapPct) < PARITY_BAND) return `${lead} the same as the shares right now.`
+  const when = close ? `at ${close}` : 'right now'
+  if (Math.abs(gapPct) < PARITY_BAND) return `${lead} the same as the shares ${when}.`
   const usd = gapDollars(gapPct, size)
-  return `${lead} ${formatPrice(Math.abs(usd))} ${usd > 0 ? 'more' : 'less'} than the shares right now.`
+  return `${lead} ${formatPrice(Math.abs(usd))} ${usd > 0 ? 'more' : 'less'} than the shares ${when}.`
 }
 
 /** The gap plus the DEX spread, both in dollars at the size; null without either number. */
