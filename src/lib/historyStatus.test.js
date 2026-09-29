@@ -32,7 +32,7 @@ describe('historyProblem', () => {
   it('writes no dashes and no abbreviations', () => {
     const all = ['busy', 'unreachable', 'missing'].map((kind) => historyProblem({ kind, retryAt: NOW + 5_000 }, NOW).text)
     for (const t of [...all, POOL_SOURCE_NOTE]) {
-      expect(t).not.toMatch(/[–—]/)
+      expect(t).not.toMatch(/[\u2013\u2014]/)
       expect(t).not.toMatch(/\bDEX\b|\bAPI\b/)
     }
   })
