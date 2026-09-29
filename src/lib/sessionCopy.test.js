@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  SESSION_DOT, SESSION_NOTE, SESSION_SHORT, widestCredibleGap, widestGapLabel, closedGapLabel, closedGapLabelFor, shareGapLine,
+  SESSION_DOT, SESSION_NOTE, SESSION_SHORT, widestCredibleGap, widestGapLabel, closedGapLabel, closedGapLabelFor, shareGapLines,
 } from './sessionCopy'
 import { THIN_VOLUME_USD } from './prices'
 
@@ -205,7 +205,7 @@ describe('closedGapLabelFor and shareGapLine', () => {
   })
 
   it('says which close a shared card measures against', () => {
-    expect(shareGapLine(nvdax, saturday)).toBe('vs NVDA at Friday’s close · Market closed')
-    expect(shareGapLine(nvdax, tuesdayOpen)).toBe('vs NVDA stock')
+    expect(shareGapLines(nvdax, saturday)).toEqual({ line: 'vs NVDA at Friday’s close', tag: 'Market closed' })
+    expect(shareGapLines(nvdax, tuesdayOpen)).toEqual({ line: 'vs NVDA stock', tag: null })
   })
 })

@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { premiumPct } from '../lib/prices'
 import { priceFooter } from '../lib/gapCheck'
 import { formatPrice, formatPct } from '../lib/format'
-import { shareGapLine } from '../lib/sessionCopy'
+import { shareGapLines } from '../lib/sessionCopy'
+import { CARD, drawGapLines } from '../lib/shareCard'
 import { track } from '../services/analytics'
 import Sheet, { SheetTitle } from '../components/Sheet'
 
-const CARD = 1080 // square PNG, social-friendly
 
 function drawLogo(ctx, ox, oy, scale) {
   const line = (pts, color) => {
@@ -60,9 +60,7 @@ async function makeCardBlob(asset) {
     ctx.fillStyle = p > 0 ? '#34d399' : p < 0 ? '#f87171' : '#a1a1aa'
     ctx.font = '700 190px sans-serif'
     ctx.fillText(formatPct(p), 84, 700)
-    ctx.fillStyle = '#a1a1aa'
-    ctx.font = '400 52px sans-serif'
-    ctx.fillText(shareGapLine(asset), 84, 776)
+    drawGapLines(ctx, shareGapLines(asset))
   } else if (asset.tokenPrice != null) {
     ctx.fillStyle = '#f4f4f5'
     ctx.font = '700 190px sans-serif'
@@ -81,6 +79,23 @@ async function makeCardBlob(asset) {
   ctx.fillText(`${date} · prices are informational, not investment advice`, 84, 984)
 
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
+}
+
+/** The DOM preview of drawGapLines: the same line, and the tag as a pill under it. */
+function GapLinesPreview({ lines }) {
+  return (
+    <>
+      <div className="mt-0.5 text-sm text-zinc-400">{lines.line}</div>
+      {lines.tag && (
+        <span
+          className="mt-1.5 inline-block rounded-full px-2 text-[11px] font-medium leading-5 text-zinc-300"
+          style={{ boxShadow: 'inset 0 0 0 1px var(--border-default)' }}
+        >
+          {lines.tag}
+        </span>
+      )}
+    </>
+  )
 }
 
 export default function ShareSheet({ asset, onClose }) {
@@ -147,7 +162,7 @@ export default function ShareSheet({ asset, onClose }) {
             <div className={`mt-1 text-4xl font-bold tabular-nums ${p > 0 ? 'text-gain' : p < 0 ? 'text-loss' : 'text-zinc-400'}`}>
               {formatPct(p)}
             </div>
-            <div className="mt-0.5 text-sm text-zinc-400">{shareGapLine(asset)}</div>
+            <GapLinesPreview lines={shareGapLines(asset)} />
           </>
         ) : (
           <div className="mt-1 text-4xl font-bold tabular-nums">

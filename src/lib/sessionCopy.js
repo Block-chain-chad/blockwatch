@@ -122,11 +122,14 @@ export function closedGapLabelFor(asset, now = Date.now()) {
 }
 
 /**
- * The line under the card's gap: which share it is measured against, and,
- * while the share leg is a close, which close and that the market is shut,
- * so a shared image never passes an overnight gap off as a live one.
+ * The lines under the share card's gap: { line, tag }. `line` says which
+ * share it is measured against, and while the share leg is a close, which
+ * close; `tag` is then "Market closed" (null otherwise), drawn on its own
+ * line, so a shared image never passes an overnight gap off as a live one.
  */
-export function shareGapLine(asset, now = Date.now()) {
+export function shareGapLines(asset, now = Date.now()) {
   const closed = closedGapLabelFor(asset, now)
-  return closed ? `vs ${asset.underlying} at ${closed.close} · ${closed.tag}` : `vs ${asset.underlying} stock`
+  return closed
+    ? { line: `vs ${asset.underlying} at ${closed.close}`, tag: closed.tag }
+    : { line: `vs ${asset.underlying} stock`, tag: null }
 }
