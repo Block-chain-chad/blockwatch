@@ -31,3 +31,20 @@ export function historyProblem(problem, now = Date.now()) {
 
 /** Said under a gap history drawn from the pool because the usual source failed. */
 export const POOL_SOURCE_NOTE = 'Token history from its trading pool, because the usual price source is busy.'
+
+/**
+ * Whole days a series spans when that is clearly short of the range it was
+ * asked for (under 95 %), or null when it covers the range. The pool returns
+ * at most 300 candles, so a 1Y chart from it spans about 300 days.
+ */
+export function daysShortOfRange(series, rangeDays) {
+  if (!Array.isArray(series) || series.length < 2 || !Number.isFinite(rangeDays)) return null
+  const days = Math.round((series[series.length - 1].t - series[0].t) / 86_400_000)
+  return days < rangeDays * 0.95 ? days : null
+}
+
+/** POOL_SOURCE_NOTE, plus how far back the series goes when that is less than the range. */
+export function poolSourceNote(series, rangeDays) {
+  const days = daysShortOfRange(series, rangeDays)
+  return days == null ? POOL_SOURCE_NOTE : `${POOL_SOURCE_NOTE} It covers the past ${days} days, not the whole range.`
+}

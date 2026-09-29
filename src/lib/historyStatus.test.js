@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { historyProblem, POOL_SOURCE_NOTE } from './historyStatus'
+import { historyProblem, POOL_SOURCE_NOTE, poolSourceNote, daysShortOfRange } from './historyStatus'
 
 describe('historyProblem', () => {
   const NOW = 1_000_000
@@ -35,5 +35,20 @@ describe('historyProblem', () => {
       expect(t).not.toMatch(/[\u2013\u2014]/)
       expect(t).not.toMatch(/\bDEX\b|\bAPI\b/)
     }
+  })
+})
+
+describe('poolSourceNote', () => {
+  const DAY = 86_400_000
+  const span = (days) => [{ t: 0, v: 1 }, { t: days * DAY, v: 1 }]
+
+  it('names the source alone when the pool covers the range', () => {
+    expect(poolSourceNote(span(7), 7)).toBe(POOL_SOURCE_NOTE)
+    expect(poolSourceNote(span(30), 30)).toBe(POOL_SOURCE_NOTE)
+  })
+
+  it('says a pool-drawn year covers only about 300 days', () => {
+    expect(daysShortOfRange(span(299), 365)).toBe(299)
+    expect(poolSourceNote(span(299), 365)).toBe(`${POOL_SOURCE_NOTE} It covers the past 299 days, not the whole range.`)
   })
 })

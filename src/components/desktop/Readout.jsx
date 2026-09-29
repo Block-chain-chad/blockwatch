@@ -22,7 +22,8 @@ import RuleTicks from './RuleTicks'
 import { ShareIcon, PlusIcon, BellIcon, StarIcon, ChevronRight } from '../Icons'
 import PremiumChart from '../PremiumChart'
 import HistoryProblem from '../HistoryProblem'
-import { POOL_SOURCE_NOTE } from '../../lib/historyStatus'
+import { poolSourceNote } from '../../lib/historyStatus'
+import { CHART_RANGES } from '../../hooks/useChartData'
 import TradeButton from '../asset/TradeButton'
 import DetailTabs from './DetailTabs'
 import AddToFolderSheet from '../../overlays/AddToFolderSheet'
@@ -212,7 +213,7 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
           )}
         </div>
         {chart.tokenSource === 'pool' && chart.premium.length >= 2 && (
-          <p className="t-caption text-zinc-500">{POOL_SOURCE_NOTE}</p>
+          <p className="t-caption text-zinc-500">{poolSourceNote(chart.token, CHART_RANGES[range]?.days)}</p>
         )}
         <div className="flex items-center gap-3">
           {RANGES.map((r) => (

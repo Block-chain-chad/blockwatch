@@ -19,8 +19,12 @@ export const CHART_RANGES = {
  * The second source for the token line: the token's own trading pool, as
  * candles through /api/candles (GeckoTerminal, cached at our edge and shared
  * by every visitor). Used when CoinGecko refuses or has nothing, so one busy
- * source no longer takes the gap history down with it. The candle size per
- * range keeps the whole window inside the 300 candles a request returns.
+ * source no longer takes the gap history down with it. A request returns at
+ * most 300 candles, and the candle size per range is chosen so that covers
+ * the whole window for 1D (25 hours), 1W (12.5 days), 1M (50 days) and 3M.
+ * It does not for 1Y: 300 daily candles are about 300 days, so a 1Y chart
+ * drawn from the pool is short of a year, and the chart says so
+ * (lib/historyStatus.js poolSourceNote).
  * These candles arrive already per share (services/candles.js converts), so
  * they skip the Ondo division the CoinGecko series needs.
  */
