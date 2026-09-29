@@ -5,7 +5,7 @@
 // an effect and phones never touch document.title.
 
 /** main.jsx / index.html's default, restored when nothing is open. */
-export const DEFAULT_TITLE = 'OnStock — Tokenized Stock Tracker'
+export const DEFAULT_TITLE = 'OnStock · Tokenized Stock Tracker'
 
 const UP = '▲' // ▲
 const DOWN = '▼' // ▼
@@ -62,10 +62,10 @@ const SCREEN_NAMES = {
   trade: 'Trade',
 }
 
-/** screenTitle('screener') → 'Gaps — OnStock'; unknown tabs get the default. */
+/** screenTitle('screener') → 'Gaps · OnStock'; unknown tabs get the default. */
 export function screenTitle(tab) {
   const name = SCREEN_NAMES[tab]
-  return name ? `${name} — OnStock` : DEFAULT_TITLE
+  return name ? `${name} · OnStock` : DEFAULT_TITLE
 }
 
 /**

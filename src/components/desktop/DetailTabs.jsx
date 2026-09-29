@@ -151,7 +151,7 @@ export default function DetailTabs({
             <p className="t-caption px-4 pt-6 text-zinc-500">
               {asset.underlying
                 ? `No recent headlines for ${asset.underlying}.`
-                : `No headlines — ${asset.ticker} tracks no listed company.`}
+                : `No headlines, because ${asset.ticker} tracks no listed company.`}
             </p>
           ))}
         {tab === 'trades' && <TradesOn asset={asset} />}

@@ -78,10 +78,10 @@ describe('titlePrice / signedPct', () => {
 
 describe('screenTitle', () => {
   it('names the takeover screens with the product suffix', () => {
-    expect(screenTitle('screener')).toBe('Gaps — OnStock')
-    expect(screenTitle('folders')).toBe('Folders — OnStock')
-    expect(screenTitle('news')).toBe('News — OnStock')
-    expect(screenTitle('trade')).toBe('Trade — OnStock')
+    expect(screenTitle('screener')).toBe('Gaps · OnStock')
+    expect(screenTitle('folders')).toBe('Folders · OnStock')
+    expect(screenTitle('news')).toBe('News · OnStock')
+    expect(screenTitle('trade')).toBe('Trade · OnStock')
   })
 
   it('falls back to the default for home or an unknown tab', () => {

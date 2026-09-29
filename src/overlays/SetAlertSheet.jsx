@@ -83,7 +83,7 @@ export default function SetAlertSheet({ asset, onClose, notify = false }) {
           {isThinlyTraded(asset) && (
             <p className="mt-2 px-1 text-xs text-zinc-500">
               Heads up: {asset.ticker} trades thinly, so its price jumps around on small
-              trades — tight thresholds here will fire often.
+              trades. Tight thresholds here will fire often.
             </p>
           )}
           <div className="mt-4 flex gap-2 px-1">

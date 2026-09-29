@@ -182,10 +182,10 @@ export default function Readout({ assetId, onSelectAsset, onOpenChart, sheet, on
           {trip ? (
             <>
               Round trip on <span className="num">{formatSize(size)}</span>: gap{' '}
-              <span className="num">{formatPrice(trip.gapUsd)}</span> + DEX spread{' '}
+              <span className="num">{formatPrice(trip.gapUsd)}</span> + decentralized exchange spread{' '}
               <span className="num">{formatPrice(trip.spreadUsd)}</span> ={' '}
-              <span className="num text-zinc-300">{formatPrice(trip.total)}</span> · spread measured on a{' '}
-              {formatPrice(spread.refUsd)} trade
+              <span className="num text-zinc-300">{formatPrice(trip.total)}</span>. The spread was measured on a{' '}
+              <span className="num">{formatPrice(spread.refUsd)}</span> trade.
             </>
           ) : (
             tripCopy

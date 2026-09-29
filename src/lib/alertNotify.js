@@ -23,14 +23,14 @@ export const NOTIFY_OFFER_COPY = 'Get a system notification when this fires, whi
  *   drift  title 'NVDAx +1.42% gap' (the Meter headline, no product suffix)
  *          body  'NVDAx drifted +1.42% from NVDA. Crossed your ±1% drift alert.'
  *   price  title 'NVDAx crossed $220.00'
- *          body  'Your price target hit — trading at $220.50.'
+ *          body  'Your price target hit. Trading at $220.50.'
  * `tag` is the asset id, so repeats for one wrapper collapse into one.
  */
 export function alertNotification(event) {
   if (event.type === 'price') {
     return {
       title: `${event.ticker} crossed ${formatPrice(event.target)}`,
-      body: `Your price target hit — trading at ${formatPrice(event.price)}.`,
+      body: `Your price target hit. Trading at ${formatPrice(event.price)}.`,
       tag: event.assetId,
     }
   }

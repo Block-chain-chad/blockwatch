@@ -82,7 +82,7 @@ export default function News({ onOpenProfile, onOpenAsset }) {
                       <span className="num">{formatPrice(item.target)}</span>
                     </div>
                     <div className="t-caption mt-0.5 text-zinc-500">
-                      Your price target hit — trading at {formatPrice(item.price)}.
+                      Your price target hit. Trading at {formatPrice(item.price)}.
                     </div>
                   </>
                 ) : (

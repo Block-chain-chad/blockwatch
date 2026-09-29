@@ -28,8 +28,8 @@ const LESSONS = [
     id: 'weekend',
     title: 'Why weekend prices drift',
     body: [
-      'The US stock market closes at 4 PM Eastern on Friday. Tokens don\'t close — they keep trading nights, weekends, and holidays.',
-      "While the market is closed, we compare tokens against the stock's last closing price, and the app labels it that way. A token drifting a percent or two over a weekend isn't an error — it's a live guess about where the stock will open on Monday.",
+      'The US stock market closes at 4 PM Eastern on Friday. Tokens don\'t close. They keep trading nights, weekends, and holidays.',
+      "While the market is closed, we compare tokens against the stock's last closing price, and the app labels it that way. A token drifting a percent or two over a weekend isn't an error. It's a live guess about where the stock will open on Monday.",
       'When the market reopens, the comparison switches back to the live share price, so the gap can change quickly. It may narrow, persist or widen.',
     ],
   },
@@ -38,7 +38,7 @@ const LESSONS = [
     title: 'Meet the issuers',
     body: [
       'Two companies issue most of the tokens here. xStocks (by Swiss firm Backed) live on the Solana blockchain and trade on exchanges like Kraken and Bybit. Ondo Global Markets tokens live on Ethereum.',
-      'The same stock can be tokenized by both — NVIDIA exists as NVDAx and NVDAon — usually at slightly different prices.',
+      'The same stock can be tokenized by both, usually at slightly different prices. NVIDIA, for example, exists as NVDAx and NVDAon.',
       "When an asset has a sibling from the other issuer, its page shows an 'Also tokenized by' section so you can compare them. Price isn't the only difference: the issuers, their legal structures, their chains and where each can be traded all differ.",
     ],
   },
@@ -46,7 +46,7 @@ const LESSONS = [
     id: 'basispoints',
     title: "What's a basis point?",
     body: [
-      'A basis point is one hundredth of a percent. A hundred of them make 1%, so a gap of 62bp is 0.62% — a little over half a percent.',
+      'A basis point is one hundredth of a percent. A hundred of them make 1%, so a gap of 62bp is 0.62%, a little over half a percent.',
       "Gaps this small get their own unit because most of them are small. Writing '0.62%' and '0.07%' next to each other makes them look alike; 62bp and 7bp do not. Once you are used to it, the number is faster to read, which is why the finance world quotes spreads this way.",
       "You'll see it on the daily digest, where the widest gap between two issuers of the same company is quoted in bp.",
     ],
@@ -55,7 +55,7 @@ const LESSONS = [
     id: 'issuerrisk',
     title: 'What if the issuer goes under?',
     body: [
-      "This is the honest risk of a tokenized stock, and it is different from the risk of the share itself. You own a claim on a share held by someone else — so you are exposed to that someone else, not just to the company's stock price.",
+      "This is the honest risk of a tokenized stock, and it is different from the risk of the share itself. You own a claim on a share held by someone else, so you are exposed to that someone else, not just to the company's stock price.",
       'The shares sit with a licensed custodian, held separately from the issuer\'s own money, which is what is meant to survive the issuer failing. That structure is the protection; it is not a government guarantee, and it is not the same as holding the share in a brokerage account in your own name.',
       'What it does not protect against: the token drifting from the share price, a chain or exchange you cannot reach, or losing your own wallet keys. Each asset page lists its issuer under Details, so you can see who you are trusting.',
     ],
@@ -64,9 +64,9 @@ const LESSONS = [
     id: 'custody',
     title: 'Who actually holds my money?',
     body: [
-      'Not us. OnStock is a tracker — it reads public prices and shows you the gap. It never takes custody of your funds, never moves them, and cannot trade on your behalf.',
+      'Not us. OnStock is a tracker. It reads public prices and shows you the gap. It never takes custody of your funds, never moves them, and cannot trade on your behalf.',
       "When you buy, that happens somewhere else. Tapping through to trade sends you out to Jupiter, where the swap settles on-chain from your own wallet. Your keys stay with you the whole time, which is what 'non-custodial' means: no one in the middle holds your tokens for you. The token's issuer may still be able to pause or freeze it.",
-      'The flip side of that is real: if you lose your wallet keys, no one — including us — can recover them for you.',
+      'The flip side of that is real: if you lose your wallet keys, no one, including us, can recover them for you.',
     ],
   },
 ]
