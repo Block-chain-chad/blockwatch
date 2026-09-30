@@ -79,12 +79,12 @@ const welcomeHtml = (siteUrl, siteHost, position) => `
   }
   <p style="font-size:15px;line-height:1.6;color:#52525b;margin:0 0 12px">
     Trading on OnStock is coming. You'll get one email from us the moment it
-    opens — nothing else in between, no newsletters, no noise.
+    opens. Nothing else in between. No newsletters, no noise.
   </p>
   <p style="font-size:15px;line-height:1.6;color:#52525b;margin:0 0 24px">
-    Meanwhile, the tracker is free: 700+ tokenized stocks, live, side by side
-    with the real thing — premiums, gaps, and the market that trades while
-    Wall Street sleeps.
+    Meanwhile, the tracker is free. It shows 700+ tokenized stocks side by
+    side with the real shares they track, the gap between the two, and the
+    market that trades while Wall Street sleeps.
   </p>
   <a href="${siteUrl}"
      style="display:inline-block;background:#0d9488;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:12px 24px;border-radius:10px">
@@ -92,7 +92,7 @@ const welcomeHtml = (siteUrl, siteHost, position) => `
   </a>
   <p style="font-size:12px;line-height:1.6;color:#a1a1aa;margin:32px 0 0">
     You're receiving this one-time email because this address joined the
-    waitlist at ${siteHost}. Wasn't you? Just ignore this — you won't hear
+    waitlist at ${siteHost}. Wasn't you? Just ignore this and you won't hear
     from us again.
   </p>
 </div>
@@ -239,9 +239,10 @@ export default async function handler(req, res) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            // The address stays on blockwatch.app until Resend has verified
-            // onstock.app; sending from an unverified domain is rejected outright.
-            from: 'OnStock <contact@blockwatch.app>',
+            // onstock.app must be verified in Resend and RESEND_API_KEY must be
+            // allowed to send from it; otherwise Resend rejects the send and
+            // only the welcome email is lost (see the !sendRes.ok branch).
+            from: 'OnStock <contact@onstock.app>',
             to: [email],
             subject: "You're on the OnStock waitlist",
             html: welcomeHtml(siteUrl, siteHost, position),
