@@ -107,12 +107,14 @@ describe('the swap flag defaults off', () => {
   })
 })
 
-describe('the link-out flag defaults on', () => {
-  it('is on before PostHog has answered, so an outage does not gut the app', () => {
-    expect(flagEnabled(LINK_OUT_FLAG)).toBe(true)
+describe('the link-out flag defaults off', () => {
+  it('is off before PostHog has answered, so an outage cannot bring the link-outs back', () => {
+    expect(flagEnabled(LINK_OUT_FLAG)).toBe(false)
   })
 
-  it('goes off when PostHog says so', () => {
+  it('follows PostHog when it answers', () => {
+    applyFlags({ [LINK_OUT_FLAG]: true })
+    expect(flagEnabled(LINK_OUT_FLAG)).toBe(true)
     applyFlags({ [LINK_OUT_FLAG]: false })
     expect(flagEnabled(LINK_OUT_FLAG)).toBe(false)
   })
@@ -159,15 +161,15 @@ describe('account deletion switch', () => {
     expect(ACCOUNT_DELETION_FLAG).toBe('account-deletion')
   })
 
-  it('is off until PostHog says on, and off again when PostHog cannot be reached', async () => {
-    expect(flagEnabled(ACCOUNT_DELETION_FLAG)).toBe(false)
-    applyFlags({ [ACCOUNT_DELETION_FLAG]: true })
+  it('is off only when PostHog says off, and back on when PostHog cannot be reached', async () => {
     expect(flagEnabled(ACCOUNT_DELETION_FLAG)).toBe(true)
+    applyFlags({ [ACCOUNT_DELETION_FLAG]: false })
+    expect(flagEnabled(ACCOUNT_DELETION_FLAG)).toBe(false)
     await loadFeatureFlags({
       fetchImpl: async () => {
         throw new Error('network down')
       },
     })
-    expect(flagEnabled(ACCOUNT_DELETION_FLAG)).toBe(false)
+    expect(flagEnabled(ACCOUNT_DELETION_FLAG)).toBe(true)
   })
 })

@@ -3,17 +3,20 @@
 // Apple requires an app that offers Sign in with Apple to revoke the user's
 // tokens when the user deletes their account (App Store Review Guideline
 // 5.1.1(v); Apple's "Revoke tokens" REST endpoint). Supabase does not do this
-// when a user is deleted, so api/delete-account.js calls this first.
+// when a user is deleted, so api/delete-account.js calls this.
 //
 // The iOS app sends a fresh authorization code, obtained by asking Apple again
-// at the moment of deletion. It is exchanged here for a refresh token, and
-// that token is revoked. Both calls authenticate with a client secret: a
+// at the moment of deletion. It is exchanged here for a refresh token and an
+// id_token naming the Apple user; api/delete-account.js checks that user is
+// this account's Apple identity, deletes the account, and only then revokes
+// the token. Both calls authenticate with a client secret: a
 // short-lived ES256 JWT signed with the Sign in with Apple private key, which
 // lives only in this server's environment.
 //
 // Pure apart from `fetchImpl` and `now`, which the tests pass in.
 
 import { createPrivateKey, sign } from 'node:crypto'
+import { jwtClaims } from './_identity.js'
 
 const APPLE = 'https://appleid.apple.com'
 const TIMEOUT_MS = 8000
@@ -51,31 +54,46 @@ async function postForm(fetchImpl, path, fields) {
 }
 
 /**
- * Exchange the code and revoke what it grants. Resolves true when Apple
- * accepted the revocation, false otherwise; never throws and never reports
- * any token or Apple's error text.
+ * Exchange a fresh authorization code with Apple. Resolves with the token to
+ * revoke later and the Apple user id ("sub") from Apple's id_token, or null on
+ * any failure. The id_token comes straight from Apple over this authenticated
+ * call, so its claims are read without re-checking its signature.
+ * Never throws and never reports any token or Apple's error text.
  */
-export async function revokeAppleGrant({ code, clientId, teamId, keyId, privateKeyPem, fetchImpl = fetch, now }) {
+export async function exchangeAppleCode({ code, clientId, teamId, keyId, privateKeyPem, fetchImpl = fetch, now }) {
   try {
     const privateKey = readPrivateKey(privateKeyPem)
     const clientSecret = appleClientSecret({ teamId, keyId, privateKey, clientId, now })
-    const tokenRes = await postForm(fetchImpl, '/auth/token', {
+    const res = await postForm(fetchImpl, '/auth/token', {
       client_id: clientId,
       client_secret: clientSecret,
       code,
       grant_type: 'authorization_code',
     })
-    if (!tokenRes.ok) return false
-    const tokens = await tokenRes.json()
+    if (!res.ok) return null
+    const tokens = await res.json()
     const token = tokens?.refresh_token ?? tokens?.access_token
-    if (typeof token !== 'string' || !token) return false
-    const revokeRes = await postForm(fetchImpl, '/auth/revoke', {
+    const sub = jwtClaims(tokens?.id_token)?.sub
+    if (typeof token !== 'string' || !token || typeof sub !== 'string' || !sub) return null
+    return { token, tokenType: tokens.refresh_token ? 'refresh_token' : 'access_token', sub, clientSecret }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Revoke a token from exchangeAppleCode. Resolves true when Apple accepted,
+ * false otherwise; never throws.
+ */
+export async function revokeAppleToken({ clientId, grant, fetchImpl = fetch }) {
+  try {
+    const res = await postForm(fetchImpl, '/auth/revoke', {
       client_id: clientId,
-      client_secret: clientSecret,
-      token,
-      token_type_hint: tokens.refresh_token ? 'refresh_token' : 'access_token',
+      client_secret: grant.clientSecret,
+      token: grant.token,
+      token_type_hint: grant.tokenType,
     })
-    return revokeRes.ok
+    return res.ok
   } catch {
     return false
   }

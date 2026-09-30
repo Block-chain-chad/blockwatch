@@ -253,6 +253,18 @@ describe('api/finnhub — unchanged behaviour', () => {
     expect(res.headers['Cache-Control']).toBe('s-maxage=300, stale-while-revalidate=600')
   })
 
+  it('shares the cache for requests that carry an allowed web Origin (security review finding 5)', async () => {
+    for (const origin of ['https://onstock.app', 'https://www.onstock.app', 'https://blockwatch.app']) {
+      const res = await call({ kind: 'quote', symbol: 'AAPL' }, { 'x-vercel-forwarded-for': '13.0.0.2', origin })
+      expect(res.headers['Cache-Control']).toBe('s-maxage=300, stale-while-revalidate=600')
+    }
+  })
+
+  it('keeps a native WebView request off the app lane private', async () => {
+    const res = await call({ kind: 'quote', symbol: 'AAPL' }, { 'x-vercel-forwarded-for': '13.0.0.3', origin: 'capacitor://localhost' })
+    expect(res.headers['Cache-Control']).toBe('private, max-age=300, stale-while-revalidate=600')
+  })
+
   it('caches a quote for longer than the client takes to come back for it', async () => {
     /*
      * The number that matters, and the one that was wrong. The desktop Board

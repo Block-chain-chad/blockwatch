@@ -94,9 +94,17 @@ export function isAppLane(req) {
 }
 
 /**
- * Apply CORS headers. Returns true when the response is scoped to ONE specific
- * origin and must therefore be kept out of shared caches; false when it is
- * safe to share (no CORS at all, or the fixed-ACAO app lane).
+ * Apply CORS headers. Returns true when the response must be kept out of
+ * shared caches: only for the native app's own origins off the app lane,
+ * because a shared entry addressed to anyone else could be handed to the
+ * WebView and blocked. False for everything else, which may be shared.
+ *
+ * Allowed WEB origins are shared-cacheable (security review finding 5). Real
+ * browsers never send Origin on the same-site GETs these read proxies serve,
+ * so a request that carries one is almost always a script, and making it
+ * `private` let a loop of them miss the edge cache and spend the whole
+ * Finnhub quota. Nothing on the web depends on these entries being private:
+ * the page is same-origin and ignores Access-Control-Allow-Origin.
  *
  * `Vary: Origin` is set UNCONDITIONALLY — allowed origins, rejected origins,
  * app lane, and requests with no Origin header at all. This is not optional on
@@ -131,7 +139,7 @@ export function applyCors(req, res) {
   if (!isAllowed(origin, req.headers.host)) return false
   res.setHeader('Access-Control-Allow-Origin', origin)
   setCorsMethodHeaders(res)
-  return true // response names ONE origin — must stay out of shared caches
+  return isNativeOrigin(origin) // only the WebView's entries must stay private
 }
 
 function setCorsMethodHeaders(res) {
@@ -151,8 +159,8 @@ function setCorsMethodHeaders(res) {
  * and is emitted byte-for-byte whenever the request carries no allowed Origin —
  * i.e. ordinary web visitors cache exactly as they always have.
  *
- * `originScoped` (from applyCors) is true when the response names ONE specific
- * origin — e.g. a browser at https://onstock.app that sent an Origin header.
+ * `originScoped` (from applyCors) is true when the response is addressed to the
+ * native WebView off the app lane (see applyCors for why web origins are not).
  * Such a response must never be stored where a different origin could be handed
  * it, so it becomes `private` (browser cache only) and `s-maxage`
  * (shared-cache-only) becomes the equivalent `max-age`, preserving the same

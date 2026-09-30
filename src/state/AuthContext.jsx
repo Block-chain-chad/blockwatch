@@ -6,6 +6,7 @@ import { signInNative, startWebSignIn } from '../services/socialSignIn'
 import { signInWithPasskey } from '../services/passkeys'
 import { clearAccountStorage, requestAccountDeletion } from '../services/accountDeletion'
 import { isNativeApp } from '../lib/platform'
+import { signedInRecently } from '../../api/_identity.js'
 
 const AuthContext = createContext({ session: null, ready: true, available: false })
 
@@ -198,6 +199,9 @@ export function AuthProvider({ children }) {
     signInWithProvider,
     signInPasskey,
     deleteAccount,
+    // Whether this session signed in recently enough to delete the account
+    // (the server checks the same thing, see api/delete-account.js).
+    signedInRecently: () => signedInRecently(session?.access_token),
   }
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

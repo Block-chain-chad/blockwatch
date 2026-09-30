@@ -1,4 +1,4 @@
-// Vercel serverless function: delete the caller's own OnStock account.
+// Vercel serverless function: delete the caller's own Onstock account.
 //
 // POST /api/delete-account
 //   Authorization: Bearer <the user's Supabase access token>
@@ -9,10 +9,16 @@
 // access token, which Supabase Auth checks; nobody can name someone else's
 // account. In order:
 //
-//   1. Sign in with Apple: when the account uses Apple and the app sent a
-//      code, revoke the grant (see ./_appleRevoke.js). A failure here does not
-//      stop the deletion; the answer says so and the person can remove
-//      OnStock from their Apple ID settings.
+//   0. Recent sign-in. A leaked or left-behind access token lives about an
+//      hour, which must not be enough to erase an account. The session must
+//      have signed in within the last 10 minutes, read from the token's `amr`
+//      times (./_identity.js). In the iOS app, an Apple account instead proves
+//      it with the fresh Apple code it sends, once Apple confirms the code
+//      belongs to this account's Apple ID. Otherwise: 403 { error:
+//      'sign in again' }, and nothing is touched.
+//   1. Sign in with Apple, part one: exchange the app's code with Apple and
+//      check the Apple user it names is this account's Apple identity. Only
+//      then is there anything to revoke. Nothing is revoked yet.
 //   2. The account's rows: folders and alerts (keyed by user id), and the
 //      waitlist entry and feedback sent from the account's email, but only
 //      when that email was confirmed. Anyone can sign up with an address they
@@ -23,6 +29,11 @@
 //      data behind.
 //   3. The auth user itself, which takes its identities, sessions and passkeys
 //      with it.
+//   4. Sign in with Apple, part two: revoke the grant, last. If steps 2 or 3
+//      fail, nothing has been revoked and the account is intact, so a retry
+//      starts clean. If the revoke itself fails, the account is already gone
+//      and the answer says `apple: 'failed'`, so the app shows the person how
+//      to turn Sign in with Apple off themselves.
 //   If step 2 fails, the user is not deleted, so a retry finds everything
 //   still in place and can finish the job.
 //
@@ -36,8 +47,8 @@
 
 import { applyCors, handlePreflight } from './_cors.js'
 import { clientKey, createRateLimiter, opaqueKey, sendTooManyRequests } from './_rateLimit.js'
-import { revokeAppleGrant } from './_appleRevoke.js'
-import { usesApple } from './_identity.js'
+import { exchangeAppleCode, revokeAppleToken } from './_appleRevoke.js'
+import { appleSubjects, signedInRecently, usesApple } from './_identity.js'
 
 // Native Sign in with Apple codes are issued to the app's bundle ID. Keep in
 // step with APPLE_BUNDLE_ID in src/services/socialSignIn.js.
@@ -65,9 +76,13 @@ function adminHeaders(key, extra = {}) {
   return { apikey: key, Authorization: `Bearer ${key}`, ...extra }
 }
 
-/** PostgREST ilike pattern that matches exactly this text, case-insensitively. */
-export function exactIlike(text) {
-  return String(text).replace(/[\\%_*]/g, (c) => `\\${c}`)
+/**
+ * PostgREST imatch (case-insensitive regular expression) that matches exactly
+ * this text. Not ilike: PostgREST turns every `*` in an ilike pattern into
+ * `%`, escaped or not, so an address containing `*` could never match itself.
+ */
+export function exactImatch(text) {
+  return `^${String(text).replace(/[.*+?^${}()|[\]\\-]/g, (c) => `\\${c}`)}$`
 }
 
 async function call(url, init) {
@@ -96,7 +111,7 @@ export function rowDeletions(user) {
     // The waitlist stores addresses lowercased (supabase/waitlist.sql);
     // feedback stores them as typed, so it is matched without regard to case.
     steps.push(['waitlist', `/rest/v1/waitlist?email=eq.${encodeURIComponent(email.toLowerCase())}`])
-    steps.push(['feedback', `/rest/v1/feedback?email=ilike.${encodeURIComponent(exactIlike(email))}`])
+    steps.push(['feedback', `/rest/v1/feedback?email=imatch.${encodeURIComponent(exactImatch(email))}`])
   }
   return steps
 }
@@ -138,23 +153,34 @@ export default async function handler(req, res) {
   const account = perAccount.take(opaqueKey(user.id))
   if (!account.ok) return sendTooManyRequests(res, account.retryAfter)
 
-  // 1. Sign in with Apple.
+  // 1. Sign in with Apple, part one: is there a grant of THIS account's to revoke?
   let apple = 'not-used'
+  let appleGrant = null
   if (usesApple(user)) {
     const { APPLE_TEAM_ID, APPLE_SIGN_IN_KEY_ID, APPLE_SIGN_IN_PRIVATE_KEY } = process.env
     if (!appleCode) apple = 'no-code'
     else if (!APPLE_TEAM_ID || !APPLE_SIGN_IN_KEY_ID || !APPLE_SIGN_IN_PRIVATE_KEY) apple = 'not-configured'
     else {
-      const revoked = await revokeAppleGrant({
+      const grant = await exchangeAppleCode({
         code: appleCode,
         clientId: APPLE_CLIENT_ID,
         teamId: APPLE_TEAM_ID,
         keyId: APPLE_SIGN_IN_KEY_ID,
         privateKeyPem: APPLE_SIGN_IN_PRIVATE_KEY,
       })
-      apple = revoked ? 'revoked' : 'failed'
-      if (!revoked) console.error('delete-account: apple revoke failed')
+      if (grant && appleSubjects(user).has(grant.sub)) appleGrant = grant
+      else {
+        apple = 'failed'
+        console.error(grant ? 'delete-account: apple code is for another apple id' : 'delete-account: apple exchange failed')
+      }
     }
+  }
+
+  // 0. Recent sign-in, checked after the Apple exchange because a matching
+  // fresh Apple code is itself a recent sign-in. Still before anything is
+  // deleted or revoked.
+  if (!signedInRecently(token) && !appleGrant) {
+    return res.status(403).json({ error: 'sign in again' })
   }
 
   // 2. Rows.
@@ -187,6 +213,13 @@ export default async function handler(req, res) {
   } catch {
     console.error('delete-account: user delete failed')
     return res.status(502).json({ error: 'try again' })
+  }
+
+  // 4. Sign in with Apple, part two: revoke, now that the account is gone.
+  if (appleGrant) {
+    const revoked = await revokeAppleToken({ clientId: APPLE_CLIENT_ID, grant: appleGrant })
+    apple = revoked ? 'revoked' : 'failed'
+    if (!revoked) console.error('delete-account: apple revoke failed')
   }
 
   return res.status(200).json({ deleted: true, apple })

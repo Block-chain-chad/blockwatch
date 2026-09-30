@@ -10,8 +10,22 @@
 // sites so no caller can forget it or claim the wrong one. Development does
 // not reach PostHog at all by default, so the counts are real users only.
 // See lib/environment.js.
+//
+// Every event also carries the browser context PostHog needs to tell a person
+// from a bot (sessionContext below). Without $raw_user_agent, PostHog filed
+// every app_opened as traffic type "Automation", category "no_user_agent".
+// The landing address is read once per browser tab and kept for the tab, so
+// every event in a visit reports where that visit came from:
+//   $raw_user_agent          the browser's user agent
+//   $current_url, $pathname  the landing address, WITHOUT its query or hash
+//                            (emailed sign-in links carry tokens there)
+//   $referrer                the referring site's origin only, or '$direct'
+//   $referring_domain        the referring site's host, or '$direct'
+//   utm_source, utm_medium, utm_campaign, utm_content, utm_term
+//                            from the landing address, when present; any
+//                            value that holds an '@' or runs long is dropped
 
-// EVENT CATALOG — every event OnStock sends, and the properties it carries.
+// EVENT CATALOG — every event Onstock sends, and the properties it carries.
 // One list, so a product question can be answered without reading the app.
 // Every event also carries `environment` (stamped in track below); none of
 // them carries an email, a wallet address, a folder name or an asset list.
@@ -81,10 +95,79 @@ export function deviceId() {
   }
 }
 
+const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term']
+const MAX_UTM_LENGTH = 100
+const LANDING_KEY = 'bw.landing.v1'
+
+/**
+ * Where a visit landed and came from, reduced to what cannot identify anyone:
+ * the landing address without its query or hash (sign-in links carry tokens
+ * there), the UTM tags, and only the origin of the referring page.
+ */
+export function landingContext(href, referrer) {
+  const out = {}
+  try {
+    const url = new URL(href)
+    out.$current_url = `${url.origin}${url.pathname}`
+    out.$pathname = url.pathname
+    for (const key of UTM_KEYS) {
+      const value = url.searchParams.get(key)
+      if (value && value.length <= MAX_UTM_LENGTH && !value.includes('@')) out[key] = value
+    }
+  } catch {
+    // No usable address: send nothing about it.
+  }
+  let from = null
+  try {
+    from = referrer ? new URL(referrer) : null
+  } catch {
+    from = null
+  }
+  const web = from && (from.protocol === 'https:' || from.protocol === 'http:')
+  out.$referrer = web ? `${from.origin}/` : '$direct'
+  out.$referring_domain = web ? from.host : '$direct'
+  return out
+}
+
+let landing = null
+
+/**
+ * The landing context for this browser tab, read once and kept in
+ * sessionStorage so a reload inside the same visit still reports where the
+ * visit began. Falls back to memory when storage is blocked.
+ */
+function landingForSession() {
+  if (landing) return landing
+  try {
+    const saved = sessionStorage.getItem(LANDING_KEY)
+    if (saved) landing = JSON.parse(saved)
+  } catch {
+    landing = null
+  }
+  if (!landing || typeof landing !== 'object') {
+    landing = landingContext(globalThis.location?.href, globalThis.document?.referrer)
+    try {
+      sessionStorage.setItem(LANDING_KEY, JSON.stringify(landing))
+    } catch {
+      // Memory only for this page load.
+    }
+  }
+  return landing
+}
+
+/** What every event carries about the browser and the visit. */
+export function sessionContext() {
+  const userAgent = globalThis.navigator?.userAgent
+  return {
+    ...landingForSession(),
+    ...(typeof userAgent === 'string' && userAgent ? { $raw_user_agent: userAgent } : {}),
+  }
+}
+
 export function track(event, properties = {}) {
-  // Stamped last, so a caller passing its own `environment` cannot mislabel
-  // the event.
-  const stamped = { ...properties, environment: appEnvironment }
+  // Stamped last, so a caller cannot mislabel the event's environment or
+  // overwrite the visit's context.
+  const stamped = { ...properties, ...sessionContext(), environment: appEnvironment }
   if (!KEY || !telemetryEnabled) {
     if (import.meta.env.DEV) console.debug('[analytics]', event, stamped)
     return
