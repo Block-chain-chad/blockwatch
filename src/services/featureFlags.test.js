@@ -161,15 +161,15 @@ describe('account deletion switch', () => {
     expect(ACCOUNT_DELETION_FLAG).toBe('account-deletion')
   })
 
-  it('is off only when PostHog says off, and back on when PostHog cannot be reached', async () => {
-    expect(flagEnabled(ACCOUNT_DELETION_FLAG)).toBe(true)
-    applyFlags({ [ACCOUNT_DELETION_FLAG]: false })
+  it('is off until PostHog says on, and off again when PostHog cannot be reached', async () => {
     expect(flagEnabled(ACCOUNT_DELETION_FLAG)).toBe(false)
+    applyFlags({ [ACCOUNT_DELETION_FLAG]: true })
+    expect(flagEnabled(ACCOUNT_DELETION_FLAG)).toBe(true)
     await loadFeatureFlags({
       fetchImpl: async () => {
         throw new Error('network down')
       },
     })
-    expect(flagEnabled(ACCOUNT_DELETION_FLAG)).toBe(true)
+    expect(flagEnabled(ACCOUNT_DELETION_FLAG)).toBe(false)
   })
 })

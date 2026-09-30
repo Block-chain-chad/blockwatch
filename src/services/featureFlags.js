@@ -37,10 +37,12 @@ export const RATIO_LINE_FLAG = 'issuer-ratio-line'
 export const SIGN_IN_APPLE_FLAG = 'sign-in-apple'
 export const SIGN_IN_GOOGLE_FLAG = 'sign-in-google'
 export const SIGN_IN_PASSKEY_FLAG = 'sign-in-passkey'
-// The Delete account row in Profile. Apple requires in-app deletion wherever
-// accounts can be made, so the row's fallback is ON: it must not vanish just
-// because PostHog is blocked or unreachable. Until Marcus is ready, the
-// PostHog flag (created at 0 percent) is what keeps it hidden.
+// The Delete account row in Profile. Marcus keeps it OFF until deletion has
+// been tested for real, on the web and in the iPhone app. The fallback is OFF
+// so a blocked or unreachable PostHog cannot show it early. Before the iPhone
+// build goes to Apple review it must be ON (Apple requires in-app deletion):
+// switch the PostHog flag on and set VITE_ACCOUNT_DELETION_ENABLED=true in the
+// builds, so the row cannot vanish when PostHog is blocked.
 export const ACCOUNT_DELETION_FLAG = 'account-deletion'
 
 /* The user-facing meaning of each flag, kept here rather than at the four
@@ -84,8 +86,8 @@ export function envEnabled(value, whenUnset) {
    represents and no lawyer has read it, so it ships OFF for the same reason a
    draft disclosure does. The Jupiter link-out ships OFF too: Marcus switched
    the link-outs off on September 30, 2026, and an outage must not bring them
-   back. Account deletion is the one that ships ON, because a missing Delete
-   row is itself the failure (see ACCOUNT_DELETION_FLAG).
+   back. Account deletion ships OFF until it has been tested for real (see
+   ACCOUNT_DELETION_FLAG).
 
    Leave VITE_SWAP_ENABLED blank for the kill switch to be absolute. Setting
    it to "true" makes ON the fallback, which means a session that cannot reach
@@ -99,8 +101,8 @@ const FALLBACK = {
   [SIGN_IN_APPLE_FLAG]: envEnabled(import.meta.env.VITE_SIGN_IN_APPLE_ENABLED, false),
   [SIGN_IN_GOOGLE_FLAG]: envEnabled(import.meta.env.VITE_SIGN_IN_GOOGLE_ENABLED, false),
   [SIGN_IN_PASSKEY_FLAG]: envEnabled(import.meta.env.VITE_SIGN_IN_PASSKEY_ENABLED, false),
-  // On unless PostHog says off; see ACCOUNT_DELETION_FLAG above.
-  [ACCOUNT_DELETION_FLAG]: envEnabled(import.meta.env.VITE_ACCOUNT_DELETION_ENABLED, true),
+  // Off until tested; see ACCOUNT_DELETION_FLAG above.
+  [ACCOUNT_DELETION_FLAG]: envEnabled(import.meta.env.VITE_ACCOUNT_DELETION_ENABLED, false),
 }
 
 /** PostHog's answer, or null while there is none. */
