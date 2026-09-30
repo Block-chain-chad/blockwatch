@@ -1,6 +1,6 @@
 // Product analytics — PostHog (free tier), called via its capture REST endpoint
-// with plain fetch: no SDK, no autocapture, just the four metrics the brief
-// cares about (searches + misses, waitlist signups, return visits, share taps).
+// with plain fetch: no SDK, no autocapture, just the metrics the brief cares
+// about (searches and misses, return visits, share taps).
 //
 // Without VITE_POSTHOG_KEY this no-ops (logging to the console in dev so the
 // events are still visible while building). Analytics must never break or slow
@@ -68,7 +68,6 @@
 //     trade_out               { ticker?, venue }          TradeButton, GapHeader, Trade
 //     swap_sent               {}                          services/swap.js
 //     wallet_connect          {}                          state/WalletContext.jsx
-//     waitlist_join           {}                          state/WaitlistContext.jsx
 //     ratio_unreadable        { source: 'jupiter_price_v3' }
 //                                                         services/jupiter.js
 //     ratio_refused           { reason }                  overlays/SwapSheet.jsx
