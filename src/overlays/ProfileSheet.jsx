@@ -12,6 +12,7 @@ import { useFlag, SIGN_IN_PASSKEY_FLAG, ACCOUNT_DELETION_FLAG } from '../service
 import { passkeysSupported } from '../services/passkeys'
 import { getThemePref } from '../lib/theme'
 import { isNativeApp } from '../lib/platform'
+import { displayIdentity } from '../lib/identity'
 import {
   CloseIcon,
   MoonIcon,
@@ -32,6 +33,7 @@ import Sheet, { SheetTitle } from '../components/Sheet'
 export default function ProfileSheet({ onClose, onGoToTrade }) {
   const { entry } = useWaitlist()
   const { user, available, signOut } = useAuth()
+  const identity = displayIdentity(user)
   const wallet = useWallet()
   const [walletOpen, setWalletOpen] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
@@ -50,10 +52,11 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
         <div className="flex items-center justify-between px-4 pt-4">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-base font-semibold text-zinc-300">
-              {user?.email ? user.email[0].toUpperCase() : <PersonIcon size={20} />}
+              {identity?.initial ?? <PersonIcon size={20} />}
             </div>
             <div className="min-w-0">
-              <SheetTitle className="truncate font-semibold">{user ? user.email || 'Signed in' : 'Guest'}</SheetTitle>
+              <SheetTitle className="truncate font-semibold">{identity ? identity.title : 'Guest'}</SheetTitle>
+              {identity?.detail && <div className="truncate text-xs text-zinc-400">{identity.detail}</div>}
               <div className="text-xs text-zinc-500">
                 {user ? 'Folders & alerts synced across devices' : 'No account needed to track'}
               </div>

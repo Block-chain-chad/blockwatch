@@ -1,10 +1,12 @@
 import { useAuth } from '../state/AuthContext'
 import { PersonIcon } from './Icons'
+import { displayIdentity } from '../lib/identity'
 
-/* Profile avatar: signed-in users get their email initial, guests a person glyph. */
+/* Profile avatar: signed-in users get the first letter of their name or email,
+   everyone else (guests, hidden Apple addresses) a person glyph. */
 export function AvatarButton({ onClick, className = '' }) {
   const { user } = useAuth()
-  const initial = user?.email?.[0]?.toUpperCase()
+  const initial = displayIdentity(user)?.initial
   return (
     <button
       onClick={onClick}
