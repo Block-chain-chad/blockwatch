@@ -6,7 +6,7 @@ import { shareFreshness } from '../lib/provenance'
 import { AssetRow } from './shared'
 import { TrashIcon } from './Icons'
 
-const EMPTY_TEXT = 'Your watchlist is empty — add the tokens you care about.'
+const EMPTY_TEXT = 'Your watchlist is empty. Add the tokens you care about.'
 
 /**
  * The watchlist as a sidebar, for the desktop asset screen. Same phone

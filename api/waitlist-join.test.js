@@ -85,6 +85,14 @@ describe('api/waitlist-join — a normal join', () => {
     expect(sends()).toHaveLength(1)
   })
 
+  it('mails from onstock.app, links back to the site it came from, and uses no em dashes', async () => {
+    await post('someone@example.com', { ...from('1.1.1.3'), origin: 'https://onstock.app', host: 'onstock.app' })
+    const mail = JSON.parse(sends()[0][1].body)
+    expect(mail.from).toBe('OnStock <contact@onstock.app>')
+    expect(mail.html).toContain('href="https://onstock.app"')
+    expect(`${mail.from} ${mail.subject} ${mail.html}`).not.toMatch(/blockwatch|\u2014/i)
+  })
+
   it('normalizes the address before using it as a key', async () => {
     await post('  Someone@Example.COM  ', from('1.1.1.2'))
     expect(JSON.parse(joins()[0][1].body)).toEqual({ p_email: 'someone@example.com' })

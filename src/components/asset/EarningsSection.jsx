@@ -1,3 +1,5 @@
+import { EM_DASH } from '../../lib/format'
+
 /* The underlying's recent quarters: a beat/miss dot, the period, actual EPS
    and the estimate. Renders nothing without earnings. */
 export default function EarningsSection({ asset, info }) {
@@ -21,7 +23,7 @@ export default function EarningsSection({ asset, info }) {
                 EPS {q.actual.toFixed(2)}
               </span>
               <span className="w-24 text-right text-xs tabular-nums text-zinc-500">
-                {q.estimate != null ? `est ${q.estimate.toFixed(2)}` : '—'}
+                {q.estimate != null ? `est ${q.estimate.toFixed(2)}` : EM_DASH}
               </span>
             </div>
           )

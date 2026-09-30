@@ -117,6 +117,17 @@ export function formatCompact(n) {
   return trueMinus('$' + s.replace(/([KMBT])$/, (m) => m.toLowerCase()))
 }
 
+/**
+ * The opening of the thinly traded note: how much of the token changed hands
+ * in the last 24 hours. Unknown volume, or an amount that would round to $0,
+ * gets its own wording instead of "About $0" or "About very little".
+ */
+export function thinVolumeText(volume24h) {
+  const v = isMissing(volume24h) ? null : denormalise(volume24h)
+  if (v == null || !(v >= 0.5)) return 'Very little of this token changed hands in 24 hours'
+  return `About ${formatCompact(v)} changed hands in 24 hours`
+}
+
 /** A plain count — holders, assets. Grouped, never compacted below 1e3. */
 export function formatCount(n) {
   if (isMissing(n)) return EM_DASH

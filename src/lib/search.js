@@ -51,3 +51,8 @@ export function rankAssets(assets, query) {
     .sort((x, y) => y[0] - x[0])
     .map(([, a]) => a)
 }
+
+/* The quiet line under a ticker in search results: "Name · Issuer, Chain". */
+export function assetSubtitle(a) {
+  return `${a.name} · ${a.issuer}${a.chain ? `, ${a.chain}` : ''}`
+}

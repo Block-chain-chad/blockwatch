@@ -18,7 +18,7 @@ export default function AboutSheet({ onClose }) {
 
       <div className="mt-4 max-h-[55vh] space-y-3 overflow-y-auto">
         <p className="text-sm leading-relaxed text-zinc-400">
-          Real stocks now exist as blockchain tokens — NVIDIA, Tesla, and the S&P 500 trade
+          Real stocks now exist as blockchain tokens. NVIDIA, Tesla, and the S&P 500 trade
           around the clock as NVDAx, TSLAx, and SPYx. OnStock shows every token side by
           side with the real share price, so you can see at a glance when a token trades at
           a premium or a discount to the actual stock.
@@ -29,7 +29,7 @@ export default function AboutSheet({ onClose }) {
           Signing in is optional and simply syncs your setup across devices.
         </p>
         <p className="text-sm leading-relaxed text-zinc-400">
-          In-app trading isn't live yet — the Trade tab has a waitlist, and everyone on it hears
+          In-app trading isn't live yet. The Trade tab has a waitlist, and everyone on it hears
           first when it opens.
         </p>
         <div className="rounded-xl bg-zinc-900 p-3.5">

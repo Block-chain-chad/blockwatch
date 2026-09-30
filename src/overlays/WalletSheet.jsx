@@ -16,7 +16,7 @@ export default function WalletSheet({ onClose }) {
       await navigator.clipboard.writeText(publicKey)
       setNote('Address copied')
     } catch {
-      setNote("Couldn't copy — long-press the address instead")
+      setNote("Couldn't copy. Press and hold the address instead")
     }
   }
 
@@ -24,7 +24,7 @@ export default function WalletSheet({ onClose }) {
     <Sheet onClose={onClose} className="z-[55]">
       <SheetTitle className="px-1 text-base font-semibold">Wallet</SheetTitle>
       <p className="mt-1 px-1 text-xs text-zinc-500">
-        Connected via Phantom. OnStock can see this address — never your keys or funds.
+        Connected via Phantom. OnStock can see this address, but never your keys or funds.
       </p>
 
       <div className="mt-3 select-text break-all rounded-xl bg-zinc-900 p-3.5 text-xs tabular-nums leading-relaxed text-zinc-300">

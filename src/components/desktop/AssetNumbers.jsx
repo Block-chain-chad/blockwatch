@@ -5,7 +5,7 @@ import { useAlerts } from '../../state/AlertsContext'
 import { getTokenSpread } from '../../services/jupiter'
 import { ASSETS } from '../../data/universe'
 import { alertLabelFor } from '../../hooks/useAssetWorkspace'
-import { formatPrice, formatCompact } from '../../lib/format'
+import { formatPrice, thinVolumeText } from '../../lib/format'
 import { isThinlyTraded } from '../../lib/prices'
 import { ShareIcon, PlusIcon, BellIcon, StarIcon } from '../Icons'
 import AssetLogo from '../AssetLogo'
@@ -128,9 +128,8 @@ export default function AssetNumbers({ assetId, scrub }) {
       {isThinlyTraded(asset) && (
         <div className="mx-4 mt-4 rounded-xl bg-zinc-900 p-3.5">
           <p className="text-xs leading-relaxed text-zinc-400">
-            <span className="font-medium text-zinc-300">Thinly traded</span> — about{' '}
-            {asset.volume24h != null ? formatCompact(asset.volume24h) : 'very little'} changed
-            hands in 24h, so small trades can move this token's price. Treat the gap vs{' '}
+            <span className="font-medium text-zinc-300">Thinly traded.</span>{' '}
+            {thinVolumeText(asset.volume24h)}, so small trades can move this token's price. Treat the gap versus{' '}
             {asset.underlying} as noisy, not as a real mispricing.
           </p>
         </div>

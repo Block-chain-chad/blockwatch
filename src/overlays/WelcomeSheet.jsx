@@ -5,6 +5,7 @@ import { CheckCircleIcon } from '../components/Icons'
 import Sheet, { SheetTitle } from '../components/Sheet'
 import { usePasskeyOffer } from '../hooks/usePasskeyOffer'
 import { passkeyName } from '../services/passkeys'
+import { displayIdentity, UNNAMED_TITLE } from '../lib/identity'
 
 /*
  * The proof-of-reality moment. Signing in used to close a sheet and change
@@ -24,6 +25,7 @@ import { passkeyName } from '../services/passkeys'
  */
 export default function WelcomeSheet({ variant, onClose, onOpenSignIn }) {
   const { user } = useAuth()
+  const identity = displayIdentity(user)
   const { watchlistIds, folders } = useFolders()
   const { rules } = useAlerts()
 
@@ -96,7 +98,8 @@ export default function WelcomeSheet({ variant, onClose, onOpenSignIn }) {
             <CheckCircleIcon size={28} />
           </span>
           <SheetTitle className="mt-3 text-base font-semibold">You're in</SheetTitle>
-          {user?.email && <p className="mt-0.5 text-sm text-zinc-400">{user.email}</p>}
+          {identity && identity.title !== UNNAMED_TITLE && <p className="mt-0.5 truncate text-sm text-zinc-300">{identity.title}</p>}
+          {identity?.detail && <p className="truncate text-xs text-zinc-500">{identity.detail}</p>}
           <p className="mt-2 text-sm text-zinc-500">
             {assetCount > 0
               ? `Your ${assetCount} tracked ${assetCount === 1 ? 'asset' : 'assets'}${

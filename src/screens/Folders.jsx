@@ -71,7 +71,7 @@ export function FoldersList({ onOpenProfile, onOpenFolder }) {
                       </span>
                     </>
                   ) : (
-                    <span className="t-caption text-zinc-500">Empty — add assets from search</span>
+                    <span className="t-caption text-zinc-500">Empty. Add assets from search</span>
                   )}
                 </div>
               </div>
@@ -90,7 +90,7 @@ export function FoldersList({ onOpenProfile, onOpenFolder }) {
       {folders.length === 0 && (
         <div className="px-6 py-12 text-center">
           <p className="text-sm text-zinc-400">
-            Folders group assets your way — one asset can live in many.
+            Folders group assets your way. One asset can live in many.
           </p>
         </div>
       )}
@@ -252,7 +252,7 @@ export function FolderDetail({ folderId, onBack, onOpenProfile, onOpenAsset }) {
 
       {visible.length === 0 && members.length > 0 && (
         <div className="px-6 pt-8 text-center text-sm text-zinc-500">
-          Nothing in this category — try another filter.
+          Nothing in this category. Try another filter.
         </div>
       )}
 

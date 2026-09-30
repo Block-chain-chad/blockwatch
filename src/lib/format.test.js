@@ -3,6 +3,7 @@ import {
   formatPrice,
   formatPct,
   formatCompact,
+  thinVolumeText,
   formatCount,
   changeColor,
   isPlausiblePct,
@@ -156,5 +157,17 @@ describe('direction colour reinforces the sign, never replaces it', () => {
 
   it('leaves exact zero neutral', () => {
     expect(changeColor(0)).toBe('text-zinc-400')
+  })
+})
+
+describe('thinVolumeText', () => {
+  it('states the amount when there is one', () => {
+    expect(thinVolumeText(12_400)).toBe('About $12.4k changed hands in 24 hours')
+  })
+
+  it('has its own wording when volume is zero, rounds to zero, or is unknown', () => {
+    for (const v of [0, -0, 0.3, null, undefined, NaN, -5]) {
+      expect(thinVolumeText(v)).toBe('Very little of this token changed hands in 24 hours')
+    }
   })
 })

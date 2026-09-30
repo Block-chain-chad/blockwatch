@@ -52,7 +52,7 @@ export default function AccessGate({ children }) {
       </svg>
       <h1 className="mt-4 text-xl font-semibold tracking-tight">OnStock</h1>
       <p className="mt-1 text-center text-sm text-zinc-500">
-        Private beta — enter your access code to continue.
+        Private beta. Enter your access code to continue.
       </p>
       <form onSubmit={submit} className="mt-6 w-full max-w-xs">
         <input
@@ -70,7 +70,7 @@ export default function AccessGate({ children }) {
         />
         {status === 'wrong' && (
           <p className="mt-2 text-center text-xs text-zinc-500">
-            That code didn't match — double-check it and try again.
+            That code didn't match. Check it and try again.
           </p>
         )}
         <button

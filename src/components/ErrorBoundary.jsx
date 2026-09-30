@@ -40,7 +40,7 @@ export default class ErrorBoundary extends Component {
       <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 px-8 pb-[max(env(safe-area-inset-bottom),2rem)] pt-[max(env(safe-area-inset-top),2rem)] text-center">
         <h1 className="text-lg font-semibold text-zinc-100">Something broke on our side</h1>
         <p className="mt-2 max-w-xs text-sm leading-relaxed text-zinc-400">
-          Not your fault, and nothing is lost — your watchlist, folders and alerts are saved on
+          Not your fault, and nothing is lost. Your watchlist, folders and alerts are saved on
           this device. Reloading usually clears it.
         </p>
         {import.meta.env.DEV && (

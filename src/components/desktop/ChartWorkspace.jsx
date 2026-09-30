@@ -614,7 +614,7 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef, dri
                       )}
                     </>
                   ) : (
-                    <span>—</span>
+                    <span>{EM_DASH}</span>
                   )}
                 </div>
               )}

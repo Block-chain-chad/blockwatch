@@ -10,7 +10,7 @@ import TreasuryYields from '../TreasuryYields'
 import WatchlistPane from '../WatchlistPane'
 import AssetNumbers from './AssetNumbers'
 
-const WATCHLIST_EMPTY = 'Your watchlist is empty — add the tokens you care about.'
+const WATCHLIST_EMPTY = 'Your watchlist is empty. Add the tokens you care about.'
 const FOLDER_EMPTY = 'No assets here yet.'
 
 /*

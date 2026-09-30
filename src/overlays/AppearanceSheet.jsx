@@ -5,7 +5,7 @@ import { CheckCircleIcon } from '../components/Icons'
 import Sheet, { SheetTitle } from '../components/Sheet'
 
 const OPTIONS = [
-  { id: 'dark', label: 'Dark', hint: 'The default — reads like a trading terminal' },
+  { id: 'dark', label: 'Dark', hint: 'The default. Reads like a trading terminal' },
   { id: 'light', label: 'Light', hint: 'Bright backgrounds, same layout' },
   { id: 'system', label: 'Match system', hint: 'Follows your device setting' },
 ]

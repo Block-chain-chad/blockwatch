@@ -26,7 +26,7 @@ const PRIMARY = {
   href: 'https://jup.ag',
   icon: WalletIcon,
   blurb:
-    'On-chain, from your own wallet. Open any asset ending in “x” and tap Trade on Jupiter — it lands on the exact pair.',
+    'On-chain, from your own wallet. Open any asset ending in “x” and tap Trade on Jupiter. It lands on the exact pair.',
   tag: 'Self-custody',
 }
 
@@ -62,7 +62,7 @@ export default function Trade({ onOpenProfile }) {
         <h2 className="t-title">The market is open</h2>
         <p className="t-body mt-1.5 text-zinc-400">
           Tokenized stocks trade 24/7 on the venues below. In-app trading is
-          what we're building — until then, OnStock gets you to the right
+          what we're building. Until then, OnStock gets you to the right
           place with the right numbers.
         </p>
 
@@ -136,8 +136,8 @@ export default function Trade({ onOpenProfile }) {
             </div>
             <p className="mt-2 text-xs leading-relaxed text-zinc-500">
               {entry.pendingSync
-                ? `${entry.email} is saved on this device. We couldn't reach the waitlist server just now — we'll finish signing you up automatically.`
-                : `${entry.email} — we'll email you when in-app trading opens.`}
+                ? `${entry.email} is saved on this device. We couldn't reach the waitlist server just now. We'll finish signing you up automatically.`
+                : `We'll email ${entry.email} when in-app trading opens.`}
             </p>
           </div>
         ) : (
@@ -162,7 +162,7 @@ export default function Trade({ onOpenProfile }) {
               {busy ? 'Joining…' : 'Join the waitlist'}
             </button>
             <p className="mt-3 text-[11px] text-zinc-400">
-              No spam — one email when trading goes live.
+              No spam. Just one email when trading goes live.
             </p>
           </form>
         )}
