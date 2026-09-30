@@ -73,7 +73,7 @@ describe('SwapSheet disclosure copy', () => {
 
   it('keeps the two statements the review confirmed are accurate', () => {
     const html = render()
-    expect(html).toContain('OnStock never holds your funds')
+    expect(html).toContain('Onstock never holds your funds')
     expect(html).toContain('Not investment advice')
   })
 

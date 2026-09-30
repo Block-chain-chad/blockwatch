@@ -57,7 +57,7 @@ export function readingSentence({ ticker, companyName, gapPct, size, thin = fals
     return `The gap on ${ticker} reads ${formatPct(gapPct)} and no real token drifts that far; treat it as noise.`
   }
   const lead = `On ${formatSize(size)} of ${companyName}, ${ticker} costs`
-  const when = close ? `at ${close}` : 'right now'
+  const when = close ? `at ${close}` : 'at the latest prices'
   if (Math.abs(gapPct) < PARITY_BAND) return `${lead} the same as the shares ${when}.`
   const usd = gapDollars(gapPct, size)
   return `${lead} ${formatPrice(Math.abs(usd))} ${usd > 0 ? 'more' : 'less'} than the shares ${when}.`

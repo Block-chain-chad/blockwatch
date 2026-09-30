@@ -1,6 +1,6 @@
 // Non-custodial swap execution — phase two of the trading ladder. Jupiter
 // quotes the route and builds the transaction; the USER's wallet signs and
-// sends it. OnStock never touches funds, keys, or the transaction after
+// sends it. Onstock never touches funds, keys, or the transaction after
 // handing it to the wallet. NO platform fee is attached anywhere in this
 // module — that switch stays off until the legal side exists.
 //

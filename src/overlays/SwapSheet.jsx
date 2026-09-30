@@ -23,7 +23,7 @@ import Sheet, { SheetTitle } from '../components/Sheet'
  * received — the floor below which the transaction fails rather than settles
  * — and the route's price impact. Confirming hands an unsigned
  * transaction to the wallet — the user signs and sends inside Phantom, funds
- * never touch OnStock. No platform fee is applied anywhere.
+ * never touch Onstock. No platform fee is applied anywhere.
  *
  * The mint and its decimals come from data/verifiedMints — the address the
  * issuer vouches for on chain — not from the asset record and not from a
@@ -674,7 +674,7 @@ export default function SwapSheet({ asset, onClose }) {
 
           <p className="mt-3 px-1 text-[11px] leading-relaxed text-zinc-400">
             Swap runs on Jupiter from your own wallet. You approve and send it in your wallet,
-            and OnStock never holds your funds. If the price moves past the minimum shown, the
+            and Onstock never holds your funds. If the price moves past the minimum shown, the
             swap fails and nothing is exchanged. You still pay the Solana network fee. Not
             investment advice.
           </p>

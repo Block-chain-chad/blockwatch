@@ -1,5 +1,5 @@
 // How the chart toolbar shrinks (spec §1.3): TradingView measures its own
-// toolbar and drops labels first, then pills, never a "…" menu. OnStock's
+// toolbar and drops labels first, then pills, never a "…" menu. Onstock's
 // Candles toolbar carries 17 chips at the design system's chip size — about
 // 1,360px, more than any center under a 1,900px window — so the same rule
 // applies here, by measurement rather than by breakpoint. Pure, so the

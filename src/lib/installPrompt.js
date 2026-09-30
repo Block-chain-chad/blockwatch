@@ -1,4 +1,4 @@
-// Should this browser be told how to put OnStock on its Home Screen?
+// Should this browser be told how to put Onstock on its Home Screen?
 //
 // Only iPhone and iPad Safari, in a normal tab. Android and desktop browsers
 // offer their own install prompt from the manifest, so they are left alone.

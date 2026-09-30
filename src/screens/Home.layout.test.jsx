@@ -81,7 +81,7 @@ describe('Home on iPhone Safari', () => {
       at('UPDATED-AGO'),
       at('Add to Home Screen'),
       at('Learn the basics'),
-      at('Prices are informational only'),
+      at('Prices come from third parties'),
     ]
     expect(order).toEqual([...order].sort((a, b) => a - b))
   })

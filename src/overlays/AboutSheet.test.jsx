@@ -4,19 +4,21 @@ import { readFileSync } from 'node:fs'
 import AboutSheet from './AboutSheet'
 
 /*
- * The "what OnStock is" sentence, which appears in two places that have to
- * agree: the About sheet and the published privacy policy.
+ * The "what Onstock is" sentence appears in two places that have to agree:
+ * the About sheet and the published privacy policy. Since September 30, 2026
+ * both say it the same way: not a broker, does not hold funds, does not
+ * execute trades, does not give investment advice. The swap that made
+ * "does not execute trades" need a qualifier is switched off, and describing
+ * an unavailable feature is its own problem on the App Store.
  *
- * It used to say OnStock "does not hold funds, execute trades, or give
- * investment advice". The first and third are still true and stay. The middle
- * one stopped being a clean statement once the app could build a swap
- * transaction for the user's wallet to sign, so it is now stated precisely
- * rather than dropped. The policy also claimed push-notification access was
- * disabled at the platform level, while SetAlertSheet asks for exactly that
- * permission.
+ * The About sheet also used to call tokens "real stocks". The issuers
+ * describe them as tracker certificates and notes, so it now says they track
+ * shares and are not the shares themselves (compliance wording item 5).
  */
 
-const privacy = readFileSync(new URL('../../public/privacy.html', import.meta.url), 'utf8')
+// Whitespace collapsed, so a rewrapped line cannot break a phrase check.
+const privacy = readFileSync(new URL('../../public/privacy.html', import.meta.url), 'utf8').replace(/\s+/g, ' ')
+const NOT_A_BROKER = 'is not a broker, does not hold your funds, does not execute trades and does not give investment advice'
 
 // Sheet reads document.activeElement while rendering, to restore focus on
 // close. Effects do not run in a static render, so this one field is the
@@ -24,35 +26,68 @@ const privacy = readFileSync(new URL('../../public/privacy.html', import.meta.ur
 beforeEach(() => vi.stubGlobal('document', { activeElement: null }))
 afterEach(() => vi.unstubAllGlobals())
 
-describe('AboutSheet custody and advice copy', () => {
+describe('AboutSheet', () => {
   const render = () => renderToStaticMarkup(<AboutSheet onClose={() => {}} />)
 
-  it('keeps the two claims that are true', () => {
+  it('says tokens track shares and are not the shares themselves', () => {
     const html = render()
-    expect(html).toContain('never holds your funds')
-    expect(html).toContain('gives no investment advice')
+    expect(html).toContain('built to track the price of a share or fund')
+    expect(html).toContain('They are not the shares themselves.')
+    expect(html).not.toContain('Real stocks')
+    expect(html).not.toContain('the actual stock')
   })
 
-  it('states the trade-execution position precisely instead of flatly', () => {
+  it('offers no trading and promises none', () => {
     const html = render()
-    expect(html).toContain('prepares the transaction for your own')
-    expect(html).toContain('wallet to approve and send')
-    expect(html).not.toContain('does not hold funds, execute trades')
+    expect(html).toContain('Onstock is a tracker. It does not offer trading.')
+    expect(html).not.toContain('waitlist')
+    expect(html).not.toContain('prepares the transaction')
+  })
+
+  it('names every price source and what Onstock is not', () => {
+    const html = render()
+    for (const source of ['CoinGecko', 'Jupiter', 'GeckoTerminal', 'Finnhub', 'Yahoo Finance']) {
+      expect(html).toContain(source)
+    }
+    expect(html).toContain('may be delayed or wrong')
+    expect(html).toContain(`Onstock ${NOT_A_BROKER}`)
   })
 })
 
 describe('privacy.html', () => {
-  it('makes the same custody and advice claims as the About sheet', () => {
-    expect(privacy).toContain('never holds your funds')
-    expect(privacy).toContain('gives no investment advice')
-    expect(privacy).toContain('prepares the transaction for your own wallet')
-    expect(privacy).not.toContain('does not hold funds, execute trades')
+  it('makes the same claims about what Onstock is as the About sheet', () => {
+    expect(privacy).toContain(`Onstock ${NOT_A_BROKER}`)
   })
 
-  it('no longer claims notification access is disabled', () => {
-    expect(privacy).not.toContain('push-notification access')
+  it('reads as a finished policy under the current name and address', () => {
+    expect(privacy).toContain('Last updated September 30, 2026')
+    expect(privacy).not.toMatch(/OnStock|mailto:contact@blockwatch|\[[A-Z]|Reviewer note|DRAFT/)
+    expect(privacy).not.toContain('—')
+    expect(privacy).toContain('mailto:contact@onstock.app')
+  })
+
+  it('describes the closed waitlist and sends no marketing email', () => {
+    expect(privacy).toContain('closed to new sign-ups on September 30, 2026')
+    expect(privacy).toContain('one email only if in-app trading ever launches')
+    expect(privacy).toContain('We do not send newsletters or marketing email.')
+    expect(privacy).not.toContain('welcome email')
+  })
+
+  it('names every service that receives data, and what analytics carries', () => {
+    for (const name of ['Vercel', 'Supabase', 'PostHog', 'Sentry', 'Resend', 'Cloudflare', 'Apple']) {
+      expect(privacy).toContain(`<td>${name}</td>`)
+    }
+    expect(privacy).toContain('user agent')
+    expect(privacy).toContain('campaign tags (UTM parameters)')
+    expect(privacy).toContain('PostHog keeps the IP address')
+  })
+
+  it('says account deletion needs a recent sign-in', () => {
+    expect(privacy).toContain('this needs a recent sign-in')
+  })
+
+  it('does not claim the app never touches location, since PostHog estimates it', () => {
+    expect(privacy).not.toContain('location access')
     expect(privacy).toContain('only if you grant permission when asked')
-    // The three the app genuinely never asks for are still listed.
-    expect(privacy).toContain('No camera, microphone, or location access')
   })
 })

@@ -21,13 +21,13 @@ describe('readingSentence', () => {
 
   it('says the gap in dollars at the size, more or less', () => {
     expect(readingSentence({ ...base, gapPct: 0.0916 })).toBe(
-      'On $1,000 of NVIDIA, NVDAx costs $0.92 more than the shares right now.'
+      'On $1,000 of NVIDIA, NVDAx costs $0.92 more than the shares at the latest prices.'
     )
     expect(readingSentence({ ...base, gapPct: -2.14 })).toBe(
-      'On $1,000 of NVIDIA, NVDAx costs $21.40 less than the shares right now.'
+      'On $1,000 of NVIDIA, NVDAx costs $21.40 less than the shares at the latest prices.'
     )
     expect(readingSentence({ ...base, gapPct: -2.14, size: 100 })).toBe(
-      'On $100 of NVIDIA, NVDAx costs $2.14 less than the shares right now.'
+      'On $100 of NVIDIA, NVDAx costs $2.14 less than the shares at the latest prices.'
     )
   })
 
@@ -42,7 +42,7 @@ describe('readingSentence', () => {
 
   it('calls parity the same', () => {
     expect(readingSentence({ ...base, gapPct: 0.02 })).toBe(
-      'On $1,000 of NVIDIA, NVDAx costs the same as the shares right now.'
+      'On $1,000 of NVIDIA, NVDAx costs the same as the shares at the latest prices.'
     )
   })
 

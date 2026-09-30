@@ -19,9 +19,8 @@ export default function News({ onOpenProfile, onOpenAsset }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // The mock feed invents headlines and credits them to real outlets
-  // (Bloomberg, Reuters, CoinDesk…). That's fine as dev scaffolding, but it
-  // must never ship: in production this list is real alert events only.
+  // The mock feed is placeholder headlines for development. It must never
+  // ship: in production this list is real alert events only.
   // The DEV branch is a compile-time constant, so Rollup drops the mock
   // import from the production bundle entirely.
   const items = [...events, ...(import.meta.env.DEV ? newsFeed : [])].sort((a, b) => b.at - a.at)

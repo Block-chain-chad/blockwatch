@@ -16,7 +16,7 @@ import { meterHeadline } from './pageTitle'
 export const NOTIFY_KEY = 'bw.meter.notify.v1'
 
 /** The one-time ask's sentence (spec §4.1): both the question and the honesty about a tab being open. */
-export const NOTIFY_OFFER_COPY = 'Get a system notification when this fires, while OnStock is open in a tab?'
+export const NOTIFY_OFFER_COPY = 'Get a system notification when this fires, while Onstock is open in a tab?'
 
 /**
  * alertNotification(event) → { title, body, tag }

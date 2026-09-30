@@ -146,13 +146,13 @@ describe('driftWindowNote', () => {
   it('names the share and both halves of the gate', () => {
     const note = driftWindowNote('NVDA')
     expect(note).toContain('while the US market is open')
-    expect(note).toContain('NVDA quote is live')
+    expect(note).toContain('NVDA quote is recent')
   })
 
   it('says "share" rather than printing a missing underlying', () => {
     // Half the sheet's callers do not check for one first.
     for (const missing of [null, undefined, '']) {
-      expect(driftWindowNote(missing)).toContain('share quote is live')
+      expect(driftWindowNote(missing)).toContain('share quote is recent')
       expect(driftWindowNote(missing)).not.toMatch(/null|undefined/)
     }
   })

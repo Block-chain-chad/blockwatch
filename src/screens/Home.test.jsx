@@ -46,7 +46,7 @@ describe('Home', () => {
     const row = html.indexOf(`>${WATCHED.ticker}<`)
     const updated = html.indexOf('UPDATED-AGO')
     const learn = html.indexOf('Learn the basics')
-    const disclaimer = html.indexOf('Prices are informational only')
+    const disclaimer = html.indexOf('Prices come from third parties')
     expect(row).toBeGreaterThan(-1)
     expect(row).toBeLessThan(learn)
     expect(updated).toBeLessThan(learn)

@@ -30,8 +30,11 @@ import { useWallet, shortAddress } from '../state/WalletContext'
 import WalletSheet from './WalletSheet'
 import Sheet, { SheetTitle } from '../components/Sheet'
 
-export default function ProfileSheet({ onClose, onGoToTrade }) {
+export default function ProfileSheet({ onClose }) {
   const { entry } = useWaitlist()
+  // A pendingSync entry was saved on this device but never reached the
+  // server, so it is not a place on the list.
+  const onWaitlist = Boolean(entry?.email) && !entry.pendingSync
   const { user, available, signOut } = useAuth()
   const identity = displayIdentity(user)
   const wallet = useWallet()
@@ -88,29 +91,16 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
           </button>
         )}
 
-        <div className="mx-4 mt-4 rounded-2xl bg-zinc-900 p-4">
-          {entry ? (
-            <>
-              <div className="text-xs uppercase tracking-wide text-zinc-500">Trading waitlist</div>
-              <div className="mt-1 text-lg font-semibold text-accent">You're on the list</div>
-              <div className="mt-1 text-xs text-zinc-500">
-                {entry.pendingSync
-                  ? 'Saved on this device. We will finish your signup automatically.'
-                  : "You joined in one tap without leaving OnStock. We'll email you when in-app trading opens."}
-              </div>
-            </>
-          ) : (
-            <button onClick={onGoToTrade} className="flex w-full items-center justify-between gap-3 text-left">
-              <div>
-                <div className="text-sm font-semibold">Trading waitlist</div>
-                <div className="mt-0.5 text-xs text-zinc-500">Be first when in-app trading opens</div>
-              </div>
-              <span className="shrink-0 rounded-full bg-accent px-3.5 py-1.5 text-[13px] font-semibold text-zinc-950">
-                Join
-              </span>
-            </button>
-          )}
-        </div>
+        {/* The waitlist is closed to new sign-ups, so only people already on
+            it see it, with the one promise still owed to them. */}
+        {onWaitlist && (
+          <div className="mx-4 mt-4 rounded-2xl bg-zinc-900 p-4">
+            <div className="text-xs uppercase tracking-wide text-zinc-500">Trading waitlist</div>
+            <div className="mt-1 text-sm text-zinc-300">
+              You're on the list. One email if in-app trading ever launches where you live.
+            </div>
+          </div>
+        )}
 
         <div className="mt-4 divide-y divide-zinc-900">
           <ListRow
@@ -153,7 +143,7 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
           />
           <ListRow
             icon={<InfoIcon size={20} />}
-            label="About OnStock"
+            label="About Onstock"
             onClick={() => setAboutOpen(true)}
           />
           <ListRow
@@ -187,7 +177,7 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
           )}
         </div>
 
-        <div className="px-4 pt-3 text-center text-[11px] text-zinc-500">OnStock v0.1 · MVP preview</div>
+        <div className="px-4 pt-3 text-center text-[11px] text-zinc-500">Onstock v0.1 · MVP preview</div>
       </Sheet>
 
       {/* Siblings of the dialog, not children: each is its own modal above it. */}

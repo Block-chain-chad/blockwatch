@@ -50,7 +50,7 @@ export default function OnboardingTip() {
     >
       <span className="mt-[5px] size-1.5 shrink-0 rounded-full bg-accent" />
       <p className="t-caption flex-1 text-zinc-400">
-        The number on each row is the token's gap against the real stock.{' '}
+        The number on each row is the token's gap against the share it tracks.{' '}
         <span className="text-gain">Green</span> trades above it,{' '}
         <span className="text-loss">red</span> trades below it, and gray means they match. Tap any row to see both
         prices charted together.

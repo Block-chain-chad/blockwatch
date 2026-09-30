@@ -17,7 +17,7 @@ import ShareSheet from '../../overlays/ShareSheet'
 
 /*
  * The selected asset's numbers under the watchlist (spec §6.8): TradingView's
- * Details header — logo, ticker, the icon actions — over OnStock's block 0,
+ * Details header — logo, ticker, the icon actions — over Onstock's block 0,
  * the gap panel, then the DEX spread, the thin-market note and the Trade
  * button. Everything below the header is the phone asset screen's markup,
  * extracted (asset/GapPanel, asset/TradeButton) or copied.

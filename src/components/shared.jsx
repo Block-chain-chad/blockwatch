@@ -431,8 +431,9 @@ export function ListRow({ icon, label, value, onClick, muted }) {
 export function Disclaimer() {
   return (
     <p className="px-6 pb-4 pt-6 text-center text-[11px] leading-relaxed text-zinc-400">
-      Prices are informational only and may be delayed. OnStock does not provide
-      investment advice. Token market data by CoinGecko.{' '}
+      Prices come from third parties, may be delayed or wrong, and are for information
+      only. Tokens are not the shares they track. Onstock is not a broker and does not
+      give investment advice. Powered by CoinGecko.{' '}
       <a
         href={`${WEB_BASE}/privacy.html`}
         target="_blank"

@@ -16,7 +16,7 @@ export default function TabBar({ tab, onChange }) {
           left edge instead of clustering in a phone-width block mid-window.
           Backdrop blur removed with the rest of the glass. */}
       <div className="mx-auto flex max-w-md lg:max-w-[var(--content-max)] lg:justify-start lg:gap-2 lg:px-2">
-        {TABS.map(({ id, label, Icon, soon }) => {
+        {TABS.map(({ id, label, Icon }) => {
           const active = tab === id
           return (
             <button
@@ -33,11 +33,6 @@ export default function TabBar({ tab, onChange }) {
                 )}
               </span>
               <span className="text-[10px] font-medium lg:text-[13px]">{label}</span>
-              {soon && (
-                <span className="t-micro absolute right-1/2 top-1 translate-x-[26px] rounded-full bg-zinc-800 px-1.5 py-px text-[8px] text-zinc-400 lg:static lg:translate-x-0">
-                  soon
-                </span>
-              )}
             </button>
           )
         })}

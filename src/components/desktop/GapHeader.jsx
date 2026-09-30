@@ -125,7 +125,7 @@ export default function GapHeader({ asset, session, lastFetchAt, onExit, onSheet
           className="t-label flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-3 font-medium text-zinc-100"
           style={{ boxShadow: 'inset 0 0 0 1px var(--border-strong)' }}
         >
-          Trade on Jupiter ↗
+          View on Jupiter ↗
         </a>
       )}
     </div>
