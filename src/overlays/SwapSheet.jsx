@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useWallet } from '../state/WalletContext'
+import { EM_DASH } from '../lib/format'
 import {
   getSwapQuote,
   executeSwap,
@@ -282,8 +283,8 @@ export default function SwapSheet({ asset, onClose }) {
         setQuote(null)
         setMessage(
           err?.code === 'timeout'
-            ? "Couldn't reach the price feed — trying again in a moment."
-            : 'No route for that size — try a different amount.'
+            ? "Couldn't reach the price feed. Trying again in a moment."
+            : 'No route for that size. Try a different amount.'
         )
       } finally {
         inFlight = false
@@ -385,7 +386,7 @@ export default function SwapSheet({ asset, onClose }) {
         // live again — and the lock has to come off with it.
         submittingRef.current = false
         setStatus('rejected')
-        setMessage('Cancelled in your wallet — nothing was sent.')
+        setMessage('Cancelled in your wallet. Nothing was sent.')
       } else if (err?.phase === 'build') {
         // Threw before the wallet was ever handed the transaction (see
         // services/swap.js): we can promise nothing left the wallet, and
@@ -466,7 +467,7 @@ export default function SwapSheet({ asset, onClose }) {
           <SheetTitle className="text-lg font-semibold">Swap submitted</SheetTitle>
           <p className="mt-2 text-sm leading-relaxed text-zinc-400">
             Your {side === 'buy' ? `${asset.ticker} purchase` : `sale of ${asset.ticker}`} was
-            sent to the Solana network. Submitted isn't the same as confirmed — your wallet is
+            sent to the Solana network. Submitted isn't the same as confirmed. Your wallet is
             the one that knows. It usually confirms in a few seconds, Phantom will notify you,
             and you can watch it here:
           </p>
@@ -489,7 +490,7 @@ export default function SwapSheet({ asset, onClose }) {
         <div className="px-1 pb-2 text-center">
           <SheetTitle className="text-lg font-semibold">Couldn’t build this swap</SheetTitle>
           <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-            Nothing was sent and nothing left your wallet — safe to try again.
+            Nothing was sent and nothing left your wallet. It is safe to try again.
           </p>
           {message && <p className="mt-2 text-xs leading-relaxed text-zinc-400">{message}</p>}
           <button
@@ -513,7 +514,7 @@ export default function SwapSheet({ asset, onClose }) {
         <div className="px-1 pb-2 text-center">
           <SheetTitle className="text-lg font-semibold">Check your wallet first</SheetTitle>
           <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-            We lost the connection before we could confirm this swap — but it
+            We lost the connection before we could confirm this swap, but it
             may still have gone through. Check your wallet's recent activity
             before trying again, so you don't swap twice.
           </p>
@@ -577,19 +578,19 @@ export default function SwapSheet({ asset, onClose }) {
             <div className="flex justify-between">
               <span className="text-zinc-500">You receive</span>
               <span className="tabular-nums text-zinc-100">
-                {received != null ? `${received} ${outLabel}` : quoting ? 'Quoting…' : '—'}
+                {received != null ? `${received} ${outLabel}` : quoting ? 'Quoting…' : EM_DASH}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-zinc-500">Minimum received</span>
               <span className="tabular-nums text-zinc-400">
-                {minReceived != null ? `${minReceived} ${outLabel}` : '—'}
+                {minReceived != null ? `${minReceived} ${outLabel}` : EM_DASH}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-zinc-500">Price impact</span>
               <span className={`tabular-nums ${impact != null && impact > 1 ? 'text-loss' : 'text-zinc-400'}`}>
-                {impact != null ? `${impact.toFixed(2)}%` : impactUnknown ? 'Unknown' : '—'}
+                {impact != null ? `${impact.toFixed(2)}%` : impactUnknown ? 'Unknown' : EM_DASH}
               </span>
             </div>
             <p className="pt-1 text-[11px] leading-relaxed text-zinc-500">
@@ -633,7 +634,7 @@ export default function SwapSheet({ asset, onClose }) {
               <p className="text-xs leading-relaxed text-zinc-100">
                 <span className="font-semibold text-loss">Very high price impact.</span> This
                 trade moves the pool ~{impact.toFixed(2)}%. That cost comes straight out of
-                what you receive — a smaller amount usually costs far less.
+                what you receive. A smaller amount usually costs far less.
               </p>
               <label className="mt-2 flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg px-1">
                 <input
@@ -672,8 +673,8 @@ export default function SwapSheet({ asset, onClose }) {
           )}
 
           <p className="mt-3 px-1 text-[11px] leading-relaxed text-zinc-400">
-            Swap runs on Jupiter from your own wallet — you approve and send it in your wallet;
-            OnStock never holds your funds. If the price moves past the minimum shown, the
+            Swap runs on Jupiter from your own wallet. You approve and send it in your wallet,
+            and OnStock never holds your funds. If the price moves past the minimum shown, the
             swap fails and nothing is exchanged. You still pay the Solana network fee. Not
             investment advice.
           </p>

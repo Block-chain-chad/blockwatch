@@ -95,8 +95,8 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
               <div className="mt-1 text-lg font-semibold text-accent">You're on the list</div>
               <div className="mt-1 text-xs text-zinc-500">
                 {entry.pendingSync
-                  ? 'Saved on this device — finishing signup automatically.'
-                  : "One tap, without leaving OnStock — we'll email you when in-app trading opens."}
+                  ? 'Saved on this device. We will finish your signup automatically.'
+                  : "You joined in one tap without leaving OnStock. We'll email you when in-app trading opens."}
               </div>
             </>
           ) : (

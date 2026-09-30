@@ -26,7 +26,7 @@ export default function FeedbackSheet({ onClose }) {
     <Sheet onClose={onClose} className="z-[55]">
       {status === 'sent' ? (
         <div className="px-1 py-6 text-center">
-          <SheetTitle className="text-base font-semibold">Thanks — we read every one.</SheetTitle>
+          <SheetTitle className="text-base font-semibold">Thanks. We read every one.</SheetTitle>
           <p className="mt-1 text-sm text-zinc-500">
             Early feedback like yours decides what gets built next.
           </p>
@@ -41,7 +41,7 @@ export default function FeedbackSheet({ onClose }) {
         <form onSubmit={submit}>
           <SheetTitle className="px-1 text-base font-semibold">Help & feedback</SheetTitle>
           <p className="mt-0.5 px-1 text-xs text-zinc-500">
-            Bug, missing token, feature idea — anything. It lands straight with us.
+            Bug, missing token, feature idea, anything. It lands straight with us.
           </p>
           <textarea
             autoFocus
@@ -61,7 +61,7 @@ export default function FeedbackSheet({ onClose }) {
           />
           {status === 'error' && (
             <p className="mt-2 px-1 text-xs text-zinc-400">
-              That didn't send — our fault, not yours. Your message is still here; give it
+              That didn't send. Our fault, not yours. Your message is still here, so give it
               another try in a moment.
             </p>
           )}

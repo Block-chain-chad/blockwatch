@@ -128,9 +128,9 @@ export default function AssetNumbers({ assetId, scrub }) {
       {isThinlyTraded(asset) && (
         <div className="mx-4 mt-4 rounded-xl bg-zinc-900 p-3.5">
           <p className="text-xs leading-relaxed text-zinc-400">
-            <span className="font-medium text-zinc-300">Thinly traded</span> — about{' '}
+            <span className="font-medium text-zinc-300">Thinly traded.</span> About{' '}
             {asset.volume24h != null ? formatCompact(asset.volume24h) : 'very little'} changed
-            hands in 24h, so small trades can move this token's price. Treat the gap vs{' '}
+            hands in 24 hours, so small trades can move this token's price. Treat the gap versus{' '}
             {asset.underlying} as noisy, not as a real mispricing.
           </p>
         </div>

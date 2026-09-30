@@ -240,7 +240,7 @@ export default function ChartToolbar({
                   swatch={SWATCHES[i % SWATCHES.length]}
                   onClick={() => onIndicators(indicators.filter((k) => k !== key))}
                   aria-label={`Remove ${label}`}
-                  {...tipProps(`${label} — click to remove`)}
+                  {...tipProps(`Remove ${label}`)}
                 >
                   {dense ? parsed.entry.short : label}
                   <CloseIcon size={12} className="opacity-50" />

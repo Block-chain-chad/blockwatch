@@ -175,7 +175,7 @@ export default function Home({ onOpenProfile, onOpenAsset, onOpenSearch }) {
         <div className="px-6 py-12 text-center">
           <p className="text-sm text-zinc-400">
             {watched.length === 0
-              ? 'Your watchlist is empty — add the tokens you care about.'
+              ? 'Your watchlist is empty. Add the tokens you care about.'
               : 'Nothing on your watchlist in this category yet.'}
           </p>
           <button

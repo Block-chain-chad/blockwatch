@@ -1,4 +1,4 @@
-import { formatCompact } from '../../lib/format'
+import { formatCompact, EM_DASH } from '../../lib/format'
 import { liquidityCaption } from '../../lib/poolLiquidity'
 import { usePoolLiquidity } from '../../hooks/usePoolLiquidity'
 import { ChevronDown } from '../Icons'
@@ -25,8 +25,8 @@ function CompareRow({ label, stock, token }) {
   return (
     <>
       <div className="text-zinc-500">{label}</div>
-      <div className="text-right text-[13px] leading-tight tabular-nums text-zinc-300">{stock ?? '—'}</div>
-      <div className="text-right text-[13px] leading-tight tabular-nums text-zinc-300">{token ?? '—'}</div>
+      <div className="text-right text-[13px] leading-tight tabular-nums text-zinc-300">{stock ?? EM_DASH}</div>
+      <div className="text-right text-[13px] leading-tight tabular-nums text-zinc-300">{token ?? EM_DASH}</div>
     </>
   )
 }

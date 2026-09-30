@@ -7,7 +7,7 @@ import { fetchNewListings } from '../services/coingecko'
 import { ASSET_IDS } from '../data/universe'
 import { formatPrice, formatPct, changeColor } from '../lib/format'
 import { isThinlyTraded } from '../lib/prices'
-import { rankAssets, popularPick } from '../lib/search'
+import { rankAssets, popularPick, assetSubtitle } from '../lib/search'
 import { getRecentViews } from '../lib/recentViews'
 import { SearchIcon, PlusIcon, CheckCircleIcon, CloseIcon } from '../components/Icons'
 import AssetLogo from '../components/AssetLogo'
@@ -199,7 +199,7 @@ export default function SearchOverlay({ onClose, onOpenAsset, pickerFolderId = n
                     <ResultRow
                       key={a.id}
                       asset={a}
-                      subtitle={`${a.name} — ${a.issuer}${a.chain ? `, ${a.chain}` : ''}`}
+                      subtitle={assetSubtitle(a)}
                       {...rowProps}
                     />
                   ))}
@@ -216,7 +216,7 @@ export default function SearchOverlay({ onClose, onOpenAsset, pickerFolderId = n
                     <ResultRow
                       key={a.id}
                       asset={a}
-                      subtitle={`${a.name} — ${a.issuer}${a.chain ? `, ${a.chain}` : ''}`}
+                      subtitle={assetSubtitle(a)}
                       changePct={a.dayChange}
                       {...rowProps}
                     />
@@ -235,11 +235,7 @@ export default function SearchOverlay({ onClose, onOpenAsset, pickerFolderId = n
                     key={t}
                     asset={asset}
                     fallbackTicker={t}
-                    subtitle={
-                      asset
-                        ? `${asset.name} — ${asset.issuer}${asset.chain ? `, ${asset.chain}` : ''}`
-                        : ''
-                    }
+                    subtitle={asset ? assetSubtitle(asset) : ''}
                     {...rowProps}
                   />
                 )
@@ -257,7 +253,7 @@ export default function SearchOverlay({ onClose, onOpenAsset, pickerFolderId = n
                       <div className="min-w-0 flex-1">
                         <div className="text-[15px] font-semibold">{l.ticker}</div>
                         <div className="truncate text-xs text-zinc-500">
-                          {l.name} — {l.issuer}
+                          {assetSubtitle({ name: l.name, issuer: l.issuer })}
                         </div>
                       </div>
                       <div className="text-right">
@@ -280,7 +276,7 @@ export default function SearchOverlay({ onClose, onOpenAsset, pickerFolderId = n
               <ResultRow
                 key={a.id}
                 asset={a}
-                subtitle={`${a.name} — ${a.issuer}${a.chain ? `, ${a.chain}` : ''}`}
+                subtitle={assetSubtitle(a)}
                 {...rowProps}
               />
             ))}
@@ -291,7 +287,7 @@ export default function SearchOverlay({ onClose, onOpenAsset, pickerFolderId = n
               No tokenized version of “{query}” yet.
             </p>
             <p className="mt-1 text-xs text-zinc-500">
-              We track new listings daily — try one of these in the meantime.
+              We add new listings daily. Try one of these in the meantime.
             </p>
             <div className="mt-4 flex flex-wrap justify-center gap-2">
               {popularSearches.map((t) => (

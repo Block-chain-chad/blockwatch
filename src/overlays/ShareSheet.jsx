@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { premiumPct } from '../lib/prices'
 import { priceFooter } from '../lib/gapCheck'
-import { formatPrice, formatPct } from '../lib/format'
+import { formatPrice, formatPct, EM_DASH } from '../lib/format'
 import { shareGapLines } from '../lib/sessionCopy'
 import { CARD, drawGapLines } from '../lib/shareCard'
 import { track } from '../services/analytics'
@@ -166,7 +166,7 @@ export default function ShareSheet({ asset, onClose }) {
           </>
         ) : (
           <div className="mt-1 text-4xl font-bold tabular-nums">
-            {asset.tokenPrice != null ? formatPrice(asset.tokenPrice) : '—'}
+            {asset.tokenPrice != null ? formatPrice(asset.tokenPrice) : EM_DASH}
           </div>
         )}
         <div className="mt-3 text-xs text-zinc-500">

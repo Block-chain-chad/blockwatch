@@ -47,7 +47,7 @@ export default function PasswordSheet({ recoveryMode = false, onClose }) {
           </SheetTitle>
           <p className="mt-0.5 px-1 text-xs text-zinc-500">
             {recoveryMode
-              ? "You're signed in via your recovery link — choose the new password now."
+              ? "You're signed in with your recovery link. Choose the new password now."
               : 'Takes effect immediately on your next sign-in.'}
           </p>
           <input
@@ -61,7 +61,7 @@ export default function PasswordSheet({ recoveryMode = false, onClose }) {
           />
           {status === 'error' && (
             <p className="mt-2 px-1 text-xs text-zinc-400">
-              That didn't save — give it another try in a moment.
+              That didn't save. Give it another try in a moment.
             </p>
           )}
           <button

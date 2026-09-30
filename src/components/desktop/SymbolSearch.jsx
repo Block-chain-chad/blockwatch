@@ -4,7 +4,7 @@ import { usePrices } from '../../state/PricesContext'
 import { useFolders } from '../../state/FoldersContext'
 import { track } from '../../services/analytics'
 import { formatPrice } from '../../lib/format'
-import { rankAssets, popularPick } from '../../lib/search'
+import { rankAssets, popularPick, assetSubtitle } from '../../lib/search'
 import { getRecentViews } from '../../lib/recentViews'
 import { isMacPlatform } from '../../lib/desktopKeys'
 import { SearchIcon, PlusIcon, CheckCircleIcon } from '../Icons'
@@ -23,10 +23,6 @@ import AssetLogo from '../AssetLogo'
  * the desktop lands here) and close() shuts it from the Esc handler.
  */
 const MAX_RESULTS = 12
-
-function subtitleOf(a) {
-  return `${a.name} — ${a.issuer}${a.chain ? `, ${a.chain}` : ''}`
-}
 
 export default function SymbolSearch({ ref, onSelectAsset }) {
   const [query, setQuery] = useState('')
@@ -196,7 +192,7 @@ export default function SymbolSearch({ ref, onSelectAsset }) {
                         <AssetLogo asset={a} size={28} />
                         <div className="min-w-0 flex-1">
                           <div className="t-label text-zinc-100">{a.ticker}</div>
-                          <div className="t-caption truncate text-zinc-500">{subtitleOf(a)}</div>
+                          <div className="t-caption truncate text-zinc-500">{assetSubtitle(a)}</div>
                         </div>
                         {a.tokenPrice != null && (
                           <div className="num t-caption shrink-0 text-zinc-300">
