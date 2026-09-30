@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Privacy Policy — OnStock</title>
+  <title>Privacy Policy · Onstock</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <style>
     :root { color-scheme: dark; }
@@ -19,6 +19,7 @@
     h1 { font-size: 26px; color: #f4f4f5; margin: 0 0 4px; letter-spacing: -0.3px; }
     .date { color: #71717a; font-size: 13px; margin-bottom: 28px; }
     h2 { font-size: 17px; color: #f4f4f5; margin: 36px 0 10px; }
+    h3 { font-size: 15px; color: #e4e4e7; margin: 22px 0 8px; }
     p, li { color: #a1a1aa; }
     strong { color: #d4d4d8; }
     a { color: #2dd4bf; text-decoration: none; }
@@ -34,146 +35,281 @@
     table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 12px 0; }
     th, td { text-align: left; padding: 8px 10px 8px 0; vertical-align: top; border-bottom: 1px solid #27272a; }
     th { color: #71717a; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
-    td:first-child { color: #d4d4d8; white-space: nowrap; }
+    td:first-child { color: #d4d4d8; }
     .back { display: inline-block; margin-top: 40px; }
   </style>
 </head>
 <body>
 <main>
-  <div class="brand"><span>▲</span> OnStock</div>
+  <div class="brand"><span>▲</span> Onstock</div>
   <h1>Privacy Policy</h1>
-  <div class="date">Effective July 22, 2026 · applies to onstock.app (formerly blockwatch.app) and its beta deployments</div>
+  <div class="date">Last updated September 30, 2026 · applies to onstock.app, the Onstock iPhone app and their test versions. Onstock was called BlockWatch until 2026, and blockwatch.app now redirects here.</div>
 
   <div class="tldr">
     <p>The short version</p>
     <ul>
-      <li>No ads, no selling or renting your data, ever.</li>
-      <li>No cookies. No camera, microphone, or location access. Notifications are used only to deliver the price and drift alerts you set up yourself, and only if you grant permission when asked.</li>
-      <li>You can use the whole tracker without an account. Accounts are optional and exist only to sync your folders and alerts.</li>
-      <li>We collect your email only when you give it to us (waitlist, account, or feedback), and we email you only for the reason you gave it.</li>
-      <li>Usage analytics are tied to a random device ID, never to your name or email.</li>
+      <li>Onstock is a free tracker for tokenized stocks. You can use it without an account.</li>
+      <li>We never sell your data, show ads, or share your data for advertising.</li>
+      <li>If you make an account, we keep your email, how you sign in, and the folders and alerts you save, so they follow you across devices.</li>
+      <li>Usage analytics use a random ID made on your device, never your name, email or account.</li>
+      <li>You can delete your account in the app or by email. Below we list exactly what that deletes and what it does not.</li>
+      <li>Onstock never holds your money or your wallet keys.</li>
     </ul>
   </div>
 
   <h2>Who we are</h2>
   <p>
-    OnStock is an independently built tracker for tokenized stocks. It shows public market
-    data. It never holds your funds and gives no investment advice. It does not execute trades:
-    where a swap is offered, OnStock only prepares the transaction for your own wallet to
-    approve and send. For anything in
-    this policy, contact <a href="mailto:contact@blockwatch.app">contact@blockwatch.app</a>.
+    Onstock is an independent app based in Arizona, United States ("we", "us"). It shows public
+    market data about tokenized stocks. Onstock is not a broker, does not hold your funds, does
+    not execute trades and does not give investment advice. For anything in this policy, email
+    <a href="mailto:contact@onstock.app">contact@onstock.app</a>.
   </p>
 
-  <h2>What we collect, and why</h2>
+  <h2>What we collect and why</h2>
+
+  <h3>If you just use the tracker (no account)</h3>
   <ul>
-    <li><strong>Waitlist:</strong> your email address, stored with a signup position. Used to send
-      one welcome email when you join and one email when trading opens — nothing else. Our
-      systems are designed so the app itself can never read the waitlist back; only we can, in
-      our database dashboard.</li>
-    <li><strong>Account (optional):</strong> your email and a password (stored hashed by our
-      authentication provider, Supabase — we never see your password). If you sign in, your
-      watchlist, folder names, and price-alert settings sync to your account so they follow you
-      across devices. Without an account, all of that stays on your device only.</li>
-    <li><strong>Feedback:</strong> whatever you type in the feedback form, plus an optional reply
-      email. If you've joined the waitlist on this device, forms pre-fill that address for
-      convenience — you can clear it before sending, and nothing is submitted until you tap send.</li>
-    <li><strong>Usage analytics:</strong> we use PostHog (US-hosted) to count a few events — app
-      opens, waitlist joins (without the email), share-card taps, and searches, including the text
-      of what was searched, so we can learn which assets people want. Events carry a random
-      device ID stored on your device, never your name, email, or account. There is no
-      click-tracking script, no session recording, and no advertising identifier. Like any web
-      request, analytics requests expose your IP address to PostHog. One practical note: search is
-      for tickers and company names — anything you type there is logged, so don't type personal
-      information into it.</li>
+    <li><strong>Usage analytics.</strong> We use PostHog, hosted in the United States, to count how
+      the app is used, so we can tell what to build and fix. We send events such as: the app was
+      opened; a search was made, including the text you typed (so please type tickers and company
+      names, not personal information); a chart, share card or lesson was opened, and for which
+      ticker; a folder or alert was created (not its name or contents); whether you allowed
+      notifications; that someone signed in and which method was used; that you tapped out to a
+      trading venue, which venue and for which ticker; and similar product events. Every event
+      carries a random ID created on your device and says whether it came from the live app or a
+      test version.</li>
+    <li><strong>Browser and visit details.</strong> Each analytics event also carries your
+      browser's user agent (a line of text that names your browser, its version, your operating
+      system and your type of device), the address of the page where your visit started (without
+      the part after a "?" or "#", which is where sign-in links carry their codes), the main
+      address of the website that sent you to Onstock, if any, and the campaign tags (UTM
+      parameters) in the link you followed, if it had them. Events never include your name,
+      email, account, wallet address or folder names.</li>
+    <li><strong>Feature switches.</strong> While the app is open, it sends the same random ID to
+      PostHog about once a minute to check which features are switched on for your device.</li>
+    <li><strong>Your IP address and approximate location.</strong> Like any website, the services
+      the app talks to see your IP address. PostHog keeps the IP address that sent each event and
+      uses it to estimate a rough location, such as country and city.</li>
+    <li><strong>Error reports.</strong> When something breaks, the app sends an error report to
+      Sentry: the error, where in the code it happened, your browser or device type and version,
+      the page address (with any sign-in codes removed), and the last few things the app did
+      before the error. Error reports do not include your account, your email or your IP
+      address.</li>
+    <li><strong>Server logs.</strong> Our host, Vercel, keeps standard request logs, such as IP
+      address, time, the page or data requested (for example a stock ticker) and browser type.</li>
+    <li><strong>Market data requests.</strong> To show prices, your device asks CoinGecko and
+      Jupiter for token prices directly, so they see your IP address and which tokens are being
+      priced. Company logos load directly from Finnhub's image servers, which see your IP address
+      and which logos loaded. Stock quotes, price history, news headlines and Treasury yields come
+      through our own servers from Finnhub, Yahoo Finance, GeckoTerminal, Google News and the
+      Federal Reserve Bank of St. Louis (its FRED service), so those providers see our server, not
+      you. Tapping a headline opens the news site, which sees that visit.</li>
   </ul>
+
+  <h3>If you joined the trading waitlist</h3>
+  <p>
+    The trading waitlist closed to new sign-ups on September 30, 2026. If you joined before then,
+    we keep your email address and your place in line. We will send you one email only if in-app
+    trading ever launches and is legally available where you live, and nothing else.
+  </p>
+
+  <h3>If you send feedback</h3>
+  <p>
+    We keep your message and, if you give one, a reply email address. If this device has a
+    waitlist entry, the email field is filled in with it; you can clear it before sending.
+    Nothing is sent until you tap send. We use feedback only to reply to you and to improve the
+    app.
+  </p>
+
+  <h3>If you create an account (optional)</h3>
+  <ul>
+    <li><strong>Email and sign-in.</strong> Your email address, and depending on how you sign in: a
+      password (stored only as a scrambled hash by our sign-in provider, Supabase; we never see
+      it), one-time sign-in links sent to your email, or Sign in with Apple.</li>
+    <li><strong>Sign in with Apple.</strong> Apple gives us an email address, which may be a
+      private relay address that forwards to you if you chose "Hide My Email". The first time you
+      sign in with Apple on the website, Apple may also share your name, which we keep with your
+      account and show in your profile.</li>
+    <li><strong>Face ID, Touch ID and passkeys (website only).</strong> If you add one, Supabase
+      stores its public key, a name for it, and when it was created and last used. The private key
+      and your fingerprint or face data never leave your device.</li>
+    <li><strong>What you save.</strong> Your folders (their names and which assets are in them)
+      and your alert rules, so they sync across your devices.</li>
+    <li><strong>Sign-in records.</strong> Supabase keeps records of sign-ins and sessions, which
+      can include IP address, time and browser type, to keep accounts secure.</li>
+  </ul>
+
+  <h3>If you connect a wallet (website only)</h3>
+  <p>
+    If you connect a Phantom wallet, the app learns your wallet's public address and keeps it in
+    the open page only. We do not send it to our servers or to analytics. Onstock cannot see your
+    keys, move your funds or sign anything.
+  </p>
+
+  <h3>If you email us</h3>
+  <p>
+    Mail to contact@onstock.app or marcus@onstock.app passes through Cloudflare, which forwards
+    it to our email inbox. We keep it as long as we need it to help you.
+  </p>
+
+  <h3>Notifications</h3>
+  <p>
+    Notifications are used only to deliver the price and drift alerts you set up yourself, and
+    only if you grant permission when asked. They are made on your device while Onstock is open.
+    We do not collect a notification token or send notifications from a server.
+  </p>
 
   <h2>What stays on your device</h2>
   <p>
-    The app keeps working data in your browser's local storage: price caches, your folders and
-    watchlist, alert rules and fired-alert history, display preferences, recently viewed assets,
-    your waitlist entry (including its email), and — when signed in — your session token.
-    None of it leaves your device except as described in this policy. Clearing the site's data in
-    your browser removes all of it.
+    The app saves working data in your browser's or phone's storage: price, logo and chart
+    caches, your folders, watchlist and alert rules, the history of alerts that fired, display
+    and layout preferences, recently viewed assets, your waitlist entry (including its email) if
+    you joined, the beta access code, the random analytics ID, where your current visit started,
+    whether you have been offered Face ID or a passkey, your notification choice, and, when
+    signed in, your session. None of it leaves your device except as this policy describes.
+    Clearing the site's data, or deleting the app, removes it.
   </p>
 
-  <h2>Market data lookups</h2>
-  <p>
-    Showing you live prices means asking data providers for them, and those requests reveal
-    ordinary web-request information:
-  </p>
-  <ul>
-    <li><strong>CoinGecko</strong> (token prices): your browser calls CoinGecko directly, so
-      CoinGecko sees your IP address and the token ids being refreshed — a standard set common
-      to all users, plus the assets you watch, view, or set alerts on.</li>
-    <li><strong>Finnhub, Yahoo Finance, Google News</strong> (stock quotes, charts, headlines):
-      these requests go through our own servers, so those providers see our server's address,
-      not yours. Two exceptions: company logo images load directly from Finnhub's image host
-      (it sees your IP and which logos loaded), and tapping a headline follows a Google News
-      link (Google and the news outlet see that visit, as with any link on the web).</li>
-  </ul>
-
-  <h2>Services we rely on</h2>
+  <h2>Who we share data with</h2>
+  <p>We share data only with the providers that run Onstock for us, and only what each one needs:</p>
   <table>
-    <tr><th>Service</th><th>Role</th><th>What it handles</th></tr>
-    <tr><td>Vercel</td><td>Hosting</td><td>Serves the app; like any host, sees request logs (IPs, requested pages and symbols)</td></tr>
-    <tr><td>Supabase</td><td>Database &amp; accounts</td><td>Waitlist emails, feedback, account credentials, synced folders and alerts</td></tr>
-    <tr><td>Resend</td><td>Email delivery</td><td>Sends the waitlist welcome email to your address</td></tr>
-    <tr><td>PostHog</td><td>Analytics</td><td>Anonymous usage events with a random device ID (US-hosted)</td></tr>
-    <tr><td>CoinGecko / Finnhub / Yahoo / Google News</td><td>Market data</td><td>Prices, charts, company info, and headlines as described above</td></tr>
+    <tr><th>Provider</th><th>What it does for us</th><th>What it handles</th></tr>
+    <tr><td>Vercel</td><td>Hosting and our servers</td><td>Request logs; passes account deletion requests to Supabase</td></tr>
+    <tr><td>Supabase</td><td>Accounts and database</td><td>Emails, sign-in data, passkeys, folders, alerts, waitlist, feedback</td></tr>
+    <tr><td>PostHog</td><td>Analytics and feature switches (United States)</td><td>Events with a random device ID, browser and visit details, and IP address</td></tr>
+    <tr><td>Sentry</td><td>Error reports</td><td>Error details, device and browser type</td></tr>
+    <tr><td>Resend</td><td>Sending email</td><td>Your email address and the message we send</td></tr>
+    <tr><td>Cloudflare</td><td>Domain and email forwarding</td><td>Emails you send us</td></tr>
+    <tr><td>Apple</td><td>Sign in with Apple, the App Store</td><td>What Apple's own privacy policy covers</td></tr>
+    <tr><td>CoinGecko, Jupiter, Finnhub (logos)</td><td>Market data your device requests directly</td><td>IP address and which tokens or logos</td></tr>
+    <tr><td>Finnhub, Yahoo Finance, GeckoTerminal, Google News, FRED</td><td>Market data and news through our servers</td><td>Tickers requested, not your data</td></tr>
   </table>
   <p>
-    Each provider processes this data to run their service for us. We don't share your data with
-    anyone else, and we never sell it.
+    Each provider processes data to provide its service to us under its own terms. We do not sell
+    or rent personal information, we do not share it for cross-context behavioral advertising,
+    and we do not use it to track you across other companies' apps or websites. We may disclose
+    information if the law requires it, or to a buyer if Onstock is sold, in which case this
+    policy continues to apply to data collected under it unless you agree otherwise.
   </p>
 
-  <h2>Cookies</h2>
+  <h2>Cookies and tracking</h2>
   <p>
-    OnStock sets no cookies — first-party or third-party. All persistence uses local storage
-    on your device. External images and links you tap (logos, news articles) are ordinary web
-    requests to other sites, which behave per those sites' own policies.
+    Onstock does not set cookies and does not use advertising identifiers, tracking pixels or
+    session recording. It uses your device's storage as described above. Onstock does not
+    respond to browser "Do Not Track" signals differently, because it does not track you across
+    other sites. Links you tap and images from other sites (logos, news articles) are ordinary web
+    requests to those sites, which follow their own policies.
   </p>
 
   <h2>Emails we send</h2>
+  <ul>
+    <li>Account emails: sign-in links, account confirmation and password resets.</li>
+    <li>Waitlist: one email, only if in-app trading ever launches and is legally available where
+      you live.</li>
+    <li>Replies to your feedback or emails.</li>
+  </ul>
   <p>
-    Only transactional ones: the waitlist welcome, sign-in links, account confirmation, and
-    password resets. No newsletters, no marketing. A note worth knowing: sign-in links are
-    literal keys to your account — anyone with access to your inbox could use one, so keep your
-    email account secure.
+    We do not send newsletters or marketing email. A sign-in link is a key to your account:
+    anyone with access to your inbox could use one, so keep your email account secure.
   </p>
 
-  <h2>Retention and your choices</h2>
+  <h2>How long we keep data</h2>
   <ul>
-    <li>Waitlist, feedback, and account data are kept until you ask us to remove them.</li>
-    <li>To delete anything — your waitlist entry, feedback, or entire account — email
-      <a href="mailto:contact@blockwatch.app">contact@blockwatch.app</a> from the address in
-      question and we'll remove it.</li>
-    <li>Signing out removes your session from the device; clearing site data removes everything
-      stored locally.</li>
+    <li><strong>Account data</strong> (email, sign-in data, passkeys, folders, alerts): until you
+      delete your account.</li>
+    <li><strong>Waitlist entries:</strong> until we have sent the one email described above, or
+      until you ask us to remove yours.</li>
+    <li><strong>Feedback and emails you send us:</strong> as long as they help us reply to you and
+      improve the app, or until you ask us to remove them.</li>
+    <li><strong>Analytics, error reports, server logs and email delivery logs:</strong> kept by
+      PostHog, Sentry, Vercel and Resend under their own retention schedules. They are not linked
+      to your account.</li>
+    <li><strong>Backups:</strong> our database provider may keep backups for a limited time after
+      data is deleted.</li>
   </ul>
+
+  <h2>Deleting your data</h2>
+  <p>
+    <strong>Delete your account in the app:</strong> open your profile, then tap Delete account.
+    To keep your account safe, this needs a recent sign-in; if you have not signed in within the
+    last few minutes, the app asks you to sign in again first. Deleting permanently removes your
+    account and your sign-in details, passkeys, synced folders and alerts. If your account email
+    is confirmed, it also deletes the waitlist entry and feedback sent with that same email
+    address. If you signed in with Apple in the iPhone app, we also ask Apple to turn off Sign in
+    with Apple for Onstock. On your device, it signs you out and clears your folders, alerts and
+    waitlist entry.
+  </p>
+  <p>
+    <strong>What account deletion does not delete:</strong> analytics tied to your device's random
+    ID, error reports, server and email delivery logs, a waitlist entry or feedback sent with a
+    different email address, emails you sent us, and backups until they expire. None of these is
+    linked to your account. To ask us to remove what we can, email
+    <a href="mailto:contact@onstock.app">contact@onstock.app</a> from the address in question.
+  </p>
+  <p>
+    <strong>By email or without an account:</strong> to delete your account, your waitlist entry
+    or your feedback, email <a href="mailto:contact@onstock.app">contact@onstock.app</a> from that
+    address. To remove what is on your device, clear the site's data or delete the app.
+  </p>
+  <p>
+    <strong>Passkeys:</strong> your device keeps its copy of a passkey in its password manager.
+    Remove it there after deleting your account.
+  </p>
+  <p>
+    <strong>Sign in with Apple:</strong> you can also remove Onstock at any time on iPhone in
+    Settings, then your name, then Sign in with Apple.
+  </p>
+
+  <h2>Your choices and rights</h2>
+  <p>
+    Wherever you live, you can ask us to tell you what personal information we hold about you,
+    correct it, delete it, or give you a copy. Email
+    <a href="mailto:contact@onstock.app">contact@onstock.app</a>. We will answer within 30 days
+    and will not treat you differently for asking. We may need to confirm that you control the
+    email address involved. Depending on where you live, you may also have the right to object to
+    or restrict some uses, to withdraw consent, and to complain to your data protection
+    authority.
+  </p>
+
+  <h2>Where data is processed</h2>
+  <p>
+    Onstock and its providers are based in the United States, and your data is processed there.
+    If you use Onstock from another country, your data is transferred to the United States.
+  </p>
 
   <h2>Security</h2>
   <p>
-    All traffic is encrypted in transit (HTTPS, enforced). API keys and the ability to read
-    stored emails live server-side only — they are never shipped to your browser. Database
-    access rules restrict account data to the signed-in owner.
+    All traffic is encrypted in transit (HTTPS, enforced). Secret keys and the ability to read
+    stored emails stay on our servers and never reach your browser. Database rules limit account
+    data to the signed-in owner. No system is perfectly secure; if a breach affects you, we will
+    tell you as the law requires.
   </p>
 
   <h2>Children</h2>
-  <p>OnStock is not directed at children under 13, and we don't knowingly collect their data.</p>
+  <p>
+    Onstock is not directed at children, and we do not knowingly collect personal information from
+    anyone under 13. If you think a child has given us information, email
+    <a href="mailto:contact@onstock.app">contact@onstock.app</a> and we will delete it.
+  </p>
 
   <h2>Not investment advice</h2>
   <p>
-    Prices shown are informational and may be delayed or, for thinly traded tokens, unreliable —
-    the app flags those. Nothing in OnStock is investment advice.
+    Onstock shows market data for information only. Prices may be delayed or wrong, and for
+    thinly traded tokens they can be unreliable; the app flags those. Nothing in Onstock is
+    investment advice, and Onstock is not a broker.
   </p>
 
   <h2>Changes</h2>
   <p>
-    If our practices change, this page and its date change with them. Meaningful changes will be
-    noted in the app.
+    If we change this policy, we will update this page and its date, and note meaningful changes
+    in the app. We will not use data we already hold in a new way that this policy did not allow
+    without asking you first.
   </p>
 
-  <a class="back" href="/">← Back to OnStock</a>
+  <h2>Contact</h2>
+  <p><a href="mailto:contact@onstock.app">contact@onstock.app</a></p>
+
+  <a class="back" href="/">← Back to Onstock</a>
 </main>
 </body>
 </html>
