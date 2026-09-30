@@ -21,7 +21,7 @@ export const SESSION_DOT = {
 }
 
 export const SESSION_NOTE = {
-  regular: 'US market open. Both prices are live, so the gap is a real spread right now.',
+  regular: 'US market open. Both prices are recent, so the gap reflects current trading, within the delay shown on each price.',
   pre: 'Pre-market. The share is trading again, but our share price is still the last close, so gaps read wider than they are.',
   post: 'After hours. The share is still trading, but our share price is today’s close, so gaps read wider than they are.',
   closed: 'US market closed. Tokens still trade, so each gap is measured against the last close.',
@@ -133,3 +133,6 @@ export function shareGapLines(asset, now = Date.now()) {
     ? { line: `vs ${asset.underlying} at ${closed.close}`, tag: closed.tag }
     : { line: `vs ${asset.underlying} stock`, tag: null }
 }
+
+/** Under every ranked list: a sort order describes prices, it is not a pick. */
+export const RANKING_NOTE = 'Rankings describe prices, not what to buy or sell.'

@@ -4,7 +4,7 @@ import { formatPct, formatCompact, changeColor, isPlausiblePct } from '../lib/fo
 import { ChevronRight } from './Icons'
 import AssetLogo from './AssetLogo'
 import ClosedGapMark from './ClosedGapMark'
-import { closedGapLabelFor } from '../lib/sessionCopy'
+import { closedGapLabelFor, RANKING_NOTE } from '../lib/sessionCopy'
 
 /*
  * "Today in tokenized stocks" — the market's daily extremes, computed from
@@ -122,6 +122,7 @@ export default function DailyDigest({ onOpenAsset }) {
           </button>
         ))}
       </div>
+      <p className="t-caption px-4 pt-2 text-zinc-500">{RANKING_NOTE}</p>
     </>
   )
 }

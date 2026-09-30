@@ -82,7 +82,7 @@ export default function AccessGate({ children }) {
         </button>
       </form>
       <p className="mt-8 text-center text-[11px] text-zinc-500">
-        Tracking tokenized stocks against the real thing · launching soon
+        Tracking tokenized stocks against the shares they track · launching soon
       </p>
     </div>
   )

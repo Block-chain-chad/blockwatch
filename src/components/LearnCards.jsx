@@ -19,8 +19,8 @@ const LESSONS = [
     id: 'backing',
     title: 'How are tokens backed?',
     body: [
-      "Each token is issued against a real share. The issuer buys actual stock and holds it with a licensed custodian as backing, and the token is built to track that share's price, which is why its price hugs the real one.",
-      'That anchor works through redemption: if the token got much cheaper than the stock, eligible professional traders could buy tokens and redeem them with the issuer, and that trade pulls prices back together. Redemption is limited: it requires identity checks, has minimum sizes, and is not available to people in the United States.',
+      "The issuers say each token is issued against a real share: the issuer buys actual stock and holds it with a licensed custodian as backing, and the token is built to track that share's price, which is why its price hugs the real one.",
+      'That anchor works through redemption: if the token got much cheaper than the stock, eligible professional traders could buy tokens and redeem them with the issuer, and that trade pulls prices back together. Redemption is limited: it requires identity checks, has minimum sizes, and is not available to people in the United States. The tokens themselves are not offered to people in the United States.',
       "You can check the details on any asset page under 'Details': the issuer, the chain it lives on, and the stock it tracks.",
     ],
   },
@@ -29,8 +29,8 @@ const LESSONS = [
     title: 'Why weekend prices drift',
     body: [
       'The US stock market closes at 4 PM Eastern on Friday. Tokens don\'t close. They keep trading nights, weekends, and holidays.',
-      "While the market is closed, we compare tokens against the stock's last closing price, and the app labels it that way. A token drifting a percent or two over a weekend isn't an error. It's a live guess about where the stock will open on Monday.",
-      'When the market reopens, the comparison switches back to the live share price, so the gap can change quickly. It may narrow, persist or widen.',
+      "While the market is closed, we compare tokens against the stock's last closing price, and the app labels it that way. A token drifting a percent or two over a weekend isn't an error. It shows what token traders are paying while the market is closed. It is not a forecast of Monday's open.",
+      'When the market reopens, the comparison switches back to the current share price, so the gap can change quickly. It may narrow, persist or widen.',
     ],
   },
   {
@@ -55,7 +55,7 @@ const LESSONS = [
     id: 'issuerrisk',
     title: 'What if the issuer goes under?',
     body: [
-      "This is the honest risk of a tokenized stock, and it is different from the risk of the share itself. You own a claim on a share held by someone else, so you are exposed to that someone else, not just to the company's stock price.",
+      "This is the honest risk of a tokenized stock, and it is different from the risk of the share itself. You hold a claim against the token's issuer, not a share in the company. xStocks are tracker certificates and Ondo tokens are notes, both backed by shares the issuers say they hold. Neither gives you a vote or other shareholder rights. So you are exposed to the issuer, not just to the company's stock price.",
       'The shares sit with a licensed custodian, held separately from the issuer\'s own money, which is what is meant to survive the issuer failing. That structure is the protection; it is not a government guarantee, and it is not the same as holding the share in a brokerage account in your own name.',
       'What it does not protect against: the token drifting from the share price, a chain or exchange you cannot reach, or losing your own wallet keys. Each asset page lists its issuer under Details, so you can see who you are trusting.',
     ],
@@ -65,7 +65,7 @@ const LESSONS = [
     title: 'Who actually holds my money?',
     body: [
       'Not us. Onstock is a tracker. It reads public prices and shows you the gap. It never takes custody of your funds, never moves them, and cannot trade on your behalf.',
-      "When you buy, that happens somewhere else. Tapping through to trade sends you out to Jupiter, where the swap settles on-chain from your own wallet. Your keys stay with you the whole time, which is what 'non-custodial' means: no one in the middle holds your tokens for you. The token's issuer may still be able to pause or freeze it.",
+      "Onstock has no trading. If you trade tokens somewhere else, that happens on that service, under its rules, from your own wallet. Your keys stay with you the whole time, which is what 'non-custodial' means: no one in the middle holds your tokens for you. The token's issuer may still be able to pause or freeze it.",
       'The flip side of that is real: if you lose your wallet keys, no one, including us, can recover them for you.',
     ],
   },

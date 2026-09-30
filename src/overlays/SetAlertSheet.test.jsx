@@ -62,14 +62,14 @@ describe('SetAlertSheet renders', () => {
     expect(html).toContain('±1%')
   })
 
-  it('says a drift alert only fires while the market is open and the share is live', () => {
+  it('says a drift alert only fires while the market is open and the share quote is recent', () => {
     const html = render()
     expect(html).toContain('while the US market is open')
-    expect(html).toContain('NVDA quote is live')
+    expect(html).toContain('NVDA quote is recent')
   })
 
   it('names the asset’s own underlying in that promise', () => {
-    expect(render({ underlying: 'TSLA', ticker: 'TSLAx' })).toContain('TSLA quote is live')
+    expect(render({ underlying: 'TSLA', ticker: 'TSLAx' })).toContain('TSLA quote is recent')
   })
 
   it('still warns separately about a thinly traded token', () => {

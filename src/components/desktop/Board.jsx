@@ -15,7 +15,7 @@ import { formatPct, formatPrice } from '../../lib/format'
 import { GAP_STATUS_LABEL } from '../../lib/gapCheck'
 import { GapBar } from '../shared'
 import ClosedGapMark from '../ClosedGapMark'
-import { closedGapLabel, closedGapLabelFor } from '../../lib/sessionCopy'
+import { closedGapLabel, closedGapLabelFor, RANKING_NOTE } from '../../lib/sessionCopy'
 import { BIG_SCREEN_BASE, GAP_COLUMN_EXTRA } from '../../lib/bigScreen'
 import RuleTicks from './RuleTicks'
 import { ChevronRight, ChevronDown } from '../Icons'
@@ -403,6 +403,12 @@ export default function Board({ selectedId, onSelect, actionsRef, lens, onLens, 
         })}
         <div style={{ height: win.bottom }} aria-hidden="true" />
       </div>
+      <p
+        className="t-caption shrink-0 border-t px-6 py-1.5 text-zinc-500"
+        style={{ borderColor: 'var(--border-subtle)' }}
+      >
+        {RANKING_NOTE}
+      </p>
     </section>
   )
 }

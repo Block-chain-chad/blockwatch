@@ -9,7 +9,7 @@ import { formatPct, changeColor, EM_DASH } from '../lib/format'
 import { ChevronRight, ChevronDown } from '../components/Icons'
 import { Disclaimer, filterAssets, FilterChips, GapBar } from '../components/shared'
 import ClosedGapMark from '../components/ClosedGapMark'
-import { closedGapLabel, closedGapLabelFor } from '../lib/sessionCopy'
+import { closedGapLabel, closedGapLabelFor, RANKING_NOTE } from '../lib/sessionCopy'
 
 /*
  * The screener — "which companies are mispriced right now?"
@@ -120,7 +120,9 @@ export default function Screener({ onOpenProfile, onOpenAsset }) {
         ))}
       </div>
 
-      <p className="t-caption px-4 pt-2 text-zinc-500">{active.hint}</p>
+      <p className="t-caption px-4 pt-2 text-zinc-500">
+        {active.hint}. {RANKING_NOTE}
+      </p>
 
       <FilterChips value={filter} onChange={setFilter} />
 
