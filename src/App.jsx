@@ -197,13 +197,7 @@ export default function App() {
             </>
           )}
           {showProfile && (
-            <ProfileSheet
-              onClose={() => setShowProfile(false)}
-              onGoToTrade={() => {
-                setShowProfile(false)
-                switchTab('trade')
-              }}
-            />
+            <ProfileSheet onClose={() => setShowProfile(false)} />
           )}
           <UndoToast />
           <RecoveryGate />

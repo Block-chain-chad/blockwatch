@@ -38,7 +38,7 @@ export default function TradeButton({ asset, onSwap }) {
   const openSwap = onSwap ?? (() => setSwapOpen(true))
   // Rung two needs a wallet AND the switch. With a wallet but no switch we
   // fall to rung one, which is a genuinely useful answer: the user can still
-  // trade, just not from inside OnStock.
+  // trade, just not from inside Onstock.
   const showSwap = Boolean(wallet.publicKey) && swapOn
   const showLinkOut = !showSwap && linkOutOn
   return (
@@ -67,7 +67,7 @@ export default function TradeButton({ asset, onSwap }) {
             className="t-label flex items-center justify-center gap-2 rounded-lg py-3 font-medium text-zinc-100 transition-colors active:bg-zinc-900"
             style={{ boxShadow: 'inset 0 0 0 1px var(--border-strong)' }}
           >
-            Trade {asset.ticker} on Jupiter ↗
+            View on Jupiter ↗
           </a>
         ) : (
           <p
@@ -79,12 +79,12 @@ export default function TradeButton({ asset, onSwap }) {
         )}
         <p className="mt-1.5 text-center text-[11px] leading-relaxed text-zinc-400">
           {showSwap
-            ? 'Swaps run from your own wallet. OnStock never holds funds.'
+            ? 'Swaps run from your own wallet. Onstock never holds funds.'
             : showLinkOut
               ? // With a wallet connected, rung two is where the button used
                 // to be, so say why it isn't rather than letting the change
                 // read as a bug.
-                `${wallet.publicKey ? `${SWAP_PAUSED_LINE} ` : ''}Opens Jupiter, an external venue. You swap from your own wallet. Availability depends on your region. Not investment advice.`
+                `${wallet.publicKey ? `${SWAP_PAUSED_LINE} ` : ''}Opens Jupiter, an outside service Onstock does not operate. The token’s issuer does not offer it in the United States, and it may be restricted where you are. Not investment advice.`
               : `${SWAP_PAUSED_LINE} You can still track ${asset.ticker} here.`}
         </p>
       </div>
