@@ -20,7 +20,7 @@
 // origins are echoed back (see api/_cors.js). Same-origin web calls are
 // unaffected.
 
-import { applyCors, handlePreflight, setCacheControl } from './_cors.js'
+import { applyCors, handlePreflight, refuseForeignOrigin } from './_cors.js'
 import { rejectUnknownParams } from './_params.js'
 import { isAllowedSymbol } from './_symbols.js'
 import { clientKey, createRateLimiter, sendTooManyRequests } from './_rateLimit.js'
@@ -74,7 +74,8 @@ const feedUrl = (query) =>
 
 export default async function handler(req, res) {
   if (handlePreflight(req, res)) return
-  const originScoped = applyCors(req, res)
+  if (refuseForeignOrigin(req, res)) return
+  applyCors(req, res)
   if (rejectUnknownParams(req, res, ALLOWED_PARAMS)) return
 
   const client = perClient.take(clientKey(req))
@@ -87,10 +88,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'bad request' })
   }
 
-  return hasTopic ? topicLane(req, res, originScoped) : symbolLane(req, res, originScoped)
+  return hasTopic ? topicLane(req, res) : symbolLane(req, res)
 }
 
-async function symbolLane(req, res, originScoped) {
+async function symbolLane(req, res) {
   const symbol = String(req.query.symbol ?? '')
   // Exact match against the app's own symbol list. src/services/stocks.js
   // sends the underlying straight out of universe.json, so this lane sees the
@@ -104,7 +105,7 @@ async function symbolLane(req, res, originScoped) {
     const upstream = await fetch(feedUrl(`"${symbol}" stock`))
     if (!upstream.ok) return res.status(upstream.status).send('upstream error')
     const xml = await upstream.text()
-    setCacheControl(res, CACHE, originScoped)
+    res.setHeader('Cache-Control', CACHE)
     res.setHeader('Content-Type', 'application/xml; charset=utf-8')
     return res.status(200).send(xml)
   } catch {
@@ -112,7 +113,7 @@ async function symbolLane(req, res, originScoped) {
   }
 }
 
-async function topicLane(req, res, originScoped) {
+async function topicLane(req, res) {
   const topic = String(req.query.topic ?? '')
   const queries = TOPIC_QUERIES[topic]
   if (!queries) return res.status(400).json({ error: 'bad request' })
@@ -145,7 +146,7 @@ async function topicLane(req, res, originScoped) {
   }
   items.sort((a, b) => b.at - a.at)
 
-  setCacheControl(res, CACHE, originScoped)
+  res.setHeader('Cache-Control', CACHE)
   res.setHeader('Content-Type', 'application/json; charset=utf-8')
   return res.status(200).json({ items: items.slice(0, MAX_ITEMS) })
 }

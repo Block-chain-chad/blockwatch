@@ -260,9 +260,18 @@ describe('api/finnhub — unchanged behaviour', () => {
     }
   })
 
-  it('keeps a native WebView request off the app lane private', async () => {
+  it('caches the iPhone app off the app lane the same way as the lane', async () => {
     const res = await call({ kind: 'quote', symbol: 'AAPL' }, { 'x-vercel-forwarded-for': '13.0.0.3', origin: 'capacitor://localhost' })
-    expect(res.headers['Cache-Control']).toBe('private, max-age=300, stale-while-revalidate=600')
+    expect(res.headers['Access-Control-Allow-Origin']).toBe('capacitor://localhost')
+    expect(res.headers['Cache-Control']).toBe('s-maxage=300, stale-while-revalidate=600')
+  })
+
+  it('refuses a made-up Origin before calling Finnhub, so rotating it cannot miss the cache forever', async () => {
+    for (const origin of ['https://evil.example', 'https://x1.example', 'null']) {
+      const res = await call({ kind: 'quote', symbol: 'AAPL' }, { 'x-vercel-forwarded-for': '13.0.0.4', origin })
+      expect(res.statusCode).toBe(403)
+    }
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('caches a quote for longer than the client takes to come back for it', async () => {

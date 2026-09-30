@@ -15,7 +15,10 @@
 //     Cached a day: pools do not move. Their liquidity does, and a cached
 //     answer can be served for days, which is why `asOf` travels with it.
 //
-//   ?op=ohlcv&network=solana&pool=<address>&timeframe=minute&aggregate=5&limit=300
+//   ?op=ohlcv&network=solana&pool=<address>&sig=<sig>&timeframe=minute&aggregate=5&limit=300
+//     Only a pool this proxy handed out: resolve signs every pool it returns
+//     (`sig`, see poolSignature), and ohlcv refuses a pool without a valid
+//     one. Made-up pool addresses never reach GeckoTerminal.
 //     Candles for one pool, ascending, in the shared candle shape. Cached for
 //     about one candle's worth for minute and hour data, an hour for daily,
 //     with a generous stale-while-revalidate so a burst of viewers is one
@@ -41,7 +44,8 @@
 // origins are echoed back (see api/_cors.js). Same-origin web calls are
 // unaffected.
 
-import { applyCors, handlePreflight, setCacheControl } from './_cors.js'
+import { createHmac, hkdfSync, timingSafeEqual } from 'node:crypto'
+import { applyCors, handlePreflight, refuseForeignOrigin } from './_cors.js'
 import { rejectUnknownParams } from './_params.js'
 import { isAllowedToken } from './_tokens.js'
 import { clientKey, createRateLimiter, sendTooManyRequests } from './_rateLimit.js'
@@ -61,7 +65,7 @@ import {
 // carrying `ticker`, is a stray cache-key dimension and is refused.
 const OP_PARAMS = Object.freeze({
   resolve: new Set(['op', 'ticker', 'network', 'c']),
-  ohlcv: new Set(['op', 'network', 'pool', 'timeframe', 'aggregate', 'limit', 'c']),
+  ohlcv: new Set(['op', 'network', 'pool', 'sig', 'timeframe', 'aggregate', 'limit', 'c']),
 })
 const ALL_PARAMS = new Set([...OP_PARAMS.resolve, ...OP_PARAMS.ohlcv])
 
@@ -120,9 +124,38 @@ const str = (v) => (typeof v === 'string' ? v : '')
 // base58, where case is meaningful, so they pass through untouched.
 const canonicalPool = (network, address) => (network === 'eth' ? address.toLowerCase() : address)
 
+// Pool signatures (security review finding 6). Pool addresses come from
+// GeckoTerminal and cannot be listed ahead of time, so instead of a list the
+// proxy signs every pool that resolve hands out, and ohlcv serves only signed
+// pools. Stateless: any instance can check a signature any other made.
+//
+// The signing key is derived (HKDF, with its own label) from FINNHUB_API_KEY,
+// a server secret every deployment already has, so there is no new variable
+// to forget. The derivation is one-way: a signature reveals nothing about the
+// Finnhub key. Rotating that key changes every signature, which costs a page
+// reload for anyone with a chart open.
+function signingKey() {
+  const secret = process.env.FINNHUB_API_KEY
+  return secret ? Buffer.from(hkdfSync('sha256', secret, '', 'onstock candles pool signature v1', 32)) : null
+}
+
+/** The signature for one pool on one network, or null without a key. */
+export function poolSignature(network, address) {
+  const key = signingKey()
+  if (!key) return null
+  return createHmac('sha256', key).update(`${network}|${address}`).digest().subarray(0, 16).toString('base64url')
+}
+
+function validSignature(network, address, sig) {
+  const expected = poolSignature(network, address)
+  if (!expected || sig.length !== expected.length) return false
+  return timingSafeEqual(Buffer.from(sig), Buffer.from(expected))
+}
+
 export default async function handler(req, res) {
   if (handlePreflight(req, res)) return
-  const originScoped = applyCors(req, res)
+  if (refuseForeignOrigin(req, res)) return
+  applyCors(req, res)
   if (rejectUnknownParams(req, res, ALL_PARAMS)) return
 
   const client = perClient.take(clientKey(req))
@@ -136,7 +169,7 @@ export default async function handler(req, res) {
   const network = str(req.query.network)
   if (!NETWORK_SET.has(network)) return res.status(400).json({ error: 'bad request' })
 
-  return op === 'resolve' ? resolveOp(req, res, originScoped, network) : ohlcvOp(req, res, originScoped, network)
+  return op === 'resolve' ? resolveOp(req, res, network) : ohlcvOp(req, res, network)
 }
 
 async function fetchUpstream(url) {
@@ -145,7 +178,7 @@ async function fetchUpstream(url) {
   return upstream.json()
 }
 
-async function resolveOp(req, res, originScoped, network) {
+async function resolveOp(req, res, network) {
   const ticker = str(req.query.ticker)
   if (!isAllowedToken(ticker, network)) return res.status(400).json({ error: 'bad request' })
 
@@ -163,18 +196,22 @@ async function resolveOp(req, res, originScoped, network) {
     asOf = new Date().toISOString()
     candidates = matchingPools(parseSearchPools(json), ticker)
       .slice(0, MAX_CANDIDATES)
-      .map((p) => ({ ...p, address: canonicalPool(network, p.address) }))
+      .map((p) => {
+        const address = canonicalPool(network, p.address)
+        return { ...p, address, sig: poolSignature(network, address) }
+      })
   } catch {
     return res.status(502).json({ error: 'upstream unreachable' })
   }
 
-  setCacheControl(res, candidates.length ? CACHE.resolve : CACHE.resolveMiss, originScoped)
+  res.setHeader('Cache-Control', candidates.length ? CACHE.resolve : CACHE.resolveMiss)
   res.setHeader('Content-Type', 'application/json; charset=utf-8')
   return res.status(200).json({ network, ticker, pool: candidates[0] ?? null, candidates, asOf })
 }
 
-async function ohlcvOp(req, res, originScoped, network) {
+async function ohlcvOp(req, res, network) {
   const pool = str(req.query.pool)
+  const sig = str(req.query.sig)
   const timeframe = str(req.query.timeframe)
   const aggregate = str(req.query.aggregate)
   const limit = str(req.query.limit)
@@ -183,6 +220,7 @@ async function ohlcvOp(req, res, originScoped, network) {
   if (
     !POOL_ADDRESS[network].test(pool) ||
     pool !== canonicalPool(network, pool) ||
+    !validSignature(network, pool, sig) ||
     !aggregates ||
     !aggregates.some((a) => String(a) === aggregate) ||
     !LIMITS.has(limit)
@@ -206,7 +244,7 @@ async function ohlcvOp(req, res, originScoped, network) {
   // hour, so say so instead.
   if (candles.length === 0) return res.status(502).json({ error: 'no candles' })
 
-  setCacheControl(res, CACHE[timeframe], originScoped)
+  res.setHeader('Cache-Control', CACHE[timeframe])
   res.setHeader('Content-Type', 'application/json; charset=utf-8')
   return res.status(200).json({
     network,

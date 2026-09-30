@@ -61,9 +61,9 @@ describe('ProfileSheet account rows', () => {
     expect(render()).toContain('Delete account')
   })
 
-  it('hides Delete account only when PostHog says off, so an unreachable PostHog cannot remove it', () => {
+  it('hides Delete account until its switch is on, including before PostHog answers', () => {
     flags.applyFlags(null)
-    expect(render()).toContain('Delete account')
+    expect(render()).not.toContain('Delete account')
     flags.applyFlags({ 'account-deletion': false })
     expect(render()).not.toContain('Delete account')
     flags.applyFlags({ 'account-deletion': true })

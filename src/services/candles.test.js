@@ -56,6 +56,7 @@ function mockFetch(asset, candles = BASE_CANDLES) {
           candidates: [
             {
               address: 'PooLaddressBase58xxxxxxxxxxxxxxxxxxxxxxxxx',
+              sig: 'signed-by-the-proxy',
               baseSymbol: asset.ticker,
               baseAddress: asset.mint,
               quoteSymbol: 'USDC',
@@ -83,6 +84,17 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+})
+
+describe('getTokenCandles — the pool signature', () => {
+  it('passes back the signature the proxy gave the pool, or the proxy refuses the pool', async () => {
+    const getTokenCandles = await freshService(NFLX)
+    await getTokenCandles(NFLX, '5m')
+    const ohlcv = globalThis.fetch.mock.calls
+      .map(([url]) => new URL(String(url), 'https://onstock.test'))
+      .find((u) => u.searchParams.get('op') === 'ohlcv')
+    expect(ohlcv.searchParams.get('sig')).toBe('signed-by-the-proxy')
+  })
 })
 
 describe('getTokenCandles — pool candles arrive per share, not per base token', () => {

@@ -94,52 +94,55 @@ export function isAppLane(req) {
 }
 
 /**
- * Apply CORS headers. Returns true when the response must be kept out of
- * shared caches: only for the native app's own origins off the app lane,
- * because a shared entry addressed to anyone else could be handed to the
- * WebView and blocked. False for everything else, which may be shared.
+ * Refuse a request that names an Origin we do not serve, before any upstream
+ * call. Returns true when it answered (403); the caller must return.
  *
- * Allowed WEB origins are shared-cacheable (security review finding 5). Real
- * browsers never send Origin on the same-site GETs these read proxies serve,
- * so a request that carries one is almost always a script, and making it
- * `private` let a loop of them miss the edge cache and spend the whole
- * Finnhub quota. Nothing on the web depends on these entries being private:
- * the page is same-origin and ignores Access-Control-Allow-Origin.
+ * Why (security review finding 5, and the follow-up review). Every response
+ * carries `Vary: Origin`, and Vercel's edge keeps a separate cache entry for
+ * each Origin value; that was proven on the live site. So a script sending a
+ * new made-up Origin on every request missed the cache every time and spent
+ * the whole Finnhub minute. Refusing unknown origins bounds the cache keys to
+ * the allowed origins plus "no Origin" (ordinary same-site browser requests,
+ * which carry none), so a loop of requests is served from the edge.
+ */
+export function refuseForeignOrigin(req, res) {
+  const origin = req.headers?.origin
+  if (origin == null || origin === '' || isAllowed(origin, req.headers.host)) return false
+  res.setHeader('Cache-Control', 'no-store')
+  res.status(403).json({ error: 'forbidden' })
+  return true
+}
+
+/**
+ * Apply CORS headers: echo an allowed Origin back, or the app lane's fixed
+ * one. Every response here may be cached at the edge, whoever asked:
  *
- * `Vary: Origin` is set UNCONDITIONALLY — allowed origins, rejected origins,
- * app lane, and requests with no Origin header at all. This is not optional on
- * these endpoints: browsers omit Origin on same-origin GETs, so every web
- * visitor would otherwise populate Vercel's CDN (see the quote TTL in
- * ./finnhub.js — named there rather than repeated here, so there is one place
- * to change it) with an entry
- * carrying neither Access-Control-Allow-Origin nor Vary. Per RFC 9111 §4.1 a
- * stored response with no Vary matches ANY request for that URI, so a
- * capacitor://localhost request could be served that header-less entry and
- * WKWebView would block it — an intermittent, cache-timing-dependent failure.
- * The app lane makes that impossible independently of Vary; Vary stays because
- * it is correct and free.
+ * - `Vary: Origin` is set UNCONDITIONALLY, and Vercel's edge keys its cache on
+ *   each Origin value (verified live), so an entry addressed to one origin is
+ *   only ever handed to that same origin. That includes the iPhone app's own
+ *   capacitor://localhost requests off the app lane, which are cached the
+ *   same way as the lane itself.
+ * - The app lane (`c=app`) carries one fixed Access-Control-Allow-Origin for
+ *   everyone (see APP_LANE_ORIGIN), so it is safe to share even without Vary.
+ * - Browsers omit Origin on same-origin GETs, so ordinary web visitors get no
+ *   Access-Control-* headers at all.
  *
- * Off the app lane, a request with no Origin behaves exactly as it always has
- * apart from carrying Vary: no Access-Control-* headers, handler proceeds.
+ * Unknown origins get no allow header here; the read proxies refuse them
+ * first with refuseForeignOrigin.
  */
 export function applyCors(req, res) {
   varyOnOrigin(res)
 
-  // App lane: one fixed ACAO for everyone, and shared-cacheable (see
-  // APP_LANE_ORIGIN). The lane's URL cannot be produced by a web visitor, and
-  // every entry in it is addressed to the app, so sharing it is safe and lets
-  // all native devices ride one cached upstream call instead of one each.
   if (isAppLane(req)) {
     res.setHeader('Access-Control-Allow-Origin', APP_LANE_ORIGIN)
     setCorsMethodHeaders(res)
-    return false // shared-cacheable, NOT origin-scoped
+    return
   }
 
   const origin = req.headers.origin ?? ''
-  if (!isAllowed(origin, req.headers.host)) return false
+  if (!isAllowed(origin, req.headers.host)) return
   res.setHeader('Access-Control-Allow-Origin', origin)
   setCorsMethodHeaders(res)
-  return isNativeOrigin(origin) // only the WebView's entries must stay private
 }
 
 function setCorsMethodHeaders(res) {
@@ -149,47 +152,6 @@ function setCorsMethodHeaders(res) {
   // the token with Supabase, and no endpoint here uses cookies.
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
   res.setHeader('Access-Control-Max-Age', '86400')
-}
-
-/**
- * Set Cache-Control for the CDN-cached read proxies, keeping Origin-scoped
- * responses out of Vercel's SHARED edge cache.
- *
- * `sharedValue` is the normal public policy (`s-maxage=…, stale-while-revalidate=…`)
- * and is emitted byte-for-byte whenever the request carries no allowed Origin —
- * i.e. ordinary web visitors cache exactly as they always have.
- *
- * `originScoped` (from applyCors) is true when the response is addressed to the
- * native WebView off the app lane (see applyCors for why web origins are not).
- * Such a response must never be stored where a different origin could be handed
- * it, so it becomes `private` (browser cache only) and `s-maxage`
- * (shared-cache-only) becomes the equivalent `max-age`, preserving the same
- * freshness window locally.
- *
- * The app lane is deliberately NOT origin-scoped: every response in it carries
- * the same fixed APP_LANE_ORIGIN, so it is safe to share, and sharing is the
- * point — it keeps N native devices riding one cached upstream call instead of
- * one call each against Finnhub's 60/min free tier.
- *
- * WHY `private` STAYS, even though these are public read-only quotes. The
- * bodies hold nothing origin-specific, so in principle a shared cache could
- * store one entry and serve it to every allowed origin, keyed by `Vary:
- * Origin`. That would be a free efficiency win IF the edge honours Vary
- * exactly. If it does not, an entry stamped
- * `Access-Control-Allow-Origin: https://blockwatch.app` can be handed to a
- * `capacitor://localhost` request, the WebView refuses to expose it, and the
- * native app breaks intermittently in a way that only shows up under cache
- * timing — the precise failure the app lane above exists to make impossible.
- * That trade is not worth taking blind, and it no longer buys protection
- * either: since api/finnhub.js sized its instance breaker to Finnhub's real
- * minute, the quota is bounded whether or not the edge is caching. So the
- * safe, honest policy stays, and going public is a measured change for
- * another day rather than a side effect of this one.
- */
-export function setCacheControl(res, sharedValue, originScoped) {
-  const value = originScoped ? `private, ${sharedValue.replace('s-maxage=', 'max-age=')}` : sharedValue
-  res.setHeader('Cache-Control', value)
-  return value
 }
 
 /**

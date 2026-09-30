@@ -5,7 +5,10 @@
 --      join_waitlist directly any more. Existing waitlist rows stay.
 --   2. Size limits on what a signed-in user can store in user_folders and
 --      user_alerts, and on the feedback email field.
---   3. Row caps per user: 200 folders and 1,000 alerts.
+--   3. Row caps per user: 40 folders and 250 alerts. With the size limits,
+--      the most one account can store is about 1.5 MB (40 folders of at most
+--      33 KB, plus 250 alerts of well under 1 KB), so the free 500 MB database
+--      needs hundreds of full accounts before it fills.
 --   4. A cap on anonymous feedback shared by every caller: 20 messages in any
 --      10 minutes and 200 in any 24 hours, counted in the database, so running
 --      many copies of a script or many server instances does not get around it.
@@ -29,13 +32,14 @@ revoke execute on function public.join_waitlist(text) from public, anon, authent
 
 -- 2. Size limits. Numbers come from what the app saves:
 --   folder id: a random UUID (36 characters) or a fixed id like "popular".
---   folder name: typed by the person; the app does not cap it, 200 is far
+--   folder name: typed by the person; the app does not cap it, 100 is far
 --     above anything that fits on screen.
 --   asset_ids: a JSON array of token ids. The whole token list is 711 ids and
---     about 25 KB, so 2,000 entries and 64 KB leave room to grow.
+--     about 25 KB, so 1,000 entries and 32 KB still fit every token in one
+--     folder. The largest in production today is 138 bytes.
 --   alert asset_id: one token id (the longest today is 72 characters).
 --   alert rule: a small JSON object (a drift threshold and a price target),
---     well under 1 KB.
+--     about 100 bytes; 512 leaves room for a new field or two.
 --   feedback email: 254 characters is the longest valid email address.
 alter table public.user_folders drop constraint if exists user_folders_id_size;
 alter table public.user_folders add constraint user_folders_id_size
@@ -43,14 +47,14 @@ alter table public.user_folders add constraint user_folders_id_size
 
 alter table public.user_folders drop constraint if exists user_folders_name_size;
 alter table public.user_folders add constraint user_folders_name_size
-  check (char_length(name) <= 200) not valid;
+  check (char_length(name) <= 100) not valid;
 
 alter table public.user_folders drop constraint if exists user_folders_asset_ids_size;
 alter table public.user_folders add constraint user_folders_asset_ids_size
   check (
     case
       when jsonb_typeof(asset_ids) = 'array'
-        then jsonb_array_length(asset_ids) <= 2000 and octet_length(asset_ids::text) <= 65536
+        then jsonb_array_length(asset_ids) <= 1000 and octet_length(asset_ids::text) <= 32768
       else false
     end
   ) not valid;
@@ -61,13 +65,14 @@ alter table public.user_alerts add constraint user_alerts_asset_id_size
 
 alter table public.user_alerts drop constraint if exists user_alerts_rule_size;
 alter table public.user_alerts add constraint user_alerts_rule_size
-  check (rule is null or (jsonb_typeof(rule) = 'object' and octet_length(rule::text) <= 2000)) not valid;
+  check (rule is null or (jsonb_typeof(rule) = 'object' and octet_length(rule::text) <= 512)) not valid;
 
 alter table public.feedback drop constraint if exists feedback_email_size;
 alter table public.feedback add constraint feedback_email_size
   check (email is null or char_length(email) <= 254) not valid;
 
--- 3. Row caps per user. The app upserts every folder and every alert on each
+-- 3. Row caps per user: 40 folders (the Home watchlist is one of them) and 250
+-- alerts (one per token at most). The app upserts every folder and every alert on each
 -- change, and a BEFORE INSERT trigger also fires for rows that end up as
 -- updates, so only a row that does not exist yet counts against the cap. The
 -- advisory lock stops two parallel inserts from both slipping under the cap.
@@ -83,8 +88,8 @@ begin
   perform pg_advisory_xact_lock(hashtextextended('user_folders:' || new.user_id::text, 0));
   if not exists (
     select 1 from public.user_folders where user_id = new.user_id and id = new.id
-  ) and (select count(*) from public.user_folders where user_id = new.user_id) >= 200 then
-    raise exception 'folder limit reached (200 per account)' using errcode = 'check_violation';
+  ) and (select count(*) from public.user_folders where user_id = new.user_id) >= 40 then
+    raise exception 'folder limit reached (40 per account)' using errcode = 'check_violation';
   end if;
   return new;
 end;
@@ -105,8 +110,8 @@ begin
   perform pg_advisory_xact_lock(hashtextextended('user_alerts:' || new.user_id::text, 0));
   if not exists (
     select 1 from public.user_alerts where user_id = new.user_id and asset_id = new.asset_id
-  ) and (select count(*) from public.user_alerts where user_id = new.user_id) >= 1000 then
-    raise exception 'alert limit reached (1000 per account)' using errcode = 'check_violation';
+  ) and (select count(*) from public.user_alerts where user_id = new.user_id) >= 250 then
+    raise exception 'alert limit reached (250 per account)' using errcode = 'check_violation';
   end if;
   return new;
 end;
@@ -156,16 +161,16 @@ commit;
 
 -- Check existing data (run by hand before validating; each should return no rows):
 --   select user_id, id from public.user_folders
---     where char_length(id) not between 1 and 64 or char_length(name) > 200
+--     where char_length(id) not between 1 and 64 or char_length(name) > 100
 --        or case when jsonb_typeof(asset_ids) = 'array'
---             then jsonb_array_length(asset_ids) > 2000 or octet_length(asset_ids::text) > 65536
+--             then jsonb_array_length(asset_ids) > 1000 or octet_length(asset_ids::text) > 32768
 --             else true end;
 --   select user_id, asset_id from public.user_alerts
 --     where char_length(asset_id) not between 1 and 100
---        or (rule is not null and (jsonb_typeof(rule) <> 'object' or octet_length(rule::text) > 2000));
+--        or (rule is not null and (jsonb_typeof(rule) <> 'object' or octet_length(rule::text) > 512));
 --   select id from public.feedback where email is not null and char_length(email) > 254;
---   select user_id, count(*) from public.user_folders group by 1 having count(*) > 200;
---   select user_id, count(*) from public.user_alerts group by 1 having count(*) > 1000;
+--   select user_id, count(*) from public.user_folders group by 1 having count(*) > 40;
+--   select user_id, count(*) from public.user_alerts group by 1 having count(*) > 250;
 --
 -- Then validate:
 --   alter table public.user_folders validate constraint user_folders_id_size;

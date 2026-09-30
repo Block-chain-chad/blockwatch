@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import handler, { limiters } from './candles.js'
+import handler, { limiters, poolSignature } from './candles.js'
+
+// The pool signing key is derived from this; see poolSignature.
+process.env.FINNHUB_API_KEY = 'test-finnhub-key'
 
 /*
  * The handler's job is to spend GeckoTerminal's shared ~30/min budget only on
@@ -46,15 +49,11 @@ async function call(query, headers = {}) {
 
 const SOL_POOL = 'EHdow7Yhmr1ac8Qff9Co1LhSosr38puA6zLd4cbJLdpV'
 const ETH_POOL = '0xff145fd4d52ebd0e758393740aea7eb6228569285b348176c1cdfc5363793b72'
-const ohlcvQuery = (over = {}) => ({
-  op: 'ohlcv',
-  network: 'solana',
-  pool: SOL_POOL,
-  timeframe: 'minute',
-  aggregate: '5',
-  limit: '300',
-  ...over,
-})
+/** An ohlcv query, signed for its own network and pool unless `sig` is given. */
+const ohlcvQuery = (over = {}) => {
+  const q = { op: 'ohlcv', network: 'solana', pool: SOL_POOL, timeframe: 'minute', aggregate: '5', limit: '300', ...over }
+  return 'sig' in over ? q : { ...q, sig: poolSignature(q.network, q.pool) ?? '' }
+}
 
 const searchBody = {
   data: [
@@ -85,8 +84,43 @@ beforeEach(() => {
     json: async () => (String(url).includes('/search/') ? searchBody : ohlcvBody),
   }))
   vi.stubGlobal('fetch', fetchMock)
+  process.env.FINNHUB_API_KEY = 'test-finnhub-key'
 })
 afterEach(() => vi.unstubAllGlobals())
+
+describe('api/candles — only pools this proxy handed out', () => {
+  const MADE_UP = '9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin'
+
+  it('refuses a well-formed pool with no signature, without calling GeckoTerminal', async () => {
+    const res = await call(ohlcvQuery({ pool: MADE_UP, sig: '' }))
+    expect(res.statusCode).toBe(400)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it("refuses another pool's signature, and a signature from the other network", async () => {
+    expect((await call(ohlcvQuery({ pool: MADE_UP, sig: poolSignature('solana', SOL_POOL) }))).statusCode).toBe(400)
+    const eth = '0xf5294094bce435bfbd0ec488be5c462aaf32bc7a'
+    expect((await call(ohlcvQuery({ network: 'eth', pool: eth, sig: poolSignature('solana', eth) }))).statusCode).toBe(400)
+    expect((await call(ohlcvQuery({ sig: 'x'.repeat(22) }))).statusCode).toBe(400)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('serves a pool exactly as resolve signed it', async () => {
+    const resolved = await call({ op: 'resolve', ticker: 'AAPLx', network: 'solana' })
+    const { address, sig } = resolved.body.pool
+    expect(sig).toMatch(/^[A-Za-z0-9_-]{22}$/)
+    const res = await call(ohlcvQuery({ pool: address, sig }))
+    expect(res.statusCode).toBe(200)
+  })
+
+  it('refuses every pool when the server has no key to sign with', async () => {
+    const sig = poolSignature('solana', SOL_POOL)
+    delete process.env.FINNHUB_API_KEY
+    expect(poolSignature('solana', SOL_POOL)).toBeNull()
+    expect((await call(ohlcvQuery({ sig }))).statusCode).toBe(400)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
 
 describe('api/candles — refuses before upstream', () => {
   const bad = [
@@ -241,10 +275,10 @@ describe('api/candles — ohlcv', () => {
     expect(res.headers['Cache-Control']).toBe('s-maxage=30, stale-while-revalidate=300')
   })
 
-  it('keeps a native WebView response off the app lane out of shared caches', async () => {
+  it('caches the iPhone app off the app lane the same way as the lane', async () => {
     const res = await call(ohlcvQuery(), { origin: 'capacitor://localhost' })
     expect(res.headers['Access-Control-Allow-Origin']).toBe('capacitor://localhost')
-    expect(res.headers['Cache-Control']).toBe('private, max-age=30, stale-while-revalidate=300')
+    expect(res.headers['Cache-Control']).toBe('s-maxage=30, stale-while-revalidate=300')
   })
 
   it('shares the app lane', async () => {

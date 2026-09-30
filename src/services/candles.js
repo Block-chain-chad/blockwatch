@@ -174,6 +174,7 @@ export async function getTokenCandles(asset, timeframeId) {
       if (IS_PROD) {
         const body = await fetchJson(
           `${API_BASE}/api/candles?op=ohlcv&network=${network}&pool=${encodeURIComponent(pool.address)}` +
+            `&sig=${encodeURIComponent(pool.sig ?? '')}` +
             `&timeframe=${timeframe.timeframe}&aggregate=${timeframe.aggregate}&limit=${timeframe.limit}${API_CACHE_SUFFIX}`
         )
         candles = Array.isArray(body?.candles) ? body.candles : []
