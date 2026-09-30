@@ -7,7 +7,7 @@
 //
 // Every POST gets 410 Gone with { error: 'waitlist closed' }. Nothing reads the
 // body, calls Supabase or calls Resend, so there is nothing left to abuse.
-// supabase/migrations/20260930000000_launch_limits.sql revokes direct access
+// supabase/launch-limits.sql revokes direct access
 // to join_waitlist, which closes the database side too.
 //
 // CORS: the native app posts from capacitor://localhost, a cross-origin
