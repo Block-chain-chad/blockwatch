@@ -213,9 +213,15 @@ describe('api/candles — ohlcv', () => {
     expect(res.headers['Cache-Control']).toBeUndefined()
   })
 
-  it('keeps an origin-scoped response out of shared caches', async () => {
-    const res = await call(ohlcvQuery(), { origin: 'https://blockwatch.app' })
-    expect(res.headers['Access-Control-Allow-Origin']).toBe('https://blockwatch.app')
+  it('shares a response for an allowed web origin, so a loop of them is served from the edge', async () => {
+    const res = await call(ohlcvQuery(), { origin: 'https://onstock.app' })
+    expect(res.headers['Access-Control-Allow-Origin']).toBe('https://onstock.app')
+    expect(res.headers['Cache-Control']).toBe('s-maxage=30, stale-while-revalidate=300')
+  })
+
+  it('keeps a native WebView response off the app lane out of shared caches', async () => {
+    const res = await call(ohlcvQuery(), { origin: 'capacitor://localhost' })
+    expect(res.headers['Access-Control-Allow-Origin']).toBe('capacitor://localhost')
     expect(res.headers['Cache-Control']).toBe('private, max-age=30, stale-while-revalidate=300')
   })
 
