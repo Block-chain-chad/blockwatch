@@ -5,7 +5,7 @@
 // an effect and phones never touch document.title.
 
 /** main.jsx / index.html's default, restored when nothing is open. */
-export const DEFAULT_TITLE = 'OnStock · Tokenized Stock Tracker'
+export const DEFAULT_TITLE = 'Onstock · Tokenized Stock Tracker'
 
 const UP = '▲' // ▲
 const DOWN = '▼' // ▼
@@ -62,10 +62,10 @@ const SCREEN_NAMES = {
   trade: 'Trade',
 }
 
-/** screenTitle('screener') → 'Gaps · OnStock'; unknown tabs get the default. */
+/** screenTitle('screener') → 'Gaps · Onstock'; unknown tabs get the default. */
 export function screenTitle(tab) {
   const name = SCREEN_NAMES[tab]
-  return name ? `${name} · OnStock` : DEFAULT_TITLE
+  return name ? `${name} · Onstock` : DEFAULT_TITLE
 }
 
 /**
@@ -87,7 +87,7 @@ export function meterHeadline({ ticker, gapPct } = {}) {
 export function meterTitle({ ticker, gapPct, closed = null } = {}) {
   const head = meterHeadline({ ticker, gapPct })
   if (head == null) return boardTitle()
-  return `${head}${Number.isFinite(gapPct) ? closedSuffix(closed) : ''} · OnStock`
+  return `${head}${Number.isFinite(gapPct) ? closedSuffix(closed) : ''} · Onstock`
 }
 
 /** ' vs Friday’s close · Market closed', or '' without a closed-market label. */
@@ -96,5 +96,5 @@ function closedSuffix(closed) {
 }
 
 export function boardTitle() {
-  return 'Board · OnStock'
+  return 'Board · Onstock'
 }

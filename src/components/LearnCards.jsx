@@ -64,7 +64,7 @@ const LESSONS = [
     id: 'custody',
     title: 'Who actually holds my money?',
     body: [
-      'Not us. OnStock is a tracker. It reads public prices and shows you the gap. It never takes custody of your funds, never moves them, and cannot trade on your behalf.',
+      'Not us. Onstock is a tracker. It reads public prices and shows you the gap. It never takes custody of your funds, never moves them, and cannot trade on your behalf.',
       "When you buy, that happens somewhere else. Tapping through to trade sends you out to Jupiter, where the swap settles on-chain from your own wallet. Your keys stay with you the whole time, which is what 'non-custodial' means: no one in the middle holds your tokens for you. The token's issuer may still be able to pause or freeze it.",
       'The flip side of that is real: if you lose your wallet keys, no one, including us, can recover them for you.',
     ],

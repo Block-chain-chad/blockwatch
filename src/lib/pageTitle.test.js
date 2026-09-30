@@ -51,7 +51,7 @@ describe('chartTitle', () => {
   })
 
   it('never appends the product name', () => {
-    expect(chartTitle({ ticker: 'NVDAx', price: 12.34, changePct: 0.65 })).not.toContain('OnStock')
+    expect(chartTitle({ ticker: 'NVDAx', price: 12.34, changePct: 0.65 })).not.toContain('Onstock')
   })
 
   it('is the default title with no ticker', () => {
@@ -78,10 +78,10 @@ describe('titlePrice / signedPct', () => {
 
 describe('screenTitle', () => {
   it('names the takeover screens with the product suffix', () => {
-    expect(screenTitle('screener')).toBe('Gaps · OnStock')
-    expect(screenTitle('folders')).toBe('Folders · OnStock')
-    expect(screenTitle('news')).toBe('News · OnStock')
-    expect(screenTitle('trade')).toBe('Trade · OnStock')
+    expect(screenTitle('screener')).toBe('Gaps · Onstock')
+    expect(screenTitle('folders')).toBe('Folders · Onstock')
+    expect(screenTitle('news')).toBe('News · Onstock')
+    expect(screenTitle('trade')).toBe('Trade · Onstock')
   })
 
   it('falls back to the default for home or an unknown tab', () => {
@@ -92,12 +92,12 @@ describe('screenTitle', () => {
 
 describe('meterTitle / boardTitle', () => {
   it('names the wrapper and its gap with the product, no triangle', () => {
-    expect(meterTitle({ ticker: 'NVDAx', gapPct: 0.09 })).toBe('NVDAx +0.09% gap · OnStock')
-    expect(meterTitle({ ticker: 'NVDAx', gapPct: -2.14 })).toBe(`NVDAx ${MINUS}2.14% gap · OnStock`)
+    expect(meterTitle({ ticker: 'NVDAx', gapPct: 0.09 })).toBe('NVDAx +0.09% gap · Onstock')
+    expect(meterTitle({ ticker: 'NVDAx', gapPct: -2.14 })).toBe(`NVDAx ${MINUS}2.14% gap · Onstock`)
     expect(meterTitle({ ticker: 'NVDAx', gapPct: 0.09 })).not.toContain(UP)
-    expect(meterTitle({ ticker: 'TBILL', gapPct: null })).toBe('TBILL · OnStock')
+    expect(meterTitle({ ticker: 'TBILL', gapPct: null })).toBe('TBILL · Onstock')
     expect(meterTitle({})).toBe(boardTitle())
-    expect(boardTitle()).toBe('Board · OnStock')
+    expect(boardTitle()).toBe('Board · Onstock')
   })
 })
 
@@ -111,9 +111,9 @@ describe('meterHeadline', () => {
   })
 
   it('is what meterTitle says before the product', () => {
-    expect(meterTitle({ ticker: 'NVDAx', gapPct: 1.42 })).toBe('NVDAx +1.42% gap · OnStock')
-    expect(meterTitle({ ticker: 'NVDAx' })).toBe('NVDAx · OnStock')
-    expect(meterTitle({})).toBe('Board · OnStock')
+    expect(meterTitle({ ticker: 'NVDAx', gapPct: 1.42 })).toBe('NVDAx +1.42% gap · Onstock')
+    expect(meterTitle({ ticker: 'NVDAx' })).toBe('NVDAx · Onstock')
+    expect(meterTitle({})).toBe('Board · Onstock')
   })
 })
 
@@ -122,9 +122,9 @@ describe('titles while the share leg is a close', () => {
 
   it('names the close in the Meter title', () => {
     expect(meterTitle({ ticker: 'NVDAx', gapPct: 1.42, closed })).toBe(
-      'NVDAx +1.42% gap vs Friday’s close · Market closed · OnStock'
+      'NVDAx +1.42% gap vs Friday’s close · Market closed · Onstock'
     )
-    expect(meterTitle({ ticker: 'NVDAx', gapPct: null, closed })).toBe('NVDAx · OnStock')
+    expect(meterTitle({ ticker: 'NVDAx', gapPct: null, closed })).toBe('NVDAx · Onstock')
   })
 
   it('names the close in the chart title in Gap mode only', () => {

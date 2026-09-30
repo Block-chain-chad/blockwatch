@@ -50,7 +50,7 @@ export default function AccessGate({ children }) {
         <path d="M8 21 L13 14 L17 17 L24 8" stroke="#2dd4bf" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
         <path d="M8 24 L13 19 L17 21 L24 13" stroke="#52525b" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-      <h1 className="mt-4 text-xl font-semibold tracking-tight">OnStock</h1>
+      <h1 className="mt-4 text-xl font-semibold tracking-tight">Onstock</h1>
       <p className="mt-1 text-center text-sm text-zinc-500">
         Private beta. Enter your access code to continue.
       </p>

@@ -1,6 +1,6 @@
 {
-  "name": "OnStock",
-  "short_name": "OnStock",
+  "name": "Onstock",
+  "short_name": "Onstock",
   "description": "Track tokenized stocks against their real share prices.",
   "start_url": "/",
   "display": "standalone",

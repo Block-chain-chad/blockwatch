@@ -4,10 +4,10 @@ import { readFileSync } from 'node:fs'
 import AboutSheet from './AboutSheet'
 
 /*
- * The "what OnStock is" sentence, which appears in two places that have to
+ * The "what Onstock is" sentence, which appears in two places that have to
  * agree: the About sheet and the published privacy policy.
  *
- * It used to say OnStock "does not hold funds, execute trades, or give
+ * It used to say Onstock "does not hold funds, execute trades, or give
  * investment advice". The first and third are still true and stay. The middle
  * one stopped being a clean statement once the app could build a swap
  * transaction for the user's wallet to sign, so it is now stated precisely

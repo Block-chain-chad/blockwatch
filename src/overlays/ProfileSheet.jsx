@@ -96,7 +96,7 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
               <div className="mt-1 text-xs text-zinc-500">
                 {entry.pendingSync
                   ? 'Saved on this device. We will finish your signup automatically.'
-                  : "You joined in one tap without leaving OnStock. We'll email you when in-app trading opens."}
+                  : "You joined in one tap without leaving Onstock. We'll email you when in-app trading opens."}
               </div>
             </>
           ) : (
@@ -153,7 +153,7 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
           />
           <ListRow
             icon={<InfoIcon size={20} />}
-            label="About OnStock"
+            label="About Onstock"
             onClick={() => setAboutOpen(true)}
           />
           <ListRow
@@ -187,7 +187,7 @@ export default function ProfileSheet({ onClose, onGoToTrade }) {
           )}
         </div>
 
-        <div className="px-4 pt-3 text-center text-[11px] text-zinc-500">OnStock v0.1 · MVP preview</div>
+        <div className="px-4 pt-3 text-center text-[11px] text-zinc-500">Onstock v0.1 · MVP preview</div>
       </Sheet>
 
       {/* Siblings of the dialog, not children: each is its own modal above it. */}

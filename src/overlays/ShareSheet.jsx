@@ -41,7 +41,7 @@ async function makeCardBlob(asset) {
   drawLogo(ctx, 84, 76, 3.4)
   ctx.fillStyle = '#f4f4f5'
   ctx.font = '600 52px sans-serif'
-  ctx.fillText('OnStock', 190, 148)
+  ctx.fillText('Onstock', 190, 148)
 
   // asset identity
   ctx.fillStyle = '#71717a'
@@ -108,7 +108,7 @@ export default function ShareSheet({ asset, onClose }) {
     const file = new File([blob], `onstock-${asset.ticker}.png`, { type: 'image/png' })
     if (navigator.canShare?.({ files: [file] })) {
       try {
-        await navigator.share({ files: [file], title: `${asset.ticker} on OnStock` })
+        await navigator.share({ files: [file], title: `${asset.ticker} on Onstock` })
         return
       } catch {
         // user cancelled or share failed — fall through to download
@@ -150,7 +150,7 @@ export default function ShareSheet({ asset, onClose }) {
             <path d="M8 21 L13 14 L17 17 L24 8" stroke="#2dd4bf" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M8 24 L13 19 L17 21 L24 13" stroke="#52525b" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          <span className="text-xs font-semibold text-zinc-300">OnStock</span>
+          <span className="text-xs font-semibold text-zinc-300">Onstock</span>
         </div>
         <div className="mt-3 text-xs text-zinc-500">
           {asset.name} · {asset.issuer}

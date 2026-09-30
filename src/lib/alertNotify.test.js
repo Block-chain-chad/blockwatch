@@ -90,7 +90,7 @@ describe('NOTIFY_KEY', () => {
 describe('NOTIFY_OFFER_COPY', () => {
   it('asks the question and says a tab must be open', () => {
     expect(NOTIFY_OFFER_COPY).toMatch(/^Get a system notification when this fires/)
-    expect(NOTIFY_OFFER_COPY).toContain('while OnStock is open in a tab')
+    expect(NOTIFY_OFFER_COPY).toContain('while Onstock is open in a tab')
     expect(NOTIFY_OFFER_COPY.endsWith('?')).toBe(true)
   })
 })

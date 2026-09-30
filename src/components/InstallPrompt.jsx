@@ -21,7 +21,7 @@ function alreadyDismissed() {
 }
 
 /*
- * One line telling iPhone Safari users how to put OnStock on their Home
+ * One line telling iPhone Safari users how to put Onstock on their Home
  * Screen, so coming back is one tap instead of a typed address. Safari has
  * no install prompt of its own, and this is the only way a web visitor gets
  * an icon. Same shape and dismiss-once rule as OnboardingTip: a hairline
@@ -65,7 +65,7 @@ export default function InstallPrompt() {
     >
       <span className="mt-[5px] size-1.5 shrink-0 rounded-full bg-accent" />
       <p className="t-caption flex-1 text-zinc-400">
-        Open OnStock in one tap: tap Share{' '}
+        Open Onstock in one tap: tap Share{' '}
         <ShareIcon size={14} className="inline-block -translate-y-px align-middle text-zinc-300" /> (under
         ··· on newer iPhones), then Add to Home Screen.
       </p>

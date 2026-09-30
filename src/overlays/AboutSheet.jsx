@@ -1,6 +1,6 @@
 import Sheet, { SheetTitle } from '../components/Sheet'
 
-/* About OnStock — the plain-language pitch, for anyone who lands cold. */
+/* About Onstock — the plain-language pitch, for anyone who lands cold. */
 export default function AboutSheet({ onClose }) {
   return (
     <Sheet onClose={onClose} className="z-[55]" pad={5}>
@@ -11,7 +11,7 @@ export default function AboutSheet({ onClose }) {
           <path d="M8 24 L13 19 L17 21 L24 13" stroke="#52525b" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
         <div>
-          <SheetTitle className="text-base font-semibold leading-tight">OnStock</SheetTitle>
+          <SheetTitle className="text-base font-semibold leading-tight">Onstock</SheetTitle>
           <div className="text-xs text-zinc-500">The tokenized stock tracker</div>
         </div>
       </div>
@@ -19,7 +19,7 @@ export default function AboutSheet({ onClose }) {
       <div className="mt-4 max-h-[55vh] space-y-3 overflow-y-auto">
         <p className="text-sm leading-relaxed text-zinc-400">
           Real stocks now exist as blockchain tokens. NVIDIA, Tesla, and the S&P 500 trade
-          around the clock as NVDAx, TSLAx, and SPYx. OnStock shows every token side by
+          around the clock as NVDAx, TSLAx, and SPYx. Onstock shows every token side by
           side with the real share price, so you can see at a glance when a token trades at
           a premium or a discount to the actual stock.
         </p>
@@ -36,12 +36,12 @@ export default function AboutSheet({ onClose }) {
           <p className="text-xs leading-relaxed text-zinc-500">
             Token market data by CoinGecko; stock quotes and company data by Finnhub; share
             price history by Yahoo Finance. Prices are informational only and may be delayed.
-            OnStock never holds your funds and gives no investment advice. It does not execute
-            trades: where a swap is offered, OnStock only prepares the transaction for your own
+            Onstock never holds your funds and gives no investment advice. It does not execute
+            trades: where a swap is offered, Onstock only prepares the transaction for your own
             wallet to approve and send.
           </p>
         </div>
-        <p className="text-center text-[11px] text-zinc-500">OnStock v0.1 · MVP preview</p>
+        <p className="text-center text-[11px] text-zinc-500">Onstock v0.1 · MVP preview</p>
       </div>
 
       <button

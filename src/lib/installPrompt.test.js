@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { isIosSafari, shouldOfferInstall, browserInstallContext } from './installPrompt'
 
 /*
- * Who is told to add OnStock to their Home Screen. The instruction names
+ * Who is told to add Onstock to their Home Screen. The instruction names
  * Safari's Share sheet, so the claims worth pinning are that it reaches
  * Safari on iPhone and iPad, and nobody else: not other iOS browsers, not
  * in-app browsers, not Android or desktop, not someone who already installed
