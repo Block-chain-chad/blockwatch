@@ -1,6 +1,6 @@
 import Header from '../components/Header'
 import { track } from '../services/analytics'
-import { useFlag, LINK_OUT_FLAG, LINK_OUT_PAUSED_LINE } from '../services/featureFlags'
+import { useFlag, LINK_OUT_FLAG } from '../services/featureFlags'
 import { WalletIcon } from '../components/Icons'
 
 /*
@@ -24,12 +24,7 @@ const PRIMARY = {
   blurb: 'An on-chain exchange you use from your own wallet. Onstock does not operate it or check whether you may use it.',
 }
 
-const RESTRICTED = [
-  { id: 'kraken', name: 'Kraken', href: 'https://www.kraken.com' },
-  { id: 'bybit', name: 'Bybit', href: 'https://www.bybit.com' },
-  { id: 'gate', name: 'Gate.io', href: 'https://www.gate.io' },
-  { id: 'kucoin', name: 'KuCoin', href: 'https://www.kucoin.com' },
-]
+const RESTRICTED = ['Kraken', 'Bybit', 'Gate.io', 'KuCoin']
 
 const NASDAQ_ORDER = 'https://www.sec.gov/files/rules/sro/nasdaq/2026/34-105047.pdf'
 
@@ -39,7 +34,7 @@ export default function Trade({ onOpenProfile }) {
 
   return (
     <div className="pb-24">
-      <Header title="Trade" onOpenProfile={onOpenProfile} />
+      <Header title="Venues" onOpenProfile={onOpenProfile} />
 
       <div className="px-4 pt-4">
         <h2 className="t-title">Where tokens trade</h2>
@@ -48,16 +43,8 @@ export default function Trade({ onOpenProfile }) {
           check or recommend any of them, and each one decides who may use it.
         </p>
 
-        {/* Switched off, the card's place says so rather than leaving a gap
-            above the list. */}
-        {!linkOutOn && (
-          <p
-            className="t-caption mt-4 rounded-lg border p-4 text-zinc-400"
-            style={{ borderColor: 'var(--border-subtle)' }}
-          >
-            {LINK_OUT_PAUSED_LINE}
-          </p>
-        )}
+        {/* Switched off, the card is simply absent: a "paused" line would
+            tell every visitor Onstock has trading (sign-off W2). */}
         {linkOutOn && (
           <a
             href={PRIMARY.href}
@@ -78,24 +65,25 @@ export default function Trade({ onOpenProfile }) {
         )}
 
         {/* The four exchanges that say in their own terms they do not serve
-            United States customers. The heading describes these four only. */}
+            United States customers. Plain names, not links, until the lawyer
+            answers question 7 (sign-off W2). */}
         <h3 className="t-micro mt-6 text-zinc-500">Not offered in the United States</h3>
-        <div className="mt-1.5 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-          {RESTRICTED.map((v) => (
-            <a
-              key={v.id}
-              href={v.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => track('trade_out', { venue: v.id })}
-              className="hover-row flex items-center justify-between border-b py-2.5 transition-colors active:bg-zinc-900"
+        <p className="t-caption mt-1 text-zinc-500">
+          These exchanges say they do not serve people in the United States. The tokens'
+          issuers also restrict the United Kingdom and some other countries.
+        </p>
+        <ul className="mt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+          {RESTRICTED.map((name) => (
+            <li
+              key={name}
+              className="flex items-center justify-between border-b py-2.5"
               style={{ borderColor: 'var(--border-subtle)' }}
             >
-              <span className="t-label text-zinc-400">{v.name}</span>
-              <span className="t-caption text-zinc-500">Exchange · xStocks ↗</span>
-            </a>
+              <span className="t-label text-zinc-400">{name}</span>
+              <span className="t-caption text-zinc-500">Exchange</span>
+            </li>
           ))}
-        </div>
+        </ul>
 
         {/* Accurate, but about a registered exchange and registered
             securities, not the tokens Onstock tracks, so it says both. */}
@@ -123,8 +111,7 @@ export default function Trade({ onOpenProfile }) {
 
         <p className="mt-6 text-center text-[11px] leading-relaxed text-zinc-400">
           These are outside services with their own terms and their own rules about who
-          may use them. Onstock links to them but does not route orders, hold funds or
-          execute trades.
+          may use them. Onstock does not route orders, hold funds or execute trades.
         </p>
       </div>
     </div>

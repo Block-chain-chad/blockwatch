@@ -19,7 +19,7 @@ const LESSONS = [
     id: 'backing',
     title: 'How are tokens backed?',
     body: [
-      "The issuers say each token is issued against a real share: the issuer buys actual stock and holds it with a licensed custodian as backing, and the token is built to track that share's price, which is why its price hugs the real one.",
+      "The issuers say each token is issued against a real share: the issuer buys actual stock and holds it with a licensed custodian as backing, and the token is built to track that share's price, which is why its price stays close to the share's.",
       'That anchor works through redemption: if the token got much cheaper than the stock, eligible professional traders could buy tokens and redeem them with the issuer, and that trade pulls prices back together. Redemption is limited: it requires identity checks, has minimum sizes, and is not available to people in the United States. The tokens themselves are not offered to people in the United States.',
       "You can check the details on any asset page under 'Details': the issuer, the chain it lives on, and the stock it tracks.",
     ],

@@ -30,4 +30,9 @@ describe('TradeButton link-out wording', () => {
     expect(html).toContain('Not investment advice.')
     expect(html).not.toContain('Availability depends on your region')
   })
+
+  it('renders nothing at all while both switches are off', () => {
+    applyFlags({ [LINK_OUT_FLAG]: false })
+    expect(renderToStaticMarkup(<TradeButton asset={verified} />)).toBe('')
+  })
 })

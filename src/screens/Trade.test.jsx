@@ -48,12 +48,24 @@ describe('Trade screen wording', () => {
     expect(html).not.toContain('exact pair')
   })
 
-  it('keeps the restriction heading, which describes the four exchanges below it', () => {
+  it('names the four exchanges as plain text under their restriction, with no links', () => {
     const html = render()
     expect(html).toContain('Not offered in the United States')
+    expect(html).toContain(
+      'These exchanges say they do not serve people in the United States. The tokens&#x27; issuers also restrict the United Kingdom and some other countries.',
+    )
     for (const name of ['Kraken', 'Bybit', 'Gate.io', 'KuCoin']) {
-      expect(html).toContain(name)
+      expect(html).toContain(`>${name}<`)
     }
+    for (const host of ['kraken.com', 'bybit.com', 'gate.io"', 'kucoin.com']) {
+      expect(html).not.toContain(host)
+    }
+  })
+
+  it('is called Venues, not Trade', () => {
+    const html = render()
+    expect(html).toContain('>Venues<')
+    expect(html).not.toContain('>Trade<')
   })
 
   it('asks nobody for an email, because the waitlist is closed', () => {
@@ -64,12 +76,14 @@ describe('Trade screen wording', () => {
     expect(html).not.toContain('trading goes live')
   })
 
-  it('shows only the paused line where the card was when the link-out is off', () => {
+  it('shows no card and no paused line when the link-out is off', () => {
     applyFlags({ [LINK_OUT_FLAG]: false })
     const html = render()
-    expect(html).toContain('Links out to trading venues are paused.')
-    expect(html).not.toContain('jup.ag')
-    expect(html).not.toContain('where we can point people')
+    expect(html).not.toContain('paused')
+    expect(html).not.toContain('href="https://jup.ag')
+    // The one link left is the regulator's order.
+    expect(html.match(/<a /g)).toHaveLength(1)
+    expect(html).toContain('href="https://www.sec.gov/')
   })
 })
 

@@ -96,18 +96,20 @@ describe('with no answer from PostHog — the default, and the loading state', (
     expect(button).not.toContain(`Swap ${verified.ticker}`)
   })
 
-  it('says so in plain words instead of leaving a gap', () => {
+  it('keeps the paused line inside the sheet and off the page', () => {
     const { sheet, button } = renderAll()
     expect(sheet).toContain(SWAP_PAUSED_LINE)
-    expect(button).toContain(SWAP_PAUSED_LINE)
+    // A paused trading control on the page tells every visitor Onstock has
+    // trading (compliance sign-off W1), so the page shows nothing instead.
+    expect(button).not.toContain(SWAP_PAUSED_LINE)
   })
 
   it('pauses the link-out too, because its fallback is off since September 30, 2026', () => {
     const { button, header, trade } = renderAll()
     expect(button).not.toContain(JUPITER_URL)
     expect(header).not.toContain(JUPITER_URL)
-    expect(button).toContain(LINK_OUT_PAUSED_LINE)
-    expect(trade).toContain(LINK_OUT_PAUSED_LINE)
+    expect(button).toBe('')
+    expect(trade).not.toContain(LINK_OUT_PAUSED_LINE)
   })
 })
 
@@ -153,28 +155,28 @@ describe('with the link-out flag off', () => {
     expect(trade).not.toContain('Open to you')
   })
 
-  it('says so on every screen it removed something from', () => {
+  it('says nothing about trading where the control was', () => {
     const { button, header, trade } = renderAll()
-    expect(button).toContain(LINK_OUT_PAUSED_LINE)
-    expect(header).toContain(TRADE_PAUSED_SHORT)
-    expect(trade).toContain(LINK_OUT_PAUSED_LINE)
+    expect(button).not.toContain(LINK_OUT_PAUSED_LINE)
+    expect(header).not.toContain(TRADE_PAUSED_SHORT)
+    expect(trade).not.toContain(LINK_OUT_PAUSED_LINE)
   })
 })
 
 describe('with both flags off', () => {
   beforeEach(() => applyFlags({ [SWAP_FLAG]: false, [LINK_OUT_FLAG]: false }))
 
-  it('leaves no route to spend money and no silent gap', () => {
+  it('leaves no route to spend money and no trading promise on the page', () => {
     const { sheet, button, header, trade } = renderAll()
     for (const html of [sheet, button, header, trade]) {
       expect(html).not.toContain('jup.ag')
     }
     expect(button).not.toContain(`Swap ${verified.ticker}`)
     expect(sheet).toContain(SWAP_PAUSED_LINE)
-    // Every surface that lost a control explains itself.
-    expect(button).toContain('paused')
-    expect(header).toContain('paused')
-    expect(trade).toContain('paused')
+    // Only the sheet, which nothing on the page can open now, says paused.
+    expect(button).toBe('')
+    expect(header).not.toContain('paused')
+    expect(trade).not.toContain('paused')
   })
 })
 

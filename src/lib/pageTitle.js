@@ -59,7 +59,7 @@ const SCREEN_NAMES = {
   screener: 'Gaps',
   folders: 'Folders',
   news: 'News',
-  trade: 'Trade',
+  trade: 'Venues',
 }
 
 /** screenTitle('screener') → 'Gaps · Onstock'; unknown tabs get the default. */
