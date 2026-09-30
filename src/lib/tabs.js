@@ -10,5 +10,5 @@ export const TABS = [
   { id: 'screener', label: 'Gaps', Icon: TrendIcon },
   { id: 'folders', label: 'Folders', Icon: FolderIcon },
   { id: 'news', label: 'News', Icon: NewsIcon },
-  { id: 'trade', label: 'Trade', Icon: TradeIcon },
+  { id: 'trade', label: 'Venues', Icon: TradeIcon },
 ]

@@ -7,7 +7,7 @@ import { formatPct, formatPrice, EM_DASH } from '../../lib/format'
 import { tokenLegLine, shareLegLine } from '../../lib/provenance'
 import { STOCK_QUOTE_SOURCE } from '../../services/stocks'
 import { verifiedToken } from '../../data/verifiedMints'
-import { useFlag, LINK_OUT_FLAG, TRADE_PAUSED_SHORT } from '../../services/featureFlags'
+import { useFlag, LINK_OUT_FLAG } from '../../services/featureFlags'
 import { GapBar } from '../shared'
 import ClosedGapMark from '../ClosedGapMark'
 import { closedGapLabelFor } from '../../lib/sessionCopy'
@@ -109,13 +109,6 @@ export default function GapHeader({ asset, session, lastFetchAt, onExit, onSheet
           address comes from the verified list, not the asset record: sending
           someone to a venue pre-filled with an unverified mint is the same
           wrong-token risk as swapping at it. */}
-      {token && !linkOutOn && (
-        // Two words, in the row's own type, where the button was. A control
-        // that simply disappears from a header reads as a rendering bug.
-        <span className="t-label flex h-8 shrink-0 items-center px-3 font-medium text-zinc-500">
-          {TRADE_PAUSED_SHORT}
-        </span>
-      )}
       {token && linkOutOn && (
         <a
           href={`https://jup.ag/swap/USDC-${token.mint}`}

@@ -2,13 +2,7 @@ import { useState } from 'react'
 import { track } from '../../services/analytics'
 import { useWallet } from '../../state/WalletContext'
 import { verifiedToken } from '../../data/verifiedMints'
-import {
-  useFlag,
-  SWAP_FLAG,
-  LINK_OUT_FLAG,
-  SWAP_PAUSED_LINE,
-  LINK_OUT_PAUSED_LINE,
-} from '../../services/featureFlags'
+import { useFlag, SWAP_FLAG, LINK_OUT_FLAG } from '../../services/featureFlags'
 import SwapSheet from '../../overlays/SwapSheet'
 
 /* The trading ladder in one block: wallet connected → in-app swap
@@ -19,10 +13,8 @@ import SwapSheet from '../../overlays/SwapSheet'
 
    Each rung also has a remote switch (services/featureFlags). Both read
    synchronously and the swap's fails closed, so there is no first render on
-   which the swap button exists and shouldn't. A rung that is switched off
-   says so in a line of plain text: a button that silently vanishes reads as a
-   broken app, and someone who came here to trade deserves to know the
-   difference.
+   which the swap button exists and shouldn't. With both rungs off the block
+   renders nothing at all.
 
    `onSwap` is optional. The phone screen passes it and keeps the SwapSheet
    in its own tail beside the other sheets, so the sheet's place in the DOM
@@ -41,6 +33,10 @@ export default function TradeButton({ asset, onSwap }) {
   // trade, just not from inside Onstock.
   const showSwap = Boolean(wallet.publicKey) && swapOn
   const showLinkOut = !showSwap && linkOutOn
+  // With both switched off the page shows nothing here, not a "paused"
+  // line: a paused trading control tells every visitor Onstock has trading
+  // (compliance sign-off W1, September 30, 2026).
+  if (!showSwap && !showLinkOut) return null
   return (
     <>
       <div className="px-4 pt-3">
@@ -58,7 +54,7 @@ export default function TradeButton({ asset, onSwap }) {
           >
             Swap {asset.ticker}
           </button>
-        ) : showLinkOut ? (
+        ) : (
           <a
             href={`https://jup.ag/swap/USDC-${token.mint}`}
             target="_blank"
@@ -69,23 +65,11 @@ export default function TradeButton({ asset, onSwap }) {
           >
             View on Jupiter ↗
           </a>
-        ) : (
-          <p
-            className="t-label flex items-center justify-center gap-2 rounded-lg py-3 text-center font-medium text-zinc-400"
-            style={{ boxShadow: 'inset 0 0 0 1px var(--border-subtle)' }}
-          >
-            {LINK_OUT_PAUSED_LINE}
-          </p>
         )}
         <p className="mt-1.5 text-center text-[11px] leading-relaxed text-zinc-400">
           {showSwap
             ? 'Swaps run from your own wallet. Onstock never holds funds.'
-            : showLinkOut
-              ? // With a wallet connected, rung two is where the button used
-                // to be, so say why it isn't rather than letting the change
-                // read as a bug.
-                `${wallet.publicKey ? `${SWAP_PAUSED_LINE} ` : ''}Opens Jupiter, an outside service Onstock does not operate. The token’s issuer does not offer it in the United States, and it may be restricted where you are. Not investment advice.`
-              : `${SWAP_PAUSED_LINE} You can still track ${asset.ticker} here.`}
+            : 'Opens Jupiter, an outside service Onstock does not operate. The token’s issuer does not offer it in the United States, and it may be restricted where you are. Not investment advice.'}
         </p>
       </div>
       {!onSwap && swapOpen && <SwapSheet asset={asset} onClose={() => setSwapOpen(false)} />}
