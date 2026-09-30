@@ -33,7 +33,8 @@ export function clearAccountStorage(userId, storage = globalThis.localStorage) {
 
 /**
  * Ask the server to delete the account. Resolves with the server's answer
- * ({ deleted: true, apple }) or throws with the HTTP status in the message.
+ * ({ deleted: true, apple }) or throws an Error carrying the HTTP `status`.
+ * A 403 means the session needs a fresh sign-in first.
  */
 export async function requestAccountDeletion({ accessToken, appleAuthorizationCode, fetchImpl = fetch }) {
   if (!accessToken) throw new Error('not signed in')
@@ -42,6 +43,10 @@ export async function requestAccountDeletion({ accessToken, appleAuthorizationCo
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
     body: JSON.stringify(appleAuthorizationCode ? { appleAuthorizationCode } : {}),
   })
-  if (!res.ok) throw new Error(`delete-account ${res.status}`)
+  if (!res.ok) {
+    const err = new Error(`delete-account ${res.status}`)
+    err.status = res.status
+    throw err
+  }
   return res.json().catch(() => ({ deleted: true }))
 }

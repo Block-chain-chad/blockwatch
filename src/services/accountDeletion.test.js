@@ -36,6 +36,11 @@ describe('requestAccountDeletion', () => {
     await expect(requestAccountDeletion({ accessToken: 't', fetchImpl })).rejects.toThrow('502')
     await expect(requestAccountDeletion({ accessToken: '', fetchImpl })).rejects.toThrow()
   })
+
+  it('carries the status, so the sheet can tell "sign in again" (403) from a failure', async () => {
+    const fetchImpl = vi.fn(async () => ({ ok: false, status: 403 }))
+    await expect(requestAccountDeletion({ accessToken: 't', fetchImpl })).rejects.toMatchObject({ status: 403 })
+  })
 })
 
 describe('clearAccountStorage', () => {
