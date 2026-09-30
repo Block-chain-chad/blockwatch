@@ -6,7 +6,7 @@
 // origins are echoed back (see api/_cors.js). Same-origin web calls are
 // unaffected.
 
-import { applyCors, handlePreflight, setCacheControl } from './_cors.js'
+import { applyCors, handlePreflight, refuseForeignOrigin } from './_cors.js'
 import { rejectUnknownParams } from './_params.js'
 import { isAllowedYahooSymbol } from './_symbols.js'
 import { clientKey, createRateLimiter, sendTooManyRequests } from './_rateLimit.js'
@@ -48,7 +48,8 @@ export const limiters = { perClient }
 
 export default async function handler(req, res) {
   if (handlePreflight(req, res)) return
-  const originScoped = applyCors(req, res)
+  if (refuseForeignOrigin(req, res)) return
+  applyCors(req, res)
   if (rejectUnknownParams(req, res, ALLOWED_PARAMS)) return
 
   const client = perClient.take(clientKey(req))
@@ -70,7 +71,7 @@ export default async function handler(req, res) {
     )
     if (!upstream.ok) return res.status(upstream.status).json({ error: 'upstream error' })
     const data = await upstream.json()
-    setCacheControl(res, 's-maxage=300, stale-while-revalidate=600', originScoped)
+    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600')
     return res.status(200).json(data)
   } catch {
     return res.status(502).json({ error: 'upstream unreachable' })

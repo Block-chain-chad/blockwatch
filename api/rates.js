@@ -13,7 +13,7 @@
 // CORS: the native app calls this from capacitor://localhost, so allowed
 // origins are echoed back (see api/_cors.js).
 
-import { applyCors, handlePreflight, setCacheControl } from './_cors.js'
+import { applyCors, handlePreflight, refuseForeignOrigin } from './_cors.js'
 import { rejectUnknownParams } from './_params.js'
 import { parseFredCsv } from './_fred.js'
 
@@ -27,7 +27,8 @@ const CACHE = 's-maxage=3600, stale-while-revalidate=86400'
 
 export default async function handler(req, res) {
   if (handlePreflight(req, res)) return
-  const originScoped = applyCors(req, res)
+  if (refuseForeignOrigin(req, res)) return
+  applyCors(req, res)
   if (rejectUnknownParams(req, res, ALLOWED_PARAMS)) return
 
   try {
@@ -39,7 +40,7 @@ export default async function handler(req, res) {
     // No readings means something changed upstream — a 200 with an empty body
     // would render as a silently blank section.
     if (!parsed.asOf) return res.status(502).send('no observations')
-    setCacheControl(res, CACHE, originScoped)
+    res.setHeader('Cache-Control', CACHE)
     res.setHeader('Content-Type', 'application/json; charset=utf-8')
     return res.status(200).json(parsed)
   } catch {

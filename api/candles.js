@@ -41,7 +41,7 @@
 // origins are echoed back (see api/_cors.js). Same-origin web calls are
 // unaffected.
 
-import { applyCors, handlePreflight, setCacheControl } from './_cors.js'
+import { applyCors, handlePreflight, refuseForeignOrigin } from './_cors.js'
 import { rejectUnknownParams } from './_params.js'
 import { isAllowedToken } from './_tokens.js'
 import { clientKey, createRateLimiter, sendTooManyRequests } from './_rateLimit.js'
@@ -122,7 +122,8 @@ const canonicalPool = (network, address) => (network === 'eth' ? address.toLower
 
 export default async function handler(req, res) {
   if (handlePreflight(req, res)) return
-  const originScoped = applyCors(req, res)
+  if (refuseForeignOrigin(req, res)) return
+  applyCors(req, res)
   if (rejectUnknownParams(req, res, ALL_PARAMS)) return
 
   const client = perClient.take(clientKey(req))
@@ -136,7 +137,7 @@ export default async function handler(req, res) {
   const network = str(req.query.network)
   if (!NETWORK_SET.has(network)) return res.status(400).json({ error: 'bad request' })
 
-  return op === 'resolve' ? resolveOp(req, res, originScoped, network) : ohlcvOp(req, res, originScoped, network)
+  return op === 'resolve' ? resolveOp(req, res, network) : ohlcvOp(req, res, network)
 }
 
 async function fetchUpstream(url) {
@@ -145,7 +146,7 @@ async function fetchUpstream(url) {
   return upstream.json()
 }
 
-async function resolveOp(req, res, originScoped, network) {
+async function resolveOp(req, res, network) {
   const ticker = str(req.query.ticker)
   if (!isAllowedToken(ticker, network)) return res.status(400).json({ error: 'bad request' })
 
@@ -168,12 +169,12 @@ async function resolveOp(req, res, originScoped, network) {
     return res.status(502).json({ error: 'upstream unreachable' })
   }
 
-  setCacheControl(res, candidates.length ? CACHE.resolve : CACHE.resolveMiss, originScoped)
+  res.setHeader('Cache-Control', candidates.length ? CACHE.resolve : CACHE.resolveMiss)
   res.setHeader('Content-Type', 'application/json; charset=utf-8')
   return res.status(200).json({ network, ticker, pool: candidates[0] ?? null, candidates, asOf })
 }
 
-async function ohlcvOp(req, res, originScoped, network) {
+async function ohlcvOp(req, res, network) {
   const pool = str(req.query.pool)
   const timeframe = str(req.query.timeframe)
   const aggregate = str(req.query.aggregate)
@@ -206,7 +207,7 @@ async function ohlcvOp(req, res, originScoped, network) {
   // hour, so say so instead.
   if (candles.length === 0) return res.status(502).json({ error: 'no candles' })
 
-  setCacheControl(res, CACHE[timeframe], originScoped)
+  res.setHeader('Cache-Control', CACHE[timeframe])
   res.setHeader('Content-Type', 'application/json; charset=utf-8')
   return res.status(200).json({
     network,

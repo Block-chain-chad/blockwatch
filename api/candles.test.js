@@ -241,10 +241,10 @@ describe('api/candles — ohlcv', () => {
     expect(res.headers['Cache-Control']).toBe('s-maxage=30, stale-while-revalidate=300')
   })
 
-  it('keeps a native WebView response off the app lane out of shared caches', async () => {
+  it('caches the iPhone app off the app lane the same way as the lane', async () => {
     const res = await call(ohlcvQuery(), { origin: 'capacitor://localhost' })
     expect(res.headers['Access-Control-Allow-Origin']).toBe('capacitor://localhost')
-    expect(res.headers['Cache-Control']).toBe('private, max-age=30, stale-while-revalidate=300')
+    expect(res.headers['Cache-Control']).toBe('s-maxage=30, stale-while-revalidate=300')
   })
 
   it('shares the app lane', async () => {
