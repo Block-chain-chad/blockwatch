@@ -98,6 +98,10 @@ describe('api/candles — refuses before upstream', () => {
     ['network off the allowlist', { op: 'resolve', ticker: 'AAPLx', network: 'bsc' }],
     ['ticker with a space', { op: 'resolve', ticker: 'AAPL x', network: 'solana' }],
     ['ticker too long', { op: 'resolve', ticker: 'ABCDEFGHIJK', network: 'solana' }],
+    ['made-up ticker in the old accepted shape', { op: 'resolve', ticker: 'ZZZZQ', network: 'solana' }],
+    ['ticker in the wrong case', { op: 'resolve', ticker: 'aaplx', network: 'solana' }],
+    ['ticker on a network the app never searches for it', { op: 'resolve', ticker: 'AAPLx', network: 'eth' }],
+    ['eth pool in upper case', ohlcvQuery({ network: 'eth', pool: '0xF5294094BCE435BFBD0EC488BE5C462AAF32BC7A' })],
     ['repeated ticker param (array)', { op: 'resolve', ticker: ['AAPLx', 'TSLAx'], network: 'solana' }],
     ['path-ish pool', ohlcvQuery({ pool: '../x' })],
     ['eth address on solana', ohlcvQuery({ pool: '0xf5294094bce435bfbd0ec488be5c462aaf32bc7a' })],
@@ -143,12 +147,30 @@ describe('api/candles — resolve', () => {
     expect(res.headers['Content-Type']).toMatch(/json/)
   })
 
+  it('hands out eth pool addresses in lower case, the only spelling ohlcv accepts', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        data: [
+          {
+            attributes: { address: '0xF5294094BCE435BFBD0EC488BE5C462AAF32BC7A', name: 'NVDAon / USDC', volume_usd: { h24: '1' } },
+            relationships: {},
+          },
+        ],
+      }),
+    })
+    const res = await call({ op: 'resolve', ticker: 'NVDAon', network: 'eth' })
+    expect(res.statusCode).toBe(200)
+    expect(res.body.pool.address).toBe('0xf5294094bce435bfbd0ec488be5c462aaf32bc7a')
+  })
+
   it('caches a miss for less time than a hit', async () => {
-    const res = await call({ op: 'resolve', ticker: 'ZZZZQ', network: 'solana' })
+    const res = await call({ op: 'resolve', ticker: 'TSLAx', network: 'solana' })
     expect(res.statusCode).toBe(200)
     expect(res.body).toEqual({
       network: 'solana',
-      ticker: 'ZZZZQ',
+      ticker: 'TSLAx',
       pool: null,
       candidates: [],
       asOf: expect.any(String),

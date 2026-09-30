@@ -6,6 +6,8 @@
 // of the gap. Two ops, both strictly allowlisted:
 //
 //   ?op=resolve&ticker=AAPLx&network=solana
+//     Only a ticker from the token list, on a network the app searches for
+//     it (api/_tokens.js, exact case).
 //     Which pool a ticker's candles should come from. Returns the pools where
 //     the ticker is the BASE token, busiest first (see api/_geckoterminal.js
 //     for why the search result cannot be used as-is), plus the top one as
@@ -41,6 +43,7 @@
 
 import { applyCors, handlePreflight, setCacheControl } from './_cors.js'
 import { rejectUnknownParams } from './_params.js'
+import { isAllowedToken } from './_tokens.js'
 import { clientKey, createRateLimiter, sendTooManyRequests } from './_rateLimit.js'
 import {
   NETWORKS,
@@ -62,7 +65,6 @@ const OP_PARAMS = Object.freeze({
 })
 const ALL_PARAMS = new Set([...OP_PARAMS.resolve, ...OP_PARAMS.ohlcv])
 
-const TICKER = /^[A-Z0-9.-]{1,10}$/i
 const NETWORK_SET = new Set(NETWORKS)
 // GeckoTerminal caps a call at 1000 candles. Fixed steps, not a free integer,
 // so `limit` cannot mint unbounded cache keys.
@@ -111,6 +113,13 @@ export const limiters = { perClient, perInstance }
 
 const str = (v) => (typeof v === 'string' ? v : '')
 
+// One spelling per pool, so one pool is one cache key. Ethereum addresses are
+// hex and case-insensitive: 0xABC and 0xabc are the same pool, and accepting
+// both would let a script mint cache keys from one real address. Resolve hands
+// out the lowercase form and ohlcv accepts only that. Solana addresses are
+// base58, where case is meaningful, so they pass through untouched.
+const canonicalPool = (network, address) => (network === 'eth' ? address.toLowerCase() : address)
+
 export default async function handler(req, res) {
   if (handlePreflight(req, res)) return
   const originScoped = applyCors(req, res)
@@ -138,7 +147,7 @@ async function fetchUpstream(url) {
 
 async function resolveOp(req, res, originScoped, network) {
   const ticker = str(req.query.ticker)
-  if (!TICKER.test(ticker)) return res.status(400).json({ error: 'bad request' })
+  if (!isAllowedToken(ticker, network)) return res.status(400).json({ error: 'bad request' })
 
   // Spent here rather than at the top of the handler, so a request the params
   // were going to refuse anyway never costs the shared budget a token.
@@ -152,7 +161,9 @@ async function resolveOp(req, res, originScoped, network) {
     // Stamped when the upstream answer arrives, so the edge cache stores the
     // real age of the figures along with them.
     asOf = new Date().toISOString()
-    candidates = matchingPools(parseSearchPools(json), ticker).slice(0, MAX_CANDIDATES)
+    candidates = matchingPools(parseSearchPools(json), ticker)
+      .slice(0, MAX_CANDIDATES)
+      .map((p) => ({ ...p, address: canonicalPool(network, p.address) }))
   } catch {
     return res.status(502).json({ error: 'upstream unreachable' })
   }
@@ -171,6 +182,7 @@ async function ohlcvOp(req, res, originScoped, network) {
   const aggregates = Object.hasOwn(TIMEFRAME_AGGREGATES, timeframe) ? TIMEFRAME_AGGREGATES[timeframe] : null
   if (
     !POOL_ADDRESS[network].test(pool) ||
+    pool !== canonicalPool(network, pool) ||
     !aggregates ||
     !aggregates.some((a) => String(a) === aggregate) ||
     !LIMITS.has(limit)
