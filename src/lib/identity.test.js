@@ -35,6 +35,14 @@ describe('displayIdentity', () => {
     expect(displayIdentity({ email: RELAY.toUpperCase() }).initial).toBeNull()
   })
 
+  it('takes the whole first character when a name starts with an emoji', () => {
+    expect(displayIdentity({ email: 'a@b.c', user_metadata: { full_name: '\u{1F680} Rocket' } }).initial).toBe('\u{1F680}')
+    expect(displayIdentity({ email: 'a@b.c', user_metadata: { full_name: '\u{1F469}\u200D\u{1F4BB} Dev' } }).initial).toBe(
+      '\u{1F469}\u200D\u{1F4BB}'
+    )
+    expect(displayIdentity({ user_metadata: { name: 'e\u0301mile' } }).initial).toBe('E\u0301')
+  })
+
   it('copes with no email and no metadata', () => {
     expect(displayIdentity({ id: 'u1', email: '' })).toEqual({ title: 'Signed in', detail: null, initial: null })
   })

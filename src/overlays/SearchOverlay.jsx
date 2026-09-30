@@ -287,7 +287,7 @@ export default function SearchOverlay({ onClose, onOpenAsset, pickerFolderId = n
               No tokenized version of “{query}” yet.
             </p>
             <p className="mt-1 text-xs text-zinc-500">
-              We add new listings daily. Try one of these in the meantime.
+              We check for new listings every day. Try one of these in the meantime.
             </p>
             <div className="mt-4 flex flex-wrap justify-center gap-2">
               {popularSearches.map((t) => (

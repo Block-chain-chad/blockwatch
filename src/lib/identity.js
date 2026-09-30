@@ -15,6 +15,13 @@ export const UNNAMED_TITLE = 'Signed in'
 
 const clean = (v) => (typeof v === 'string' ? v.trim() : '')
 
+function firstCharacter(text) {
+  if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+    return new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(text)[Symbol.iterator]().next().value.segment
+  }
+  return Array.from(text)[0]
+}
+
 export function isAppleRelayEmail(email) {
   return APPLE_RELAY.test(clean(email))
 }
@@ -36,6 +43,8 @@ export function displayIdentity(user) {
   const title = name || (email && !relay ? email : relay ? 'Signed in with Apple' : UNNAMED_TITLE)
   const detail = email && title !== email ? email : null
   const source = name || (relay ? '' : email)
-  const initial = source ? source[0].toUpperCase() : null
+  // First whole character, so a name that starts with an emoji or an accented
+  // letter built from two code points keeps its letter intact.
+  const initial = source ? firstCharacter(source).toUpperCase() : null
   return { title, detail, initial }
 }
