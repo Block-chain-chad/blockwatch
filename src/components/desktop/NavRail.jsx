@@ -4,7 +4,7 @@ import { TABS } from '../TabBar'
 /*
  * The phone tab bar turned on its side: the same five destinations, icon over
  * a 10px label, down the left edge at 64px (spec §6.7). The News unread dot
- * and the Trade "soon" tag are the TabBar's, copied so the two never drift.
+ * is the TabBar's, copied so the two never drift.
  * A normal tab stop; no custom keys.
  */
 export default function NavRail({ tab, onTab, hidden }) {
@@ -16,7 +16,7 @@ export default function NavRail({ tab, onTab, hidden }) {
       className="flex flex-col border-r"
       style={{ width: 'var(--rail-w)', borderColor: 'var(--border-subtle)', gridColumn: 1 }}
     >
-      {TABS.map(({ id, label, Icon, soon }) => {
+      {TABS.map(({ id, label, Icon }) => {
         const active = tab === id
         return (
           <button
@@ -35,11 +35,6 @@ export default function NavRail({ tab, onTab, hidden }) {
               )}
             </span>
             <span className="text-[10px] font-medium">{label}</span>
-            {soon && (
-              <span className="t-micro absolute right-1/2 top-1 translate-x-[26px] rounded-full bg-zinc-800 px-1.5 py-px text-[8px] text-zinc-400">
-                soon
-              </span>
-            )}
           </button>
         )
       })}
