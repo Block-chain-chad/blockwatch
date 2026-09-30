@@ -102,13 +102,12 @@ describe('with no answer from PostHog — the default, and the loading state', (
     expect(button).toContain(SWAP_PAUSED_LINE)
   })
 
-  it('still lets the link-out stand, because its fallback is on', () => {
+  it('pauses the link-out too, because its fallback is off since September 30, 2026', () => {
     const { button, header, trade } = renderAll()
-    expect(button).toContain(JUPITER_URL)
-    expect(header).toContain(JUPITER_URL)
-    // The Trade screen's card, keyed off its link label rather than a badge:
-    // it carries no availability claim any more (screens/Trade.test.jsx).
-    expect(trade).toContain(TRADE_VENUE_CARD)
+    expect(button).not.toContain(JUPITER_URL)
+    expect(header).not.toContain(JUPITER_URL)
+    expect(button).toContain(LINK_OUT_PAUSED_LINE)
+    expect(trade).toContain(LINK_OUT_PAUSED_LINE)
   })
 })
 

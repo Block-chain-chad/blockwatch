@@ -4,7 +4,7 @@ import SwapSheet from './SwapSheet'
 import TradeButton from '../components/asset/TradeButton'
 import { VERIFIED_MINTS } from '../data/verifiedMints'
 import { BY_ID } from '../data/universe'
-import { applyFlags, SWAP_FLAG } from '../services/featureFlags'
+import { applyFlags, SWAP_FLAG, LINK_OUT_FLAG } from '../services/featureFlags'
 import { SLIPPAGE_BPS } from '../services/swap'
 
 /*
@@ -92,6 +92,7 @@ describe('SwapSheet disclosure copy', () => {
 
 describe('TradeButton renders', () => {
   it('offers the verified address to the external venue', () => {
+    applyFlags({ [LINK_OUT_FLAG]: true })
     const html = renderToStaticMarkup(<TradeButton asset={verified} />)
     expect(html).toContain(`https://jup.ag/swap/USDC-${VERIFIED_MINTS[verified.id].mint}`)
   })
