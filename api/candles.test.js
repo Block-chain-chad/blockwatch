@@ -105,6 +105,15 @@ describe('api/candles — only pools this proxy handed out', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
+  it('answers a signature with non-ASCII characters with 400, not a crash', async () => {
+    const good = poolSignature('solana', SOL_POOL)
+    for (const sig of [`é${good.slice(2)}`, '\u{1F680}'.repeat(11), 'é'.repeat(22), '\u0000'.repeat(22)]) {
+      const res = await call(ohlcvQuery({ sig }))
+      expect(res.statusCode).toBe(400)
+    }
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
   it('serves a pool exactly as resolve signed it', async () => {
     const resolved = await call({ op: 'resolve', ticker: 'AAPLx', network: 'solana' })
     const { address, sig } = resolved.body.pool

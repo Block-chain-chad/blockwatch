@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Sheet, { SheetTitle } from '../components/Sheet'
+import { MAX_FOLDER_NAME } from '../lib/accountLimits'
 
 /* Minimal bottom-sheet text prompt (create/rename folder). */
 export default function PromptSheet({ title, placeholder, initial = '', submitLabel, onSubmit, onClose }) {
@@ -21,6 +22,7 @@ export default function PromptSheet({ title, placeholder, initial = '', submitLa
           autoFocus
           value={value}
           onChange={(e) => setValue(e.target.value)}
+          maxLength={MAX_FOLDER_NAME}
           placeholder={placeholder}
           className="mt-3 w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none ring-accent/60 focus:ring-2"
         />

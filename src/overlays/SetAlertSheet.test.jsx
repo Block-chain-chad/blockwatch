@@ -20,12 +20,15 @@ vi.mock('../services/notifications', () => ({
 }))
 
 // The sheet reads the alert store on render; no provider exists here.
+const alerts = vi.hoisted(() => ({ canAlert: true, syncNotice: null }))
 vi.mock('../state/AlertsContext', () => ({
   useAlerts: () => ({
     rules: {},
     setDriftAlert: () => {},
     setPriceAlert: () => {},
     removeAlert: () => {},
+    canAlertOn: () => alerts.canAlert,
+    syncNotice: alerts.syncNotice,
   }),
 }))
 
@@ -45,6 +48,8 @@ const asset = {
 // close. Nothing else here touches the DOM.
 beforeEach(() => {
   vi.stubGlobal('document', { activeElement: null })
+  alerts.canAlert = true
+  alerts.syncNotice = null
 })
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -109,5 +114,23 @@ describe('the notification offer', () => {
     const html = renderToStaticMarkup(<SetAlertSheet asset={asset} onClose={() => {}} />)
     expect(html).not.toContain('Get a system notification')
     expect(requestNotificationPermission).not.toHaveBeenCalled()
+  })
+})
+
+describe('SetAlertSheet at the account limits', () => {
+  it('says the limit plainly and will not save a new alert past it', () => {
+    alerts.canAlert = false
+    const html = render()
+    expect(html).toContain('You can set alerts on up to 250 tokens.')
+    expect(html).toMatch(/<button disabled=""[^>]*>Set drift alert<\/button>/)
+  })
+
+  it('shows a quiet notice when some alerts could not sync', () => {
+    alerts.syncNotice = "Some alerts couldn't sync to your account. They're still saved on this device."
+    expect(render()).toContain('still saved on this device')
+  })
+
+  it('says nothing about limits when there is room', () => {
+    expect(render()).not.toContain('up to 250')
   })
 })

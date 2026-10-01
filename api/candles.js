@@ -148,8 +148,13 @@ export function poolSignature(network, address) {
 
 function validSignature(network, address, sig) {
   const expected = poolSignature(network, address)
-  if (!expected || sig.length !== expected.length) return false
-  return timingSafeEqual(Buffer.from(sig), Buffer.from(expected))
+  if (!expected) return false
+  // Compare BYTE lengths: timingSafeEqual throws on buffers of different
+  // sizes, and "é" is one character but two bytes, so a character count that
+  // matches can still crash the comparison.
+  const given = Buffer.from(sig)
+  const want = Buffer.from(expected)
+  return given.length === want.length && timingSafeEqual(given, want)
 }
 
 export default async function handler(req, res) {

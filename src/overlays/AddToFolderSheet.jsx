@@ -3,11 +3,17 @@ import { useFolders } from '../state/FoldersContext'
 import { CheckCircleIcon, PlusIcon, FolderIcon } from '../components/Icons'
 import PromptSheet from './PromptSheet'
 import Sheet, { SheetTitle } from '../components/Sheet'
+import { FOLDER_FULL_MESSAGE, FOLDER_LIMIT_MESSAGE } from '../lib/accountLimits'
 
 /* Multi-folder tagging: toggle which folders contain this asset. */
 export default function AddToFolderSheet({ asset, onClose }) {
-  const { folders, toggleAssetInFolder, createFolder } = useFolders()
+  const { folders, toggleAssetInFolder, createFolder, folderLimitReached, syncNotice } = useFolders()
   const [creating, setCreating] = useState(false)
+  const [refused, setRefused] = useState(null)
+
+  function toggle(folderId) {
+    setRefused(toggleAssetInFolder(folderId, asset.id) ? null : FOLDER_FULL_MESSAGE)
+  }
 
   return (
     <>
@@ -25,7 +31,7 @@ export default function AddToFolderSheet({ asset, onClose }) {
             return (
               <button
                 key={f.id}
-                onClick={() => toggleAssetInFolder(f.id, asset.id)}
+                onClick={() => toggle(f.id)}
                 className="flex w-full items-center gap-3 px-5 py-3.5 text-left transition-colors active:bg-zinc-900"
               >
                 <FolderIcon size={19} className="text-zinc-500" />
@@ -48,11 +54,17 @@ export default function AddToFolderSheet({ asset, onClose }) {
         <div className="px-4 pt-2">
           <button
             onClick={() => setCreating(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-zinc-800 py-3 text-sm font-medium text-zinc-400 transition-colors active:bg-zinc-900"
+            disabled={folderLimitReached}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-zinc-800 py-3 text-sm font-medium text-zinc-400 transition-colors active:bg-zinc-900 disabled:opacity-40"
           >
             <PlusIcon size={17} />
             New folder
           </button>
+          {[folderLimitReached && FOLDER_LIMIT_MESSAGE, refused, syncNotice].filter(Boolean).map((line) => (
+            <p key={line} className="mt-2 text-center text-xs text-zinc-500">
+              {line}
+            </p>
+          ))}
         </div>
       </Sheet>
 
@@ -64,7 +76,7 @@ export default function AddToFolderSheet({ asset, onClose }) {
           onClose={() => setCreating(false)}
           onSubmit={(name) => {
             const id = createFolder(name)
-            toggleAssetInFolder(id, asset.id)
+            if (id) toggle(id)
           }}
         />
       )}

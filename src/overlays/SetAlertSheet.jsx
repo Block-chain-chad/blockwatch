@@ -9,6 +9,7 @@ import { requestNotificationPermission } from '../services/notifications'
 import { driftWindowNote } from '../lib/alertRules'
 import { closedGapLabelFor } from '../lib/sessionCopy'
 import ClosedGapMark from '../components/ClosedGapMark'
+import { ALERT_LIMIT_MESSAGE } from '../lib/accountLimits'
 
 const THRESHOLDS = [0.5, 1, 2, 5]
 
@@ -18,8 +19,10 @@ const THRESHOLDS = [0.5, 1, 2, 5]
  *  - Price target: token crosses $X (one-shot, direction from current price)
  */
 export default function SetAlertSheet({ asset, onClose, notify = false }) {
-  const { rules, setDriftAlert, setPriceAlert, removeAlert } = useAlerts()
+  const { rules, setDriftAlert, setPriceAlert, removeAlert, canAlertOn, syncNotice } = useAlerts()
   const existing = rules[asset.id] ?? {}
+  // A token with no alert yet, past the limit: say so instead of saving.
+  const atLimit = !canAlertOn(asset.id)
   const [tab, setTab] = useState(existing.price && !existing.drift ? 'price' : 'drift')
   const [threshold, setThreshold] = useState(existing.drift?.threshold ?? 1)
   const [target, setTarget] = useState(
@@ -40,6 +43,8 @@ export default function SetAlertSheet({ asset, onClose, notify = false }) {
   return (
     <Sheet onClose={onClose}>
       <SheetTitle className="px-1 text-base font-semibold">Alerts for {asset.ticker}</SheetTitle>
+      {atLimit && <p className="mt-1 px-1 text-xs text-zinc-400">{ALERT_LIMIT_MESSAGE}</p>}
+      {syncNotice && <p className="mt-1 px-1 text-xs text-zinc-500">{syncNotice}</p>}
 
       <div className="mt-3 flex rounded-xl bg-zinc-900 p-1">
         {[
@@ -115,11 +120,12 @@ export default function SetAlertSheet({ asset, onClose, notify = false }) {
               </button>
             )}
             <button
+              disabled={atLimit}
               onClick={() => {
                 setDriftAlert(asset.id, threshold)
                 onClose()
               }}
-              className="flex-1 rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim"
+              className="flex-1 rounded-xl bg-accent py-3 text-sm font-semibold text-zinc-950 transition-colors active:bg-accent-dim disabled:opacity-40"
             >
               {existing.drift ? 'Update drift alert' : 'Set drift alert'}
             </button>
@@ -170,7 +176,7 @@ export default function SetAlertSheet({ asset, onClose, notify = false }) {
               </button>
             )}
             <button
-              disabled={!targetValid}
+              disabled={!targetValid || atLimit}
               onClick={() => {
                 setPriceAlert(asset.id, targetNum, direction)
                 onClose()
