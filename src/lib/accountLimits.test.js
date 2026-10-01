@@ -42,6 +42,14 @@ describe('folder limits', () => {
     expect(folderFits(folder({ assetIds: null }))).toBe(false)
   })
 
+  it('cuts on whole characters, so an emoji at the cut is not split in half', () => {
+    const name = cleanFolderName(`${'n'.repeat(99)}\u{1F680}\u{1F680}`)
+    expect(Array.from(name)).toHaveLength(100)
+    expect(name.endsWith('\u{1F680}')).toBe(true)
+    expect(name).not.toMatch(/[\uD800-\uDBFF]$/)
+    expect(folderFits(folder({ name }))).toBe(true)
+  })
+
   it('cuts a typed name to 100 characters and trims it', () => {
     expect(cleanFolderName(`  ${'n'.repeat(150)}  `)).toHaveLength(100)
     expect(cleanFolderName('  Energy ')).toBe('Energy')

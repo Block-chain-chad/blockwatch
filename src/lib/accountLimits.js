@@ -42,7 +42,12 @@ export function jsonbText(value) {
 }
 
 const byteLength = (text) => new TextEncoder().encode(text).length
-const sizeOk = (text, min, max) => typeof text === 'string' && text.length >= min && text.length <= max
+// Counted in whole characters, as Postgres char_length counts them.
+const sizeOk = (text, min, max) => {
+  if (typeof text !== 'string') return false
+  const length = Array.from(text).length
+  return length >= min && length <= max
+}
 
 /** Whether one folder fits the database's limits for a row. */
 export function folderFits(folder) {
@@ -67,7 +72,10 @@ export function alertFits(assetId, rule) {
   )
 }
 
-/** A folder name as the app stores it: trimmed and cut to the limit. */
+/**
+ * A folder name as the app stores it: trimmed and cut to the limit on whole
+ * characters, so an emoji at the cut is dropped rather than split in half.
+ */
 export function cleanFolderName(name) {
-  return String(name ?? '').trim().slice(0, MAX_FOLDER_NAME)
+  return Array.from(String(name ?? '').trim()).slice(0, MAX_FOLDER_NAME).join('')
 }
