@@ -15,6 +15,9 @@ export function accountStorageKeys(userId) {
   return [
     'bw.folders.v1',
     `bw.folders.u.${userId}`,
+    // Changes not yet confirmed by the server (fix/app-limits).
+    `bw.folders.unsynced.${userId}`,
+    `bw.alerts.unsynced.${userId}`,
     'bw.alerts.v1',
     HOLDINGS_GUEST_KEY,
     holdingsUserKey(userId),

@@ -48,6 +48,14 @@ describe('clearAccountStorage', () => {
     expect(accountStorageKeys('u1')).toEqual(expect.arrayContaining(['bw.holdings.v1', 'bw.holdings.u.u1']))
   })
 
+  it("includes this account's unsynced folder and alert changes, and no other account's", () => {
+    const keys = accountStorageKeys('u1')
+    expect(keys).toEqual(expect.arrayContaining(['bw.folders.unsynced.u1', 'bw.alerts.unsynced.u1']))
+    const store = new Map(['bw.folders.unsynced.u1', 'bw.alerts.unsynced.u1', 'bw.folders.unsynced.u2'].map((k) => [k, 'x']))
+    clearAccountStorage('u1', { removeItem: (k) => store.delete(k) })
+    expect([...store.keys()]).toEqual(['bw.folders.unsynced.u2'])
+  })
+
   it("removes the account's data and keeps display settings", () => {
     const store = new Map(
       [...accountStorageKeys('u1'), 'bw.theme.v1', 'bw.device.v1', 'bw.folders.u.other'].map((k) => [k, 'x']),
