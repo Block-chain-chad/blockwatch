@@ -18,7 +18,7 @@ import { classifyVisit } from '../../lib/returnVisit'
 import { DESKTOP_HOME_KEY } from '../../lib/desktopHome'
 import { FoldersList, FolderDetail } from '../../screens/Folders'
 import News from '../../screens/News'
-import Trade from '../../screens/Trade'
+import { Holdings } from '../../webOnly'
 import Masthead from './Masthead'
 import Board from './Board'
 import Readout from './Readout'
@@ -34,7 +34,7 @@ const KNOWN_IDS = new Set(ASSET_IDS)
  * The Meter (spec §3.2): the masthead over the Board and the Readout; the
  * chart is a drill-in one key away. Mounted by App at 1024px and up in a
  * browser when the desktop home is 'meter'; the Phase 1 DesktopShell is the
- * other home until the owner picks. Folders, News and Trade take over the
+ * other home until the owner picks. Folders, News and Holdings take over the
  * whole area below the masthead (their phone screens at 640px, centred);
  * picking an asset from any of them returns the Board with that wrapper in
  * the Readout.
@@ -120,7 +120,7 @@ export default function MeterShell({ tab, onTab, assetId, onSelectAsset, openFol
   }
 
   // The chart and fullscreen are Board-only: a takeover screen (Folders,
-  // News, Trade) keeps the 'board' key scope, so C and F must ignore it or
+  // News, Holdings) keeps the 'board' key scope, so C and F must ignore it or
   // they leave state behind that springs open on the way back.
   function openChart() {
     if (!assetId || tab !== 'home') return
@@ -209,8 +209,10 @@ export default function MeterShell({ tab, onTab, assetId, onSelectAsset, openFol
       )
     } else if (tab === 'news') {
       screen = <News onOpenProfile={onOpenProfile} onOpenAsset={(a) => select(a.id, { from: 'news' })} />
-    } else {
-      screen = <Trade onOpenProfile={onOpenProfile} />
+    } else if (tab === 'holdings' && Holdings) {
+      // Straight to the asset, without a meter_asset event: analytics never
+      // learns which token someone opened from their holdings.
+      screen = <Holdings onOpenProfile={onOpenProfile} onOpenAsset={(a) => onSelectAsset(a.id)} />
     }
     body = (
       <main className="min-h-0 overflow-y-auto">

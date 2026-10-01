@@ -40,10 +40,12 @@ export const NewsIcon = (p) => (
   </Base>
 )
 
-export const TradeIcon = (p) => (
+/* Stacked rows: a list of what you hold. Not a wallet: Onstock cannot see one. */
+export const HoldingsIcon = (p) => (
   <Base {...p}>
-    <path d="M4 17l4.5-6 3.5 3 7-9" />
-    <path d="M15 5h4v4" />
+    <rect x="4" y="4.5" width="16" height="4" rx="1.5" />
+    <rect x="4" y="10" width="16" height="4" rx="1.5" />
+    <rect x="4" y="15.5" width="16" height="4" rx="1.5" />
   </Base>
 )
 

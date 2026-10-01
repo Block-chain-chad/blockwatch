@@ -9,6 +9,7 @@ import EarningsSection from '../asset/EarningsSection'
 import DetailsSection from '../asset/DetailsSection'
 import AssetNews from '../asset/AssetNews'
 import TradesOn from '../asset/TradesOn'
+import WhereTokensTrade from '../../overlays/WhereTokensTrade'
 import AlsoTokenizedBy from '../asset/AlsoTokenizedBy'
 import LearnCards from '../LearnCards'
 
@@ -154,7 +155,12 @@ export default function DetailTabs({
                 : `No headlines, because ${asset.ticker} tracks no listed company.`}
             </p>
           ))}
-        {tab === 'trades' && <TradesOn asset={asset} />}
+        {tab === 'trades' && (
+          <>
+            <TradesOn asset={asset} />
+            <WhereTokensTrade className="px-4 pt-4" />
+          </>
+        )}
         {tab === 'also' &&
           (siblings.length > 0 ? (
             <AlsoTokenizedBy asset={asset} siblings={siblings} onSwitchAsset={onSelectAsset} />

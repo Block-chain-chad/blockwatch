@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:ios": "vite build --mode ios && cap sync ios",
+    "build:ios": "vite build --mode ios && node scripts/check-ios-bundle.mjs && cap sync ios",
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",

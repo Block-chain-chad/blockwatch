@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState } from 'react'
+import { Fragment, Suspense, lazy, useEffect, useState } from 'react'
 import { track } from './services/analytics'
 import AccessGate from './components/AccessGate'
 import { AuthProvider, useAuth } from './state/AuthContext'
@@ -14,7 +14,7 @@ import Home from './screens/Home'
 import { FoldersList, FolderDetail } from './screens/Folders'
 import Screener from './screens/Screener'
 import News from './screens/News'
-import Trade from './screens/Trade'
+import { Holdings, HoldingsProvider } from './webOnly'
 import AssetDetail from './screens/AssetDetail'
 import SearchOverlay from './overlays/SearchOverlay'
 import ProfileSheet from './overlays/ProfileSheet'
@@ -29,6 +29,9 @@ import { resolveDesktopHome, DESKTOP_HOME_KEY } from './lib/desktopHome'
    it was before the desktop existed. */
 const DesktopShell = lazy(() => import('./components/desktop/DesktopShell'))
 const MeterShell = lazy(() => import('./components/desktop/MeterShell'))
+
+// Holdings state wraps the app on the web only (src/webOnly.js).
+const HoldingsState = HoldingsProvider ?? Fragment
 
 /* When the user arrives via a password-recovery email link, prompt for the new password. */
 function RecoveryGate() {
@@ -116,8 +119,8 @@ export default function App() {
     )
   } else if (tab === 'news') {
     screen = <News onOpenProfile={openProfile} onOpenAsset={openAsset} />
-  } else {
-    screen = <Trade onOpenProfile={openProfile} />
+  } else if (tab === 'holdings' && Holdings) {
+    screen = <Holdings onOpenProfile={openProfile} onOpenAsset={openAsset} />
   }
 
   return (
@@ -128,6 +131,7 @@ export default function App() {
       <AlertsProvider>
       <FoldersProvider>
       <WaitlistProvider>
+      <HoldingsState>
         {/* dvh, not vh: mobile URL bars collapse and 100vh layouts jump.
             The shell stays phone-width up to lg because the native iOS build
             renders inside it; from lg in the native app it opens out to the
@@ -203,6 +207,7 @@ export default function App() {
           <RecoveryGate />
           <WelcomeGate onOpenSignIn={() => setShowProfile(true)} />
         </div>
+      </HoldingsState>
       </WaitlistProvider>
       </FoldersProvider>
       </AlertsProvider>

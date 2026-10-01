@@ -25,7 +25,7 @@ const WORDS = [
   { id: 'watching', label: 'Watching' },
   { id: 'folders', label: 'Folders' },
   { id: 'news', label: 'News' },
-  { id: 'trade', label: 'Venues' },
+  ...(import.meta.env.VITE_BUILD_TARGET === 'ios' ? [] : [{ id: 'holdings', label: 'Holdings' }]),
 ]
 
 export default function Masthead({ active, onTab, searchRef, onSelectAsset, onOpenProfile }) {
