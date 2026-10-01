@@ -313,17 +313,39 @@ describe('first sign-in with holdings on this device (criterion 4)', () => {
     expect(text()).not.toContain('already in your account')
   })
 
-  it('keeps the device copy and asks again when the write fails', async () => {
+  it('keeps the device copy, says so once, and asks again when the write fails', async () => {
     await signIn(A)
     db.failWrite = true
     await act(async () => button('Add to my account').click())
     await settle()
     expect(stored(GUEST)).toHaveLength(3)
     expect(list()).toEqual(['a=1'])
+    expect(stored(cacheKey(A)).pending).toBe(false)
+    expect(text()).toContain(
+      "We couldn't add the holdings on this device to your account. They're still on this device, and we'll ask again next time.",
+    )
     db.failWrite = false
+    const writes = db.calls.filter(([op]) => op !== 'select').length
+    await settle()
+    // No retry on its own.
+    expect(db.calls.filter(([op]) => op !== 'select').length).toBe(writes)
     reload()
     await settle()
     expect(text()).toContain('Add the 3 holdings on this device to your account?')
+  })
+
+  it('a failed merge never overwrites a holding added on another device', async () => {
+    await signIn(A)
+    db.failWrite = true
+    await act(async () => button('Add to my account').click())
+    await settle()
+    db.failWrite = false
+    // Meanwhile, on another device:
+    db.rows.get(A.id).set('elsewhere', { asset_id: 'elsewhere', amount: '4', updated_at: '2026-09-30T01:00:00Z' })
+    reload()
+    await settle()
+    expect(serverRows(A)).toEqual(['a=1', 'elsewhere=4'])
+    expect(list().sort()).toEqual(['a=1', 'elsewhere=4'])
   })
 
   it('Keep on this device only: uploads nothing, does not ask again this sign-in, and the copy returns after sign-out', async () => {

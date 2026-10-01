@@ -11,6 +11,10 @@ const SYNC_DEBOUNCE_MS = 800
 const TOAST_MS = 5000
 const NOTICE_MS = 8000
 
+// Approved by compliance (7-holdings.md, addendum 2, item 2).
+const IMPORT_FAILED =
+  "We couldn't add the holdings on this device to your account. They're still on this device, and we'll ask again next time."
+
 function read(key) {
   try {
     return JSON.parse(localStorage.getItem(key))
@@ -215,6 +219,7 @@ export function HoldingsProvider({ children }) {
     setPrompt(null)
     if (!id) return
     const before = listRef.current
+    const pendingBefore = pendingRef.current
     const { merged, skipped, left } = mergeGuest(before, loadGuest())
     clearTimeout(syncTimer.current)
     seqRef.current++
@@ -225,10 +230,16 @@ export function HoldingsProvider({ children }) {
     const ok = await pushAccount(id, merged)
     if (ownerRef.current !== id) return
     if (!ok) {
-      // Keep the device copy and ask again next time. The account keeps
-      // what it had.
-      if (listRef.current === merged) show(before)
+      // Put everything back as it was, so the next load does not take the
+      // merge as this device's unconfirmed change and push it over holdings
+      // added elsewhere since. The device copy stays, and the next load
+      // asks again. Said once; nothing retries on its own.
+      if (seq === seqRef.current) {
+        show(before)
+        pendingRef.current = pendingBefore
+      }
       saveCache(id)
+      setTimed(setNotice, noticeTimer, IMPORT_FAILED, NOTICE_MS)
       return
     }
     if (left.length) write(HOLDINGS_GUEST_KEY, left)
