@@ -171,6 +171,7 @@ describe('api/delete-account: deleting', () => {
       `GET ${URL_}/auth/v1/user`,
       `DELETE ${URL_}/rest/v1/user_folders?user_id=eq.${USER.id}`,
       `DELETE ${URL_}/rest/v1/user_alerts?user_id=eq.${USER.id}`,
+      `DELETE ${URL_}/rest/v1/user_holdings?user_id=eq.${USER.id}`,
       `DELETE ${URL_}/rest/v1/waitlist?email=eq.someone_name%40example.com`,
       `DELETE ${URL_}/rest/v1/feedback?email=imatch.${encodeURIComponent('^Someone_Name@Example\\.com$')}`,
       `DELETE ${URL_}/auth/v1/admin/users/${USER.id}`,
@@ -338,6 +339,7 @@ describe('api/delete-account: unconfirmed email', () => {
       `GET ${URL_}/auth/v1/user`,
       `DELETE ${URL_}/rest/v1/user_folders?user_id=eq.${USER.id}`,
       `DELETE ${URL_}/rest/v1/user_alerts?user_id=eq.${USER.id}`,
+      `DELETE ${URL_}/rest/v1/user_holdings?user_id=eq.${USER.id}`,
       `DELETE ${URL_}/auth/v1/admin/users/${USER.id}`,
     ])
   })
@@ -353,12 +355,12 @@ describe('helpers', () => {
   })
 
   it('skips the email-keyed tables for an account with no email', () => {
-    expect(rowDeletions({ id: USER.id }).map(([label]) => label)).toEqual(['folders', 'alerts'])
+    expect(rowDeletions({ id: USER.id }).map(([label]) => label)).toEqual(['folders', 'alerts', 'holdings'])
   })
 
   it('skips the email-keyed tables when the email was never confirmed', () => {
     const unconfirmed = { ...USER, email_confirmed_at: null }
-    expect(rowDeletions(unconfirmed).map(([label]) => label)).toEqual(['folders', 'alerts'])
-    expect(rowDeletions({ ...USER, email_confirmed_at: undefined }).map(([label]) => label)).toEqual(['folders', 'alerts'])
+    expect(rowDeletions(unconfirmed).map(([label]) => label)).toEqual(['folders', 'alerts', 'holdings'])
+    expect(rowDeletions({ ...USER, email_confirmed_at: undefined }).map(([label]) => label)).toEqual(['folders', 'alerts', 'holdings'])
   })
 })

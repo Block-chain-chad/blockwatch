@@ -44,6 +44,10 @@ describe('requestAccountDeletion', () => {
 })
 
 describe('clearAccountStorage', () => {
+  it("includes the device's holdings and this account's holdings cache", () => {
+    expect(accountStorageKeys('u1')).toEqual(expect.arrayContaining(['bw.holdings.v1', 'bw.holdings.u.u1']))
+  })
+
   it("removes the account's data and keeps display settings", () => {
     const store = new Map(
       [...accountStorageKeys('u1'), 'bw.theme.v1', 'bw.device.v1', 'bw.folders.u.other'].map((k) => [k, 'x']),

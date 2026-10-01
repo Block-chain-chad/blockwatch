@@ -19,12 +19,12 @@
 //   1. Sign in with Apple, part one: exchange the app's code with Apple and
 //      check the Apple user it names is this account's Apple identity. Only
 //      then is there anything to revoke. Nothing is revoked yet.
-//   2. The account's rows: folders and alerts (keyed by user id), and the
+//   2. The account's rows: folders, alerts and holdings (keyed by user id), and the
 //      waitlist entry and feedback sent from the account's email, but only
 //      when that email was confirmed. Anyone can sign up with an address they
 //      do not own, so an unconfirmed address proves nothing and must not reach
-//      rows that belong to whoever does own it. Folders and
-//      alerts would also go with the user through their foreign keys; they are
+//      rows that belong to whoever does own it. Folders, alerts and
+//      holdings would also go with the user through their foreign keys; they are
 //      deleted by name so a future table without that cascade cannot keep
 //      data behind.
 //   3. The auth user itself, which takes its identities, sessions and passkeys
@@ -105,6 +105,7 @@ export function rowDeletions(user) {
   const steps = [
     ['folders', `/rest/v1/user_folders?user_id=eq.${id}`],
     ['alerts', `/rest/v1/user_alerts?user_id=eq.${id}`],
+    ['holdings', `/rest/v1/user_holdings?user_id=eq.${id}`],
   ]
   const email = typeof user.email === 'string' ? user.email.trim() : ''
   if (email && user.email_confirmed_at) {

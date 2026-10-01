@@ -123,7 +123,9 @@ describe('DeleteAccountSheet', () => {
 
   it('says what is deleted, what is kept, and links the privacy policy, spelled Onstock', () => {
     mount()
-    expect(text()).toContain('everything saved to it: your synced folders and alerts, your passkeys, and your sign-in details')
+    expect(text()).toContain(
+      'This permanently deletes your Onstock account and everything saved to it: your synced folders, alerts and holdings, your passkeys, and your sign-in details. If your account email is confirmed, it also deletes the trading waitlist entry and any feedback sent with that same email address. This can\'t be undone.',
+    )
     expect(text()).toContain('Some records are not part of your account')
     expect(document.querySelector('a[href="https://onstock.app/privacy.html"]').textContent).toBe('privacy policy')
     expect(text()).not.toMatch(/OnStock|\u2014/)

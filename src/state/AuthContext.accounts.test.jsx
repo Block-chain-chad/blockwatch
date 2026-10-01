@@ -71,6 +71,30 @@ beforeEach(() => {
   h.requestAccountDeletion.mockResolvedValue({ deleted: true, apple: 'not-used' })
 })
 
+describe('signOut', () => {
+  it("clears this device's signed-in holdings cache, and keeps the guest copy", async () => {
+    const store = new Map([
+      ['bw.holdings.u.u1', '{}'],
+      ['bw.holdings.v1', '[]'],
+      ['bw.folders.v1', '[]'],
+    ])
+    vi.stubGlobal('localStorage', {
+      get length() {
+        return store.size
+      },
+      key: (i) => [...store.keys()][i] ?? null,
+      removeItem: (k) => store.delete(k),
+    })
+    try {
+      await mount().signOut()
+      expect(h.signOut).toHaveBeenCalled()
+      expect([...store.keys()]).toEqual(['bw.holdings.v1', 'bw.folders.v1'])
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+})
+
 describe('signInWithProvider', () => {
   it('uses the browser flow on the web', async () => {
     await mount().signInWithProvider('google')

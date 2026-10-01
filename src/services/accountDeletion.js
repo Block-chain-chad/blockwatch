@@ -8,6 +8,7 @@
 
 import { API_BASE } from './apiBase'
 import { PASSKEY_OFFERED_KEY } from './passkeys'
+import { HOLDINGS_GUEST_KEY, holdingsUserKey } from '../lib/holdingsKeys'
 
 /** What this device keeps that belongs to an account, besides display settings. */
 export function accountStorageKeys(userId) {
@@ -15,6 +16,8 @@ export function accountStorageKeys(userId) {
     'bw.folders.v1',
     `bw.folders.u.${userId}`,
     'bw.alerts.v1',
+    HOLDINGS_GUEST_KEY,
+    holdingsUserKey(userId),
     'bw.waitlist.v1',
     PASSKEY_OFFERED_KEY,
   ]
