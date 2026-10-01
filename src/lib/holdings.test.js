@@ -130,6 +130,15 @@ describe('value per issuer', () => {
     expect(s.rows.map((r) => r.assetId)).toEqual(['big', 'small', 'none'])
   })
 
+  it('treats a price that is not a finite number as no price, without throwing', () => {
+    for (const tokenPrice of [NaN, Infinity, '12']) {
+      const s = summarize([{ assetId: 'n', amount: '1' }], { n: asset({ tokenPrice }) }, { now: NOW })
+      expect(s.missing).toBe(1)
+      expect(s.value).toBeNull()
+    }
+    expect(dollarGap('1', asset({ stockPrice: Infinity }), NOW)).toBeNull()
+  })
+
   it('skips a token that left the universe', () => {
     expect(summarize([{ assetId: 'gone', amount: '1' }], {}, { now: NOW }).total).toBe(0)
   })
@@ -198,6 +207,12 @@ describe('formatting', () => {
     expect(formatUsd(units('0.004'))).toBe('$0.00')
     expect(formatUsd(units('12.1'), { sign: true })).toBe('+$12.10')
     expect(formatMove(units('-12.1'), -0.67)).toBe('−$12.10 (−0.67%)')
+  })
+
+  it('writes a move that rounds to $0.00 without a sign or a percent', () => {
+    expect(formatMove(units('-0.001'), -0.004)).toBe('$0.00')
+    expect(formatMove(units('0.004'), 0.003)).toBe('$0.00')
+    expect(formatMove(units('0.005'), 0.003)).toBe('+$0.01 (<0.01%)')
   })
 
   it('writes amounts with grouping and every decimal', () => {

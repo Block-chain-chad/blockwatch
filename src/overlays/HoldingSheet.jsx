@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import Sheet, { SheetTitle } from '../components/Sheet'
 import AssetLogo from '../components/AssetLogo'
-import { HoldingGap, AmountForm, ONDO_AMOUNT_NOTE } from '../components/HoldingParts'
+import { HoldingGap, AmountForm, ONDO_AMOUNT_NOTE, NOT_AVAILABLE } from '../components/HoldingParts'
 import { useAsset } from '../state/PricesContext'
 import { useHoldings } from '../state/HoldingsContext'
 import { useNow } from '../hooks/useNow'
 import { holdingRow, formatUsd, formatMove, formatAmount, dollarGapSentence } from '../lib/holdings'
-import { EM_DASH } from '../lib/format'
 
 /*
  * One holding: its figures, the gap in dollars (only here, only when the gap
@@ -15,7 +14,7 @@ import { EM_DASH } from '../lib/format'
  * `notice` is a line shown above everything (the add sheet's "already in
  * your Holdings"); `startEditing` opens with the Amount field.
  */
-export default function HoldingSheet({ assetId, notice = null, startEditing = false, onClose, onOpenAsset }) {
+export default function HoldingSheet({ assetId, notice = null, startEditing = false, settled = true, onClose, onOpenAsset }) {
   const { holdings, update, remove } = useHoldings()
   const asset = useAsset(assetId)
   const now = useNow(15_000)
@@ -23,7 +22,7 @@ export default function HoldingSheet({ assetId, notice = null, startEditing = fa
   const holding = holdings.find((h) => h.assetId === assetId)
   if (!holding || !asset) return null
 
-  const row = holdingRow(holding, asset, { now })
+  const row = holdingRow(holding, asset, { now, settled })
   const sentence = dollarGapSentence(holding.amount, asset, { now })
 
   return (
@@ -50,11 +49,19 @@ export default function HoldingSheet({ assetId, notice = null, startEditing = fa
       ) : (
         <>
           <dl className="mt-4 space-y-2.5 px-1 text-sm">
-            <Fact label="Estimated value">{row.value != null ? formatUsd(row.value) : 'No current price'}</Fact>
+            <Fact label="Estimated value">
+              {row.state === 'loading' ? (
+                <span className="inline-block h-4 w-20 animate-pulse rounded bg-zinc-800 align-middle" />
+              ) : row.value != null ? (
+                formatUsd(row.value)
+              ) : (
+                'No current price'
+              )}
+            </Fact>
             <Fact label="Amount">{`${formatAmount(holding.amount)} ${asset.ticker}`}</Fact>
-            <Fact label="Price move, past 24 hours">{row.move != null ? formatMove(row.move, asset.dayChange) : EM_DASH}</Fact>
+            <Fact label="Price move, past 24 hours">{row.move != null ? formatMove(row.move, asset.dayChange) : NOT_AVAILABLE}</Fact>
             <Fact label="Gap">
-              <HoldingGap asset={asset} now={now} />
+              <HoldingGap asset={asset} now={now} settled={settled} named={false} />
             </Fact>
           </dl>
           {sentence && <p className="t-body mt-4 px-1 text-zinc-300">{sentence}</p>}

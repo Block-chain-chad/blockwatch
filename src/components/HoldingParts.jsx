@@ -12,6 +12,9 @@ import ClosedGapMark from './ClosedGapMark'
 export const ONDO_AMOUNT_NOTE =
   'Enter the number of tokens. On some chains your wallet may show an adjusted amount that already includes reinvested dividends; if so, the value here may be off.'
 
+/** In place of a figure there is none for. Never a dash (Marcus's writing rule). */
+export const NOT_AVAILABLE = 'Not available'
+
 const AMOUNT_HELP = {
   xStocks: 'Enter the number your wallet shows for this token.',
   Ondo: ONDO_AMOUNT_NOTE,
@@ -24,21 +27,28 @@ const GAP_WORDS = { ...GAP_STATUS_LABEL, none: 'No share to compare' }
  * lib/gapCheck.js confirms the gap; while the share leg is a close it
  * carries the closed-market mark. The value and price move never do: the
  * token price is live.
+ *
+ * A gap still waiting for a price shows a placeholder only until the first
+ * prices have settled; after that a price that never came is "Gap not
+ * confirmed", because no number is on its way. `named` puts the word "Gap"
+ * before the number; the row sheet, which labels the line itself, turns it
+ * off.
  */
-export function HoldingGap({ asset, now }) {
+export function HoldingGap({ asset, now, settled = true, named = true }) {
   const check = gapCheck(asset, now)
-  if (check.status === 'pending') {
+  if (check.status === 'pending' && !settled) {
     return <span data-gap="pending" className="inline-block h-3.5 w-16 animate-pulse rounded bg-zinc-800 align-middle" />
   }
   if (check.status !== 'ok') {
-    return <span className="t-caption whitespace-nowrap text-zinc-500">{GAP_WORDS[check.status]}</span>
+    const words = check.status === 'pending' ? GAP_STATUS_LABEL['price-check-failed'] : GAP_WORDS[check.status]
+    return <span className="t-caption whitespace-nowrap text-zinc-500">{words}</span>
   }
   const quiet = Math.abs(check.gap) < PARITY_BAND || isThinlyTraded(asset)
   const closed = closedGapLabelFor(asset, now)
   return (
     <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
       <span className="t-caption whitespace-nowrap">
-        <span className="text-zinc-500">Gap </span>
+        {named && <span className="text-zinc-500">Gap </span>}
         <span className={`num font-medium ${quiet ? 'text-zinc-500' : changeColor(check.gap)}`}>{formatPct(check.gap)}</span>
       </span>
       <ClosedGapMark label={closed} />

@@ -130,7 +130,8 @@ export function cleanHoldings(raw) {
  * value, move and prior are units of 1e-18 dollars, or null.
  */
 export function holdingRow(holding, asset, { now = Date.now(), settled = true } = {}) {
-  const priced = asset.tokenPrice != null && isFresh(asset.priceUpdatedAt, now)
+  // A price that is not a finite number (a bad cached row) is no price.
+  const priced = Number.isFinite(asset.tokenPrice) && isFresh(asset.priceUpdatedAt, now)
   const state = priced ? 'priced' : asset.tokenPrice == null && !settled ? 'loading' : 'no-price'
   const value = priced ? mul(toUnits(holding.amount), toUnits(asset.tokenPrice)) : null
   const change = toUnits(asset.dayChange)
@@ -196,9 +197,13 @@ export function formatUsd(units, { sign = false } = {}) {
   return sign && cents > 0n ? `+${body}` : body
 }
 
-/** '+$12.10 (+0.67%)'. */
+/**
+ * '+$12.10 (+0.67%)'. A move that rounds to $0.00 is just '$0.00': a sign or
+ * a "<0.01%" beside a zero reads as a contradiction.
+ */
 export function formatMove(move, pct) {
-  return pct == null ? formatUsd(move, { sign: true }) : `${formatUsd(move, { sign: true })} (${formatPct(pct)})`
+  const usd = formatUsd(move, { sign: true })
+  return pct == null || roundDiv(move, CENT) === 0n ? usd : `${usd} (${formatPct(pct)})`
 }
 
 /** An amount for a row: grouped whole part, every decimal kept ('1,250.5'). */
@@ -231,8 +236,9 @@ export function coverageLines(summary) {
 export function dollarGap(amount, asset, now = Date.now()) {
   const check = gapCheck(asset, now)
   if (check.status !== 'ok') return null
-  const perToken = toUnits(asset.tokenPrice) - mul(toUnits(asset.sharesPerToken), toUnits(asset.stockPrice))
-  return { units: mul(toUnits(amount), perToken), pct: check.gap }
+  const [token, shares, stock, held] = [asset.tokenPrice, asset.sharesPerToken, asset.stockPrice, amount].map(toUnits)
+  if ([token, shares, stock, held].includes(null)) return null
+  return { units: mul(held, token - mul(shares, stock)), pct: check.gap }
 }
 
 /**

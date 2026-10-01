@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import AssetLogo from '../components/AssetLogo'
-import { HoldingGap, ONDO_AMOUNT_NOTE } from '../components/HoldingParts'
+import { HoldingGap, ONDO_AMOUNT_NOTE, NOT_AVAILABLE } from '../components/HoldingParts'
 import { PlusIcon } from '../components/Icons'
 import AddHoldingSheet from '../overlays/AddHoldingSheet'
 import HoldingSheet from '../overlays/HoldingSheet'
@@ -13,7 +13,7 @@ import { useNow } from '../hooks/useNow'
 import { track } from '../services/analytics'
 import { summarize, coverageLines, formatUsd, formatMove, formatAmount, alreadyHeld } from '../lib/holdings'
 import { isThinlyTraded } from '../lib/prices'
-import { timeAgo, EM_DASH } from '../lib/format'
+import { timeAgo } from '../lib/format'
 
 /*
  * Holdings (web only, src/webOnly.js): tokens and amounts a person typed in,
@@ -96,7 +96,7 @@ export default function Holdings({ onOpenProfile, onOpenAsset, settleMs = PRICE_
         <Summary summary={summary} />
         <div className="mt-4 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
           {summary.rows.map((row) => (
-            <HoldingRow key={row.assetId} row={row} now={now} onOpen={() => setOpen({ assetId: row.assetId })} />
+            <HoldingRow key={row.assetId} row={row} now={now} settled={settled} onOpen={() => setOpen({ assetId: row.assetId })} />
           ))}
         </div>
         <div className="px-4 pt-4">
@@ -149,6 +149,7 @@ export default function Holdings({ onOpenProfile, onOpenAsset, settleMs = PRICE_
           assetId={open.assetId}
           notice={open.notice}
           startEditing={open.startEditing}
+          settled={settled}
           onClose={() => setOpen(null)}
           onOpenAsset={onOpenAsset}
         />
@@ -170,14 +171,14 @@ function Summary({ summary }) {
         )}
       </div>
       <div className="num mt-1 text-[34px] font-semibold leading-tight tracking-tight text-zinc-100">
-        {summary.loading ? <Skeleton className="h-9 w-44" /> : summary.value != null ? formatUsd(summary.value) : EM_DASH}
+        {summary.loading ? <Skeleton className="h-9 w-44" /> : summary.value != null ? formatUsd(summary.value) : NOT_AVAILABLE}
       </div>
       {!summary.loading && (
         <>
           <div className="t-caption mt-1.5">
             <span className="text-zinc-500">Price move, past 24 hours </span>
             <span className="num font-medium text-zinc-300">
-              {summary.move != null ? formatMove(summary.move, summary.movePct) : EM_DASH}
+              {summary.move != null ? formatMove(summary.move, summary.movePct) : NOT_AVAILABLE}
             </span>
           </div>
           {lines.map((line) => (
@@ -196,7 +197,7 @@ function Summary({ summary }) {
 }
 
 /* One holding, in the Home list's row style. */
-function HoldingRow({ row, now, onOpen }) {
+function HoldingRow({ row, now, settled, onOpen }) {
   const { asset } = row
   return (
     <button
@@ -225,7 +226,7 @@ function HoldingRow({ row, now, onOpen }) {
           )}
         </div>
         <div className="mt-1.5">
-          <HoldingGap asset={asset} now={now} />
+          <HoldingGap asset={asset} now={now} settled={settled} />
         </div>
         {isThinlyTraded(asset) && <p className="t-caption mt-1 text-zinc-500">Thinly traded. Value can swing on small trades.</p>}
         {asset.issuer === 'Ondo' && <p className="t-caption mt-1 text-zinc-500">{ONDO_AMOUNT_NOTE}</p>}

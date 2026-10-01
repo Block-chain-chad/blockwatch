@@ -188,6 +188,22 @@ describe('one holding (criteria 2 and 12)', () => {
     expect(text()).toContain('sign-in sheet')
   })
 
+  it('says "Not available" where there is no price move, never a dash', () => {
+    h.byId = { [NVDAX]: priced(NVDAX, { dayChange: null }) }
+    mount()
+    keep()
+    expect(text()).toContain('Price move, past 24 hours Not available')
+    expect(text()).not.toContain('\u2014')
+    act(() => rowFor('NVDAx').click())
+    expect(document.querySelector('[role="dialog"]').textContent).toContain('Price move, past 24 hoursNot available')
+  })
+
+  it('does not crash on a malformed price', () => {
+    h.byId = { [NVDAX]: priced(NVDAX, { tokenPrice: NaN }) }
+    mount()
+    expect(rowFor('NVDAx').textContent).toContain('No current price')
+  })
+
   it('drops the guest line when signed in', () => {
     h.signedIn = true
     mount()
@@ -251,13 +267,30 @@ describe('gap chips (criterion 6)', () => {
     })
   }
 
-  it('pending: a placeholder and no number', () => {
+  it('pending: a placeholder and no number while the first prices load', () => {
     h.holdings = [hold(NVDAX)]
     h.byId = { [NVDAX]: priced(NVDAX, { stockPrice: null }) }
-    mount()
+    act(() => root.render(<Holdings onOpenProfile={() => {}} onOpenAsset={onOpenAsset} />))
     expect(rowFor('NVDAx').querySelector('[data-gap="pending"]')).not.toBeNull()
     expect(rowFor('NVDAx').textContent).not.toContain('Gap')
   })
+
+  for (const [missing, over] of [
+    ['token price', { tokenPrice: null }],
+    ['share price', { stockPrice: null }],
+  ]) {
+    it(`a ${missing} that never arrives ends as "Gap not confirmed", not a placeholder forever`, () => {
+      h.holdings = [hold(NVDAX)]
+      h.byId = { [NVDAX]: priced(NVDAX, over) }
+      mount()
+      keep()
+      expect(rowFor('NVDAx').querySelector('[data-gap="pending"]')).toBeNull()
+      expect(rowFor('NVDAx').textContent).toContain('Gap not confirmed')
+      act(() => rowFor('NVDAx').click())
+      expect(document.querySelector('[role="dialog"] [data-gap="pending"]')).toBeNull()
+      expect(document.querySelector('[role="dialog"]').textContent).toContain('Gap not confirmed')
+    })
+  }
 })
 
 describe('market closed (criterion 7)', () => {
@@ -317,6 +350,9 @@ describe('the row sheet (criterion 8)', () => {
     keep()
     expect(sheet.textContent).toContain(sentence)
     expect(sheet.textContent).toContain('tracks NVIDIA')
+    // The line is labelled Gap once; the chip does not repeat it.
+    expect(sheet.textContent.match(/Gap/g)).toHaveLength(1)
+    expect(sheet.textContent).toContain('Gap+0.23%')
     for (const label of ['Change amount', 'Open token page', 'Remove from Holdings']) expect(button(label)).toBeTruthy()
     expect(sheet.textContent).not.toMatch(/\b(Buy|Sell|Swap|Trade)\b/)
   })
