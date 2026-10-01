@@ -2,16 +2,20 @@
 // database would refuse (supabase/launch-limits.sql) stay on the device and
 // are counted instead of sent, and one refused row never stops the others.
 // Used by state/FoldersContext.jsx and state/AlertsContext.jsx.
+//
+// The ids that did not reach the account are remembered on the device
+// (saveUnsynced), so loading the account later puts this device's copy of
+// those rows back (withUnsynced) instead of losing them.
 
 import { supabase } from './supabase'
-import { upsertRows } from './syncRows'
+import { isTransient, upsertRows } from './syncRows'
 import { MAX_ALERTS, MAX_FOLDER_ROWS, alertFits, folderFits } from '../lib/accountLimits'
 
 /**
  * Mirror this device's folders to the account. Rows the database would refuse
  * (too big, or past the row cap) are kept on the device and counted instead of
  * sent, and one refused row never stops the others. Resolves
- * { unsynced, offline }; never throws.
+ * { unsyncedIds, offline }; never throws.
  */
 export async function pushFolders(userId, folders, client = supabase) {
   try {
@@ -22,7 +26,7 @@ export async function pushFolders(userId, folders, client = supabase) {
       del = del.not('id', 'in', `(${folders.map((f) => `"${f.id}"`).join(',')})`)
     }
     const { error: delError } = await del
-    if (delError && !delError.code) return { unsynced: 0, offline: true }
+    if (delError && isTransient(delError)) return { unsyncedIds: [], offline: true }
 
     // The watchlist comes first in the list, so it is never the one left out.
     const fitting = folders.filter(folderFits).slice(0, MAX_FOLDER_ROWS)
@@ -34,9 +38,12 @@ export async function pushFolders(userId, folders, client = supabase) {
       updated_at: new Date().toISOString(),
     }))
     const { rejected, offline } = await upsertRows(client, 'user_folders', rows)
-    return { unsynced: folders.length - fitting.length + rejected, offline }
+    if (offline) return { unsyncedIds: [], offline }
+    const stored = new Set(rows.map((r) => r.id))
+    for (const r of rejected) stored.delete(r.id)
+    return { unsyncedIds: folders.map((f) => f.id).filter((id) => !stored.has(id)), offline }
   } catch {
-    return { unsynced: 0, offline: true }
+    return { unsyncedIds: [], offline: true }
   }
 }
 
@@ -44,7 +51,7 @@ export async function pushFolders(userId, folders, client = supabase) {
 // stay device-local — notifications are a per-device concern). The legacy
 // threshold column keeps a value for older rows; the full rule lives in jsonb.
 // Rules the database would refuse stay on the device and are counted, and one
-// refused row never stops the others. Resolves { unsynced, offline }.
+// refused row never stops the others. Resolves { unsyncedIds, offline }.
 export async function pushRules(userId, rules, client = supabase) {
   try {
     const entries = Object.entries(rules)
@@ -54,7 +61,7 @@ export async function pushRules(userId, rules, client = supabase) {
       del = del.not('asset_id', 'in', `(${entries.map(([id]) => `"${id}"`).join(',')})`)
     }
     const { error: delError } = await del
-    if (delError && !delError.code) return { unsynced: 0, offline: true }
+    if (delError && isTransient(delError)) return { unsyncedIds: [], offline: true }
 
     const fitting = entries.filter(([assetId, r]) => alertFits(assetId, r)).slice(0, MAX_ALERTS)
     const rows = fitting.map(([assetId, r]) => ({
@@ -65,8 +72,47 @@ export async function pushRules(userId, rules, client = supabase) {
       updated_at: new Date().toISOString(),
     }))
     const { rejected, offline } = await upsertRows(client, 'user_alerts', rows)
-    return { unsynced: entries.length - fitting.length + rejected, offline }
+    if (offline) return { unsyncedIds: [], offline }
+    const stored = new Set(rows.map((r) => r.asset_id))
+    for (const r of rejected) stored.delete(r.asset_id)
+    return { unsyncedIds: entries.map(([id]) => id).filter((id) => !stored.has(id)), offline }
   } catch {
-    return { unsynced: 0, offline: true }
+    return { unsyncedIds: [], offline: true }
   }
+}
+
+const unsyncedKey = (kind, userId) => `bw.${kind}.unsynced.${userId}`
+
+/** The ids of `kind` ('folders' or 'alerts') this device holds but the account does not. */
+export function loadUnsynced(kind, userId, storage = globalThis.localStorage) {
+  try {
+    const ids = JSON.parse(storage?.getItem(unsyncedKey(kind, userId)) ?? '[]')
+    return Array.isArray(ids) ? ids.filter((id) => typeof id === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+/** Remember which ids did not reach the account; forget the key when none. */
+export function saveUnsynced(kind, userId, ids, storage = globalThis.localStorage) {
+  try {
+    if (ids.length === 0) storage?.removeItem(unsyncedKey(kind, userId))
+    else storage?.setItem(unsyncedKey(kind, userId), JSON.stringify(ids))
+  } catch {
+    // Blocked storage: nothing to remember them in.
+  }
+}
+
+/**
+ * The account's rows with this device's copy of every unsynced row put back:
+ * replacing the account's older copy of the same id, or added at the end.
+ * `idOf` reads a row's id.
+ */
+export function withUnsynced(accountRows, deviceRows, unsyncedIds, idOf) {
+  const keep = new Set(unsyncedIds)
+  const device = new Map(deviceRows.filter((r) => keep.has(idOf(r))).map((r) => [idOf(r), r]))
+  const merged = accountRows.map((r) => device.get(idOf(r)) ?? r)
+  const present = new Set(accountRows.map(idOf))
+  for (const [id, row] of device) if (!present.has(id)) merged.push(row)
+  return merged
 }

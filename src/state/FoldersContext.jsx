@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { useAuth } from './AuthContext'
 import { supabase } from '../services/supabase'
 import { track } from '../services/analytics'
-import { pushFolders } from '../services/accountSync'
+import { loadUnsynced, pushFolders, saveUnsynced, withUnsynced } from '../services/accountSync'
 import { MAX_FOLDERS, MAX_FOLDER_ASSETS, FOLDERS_UNSYNCED_MESSAGE, cleanFolderName } from '../lib/accountLimits'
 
 const ANON_KEY = 'bw.folders.v1'
@@ -116,7 +116,9 @@ export function FoldersProvider({ children }) {
   async function sync(identity) {
     const result = await pushFolders(identity, foldersRef.current)
     // Offline says nothing about which rows fit; keep the last answer.
-    if (!result.offline && hydratedForRef.current === identity) setUnsynced(result.unsynced)
+    if (result.offline || hydratedForRef.current !== identity) return
+    saveUnsynced('folders', identity, result.unsyncedIds)
+    setUnsynced(result.unsyncedIds.length)
   }
 
   // Hydrate on sign-in/out.
@@ -146,9 +148,14 @@ export function FoldersProvider({ children }) {
         hydratedForRef.current = user.id
         return
       }
-      if (data.length > 0) {
+      // Folders that never reached the account live only in this device's
+      // cache; put them back so loading the account cannot lose them.
+      const unsyncedIds = loadUnsynced('folders', user.id)
+      if (data.length > 0 || (cached && unsyncedIds.length > 0)) {
         hydratedForRef.current = user.id
-        setFolders(ensureWatchlist(data.map((r) => ({ id: r.id, name: r.name, assetIds: r.asset_ids ?? [] }))))
+        const account = data.map((r) => ({ id: r.id, name: r.name, assetIds: r.asset_ids ?? [] }))
+        setFolders(ensureWatchlist(withUnsynced(account, cached ?? [], unsyncedIds, (f) => f.id)))
+        setUnsynced(unsyncedIds.length)
       } else {
         // Fresh account: import whatever this device already had ("import my folders").
         const device = loadLocal()

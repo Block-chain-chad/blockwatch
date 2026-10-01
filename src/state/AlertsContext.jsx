@@ -5,7 +5,7 @@ import { supabase } from '../services/supabase'
 import { track } from '../services/analytics'
 import { premiumPct } from '../lib/prices'
 import { canAlertOnGap, driftStep } from '../lib/alertRules'
-import { pushRules } from '../services/accountSync'
+import { loadUnsynced, pushRules, saveUnsynced, withUnsynced } from '../services/accountSync'
 import { MAX_ALERTS, ALERTS_UNSYNCED_MESSAGE } from '../lib/accountLimits'
 
 const STORAGE_KEY = 'bw.alerts.v1'
@@ -89,7 +89,9 @@ export function AlertsProvider({ children }) {
   async function sync(identity) {
     const result = await pushRules(identity, storeRef.current.rules)
     // Offline says nothing about which rules fit; keep the last answer.
-    if (!result.offline && hydratedForRef.current === identity) setUnsynced(result.unsynced)
+    if (result.offline || hydratedForRef.current !== identity) return
+    saveUnsynced('alerts', identity, result.unsyncedIds)
+    setUnsynced(result.unsyncedIds.length)
   }
 
   // Signed in: server rules replace local on sign-in (import local ones when
@@ -111,15 +113,21 @@ export function AlertsProvider({ children }) {
       hydratedForRef.current = user.id
       if (error) return // offline: keep local rules; sync resumes on next change
       if (data.length > 0) {
-        setStore((prev) => ({
-          ...prev,
-          rules: migrateRules(
-            Object.fromEntries(
-              data.map((r) => [r.asset_id, r.rule ?? { threshold: Number(r.threshold) }])
-            )
-          ),
-          states: {}, // re-arm so already-drifted assets fire fresh on this device
-        }))
+        // Alerts that never reached the account live only on this device; put
+        // them back so loading the account cannot lose them.
+        const unsyncedIds = loadUnsynced('alerts', user.id)
+        setStore((prev) => {
+          const account = Object.entries(
+            migrateRules(Object.fromEntries(data.map((r) => [r.asset_id, r.rule ?? { threshold: Number(r.threshold) }])))
+          )
+          const rules = withUnsynced(account, Object.entries(prev.rules), unsyncedIds, ([id]) => id)
+          return {
+            ...prev,
+            rules: Object.fromEntries(rules),
+            states: {}, // re-arm so already-drifted assets fire fresh on this device
+          }
+        })
+        setUnsynced(unsyncedIds.length)
       } else {
         const rules = storeRef.current.rules
         if (Object.keys(rules).length > 0) sync(user.id)
