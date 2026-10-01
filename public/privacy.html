@@ -84,7 +84,9 @@
       the part after a "?" or "#", which is where sign-in links carry their codes), the main
       address of the website that sent you to Onstock, if any, and the campaign tags (UTM
       parameters) in the link you followed, if it had them. Events never include your name,
-      email, account, wallet address or folder names.</li>
+      email, account, wallet address, folder names or holdings.</li>
+    <li><strong>Holdings (website only).</strong> If you add holdings without an account, the
+      tokens and amounts you type stay on your device. We do not receive them.</li>
     <li><strong>Feature switches.</strong> While the app is open, it sends the same random ID to
       PostHog about once a minute to check which features are switched on for your device.</li>
     <li><strong>Your IP address.</strong> Like any website, the services the app talks to see
@@ -132,8 +134,9 @@
     <li><strong>Face ID, Touch ID and passkeys (website only).</strong> If you add one, Supabase
       stores its public key, a name for it, and when it was created and last used. The private key
       and your fingerprint or face data never leave your device.</li>
-    <li><strong>What you save.</strong> Your folders (their names and which assets are in them)
-      and your alert rules, so they sync across your devices.</li>
+    <li><strong>What you save.</strong> Your folders (their names and which assets are in them),
+      your alert rules, and your holdings (which tokens and the amounts you typed in), so they
+      sync across your devices.</li>
     <li><strong>Sign-in records.</strong> Supabase keeps records of sign-ins and sessions, which
       can include IP address, time and browser type, to keep accounts secure.</li>
   </ul>
@@ -162,7 +165,7 @@
   <h2>What stays on your device</h2>
   <p>
     The app saves working data in your browser's or phone's storage: price, logo and chart
-    caches, your folders, watchlist and alert rules, the history of alerts that fired, display
+    caches, your folders, watchlist and alert rules, your holdings, the history of alerts that fired, display
     and layout preferences, recently viewed assets, your waitlist entry (including its email) if
     you joined, the beta access code, the random analytics ID, where your current visit started,
     whether you have been offered Face ID or a passkey, your notification choice, and, when
@@ -175,7 +178,7 @@
   <table>
     <tr><th>Provider</th><th>What it does for us</th><th>What it handles</th></tr>
     <tr><td>Vercel</td><td>Hosting and our servers</td><td>Request logs; passes account deletion requests to Supabase</td></tr>
-    <tr><td>Supabase</td><td>Accounts and database</td><td>Emails, sign-in data, passkeys, folders, alerts, waitlist, feedback</td></tr>
+    <tr><td>Supabase</td><td>Accounts and database</td><td>Emails, sign-in data, passkeys, folders, alerts, holdings, waitlist, feedback</td></tr>
     <tr><td>PostHog</td><td>Analytics and feature switches (United States)</td><td>Events with a random device ID and browser and visit details; set not to store IP addresses</td></tr>
     <tr><td>Sentry</td><td>Error reports</td><td>Error details, device and browser type</td></tr>
     <tr><td>Resend</td><td>Sends our sign-in, confirmation, password reset and waitlist emails</td><td>Your email address and the message we send</td></tr>
@@ -215,7 +218,7 @@
 
   <h2>How long we keep data</h2>
   <ul>
-    <li><strong>Account data</strong> (email, sign-in data, passkeys, folders, alerts): until you
+    <li><strong>Account data</strong> (email, sign-in data, passkeys, folders, alerts, holdings): until you
       delete your account.</li>
     <li><strong>Waitlist entries:</strong> until we have sent the one email described above, or
       until September 30, 2028, whichever comes first. Then we delete them. You can ask us to
@@ -235,7 +238,7 @@
     <strong>Delete your account:</strong> email
     <a href="mailto:contact@onstock.app">contact@onstock.app</a> from your account's address and we
     will delete it. That permanently removes your account and your sign-in details, passkeys,
-    synced folders and alerts. If your account email is confirmed, we also delete the waitlist
+    synced folders, alerts and holdings. If your account email is confirmed, we also delete the waitlist
     entry and feedback sent with that same email address. To clear what is on your device, sign
     out and clear the site's data, or delete the app.
   </p>

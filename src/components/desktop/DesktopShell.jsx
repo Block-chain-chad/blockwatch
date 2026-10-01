@@ -9,7 +9,7 @@ import { screenTitle, DEFAULT_TITLE } from '../../lib/pageTitle'
 import Screener from '../../screens/Screener'
 import { FoldersList, FolderDetail } from '../../screens/Folders'
 import News from '../../screens/News'
-import Trade from '../../screens/Trade'
+import { Holdings } from '../../webOnly'
 import TopBar from './TopBar'
 import NavRail from './NavRail'
 import RightColumn from './RightColumn'
@@ -25,7 +25,7 @@ const KNOWN_IDS = new Set(ASSET_IDS)
  * for price. Mounted by App at 1024px and up, in a browser only; the phone
  * tree never sees it.
  *
- * Home on the desktop IS the chart workspace. Gaps, Folders, News and Trade
+ * Home on the desktop IS the chart workspace. Gaps, Folders, News and Holdings
  * take over the center (their phone screens at 640px, centred) and picking
  * an asset from any of them returns the chart with that asset. The rail and
  * right column hide in fullscreen (Shift+F, Esc restores); the top bar stays.
@@ -142,8 +142,8 @@ export default function DesktopShell({
       )
     } else if (tab === 'news') {
       screen = <News onOpenProfile={onOpenProfile} onOpenAsset={openAsset} />
-    } else {
-      screen = <Trade onOpenProfile={onOpenProfile} />
+    } else if (tab === 'holdings' && Holdings) {
+      screen = <Holdings onOpenProfile={onOpenProfile} onOpenAsset={openAsset} />
     }
     center = <div className="mx-auto max-w-[640px]">{screen}</div>
   }

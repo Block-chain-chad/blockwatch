@@ -12,7 +12,7 @@ vi.hoisted(() => {
 const { default: SwapSheet } = await import('../overlays/SwapSheet')
 const { default: TradeButton } = await import('../components/asset/TradeButton')
 const { default: GapHeader } = await import('../components/desktop/GapHeader')
-const { default: Trade } = await import('../screens/Trade')
+const { WhereTokensTradeSheet } = await import('../overlays/WhereTokensTrade')
 const { VERIFIED_MINTS } = await import('../data/verifiedMints')
 const { BY_ID } = await import('../data/universe')
 const {
@@ -43,19 +43,11 @@ const {
 const verified = BY_ID[Object.keys(VERIFIED_MINTS)[0]]
 const mint = VERIFIED_MINTS[verified.id].mint
 const JUPITER_URL = `https://jup.ag/swap/USDC-${mint}`
-// What the Trade screen renders when, and only when, the link-out is on.
-const TRADE_VENUE_CARD = 'Jupiter ↗'
-
 // A connected wallet, so the in-app swap is the rung under test rather than
 // the link-out. Mocked at the module: these are static renders, so there is
 // no provider tree to put a value into.
 vi.mock('../state/WalletContext', () => ({
   useWallet: () => ({ publicKey: 'Wa11etPub1icKeyFor7esting', provider: null }),
-}))
-
-// Trade reads the waitlist from a context whose default is null.
-vi.mock('../state/WaitlistContext', () => ({
-  useWaitlist: () => ({ entry: null, join: async () => {} }),
 }))
 
 // Sheet reads document.activeElement while rendering, to restore focus on
@@ -83,7 +75,7 @@ const renderAll = () => ({
   sheet: renderToStaticMarkup(<SwapSheet asset={verified} onClose={() => {}} />),
   button: renderToStaticMarkup(<TradeButton asset={verified} />),
   header: renderToStaticMarkup(<GapHeader {...headerProps} />),
-  trade: renderToStaticMarkup(<Trade onOpenProfile={() => {}} />),
+  trade: renderToStaticMarkup(<WhereTokensTradeSheet onClose={() => {}} />),
 })
 
 describe('with no answer from PostHog — the default, and the loading state', () => {
@@ -181,11 +173,12 @@ describe('with both flags off', () => {
 })
 
 describe('with both flags on', () => {
-  it('is the app as it shipped', () => {
+  it('is the app as it shipped, and the venue sheet still names no Jupiter', () => {
     applyFlags({ [SWAP_FLAG]: true, [LINK_OUT_FLAG]: true })
     const { button, header, trade } = renderAll()
     expect(button).toContain(`Swap ${verified.ticker}`)
     expect(header).toContain(JUPITER_URL)
-    expect(trade).toContain(TRADE_VENUE_CARD)
+    expect(trade).not.toContain('Jupiter')
+    expect(trade).not.toContain('href=')
   })
 })

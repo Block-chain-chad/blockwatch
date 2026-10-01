@@ -27,7 +27,7 @@ const { AvatarButton } = await import('../components/Header')
 beforeEach(() => vi.stubGlobal('document', { activeElement: null }))
 afterEach(() => vi.unstubAllGlobals())
 
-const profile = () => renderToStaticMarkup(<ProfileSheet onClose={() => {}} onGoToTrade={() => {}} />)
+const profile = () => renderToStaticMarkup(<ProfileSheet onClose={() => {}} />)
 const welcome = () =>
   renderToStaticMarkup(<WelcomeSheet variant="success" onClose={() => {}} onOpenSignIn={() => {}} />)
 const avatar = () => renderToStaticMarkup(<AvatarButton onClick={() => {}} />)

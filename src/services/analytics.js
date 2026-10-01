@@ -60,12 +60,18 @@
 //     install_prompt_shown    {}   once per page load      InstallPrompt.jsx
 //     install_prompt_dismissed {}                         InstallPrompt.jsx
 //
+//   Holdings (2026-09-30, website only). Never a token, an amount, a value
+//   or how many holdings someone has.
+//     holdings_opened         {}                          screens/Holdings.jsx
+//     holding_added           { source: 'typed' }         state/HoldingsContext.jsx
+//     holding_removed         {}                          state/HoldingsContext.jsx
+//
 //   Accounts (2026-09-25). Nothing about the passkey or the provider account.
 //     passkey_added           {}                          services/passkeys.js
 //     account_deleted         {}                          state/AuthContext.jsx
 //
 //   Money
-//     trade_out               { ticker?, venue }          TradeButton, GapHeader, Trade
+//     trade_out               { ticker?, venue }          TradeButton, GapHeader
 //     swap_sent               {}                          services/swap.js
 //     wallet_connect          {}                          state/WalletContext.jsx
 //     ratio_unreadable        { source: 'jupiter_price_v3' }

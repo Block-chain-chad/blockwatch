@@ -28,6 +28,7 @@ import AnalystRatings from '../components/asset/AnalystRatings'
 import EarningsSection from '../components/asset/EarningsSection'
 import AssetNews from '../components/asset/AssetNews'
 import DetailsSection from '../components/asset/DetailsSection'
+import WhereTokensTrade from '../overlays/WhereTokensTrade'
 import { poolSourceNote, daysShortOfRange } from '../lib/historyStatus'
 
 const RANGES = Object.keys(CHART_RANGES)
@@ -443,6 +444,9 @@ export default function AssetDetail({ assetId, onBack, onSwitchAsset }) {
         open={detailsOpen}
         onToggle={() => setDetailsOpen((o) => !o)}
       />
+
+      {/* Near the bottom, away from the price and the gap (brief section 3). */}
+      <WhereTokensTrade className="px-8 pt-4" />
 
       <UpdatedAgo className="pt-4 text-center" />
       </div>

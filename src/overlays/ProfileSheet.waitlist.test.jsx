@@ -19,7 +19,8 @@ vi.mock('../services/supabase', () => ({ supabase: null }))
 
 const { default: ProfileSheet } = await import('./ProfileSheet')
 
-const NEUTRAL_LINE = 'You&#x27;re on the list. One email if in-app trading ever launches where you live.'
+const NEUTRAL_LINE =
+  'You&#x27;re on the list. If in-app trading ever opens where you live, we&#x27;ll send one email. To leave the list, email contact@onstock.app.'
 
 beforeEach(() => {
   vi.stubGlobal('document', { activeElement: null })
@@ -45,10 +46,13 @@ describe('ProfileSheet trading waitlist', () => {
     expect(html).not.toContain('when in-app trading opens')
   })
 
-  it('does not tell a device whose join never reached the server that it is on the list', () => {
+  it('tells a device whose join never reached the server that the waitlist is closed, without retrying', () => {
+    const fetchSpy = vi.fn()
+    vi.stubGlobal('fetch', fetchSpy)
     h.entry = { email: 'a@b.c', position: null, pendingSync: true }
     const html = render()
-    expect(html).not.toContain('Trading waitlist')
+    expect(html).toContain('The waitlist is closed.')
     expect(html).not.toContain('on the list')
+    expect(fetchSpy).not.toHaveBeenCalled()
   })
 })

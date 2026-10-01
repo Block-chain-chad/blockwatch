@@ -36,7 +36,7 @@ afterEach(() => {
   flags.applyFlags(null)
 })
 
-const render = () => renderToStaticMarkup(<ProfileSheet onClose={() => {}} onGoToTrade={() => {}} />)
+const render = () => renderToStaticMarkup(<ProfileSheet onClose={() => {}} />)
 
 describe('ProfileSheet account rows', () => {
   it('offers Delete account and passkeys to a signed-in user', () => {

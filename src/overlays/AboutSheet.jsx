@@ -1,4 +1,5 @@
 import Sheet, { SheetTitle } from '../components/Sheet'
+import WhereTokensTrade from './WhereTokensTrade'
 
 /* About Onstock — the plain-language pitch, for anyone who lands cold. */
 export default function AboutSheet({ onClose }) {
@@ -24,6 +25,8 @@ export default function AboutSheet({ onClose }) {
           shows each token's price next to the price of what it tracks, and the gap between
           them.
         </p>
+        {/* So anyone, with no token open, can see which venues exclude them. */}
+        <WhereTokensTrade className="rounded-xl bg-zinc-900 px-3.5 py-3" />
         <p className="text-sm leading-relaxed text-zinc-400">
           Tracking is free, with no account needed: build a watchlist, organize folders, set
           drift and price alerts, compare issuers, and follow the market's daily extremes.

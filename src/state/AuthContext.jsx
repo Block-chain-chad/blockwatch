@@ -6,6 +6,7 @@ import { signInNative, startWebSignIn } from '../services/socialSignIn'
 import { signInWithPasskey } from '../services/passkeys'
 import { clearAccountStorage, requestAccountDeletion } from '../services/accountDeletion'
 import { isNativeApp } from '../lib/platform'
+import { clearHoldingsCaches } from '../lib/holdingsKeys'
 import { signedInRecently } from '../../api/_identity.js'
 
 const AuthContext = createContext({ session: null, ready: true, available: false })
@@ -139,6 +140,9 @@ export function AuthProvider({ children }) {
 
   async function signOut() {
     if (supabase) await supabase.auth.signOut()
+    // Holdings are more private than folders and devices get shared, so the
+    // account's copy leaves the device with the sign-in.
+    clearHoldingsCaches()
   }
 
   /**

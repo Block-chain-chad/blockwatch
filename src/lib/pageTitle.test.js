@@ -81,7 +81,7 @@ describe('screenTitle', () => {
     expect(screenTitle('screener')).toBe('Gaps · Onstock')
     expect(screenTitle('folders')).toBe('Folders · Onstock')
     expect(screenTitle('news')).toBe('News · Onstock')
-    expect(screenTitle('trade')).toBe('Venues · Onstock')
+    expect(screenTitle('holdings')).toBe('Holdings · Onstock')
   })
 
   it('falls back to the default for home or an unknown tab', () => {

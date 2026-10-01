@@ -56,8 +56,8 @@ export default function DeleteAccountSheet({ onClose, reload = () => window.loca
         <div className="px-1 py-4 text-center">
           <SheetTitle className="text-base font-semibold">Your account is deleted</SheetTitle>
           <p className="mt-1 text-sm text-zinc-500">
-            You're signed out, and this device no longer keeps your folders, alerts or waitlist entry. You can
-            still use Onstock without an account.
+            You're signed out, and this device no longer keeps your folders, alerts, holdings or waitlist entry.
+            You can still use Onstock without an account.
           </p>
           {appleAccount && appleResult !== 'revoked' && (
             <p className="mt-3 text-left text-sm leading-relaxed text-zinc-400">
@@ -106,8 +106,8 @@ export default function DeleteAccountSheet({ onClose, reload = () => window.loca
     <Sheet onClose={onClose} className="z-[60]">
       <SheetTitle className="px-1 text-base font-semibold">Delete your account?</SheetTitle>
       <p className="mt-1 px-1 text-sm leading-relaxed text-zinc-400">
-        This permanently deletes your Onstock account and everything saved to it: your synced folders and
-        alerts, your passkeys, and your sign-in details. If your account email is confirmed, it also deletes the
+        This permanently deletes your Onstock account and everything saved to it: your synced folders, alerts
+        and holdings, your passkeys, and your sign-in details. If your account email is confirmed, it also deletes the
         trading waitlist entry and any feedback sent with that same email address. This can't be undone.
       </p>
       <p className="mt-2 px-1 text-xs leading-relaxed text-zinc-500">

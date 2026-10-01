@@ -32,9 +32,10 @@ import Sheet, { SheetTitle } from '../components/Sheet'
 
 export default function ProfileSheet({ onClose }) {
   const { entry } = useWaitlist()
-  // A pendingSync entry was saved on this device but never reached the
-  // server, so it is not a place on the list.
-  const onWaitlist = Boolean(entry?.email) && !entry.pendingSync
+  // A pendingSync entry was saved on this device before the waitlist closed
+  // but never reached the server, so it is not a place on the list. Nothing
+  // retries it: the server refuses every join now.
+  const waitlist = !entry?.email ? null : entry.pendingSync ? 'closed' : 'joined'
   const { user, available, signOut } = useAuth()
   const identity = displayIdentity(user)
   const wallet = useWallet()
@@ -91,13 +92,16 @@ export default function ProfileSheet({ onClose }) {
           </button>
         )}
 
-        {/* The waitlist is closed to new sign-ups, so only people already on
-            it see it, with the one promise still owed to them. */}
-        {onWaitlist && (
+        {/* The waitlist is closed to new sign-ups, so only a device that
+            already has an entry sees it: the one promise still owed, or that
+            a join which never finished can no longer finish. */}
+        {waitlist && (
           <div className="mx-4 mt-4 rounded-2xl bg-zinc-900 p-4">
             <div className="text-xs uppercase tracking-wide text-zinc-500">Trading waitlist</div>
             <div className="mt-1 text-sm text-zinc-300">
-              You're on the list. One email if in-app trading ever launches where you live.
+              {waitlist === 'joined'
+                ? "You're on the list. If in-app trading ever opens where you live, we'll send one email. To leave the list, email contact@onstock.app."
+                : 'The waitlist is closed.'}
             </div>
           </div>
         )}
