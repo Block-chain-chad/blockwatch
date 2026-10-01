@@ -9,6 +9,7 @@
 
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 export const WEB_ONLY_STRINGS = [
   // The Holdings screen, its sheets and its sync. (The device keys may
@@ -38,7 +39,10 @@ export function findWebOnly(dir) {
   return hits
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Run as a script (not imported by its test). pathToFileURL, not a
+// hand-built file:// string: on Windows, or in a folder with a space in its
+// name, the two never matched and the guard silently passed.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const dir = process.argv[2] ?? 'dist'
   const hits = findWebOnly(dir)
   if (hits.length) {

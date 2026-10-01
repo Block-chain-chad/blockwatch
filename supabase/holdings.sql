@@ -42,9 +42,11 @@ create policy "users manage own holdings"
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
--- Signed-in people only. Row-level security already hides every row from
--- anonymous callers; this takes the table off their API surface as well.
-revoke all on public.user_holdings from anon;
+-- Signed-in people only, and only the four operations the app uses.
+-- Row-level security already hides every row from anonymous callers.
+-- Supabase's default grants give both roles every privilege on a new table,
+-- TRUNCATE included, which ignores row-level security. Start from nothing.
+revoke all on public.user_holdings from anon, authenticated;
 grant select, insert, update, delete on public.user_holdings to authenticated;
 
 create or replace function public.enforce_user_holdings_cap()
