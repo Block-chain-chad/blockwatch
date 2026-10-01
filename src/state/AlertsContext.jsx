@@ -5,6 +5,8 @@ import { supabase } from '../services/supabase'
 import { track } from '../services/analytics'
 import { premiumPct } from '../lib/prices'
 import { canAlertOnGap, driftStep } from '../lib/alertRules'
+import { pushRules } from '../services/accountSync'
+import { MAX_ALERTS, ALERTS_UNSYNCED_MESSAGE } from '../lib/accountLimits'
 
 const STORAGE_KEY = 'bw.alerts.v1'
 const MAX_EVENTS = 50
@@ -49,33 +51,6 @@ function load() {
   return { rules: {}, states: {}, events: [], lastSeenAt: 0 }
 }
 
-// Mirror the signed-in user's rules to Supabase (fired events and read-state
-// stay device-local — notifications are a per-device concern). The legacy
-// threshold column keeps a value for older rows; the full rule lives in jsonb.
-async function pushRules(userId, rules) {
-  try {
-    const entries = Object.entries(rules)
-    if (entries.length > 0) {
-      await supabase.from('user_alerts').upsert(
-        entries.map(([assetId, r]) => ({
-          user_id: userId,
-          asset_id: assetId,
-          threshold: r.drift?.threshold ?? 0,
-          rule: r,
-          updated_at: new Date().toISOString(),
-        }))
-      )
-    }
-    let del = supabase.from('user_alerts').delete().eq('user_id', userId)
-    if (entries.length > 0) {
-      del = del.not('asset_id', 'in', `(${entries.map(([id]) => `"${id}"`).join(',')})`)
-    }
-    await del
-  } catch {
-    // offline / migration not run yet — next change retries
-  }
-}
-
 const AlertsContext = createContext(null)
 
 /**
@@ -88,6 +63,8 @@ export function AlertsProvider({ children }) {
   const { assets, session } = usePrices()
   const { user, ready } = useAuth()
   const [store, setStore] = useState(load)
+  // How many alerts the last sync could not store on the account.
+  const [unsynced, setUnsynced] = useState(0)
 
   // Drift alerts compare token vs stock price, and stock quotes only flow for
   // subscribed assets — so every asset with a rule stays subscribed even when
@@ -109,6 +86,12 @@ export function AlertsProvider({ children }) {
     }
   }, [store])
 
+  async function sync(identity) {
+    const result = await pushRules(identity, storeRef.current.rules)
+    // Offline says nothing about which rules fit; keep the last answer.
+    if (!result.offline && hydratedForRef.current === identity) setUnsynced(result.unsynced)
+  }
+
   // Signed in: server rules replace local on sign-in (import local ones when
   // the account is fresh). Signing out keeps the last-known rules on the
   // device — logging out shouldn't silently kill someone's alerts.
@@ -119,6 +102,7 @@ export function AlertsProvider({ children }) {
     async function hydrate() {
       if (!user) {
         hydratedForRef.current = null
+        setUnsynced(0)
         return
       }
       if (hydratedForRef.current === user.id) return
@@ -138,7 +122,7 @@ export function AlertsProvider({ children }) {
         }))
       } else {
         const rules = storeRef.current.rules
-        if (Object.keys(rules).length > 0) pushRules(user.id, rules)
+        if (Object.keys(rules).length > 0) sync(user.id)
       }
     }
 
@@ -153,7 +137,7 @@ export function AlertsProvider({ children }) {
     const identity = user?.id
     if (!identity || hydratedForRef.current !== identity) return
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current)
-    syncTimerRef.current = setTimeout(() => pushRules(identity, storeRef.current.rules), SYNC_DEBOUNCE_MS)
+    syncTimerRef.current = setTimeout(() => sync(identity), SYNC_DEBOUNCE_MS)
     // The body reads nothing off `user` but its id, and Supabase hands back a
     // new user object on every hourly token refresh — depending on the object
     // re-fired a full rules upsert each time. Matches FoldersContext.
@@ -266,7 +250,13 @@ export function AlertsProvider({ children }) {
     // of a stale reading, and this is not one.
   }, [assets, store.rules, session])
 
+  // A new token past the alert limit is refused; changing a token that
+  // already has an alert is always allowed.
+  const canAlertOn = (assetId) => Boolean(store.rules[assetId]) || Object.keys(store.rules).length < MAX_ALERTS
+
+  /** Returns false, changing nothing, when the alert limit is reached. */
   function setDriftAlert(assetId, threshold) {
+    if (!canAlertOn(assetId)) return false
     // Only a first drift alert for this asset is a creation. Re-opening the
     // sheet to move the threshold is an update, and counting it as a
     // creation would inflate the one number this event exists to answer:
@@ -284,14 +274,18 @@ export function AlertsProvider({ children }) {
       const rule = { ...prev.rules[assetId], drift: { threshold } }
       return { ...prev, rules: { ...prev.rules, [assetId]: rule }, states }
     })
+    return true
   }
 
+  /** Returns false, changing nothing, when the alert limit is reached. */
   function setPriceAlert(assetId, target, direction) {
+    if (!canAlertOn(assetId)) return false
     if (!store.rules[assetId]?.price) track('alert_created', { type: 'target' })
     setStore((prev) => {
       const rule = { ...prev.rules[assetId], price: { target, direction } }
       return { ...prev, rules: { ...prev.rules, [assetId]: rule } }
     })
+    return true
   }
 
   function removeAlert(assetId, kind) {
@@ -327,6 +321,9 @@ export function AlertsProvider({ children }) {
         setPriceAlert,
         removeAlert,
         markSeen,
+        canAlertOn,
+        // A quiet line for the alert sheet, or null when everything synced.
+        syncNotice: user && unsynced > 0 ? ALERTS_UNSYNCED_MESSAGE : null,
       }}
     >
       {children}

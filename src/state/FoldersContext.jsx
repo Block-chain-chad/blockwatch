@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { useAuth } from './AuthContext'
 import { supabase } from '../services/supabase'
 import { track } from '../services/analytics'
+import { pushFolders } from '../services/accountSync'
+import { MAX_FOLDERS, MAX_FOLDER_ASSETS, FOLDERS_UNSYNCED_MESSAGE, cleanFolderName } from '../lib/accountLimits'
 
 const ANON_KEY = 'bw.folders.v1'
 const TOAST_MS = 5000
@@ -64,30 +66,6 @@ function saveLocal(key, folders) {
   }
 }
 
-async function pushToServer(userId, folders) {
-  try {
-    if (folders.length > 0) {
-      await supabase.from('user_folders').upsert(
-        folders.map((f) => ({
-          user_id: userId,
-          id: f.id,
-          name: f.name,
-          asset_ids: f.assetIds,
-          updated_at: new Date().toISOString(),
-        }))
-      )
-    }
-    // Reconcile deletions: remove server rows no longer present locally.
-    let del = supabase.from('user_folders').delete().eq('user_id', userId)
-    if (folders.length > 0) {
-      del = del.not('id', 'in', `(${folders.map((f) => `"${f.id}"`).join(',')})`)
-    }
-    await del
-  } catch {
-    // offline / not configured — next change retries; local copy is intact
-  }
-}
-
 function newId() {
   return crypto.randomUUID?.() ?? `f-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
@@ -109,6 +87,8 @@ export function FoldersProvider({ children }) {
   const { user, ready } = useAuth()
   const [folders, setFolders] = useState(() => loadLocal())
   const [toast, setToast] = useState(null)
+  // How many folders the last sync could not store on the account.
+  const [unsynced, setUnsynced] = useState(0)
   const foldersRef = useRef(folders)
   const timerRef = useRef(null)
   const syncTimerRef = useRef(null)
@@ -126,12 +106,18 @@ export function FoldersProvider({ children }) {
     } else {
       saveLocal(`bw.folders.u.${identity}`, folders)
       if (syncTimerRef.current) clearTimeout(syncTimerRef.current)
-      syncTimerRef.current = setTimeout(() => pushToServer(identity, foldersRef.current), SYNC_DEBOUNCE_MS)
+      syncTimerRef.current = setTimeout(() => sync(identity), SYNC_DEBOUNCE_MS)
     }
     // Depend on the user's ID, not the user object: Supabase hands back a new
     // user object on every hourly token refresh, which would re-run this and
     // push every folder to the server again for no reason.
   }, [folders, user?.id])
+
+  async function sync(identity) {
+    const result = await pushFolders(identity, foldersRef.current)
+    // Offline says nothing about which rows fit; keep the last answer.
+    if (!result.offline && hydratedForRef.current === identity) setUnsynced(result.unsynced)
+  }
 
   // Hydrate on sign-in/out.
   useEffect(() => {
@@ -143,6 +129,7 @@ export function FoldersProvider({ children }) {
         if (hydratedForRef.current !== null) {
           hydratedForRef.current = null
           setFolders(loadLocal())
+          setUnsynced(0)
         }
         return
       }
@@ -167,7 +154,8 @@ export function FoldersProvider({ children }) {
         const device = loadLocal()
         hydratedForRef.current = user.id
         setFolders(device)
-        pushToServer(user.id, device)
+        foldersRef.current = device
+        sync(user.id)
       }
     }
 
@@ -191,9 +179,17 @@ export function FoldersProvider({ children }) {
     })
   }
 
+  // Counted the way the account counts them: every folder except the watchlist.
+  const folderLimitReached = folders.filter((f) => f.id !== WATCHLIST_ID).length >= MAX_FOLDERS
+
+  /** Make a folder and return its id, or null when the folder limit is reached. */
   function createFolder(name) {
+    if (foldersRef.current.filter((f) => f.id !== WATCHLIST_ID).length >= MAX_FOLDERS) return null
     const id = newId()
-    setFolders((prev) => [...prev, { id, name: name.trim(), assetIds: [] }])
+    const next = [...foldersRef.current, { id, name: cleanFolderName(name), assetIds: [] }]
+    // Kept in step now, so a toggle right after creating sees the new folder.
+    foldersRef.current = next
+    setFolders(next)
     // Counted here, not at the two buttons that reach it, so a third place to
     // make a folder is counted the day it ships. The name is the user's own
     // words and never leaves the device.
@@ -202,7 +198,7 @@ export function FoldersProvider({ children }) {
   }
 
   function renameFolder(id, name) {
-    setFolders((prev) => prev.map((f) => (f.id === id ? { ...f, name: name.trim() } : f)))
+    setFolders((prev) => prev.map((f) => (f.id === id ? { ...f, name: cleanFolderName(name) } : f)))
   }
 
   function deleteFolder(id) {
@@ -213,12 +209,16 @@ export function FoldersProvider({ children }) {
     showUndoToast(`Deleted “${folder.name}”`, prev)
   }
 
-  /** Add/remove an asset from a folder (multi-folder tagging). */
+  /**
+   * Add/remove an asset from a folder (multi-folder tagging). Returns false
+   * when nothing changed: no such folder, or adding to a full folder.
+   */
   function toggleAssetInFolder(folderId, assetId) {
     const prev = foldersRef.current
     const folder = prev.find((f) => f.id === folderId)
-    if (!folder) return
+    if (!folder) return false
     const removing = folder.assetIds.includes(assetId)
+    if (!removing && folder.assetIds.length >= MAX_FOLDER_ASSETS) return false
     setFolders(
       prev.map((f) =>
         f.id === folderId
@@ -239,6 +239,7 @@ export function FoldersProvider({ children }) {
       // added to and nothing else — no folder name, no asset id.
       track('folder_asset_added', { list: folderId === WATCHLIST_ID ? 'watchlist' : 'folder' })
     }
+    return true
   }
 
   // Consumers see only real user folders; the watchlist has its own API.
@@ -256,6 +257,9 @@ export function FoldersProvider({ children }) {
     renameFolder,
     deleteFolder,
     toggleAssetInFolder,
+    folderLimitReached,
+    // A quiet line for the folder screens, or null when everything synced.
+    syncNotice: user && unsynced > 0 ? FOLDERS_UNSYNCED_MESSAGE : null,
   }
   return <FoldersContext.Provider value={value}>{children}</FoldersContext.Provider>
 }

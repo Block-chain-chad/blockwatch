@@ -21,12 +21,13 @@ import {
 } from '../components/shared'
 import AssetLogo from '../components/AssetLogo'
 import PromptSheet from '../overlays/PromptSheet'
+import { FOLDER_LIMIT_MESSAGE } from '../lib/accountLimits'
 import SearchOverlay from '../overlays/SearchOverlay'
 import Sheet, { SheetTitle } from '../components/Sheet'
 
 export function FoldersList({ onOpenProfile, onOpenFolder }) {
   const { assets } = usePrices()
-  const { folders, createFolder } = useFolders()
+  const { folders, createFolder, folderLimitReached, syncNotice } = useFolders()
   const [creating, setCreating] = useState(false)
 
   return (
@@ -98,12 +99,15 @@ export function FoldersList({ onOpenProfile, onOpenFolder }) {
       <div className="px-4 pt-4">
         <button
           onClick={() => setCreating(true)}
-          className="t-label flex w-full items-center justify-center gap-2 rounded-lg border border-dashed py-3 text-zinc-400 transition-colors active:bg-zinc-900"
+          disabled={folderLimitReached}
+          className="t-label flex w-full items-center justify-center gap-2 rounded-lg border border-dashed py-3 text-zinc-400 transition-colors active:bg-zinc-900 disabled:opacity-40"
           style={{ borderColor: 'var(--border-default)' }}
         >
           <PlusIcon size={18} />
           New folder
         </button>
+        {folderLimitReached && <p className="t-caption mt-2 text-center text-zinc-500">{FOLDER_LIMIT_MESSAGE}</p>}
+        {syncNotice && <p className="t-caption mt-2 text-center text-zinc-500">{syncNotice}</p>}
       </div>
 
       {creating && (
@@ -112,7 +116,10 @@ export function FoldersList({ onOpenProfile, onOpenFolder }) {
           placeholder="e.g. Energy, Chips & AI"
           submitLabel="Create"
           onClose={() => setCreating(false)}
-          onSubmit={(name) => onOpenFolder(createFolder(name))}
+          onSubmit={(name) => {
+            const id = createFolder(name)
+            if (id) onOpenFolder(id)
+          }}
         />
       )}
     </div>
