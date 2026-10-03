@@ -9,6 +9,7 @@ import { delayTooltip } from '../lib/provenance'
 import { closedGapLabelFor } from '../lib/sessionCopy'
 import ClosedGapMark from './ClosedGapMark'
 import TipBubble from './TipBubble'
+import { tipSide } from '../lib/tips'
 import { WEB_BASE } from '../services/apiBase'
 
 export { formatPrice, formatPct, changeColor }
@@ -215,7 +216,9 @@ export function Sparkline({ points, width = 56, height = 14 }) {
  *
  * Placement, measured after every render and on scroll and resize: under the
  * row, or above it when the row's bottom is in the lowest third of the
- * window, so it never covers the figure or pill it explains. The caret sits
+ * window and there is room below the top of the list (tipSide in
+ * lib/tips.js), so it never covers the figure or pill it explains, nor the
+ * search field and status line above the list. The caret sits
  * over that figure or pill, and the bubble keeps 16px from the row's edges.
  * A row with no layout (the other breakpoint's hidden copy) keeps the
  * default: under the row, right-aligned.
@@ -245,11 +248,20 @@ function RowTip({ tip, rowRef, id }) {
     const centre = t.left + t.width / 2 - r.left
     const left = Math.round(clamp(centre - width + 28, TIP_EDGE, r.width - TIP_EDGE - width))
     const caret = Math.round(clamp(centre - left, 14, width - 14))
-    const side = r.bottom > window.innerHeight * (2 / 3) ? 'above' : 'below'
     const rowH = Math.round(r.height)
-    setPlace((p) =>
-      p && p.side === side && p.left === left && p.caret === caret && p.rowH === rowH ? p : { side, left, caret, rowH },
-    )
+    const geometry = {
+      rowTop: r.top,
+      rowBottom: r.bottom,
+      // The row's parent is the list; the bubble never rises above it.
+      listTop: row.parentElement.getBoundingClientRect().top,
+      bubbleHeight: box.offsetHeight,
+      viewportHeight: window.innerHeight,
+      gap: TIP_GAP,
+    }
+    setPlace((p) => {
+      const side = tipSide({ ...geometry, current: p?.side ?? null })
+      return p && p.side === side && p.left === left && p.caret === caret && p.rowH === rowH ? p : { side, left, caret, rowH }
+    })
   }, [kind, rowRef])
 
   // After every render (a price tick can widen the figure or add the pill),

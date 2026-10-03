@@ -73,6 +73,27 @@ export function currentTip({ seen, status, covered, anchors }) {
   return null
 }
 
+/** How far past the two-thirds line a row must be before its bubble changes side. */
+export const SIDE_HYSTERESIS_PX = 40
+
+/**
+ * Which side of its row a bubble sits on: 'below' or 'above'. Window
+ * coordinates in px, from getBoundingClientRect.
+ *   - Above only when it fits between the row and the top of Home's list, so
+ *     it never covers the search field or the market status line.
+ *   - Otherwise above once the row's bottom is in the lowest third of the
+ *     window. With a side already chosen (`current`), it changes only when
+ *     the row is SIDE_HYSTERESIS_PX past that line, so a row resting near
+ *     the line does not flip the bubble on every scroll event.
+ */
+export function tipSide({ current = null, rowTop, rowBottom, listTop, bubbleHeight, viewportHeight, gap }) {
+  if (rowTop - gap - bubbleHeight < listTop) return 'below'
+  const line = viewportHeight * (2 / 3)
+  if (current === 'above') return rowBottom < line - SIDE_HYSTERESIS_PX ? 'below' : 'above'
+  if (current === 'below') return rowBottom > line + SIDE_HYSTERESIS_PX ? 'above' : 'below'
+  return rowBottom > line ? 'above' : 'below'
+}
+
 /** { gap, closed } seen flags. A read that throws counts as seen. */
 export function readSeen(getStorage) {
   const seen = {}

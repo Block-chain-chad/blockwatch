@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { TIP_KEYS, TIP_COPY, tipAnchors, currentTip, readSeen, writeSeen } from './tips'
+import { TIP_KEYS, TIP_COPY, tipAnchors, currentTip, readSeen, writeSeen, tipSide, SIDE_HYSTERESIS_PX } from './tips'
 import { BY_ID } from '../data/universe'
 import { sharesPerToken, gapCheck } from './gapCheck'
 
@@ -169,5 +169,44 @@ describe('copy', () => {
 
   it('has no dashes', () => {
     expect(JSON.stringify(TIP_COPY)).not.toMatch(/[–—]/)
+  })
+})
+
+describe('tipSide', () => {
+  // An 812px window: the two-thirds line is at 541.3px. The list starts at
+  // 254px; rows are 58px tall; the bubble is 157px tall with a 6px gap.
+  const at = (rowTop, over = {}) =>
+    tipSide({ rowTop, rowBottom: rowTop + 58, listTop: 254, bubbleHeight: 157, viewportHeight: 812, gap: 6, ...over })
+
+  it('sits under a row in the top two thirds, and above one in the lowest third', () => {
+    expect(at(300)).toBe('below')
+    expect(at(600)).toBe('above')
+  })
+
+  it('never rises above the top of the list: without room above, it goes below', () => {
+    // A short window puts the first row in the lowest third, but above it
+    // the bubble would cover the search field and the status line.
+    expect(at(254, { viewportHeight: 440 })).toBe('below')
+    expect(at(410, { viewportHeight: 440 })).toBe('below') // 410 - 6 - 157 = 247, above the list
+    expect(at(417, { viewportHeight: 440 })).toBe('above') // 417 - 6 - 157 = 254, exactly fits
+    expect(at(600, { current: 'above', listTop: 500 })).toBe('below')
+  })
+
+  it('keeps its side until the row is clearly past the line', () => {
+    const line = 812 * (2 / 3)
+    const bottomAt = (b, current) => at(b - 58, { current })
+    expect(bottomAt(line + 10, 'below')).toBe('below')
+    expect(bottomAt(line + SIDE_HYSTERESIS_PX - 1, 'below')).toBe('below')
+    expect(bottomAt(line + SIDE_HYSTERESIS_PX + 1, 'below')).toBe('above')
+    expect(bottomAt(line - 10, 'above')).toBe('above')
+    expect(bottomAt(line - SIDE_HYSTERESIS_PX + 1, 'above')).toBe('above')
+    expect(bottomAt(line - SIDE_HYSTERESIS_PX - 1, 'above')).toBe('below')
+  })
+
+  it('does not flicker while a row rests on the line and scroll events wobble it', () => {
+    const line = 812 * (2 / 3)
+    let side = 'below'
+    for (const wobble of [-20, 15, -5, 30, -30, 10]) side = at(line + wobble - 58, { current: side })
+    expect(side).toBe('below')
   })
 })
