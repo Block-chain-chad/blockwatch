@@ -39,6 +39,7 @@ const { default: Home } = await import('./Home')
 const { default: Sheet } = await import('../components/Sheet')
 const { BY_ID } = await import('../data/universe')
 const { sharesPerToken } = await import('../lib/gapCheck')
+const { TAP_GUARD_MS } = await import('../components/TipBubble')
 
 const OPEN = Date.parse('2026-09-30T15:00:00Z') // Wed 11:00 New York
 const AFTER_HOURS = Date.parse('2026-10-01T21:00:00Z') // Thu 17:00
@@ -121,6 +122,11 @@ const button = (label, scope = container) => [...scope.querySelectorAll('button'
 const titleOf = (b) => document.getElementById(b.getAttribute('aria-labelledby'))?.textContent
 const bodyOf = (b) => b.querySelector('p').textContent
 const click = (el) => act(() => el.click())
+/** A tap on a bubble's button, once its tap guard has passed. */
+const tap = (el) => {
+  vi.setSystemTime(Date.now() + TAP_GUARD_MS)
+  click(el)
+}
 const escape = () => act(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })))
 
 beforeEach(() => {
@@ -158,7 +164,7 @@ describe('tip 1, the gap (criteria 1, 2, 6)', () => {
   it('closes on Got it, stores the old caption key, and stays closed after a reload', () => {
     market(OPEN)
     mount()
-    click(button('Got it', bubble()))
+    tap(button('Got it', bubble()))
     expect(bubble()).toBeNull()
     expect(store['bw.tip.premium.v1']).toBe('1')
     remount()
@@ -204,7 +210,7 @@ describe('tip 2, Market closed (criteria 3, 4, 5)', () => {
     market(WEEKEND, FRIDAY_CLOSE)
     mount()
     expect(titleOf(bubble())).toBe('The gap')
-    click(button('Got it', bubble()))
+    tap(button('Got it', bubble()))
     const b = bubble()
     expect(titleOf(b)).toBe('Market closed')
     expect(bodyOf(b)).toBe(FRIDAY_SENTENCE)
@@ -212,9 +218,25 @@ describe('tip 2, Market closed (criteria 3, 4, 5)', () => {
     const row = rowFor('NVDAx')
     expect(row.querySelector('[data-closed-mark]')).toBeTruthy()
     expect(row.nextElementSibling.contains(b)).toBe(true)
-    click(button('Got it', b))
+    tap(button('Got it', b))
     expect(bubble()).toBeNull()
     expect(store['bw.tip.closed.v1']).toBe('1')
+  })
+
+  it('survives a double tap on tip 1’s Got it: tip 2 is a new bubble and ignores the second tap', () => {
+    market(WEEKEND, FRIDAY_CLOSE)
+    mount()
+    const first = bubble()
+    tap(button('Got it', first))
+    const second = bubble()
+    expect(second).not.toBe(first)
+    click(button('Got it', second)) // the second tap of the double tap, at once
+    expect(bubble()).toBe(second)
+    expect(titleOf(second)).toBe('Market closed')
+    expect(store['bw.tip.closed.v1']).toBeUndefined()
+    expect(track.mock.calls.filter(([e]) => e === 'tip_closed')).toEqual([['tip_closed', { tip: 'gap', how: 'got_it' }]])
+    tap(button('Got it', second))
+    expect(bubble()).toBeNull()
   })
 
   it('uses the outside-regular-hours sentence with today’s close after hours', () => {
@@ -247,7 +269,7 @@ describe('sheets and overlays (criterion 7)', () => {
   it('hides while its lesson is open, counts the open, and comes back after', () => {
     market(OPEN)
     mount()
-    click(button("What's a premium?", bubble()))
+    tap(button("What's a premium?", bubble()))
     expect(track).toHaveBeenCalledWith('learn_open', { source: 'tip', lesson: 'premium' })
     const sheet = document.querySelector('[role="dialog"]')
     expect(sheet.textContent).toContain("What's a premium?")
@@ -313,7 +335,7 @@ describe('the three ways it counts as seen (criteria 8, 13)', () => {
   it('sends one tip_closed per close, with the right tip and how', () => {
     market(WEEKEND, FRIDAY_CLOSE)
     mount()
-    click(button('Got it', bubble()))
+    tap(button('Got it', bubble()))
     escape()
     escape()
     expect(track.mock.calls.filter(([e]) => e === 'tip_closed')).toEqual([
@@ -334,7 +356,7 @@ describe('layout (criterion 9) and the old caption', () => {
     expect(firstRow.nextElementSibling.contains(bubble())).toBe(true)
     const before = (row) => container.innerHTML.slice(0, container.innerHTML.indexOf(row.outerHTML))
     const withBubble = before(firstRow)
-    click(button('Got it', bubble()))
+    tap(button('Got it', bubble()))
     expect(before(rowFor('NVDAx'))).toBe(withBubble)
   })
 
@@ -372,7 +394,7 @@ describe('screen readers and keyboards (criterion 11)', () => {
   it('drops the description once the tip is closed', () => {
     market(OPEN)
     mount()
-    click(button('Got it', bubble()))
+    tap(button('Got it', bubble()))
     expect(rowFor('NVDAx').hasAttribute('aria-describedby')).toBe(false)
   })
 

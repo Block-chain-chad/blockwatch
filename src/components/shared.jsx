@@ -221,6 +221,8 @@ export function Sparkline({ points, width = 56, height = 14 }) {
  * default: under the row, right-aligned.
  *
  * `tip` comes from Home: { kind, title, body, link, onLink, onClose(how) }.
+ * Keyed by kind where it is rendered, so tip 2 replacing tip 1 on the same
+ * row is a new bubble: it fades in, and its tap guard starts again.
  */
 const TIP_TARGET = { gap: '[data-gap-figure]', closed: '[data-closed-mark]' }
 const TIP_EDGE = 16
@@ -367,7 +369,7 @@ export function AssetRow({
           </div>
         </div>
       </button>
-      {tip && <RowTip tip={tip} rowRef={rowRef} id={tipId} />}
+      {tip && <RowTip key={tip.kind} tip={tip} rowRef={rowRef} id={tipId} />}
     </>
   )
 }
@@ -439,7 +441,7 @@ export function AssetTableRow({ asset, onOpen, spark, marketOpen = true, tip = n
         </span>
         <span className="t-caption truncate text-right text-zinc-500">{asset.chain || EM_DASH}</span>
       </button>
-      {tip && <RowTip tip={tip} rowRef={rowRef} id={tipId} />}
+      {tip && <RowTip key={tip.kind} tip={tip} rowRef={rowRef} id={tipId} />}
     </>
   )
 }

@@ -9,7 +9,7 @@ import { createRoot } from 'react-dom/client'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import TipBubble from './TipBubble'
+import TipBubble, { TAP_GUARD_MS } from './TipBubble'
 import { TIP_COPY } from '../lib/tips'
 import { closedGapLabel } from '../lib/sessionCopy'
 
@@ -24,6 +24,7 @@ let container
 let root
 
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] })
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -31,6 +32,7 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount())
   container.remove()
+  vi.useRealTimers()
 })
 
 function render(props) {
@@ -50,10 +52,16 @@ describe('tip 1, the gap', () => {
     expect(button('Got it')).toBeTruthy()
   })
 
-  it('calls back on Got it and on the link', () => {
+  it('ignores taps for the first 300 ms, then calls back on Got it and on the link', () => {
     const onClose = vi.fn()
     const onLink = vi.fn()
     render({ title: 'The gap', body: 'b', link: TIP_COPY.gap.link, onClose, onLink })
+    vi.setSystemTime(Date.now() + TAP_GUARD_MS - 1)
+    act(() => button('Got it').click())
+    act(() => button("What's a premium?").click())
+    expect(onClose).not.toHaveBeenCalled()
+    expect(onLink).not.toHaveBeenCalled()
+    vi.setSystemTime(Date.now() + 1)
     act(() => button('Got it').click())
     act(() => button("What's a premium?").click())
     expect(onClose).toHaveBeenCalledTimes(1)

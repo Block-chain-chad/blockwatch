@@ -1,3 +1,9 @@
+import { useState } from 'react'
+
+/* Taps this soon after a bubble appears are ignored: a double tap on one
+   bubble's "Got it" must not close the next one, unread, in the same place. */
+export const TAP_GUARD_MS = 300
+
 /*
  * One of Home's tip bubbles (lib/tips.js decides which, and where). It floats
  * over the list instead of inserting a row, because nothing may push the
@@ -18,6 +24,10 @@
  * off under prefers-reduced-motion.
  */
 export default function TipBubble({ ref, id, title, body, link, onLink, onClose, side = 'below', caret = null, style }) {
+  const [shownAt] = useState(() => Date.now())
+  const guarded = (fn) => () => {
+    if (Date.now() - shownAt >= TAP_GUARD_MS) fn?.()
+  }
   const caretEdge =
     side === 'below' ? { top: -4.5, borderWidth: '1px 0 0 1px' } : { bottom: -4.5, borderWidth: '0 1px 1px 0' }
   const caretX = caret == null ? { right: 20 } : { left: caret - 4 }
@@ -51,7 +61,7 @@ export default function TipBubble({ ref, id, title, body, link, onLink, onClose,
       <div className="flex items-center justify-between gap-3">
         {link && (
           <button
-            onClick={onLink}
+            onClick={guarded(onLink)}
             className="t-caption -ml-2 min-h-11 px-2 text-left text-zinc-300 underline underline-offset-2"
           >
             {link}
@@ -59,7 +69,7 @@ export default function TipBubble({ ref, id, title, body, link, onLink, onClose,
         )}
         {/* The light theme's accent is 3.3:1 on this surface; its dim step is 4.9:1. */}
         <button
-          onClick={onClose}
+          onClick={guarded(onClose)}
           className="t-caption -mr-2 ml-auto min-h-11 min-w-11 px-2 font-medium text-accent [html.light_&]:text-accent-dim"
         >
           Got it
