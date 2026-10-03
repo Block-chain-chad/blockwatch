@@ -71,11 +71,14 @@ export function closedGapLabel({ now = Date.now(), quoteAsOf = null } = {}) {
   const { session, close } = state
   const agrees = close != null && (!Number.isFinite(quoteAsOf) || etDate(quoteAsOf) === close.date)
   const whose = !agrees ? 'last' : close.today ? 'today’s' : `${close.weekday}’s`
+  const at = agrees ? `${whose} close` : 'the last close'
+  // The hover text here and Home's "Market closed" tip bubble are the same
+  // sentence (approved by the Compliance Reviewer on 2026-10-03).
   const title =
     session === 'closed'
-      ? `The US market is closed. This gap compares the token’s price with the share’s ${whose} close, so it is not a live spread.`
-      : `The share is trading outside regular hours, but this gap compares the token with the share’s ${whose} close, so it can read wider than it is.`
-  return { tag: MARKET_CLOSED_TAG, vs: `vs ${whose} close`, close: agrees ? `${whose} close` : 'the last close', title }
+      ? `The US market is closed. This gap compares the token’s latest price with the share price at ${at}, so the two prices are from different times.`
+      : `The share is trading outside regular hours, but this gap compares the token’s latest price with the share price at ${at}, so it may not match where the share is trading now.`
+  return { tag: MARKET_CLOSED_TAG, vs: `vs ${whose} close`, close: at, title }
 }
 
 /**

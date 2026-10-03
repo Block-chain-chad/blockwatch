@@ -134,20 +134,40 @@ describe('closedGapLabel', () => {
   it('names today’s close after hours on a weekday, and tags it Market closed', () => {
     const label = closedGapLabel(at('2026-09-15T21:00:00Z')) // Tue 17:00
     expect(label).toMatchObject({ tag: 'Market closed', vs: 'vs today’s close' })
-    expect(label.title).toContain('outside regular hours')
+    expect(label.title).toBe(
+      'The share is trading outside regular hours, but this gap compares the token’s latest price with the share price at today’s close, so it may not match where the share is trading now.',
+    )
     expect(vs('2026-09-15T20:00:00Z')).toBe('vs today’s close') // Tue 16:00, the close itself
   })
 
   it('still names today’s close overnight, after the extended session', () => {
     const label = closedGapLabel(at('2026-09-16T02:00:00Z')) // Tue 22:00
     expect(label.vs).toBe('vs today’s close')
-    expect(label.title).toContain('not a live spread')
+    expect(label.title).toBe(
+      'The US market is closed. This gap compares the token’s latest price with the share price at today’s close, so the two prices are from different times.',
+    )
   })
 
   it('names the previous trading day before the open', () => {
     expect(vs('2026-09-16T07:00:00Z')).toBe('vs Tuesday’s close') // Wed 03:00, overnight
     expect(vs('2026-09-16T12:00:00Z')).toBe('vs Tuesday’s close') // Wed 08:00, pre-market
     expect(vs('2026-09-21T11:00:00Z')).toBe('vs Friday’s close') // Mon 07:00, after a weekend
+  })
+
+  it('names Friday’s close in the hover text on a weekend, with one possessive', () => {
+    const label = closedGapLabel(at('2026-09-19T16:00:00Z')) // Sat noon
+    expect(label.title).toBe(
+      'The US market is closed. This gap compares the token’s latest price with the share price at Friday’s close, so the two prices are from different times.',
+    )
+    expect(label.title).not.toContain('share’s Friday’s')
+    expect(label).toMatchObject({ tag: 'Market closed', vs: 'vs Friday’s close', close: 'Friday’s close' })
+  })
+
+  it('names Friday’s close in the pre-market hover text on a Monday', () => {
+    const label = closedGapLabel(at('2026-09-21T12:00:00Z')) // Mon 08:00
+    expect(label.title).toBe(
+      'The share is trading outside regular hours, but this gap compares the token’s latest price with the share price at Friday’s close, so it may not match where the share is trading now.',
+    )
   })
 
   it('names Friday’s close on Saturday and on Sunday', () => {
@@ -178,7 +198,9 @@ describe('closedGapLabel', () => {
     const thursdayClose = Date.parse('2026-09-17T20:00:00Z')
     const label = closedGapLabel({ now: Date.parse('2026-09-19T16:00:00Z'), quoteAsOf: thursdayClose })
     expect(label.vs).toBe('vs last close')
-    expect(label.title).toContain('the share’s last close')
+    expect(label.title).toBe(
+      'The US market is closed. This gap compares the token’s latest price with the share price at the last close, so the two prices are from different times.',
+    )
   })
 
   it('says last close past the end of the calendar', () => {
