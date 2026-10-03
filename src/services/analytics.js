@@ -42,8 +42,10 @@
 //     search_miss             { query }                   SearchOverlay, SymbolSearch
 //     chart_mode              { mode, ticker }            ChartWorkspace, AssetDetail
 //     share                   { ticker, action }          ShareSheet.jsx
-//     learn_open              { source: 'home' | 'news' | 'desktop', lesson }
-//                                                         LearnCards.jsx
+//     learn_open              { source: 'home' | 'news' | 'desktop' | 'tip', lesson }
+//                                                         LearnCards.jsx, screens/Home.jsx
+//     tip_closed              { tip: 'gap' | 'closed', how: 'got_it' | 'row' | 'escape' }
+//                             Never the ticker or the row. screens/Home.jsx
 //
 //   Coming back — the actions that give someone a reason to (2026-09-16)
 //     folder_created          {}                          state/FoldersContext.jsx

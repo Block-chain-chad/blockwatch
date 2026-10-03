@@ -24,7 +24,7 @@ function alreadyDismissed() {
  * One line telling iPhone Safari users how to put Onstock on their Home
  * Screen, so coming back is one tap instead of a typed address. Safari has
  * no install prompt of its own, and this is the only way a web visitor gets
- * an icon. Same shape and dismiss-once rule as OnboardingTip: a hairline
+ * an icon. Same shape and dismiss-once rule as Home’s old inline tip: a hairline
  * caption row, not a card, and gone for good once closed.
  *
  * Share sits in the toolbar on older iPhones; Safari's compact layout on

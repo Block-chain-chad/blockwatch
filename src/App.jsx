@@ -102,6 +102,9 @@ export default function App() {
         onOpenProfile={openProfile}
         onOpenAsset={openAsset}
         onOpenSearch={() => setShowSearch(true)}
+        // Search and the asset screen cover Home without being sheets; its
+        // tip bubble hides under them.
+        covered={showSearch || openAssetId != null}
       />
     )
   } else if (tab === 'screener') {

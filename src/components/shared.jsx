@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useCallback, useId, useLayoutEffect, useRef, useState } from 'react'
 import { premiumPct, PARITY_BAND, isThinlyTraded } from '../lib/prices'
 import { gapCheck, GAP_STATUS_LABEL } from '../lib/gapCheck'
 import { SearchIcon, ChevronRight } from './Icons'
@@ -8,6 +8,7 @@ import { formatPrice, formatPct, changeColor, EM_DASH } from '../lib/format'
 import { delayTooltip } from '../lib/provenance'
 import { closedGapLabelFor } from '../lib/sessionCopy'
 import ClosedGapMark from './ClosedGapMark'
+import TipBubble from './TipBubble'
 import { WEB_BASE } from '../services/apiBase'
 
 export { formatPrice, formatPct, changeColor }
@@ -72,7 +73,7 @@ export function PremiumValue({ asset, size = 'row', mark = true }) {
   // only cell heavier than the row's base weight.
   const cls =
     size === 'lead' ? 't-title' : size === 'table' ? 'text-[15px] font-semibold' : 't-label'
-  const figure = <span className={`num ${cls} ${color}`}>{formatPct(value)}</span>
+  const figure = <span data-gap-figure="" className={`num ${cls} ${color}`}>{formatPct(value)}</span>
   if (!mark || !closed) return figure
   return (
     <span className="inline-flex items-center gap-2">
@@ -208,6 +209,95 @@ export function Sparkline({ points, width = 56, height = 14 }) {
 }
 
 /*
+ * A tip bubble under (or over) its row on Home. Rendered as the row's next
+ * sibling inside a zero-height box, so it floats over the rows below without
+ * moving any of them, and Tab goes from the row straight into it.
+ *
+ * Placement, measured after every render and on scroll and resize: under the
+ * row, or above it when the row's bottom is in the lowest third of the
+ * window, so it never covers the figure or pill it explains. The caret sits
+ * over that figure or pill, and the bubble keeps 16px from the row's edges.
+ * A row with no layout (the other breakpoint's hidden copy) keeps the
+ * default: under the row, right-aligned.
+ *
+ * `tip` comes from Home: { kind, title, body, link, onLink, onClose(how) }.
+ */
+const TIP_TARGET = { gap: '[data-gap-figure]', closed: '[data-closed-mark]' }
+const TIP_EDGE = 16
+const TIP_GAP = 6
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
+
+function RowTip({ tip, rowRef, id }) {
+  const boxRef = useRef(null)
+  const [place, setPlace] = useState(null)
+
+  const kind = tip.kind
+  const measure = useCallback(() => {
+    const row = rowRef.current
+    const box = boxRef.current
+    if (!row || !box) return
+    const r = row.getBoundingClientRect()
+    if (!r.width) return
+    const t = (row.querySelector(TIP_TARGET[kind]) ?? row).getBoundingClientRect()
+    const width = box.offsetWidth
+    const centre = t.left + t.width / 2 - r.left
+    const left = Math.round(clamp(centre - width + 28, TIP_EDGE, r.width - TIP_EDGE - width))
+    const caret = Math.round(clamp(centre - left, 14, width - 14))
+    const side = r.bottom > window.innerHeight * (2 / 3) ? 'above' : 'below'
+    const rowH = Math.round(r.height)
+    setPlace((p) =>
+      p && p.side === side && p.left === left && p.caret === caret && p.rowH === rowH ? p : { side, left, caret, rowH },
+    )
+  }, [kind, rowRef])
+
+  // After every render (a price tick can widen the figure or add the pill),
+  // and on scroll and resize.
+  useLayoutEffect(measure)
+  useLayoutEffect(() => {
+    window.addEventListener('scroll', measure, { passive: true })
+    window.addEventListener('resize', measure)
+    return () => {
+      window.removeEventListener('scroll', measure)
+      window.removeEventListener('resize', measure)
+    }
+  }, [measure])
+
+  const side = place?.side ?? 'below'
+  const style = {
+    ...(side === 'above' ? { bottom: (place?.rowH ?? 0) + TIP_GAP } : { top: TIP_GAP }),
+    ...(place ? { left: place.left } : { right: TIP_EDGE }),
+  }
+  // Focus goes to the row before the lesson opens, so the sheet hands it back
+  // there when it closes: the bubble itself is gone while the sheet is open.
+  function openLesson() {
+    rowRef.current?.focus({ preventScroll: true })
+    tip.onLink()
+  }
+  return (
+    <div className="relative h-0">
+      <TipBubble
+        ref={boxRef}
+        id={id}
+        title={tip.title}
+        body={tip.body}
+        link={tip.link}
+        onLink={openLesson}
+        onClose={() => tip.onClose('got_it')}
+        side={side}
+        caret={place?.caret ?? null}
+        style={style}
+      />
+    </div>
+  )
+}
+
+/* The row tap that opens an asset also closes the tip it carries, first. */
+function openRow(tip, onOpen, asset) {
+  tip?.onClose('row')
+  onOpen(asset)
+}
+
+/*
  * Watchlist row, mobile. Premium leads; the two prices that produce it sit
  * beneath as supporting evidence, separated by a thin slash so they read as
  * one quantity rather than two columns.
@@ -225,52 +315,60 @@ export function AssetRow({
   marketOpen = true,
   barWidth = 88,
   delayed = false,
+  tip = null,
 }) {
   const thin = isThinlyTraded(asset)
   const { value, closed } = usePremium(asset)
+  const rowRef = useRef(null)
+  const tipId = useId()
   return (
-    <button
-      onClick={() => onOpen(asset)}
-      className="hover-row flex w-full items-center gap-3 border-b px-4 py-2.5 text-left transition-colors active:bg-zinc-900"
-      style={{ borderColor: 'var(--border-subtle)' }}
-    >
-      <AssetLogo asset={asset} size={32} />
-      <div className="min-w-0 flex-1">
-        <div className="t-label text-zinc-100">{asset.ticker}</div>
-        <div className="t-caption truncate text-zinc-500">
-          {asset.name}
-          {thin && <span className="text-zinc-500"> · thin</span>}
+    <>
+      <button
+        ref={rowRef}
+        aria-describedby={tip ? tipId : undefined}
+        onClick={() => openRow(tip, onOpen, asset)}
+        className="hover-row flex w-full items-center gap-3 border-b px-4 py-2.5 text-left transition-colors active:bg-zinc-900"
+        style={{ borderColor: 'var(--border-subtle)' }}
+      >
+        <AssetLogo asset={asset} size={32} />
+        <div className="min-w-0 flex-1">
+          <div className="t-label text-zinc-100">{asset.ticker}</div>
+          <div className="t-caption truncate text-zinc-500">
+            {asset.name}
+            {thin && <span className="text-zinc-500"> · thin</span>}
+          </div>
         </div>
-      </div>
-      {/* The 7-day stroke is hidden while the market is shut: a week of token
-          movement next to a frozen stock leg invites a comparison that isn't
-          there. */}
-      {spark && marketOpen && (
-        <span className="hidden shrink-0 text-zinc-600 min-[360px]:inline">
-          <Sparkline points={spark} width={44} height={14} />
-        </span>
-      )}
-      <div className="shrink-0 text-right">
-        <div className="flex items-center justify-end gap-2">
-          {/* The closed-market mark needs the room; the bar gives it up. */}
-          <GapBar pct={value} thin={thin} width={closed ? Math.min(barWidth, 48) : barWidth} />
-          <PremiumValue asset={asset} />
+        {/* The 7-day stroke is hidden while the market is shut: a week of token
+            movement next to a frozen stock leg invites a comparison that isn't
+            there. */}
+        {spark && marketOpen && (
+          <span className="hidden shrink-0 text-zinc-600 min-[360px]:inline">
+            <Sparkline points={spark} width={44} height={14} />
+          </span>
+        )}
+        <div className="shrink-0 text-right">
+          <div className="flex items-center justify-end gap-2">
+            {/* The closed-market mark needs the room; the bar gives it up. */}
+            <GapBar pct={value} thin={thin} width={closed ? Math.min(barWidth, 48) : barWidth} />
+            <PremiumValue asset={asset} />
+          </div>
+          <div className="num t-caption mt-1 text-zinc-500">
+            <PriceText value={asset.tokenPrice} />
+            <span className="mx-1 text-zinc-600">/</span>
+            {asset.underlying ? <PriceText value={asset.stockPrice} /> : EM_DASH}
+            {delayed && asset.underlying && (
+              <span
+                className="ml-1 text-[10px] font-bold leading-none text-amber-400"
+                title={delayTooltip()}
+              >
+                D
+              </span>
+            )}
+          </div>
         </div>
-        <div className="num t-caption mt-1 text-zinc-500">
-          <PriceText value={asset.tokenPrice} />
-          <span className="mx-1 text-zinc-600">/</span>
-          {asset.underlying ? <PriceText value={asset.stockPrice} /> : EM_DASH}
-          {delayed && asset.underlying && (
-            <span
-              className="ml-1 text-[10px] font-bold leading-none text-amber-400"
-              title={delayTooltip()}
-            >
-              D
-            </span>
-          )}
-        </div>
-      </div>
-    </button>
+      </button>
+      {tip && <RowTip tip={tip} rowRef={rowRef} id={tipId} />}
+    </>
   )
 }
 
@@ -302,40 +400,47 @@ export function AssetTableHeader() {
   )
 }
 
-export function AssetTableRow({ asset, onOpen, spark, marketOpen = true }) {
+export function AssetTableRow({ asset, onOpen, spark, marketOpen = true, tip = null }) {
   const thin = isThinlyTraded(asset)
   const { value } = usePremium(asset)
+  const rowRef = useRef(null)
+  const tipId = useId()
   return (
-    <button
-      onClick={() => onOpen(asset)}
-      className={`hover-row grid ${COLS} w-full items-center gap-4 border-b px-4 text-left transition-colors`}
-      style={{ borderColor: 'var(--border-subtle)', height: 'var(--row-h-pointer)' }}
-    >
-      <span className="flex min-w-0 items-center gap-2.5">
-        <AssetLogo asset={asset} size={22} />
-        <span className="t-label shrink-0 text-zinc-100">{asset.ticker}</span>
-        <span className="t-caption truncate text-zinc-500">
-          {asset.name}
-          {thin && <span className="text-zinc-500"> · thin</span>}
+    <>
+      <button
+        ref={rowRef}
+        aria-describedby={tip ? tipId : undefined}
+        onClick={() => openRow(tip, onOpen, asset)}
+        className={`hover-row grid ${COLS} w-full items-center gap-4 border-b px-4 text-left transition-colors`}
+        style={{ borderColor: 'var(--border-subtle)', height: 'var(--row-h-pointer)' }}
+      >
+        <span className="flex min-w-0 items-center gap-2.5">
+          <AssetLogo asset={asset} size={22} />
+          <span className="t-label shrink-0 text-zinc-100">{asset.ticker}</span>
+          <span className="t-caption truncate text-zinc-500">
+            {asset.name}
+            {thin && <span className="text-zinc-500"> · thin</span>}
+          </span>
         </span>
-      </span>
-      <span className="flex justify-end">
-        <GapBar pct={value} thin={thin} width={132} />
-      </span>
-      <span className="text-right">
-        <PremiumValue asset={asset} size="table" />
-      </span>
-      <span className="num t-label text-right text-zinc-100">
-        <PriceText value={asset.tokenPrice} />
-      </span>
-      <span className="num t-label text-right text-zinc-400">
-        {asset.underlying ? <PriceText value={asset.stockPrice} /> : EM_DASH}
-      </span>
-      <span className="text-right text-zinc-600">
-        {spark && marketOpen ? <Sparkline points={spark} width={64} height={16} /> : null}
-      </span>
-      <span className="t-caption truncate text-right text-zinc-500">{asset.chain || EM_DASH}</span>
-    </button>
+        <span className="flex justify-end">
+          <GapBar pct={value} thin={thin} width={132} />
+        </span>
+        <span className="text-right">
+          <PremiumValue asset={asset} size="table" />
+        </span>
+        <span className="num t-label text-right text-zinc-100">
+          <PriceText value={asset.tokenPrice} />
+        </span>
+        <span className="num t-label text-right text-zinc-400">
+          {asset.underlying ? <PriceText value={asset.stockPrice} /> : EM_DASH}
+        </span>
+        <span className="text-right text-zinc-600">
+          {spark && marketOpen ? <Sparkline points={spark} width={64} height={16} /> : null}
+        </span>
+        <span className="t-caption truncate text-right text-zinc-500">{asset.chain || EM_DASH}</span>
+      </button>
+      {tip && <RowTip tip={tip} rowRef={rowRef} id={tipId} />}
+    </>
   )
 }
 

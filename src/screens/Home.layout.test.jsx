@@ -16,15 +16,14 @@ import { createRoot } from 'react-dom/client'
  * it has no browser to detect.
  *
  * The contexts are stubbed to one watched asset and a live feed. The header,
- * the onboarding tip, the yield curve and the timestamp are stubbed because
- * each reads a provider or the network of its own; the timestamp keeps a
- * marker so its position can be checked.
+ * the yield curve and the timestamp are stubbed because each reads a provider
+ * or the network of its own; the timestamp keeps a marker so its position can
+ * be checked. The tip bubbles have their own file, Home.tips.test.jsx.
  */
 
 vi.mock('../services/analytics', () => ({ track: vi.fn(), deviceId: () => 'test-device' }))
 vi.mock('../lib/platform', () => ({ isNativeApp: () => false }))
 vi.mock('../components/Header', () => ({ default: () => null }))
-vi.mock('../components/OnboardingTip', () => ({ default: () => null }))
 vi.mock('../components/TreasuryYields', () => ({ default: () => null }))
 vi.mock('../components/UpdatedAgo', () => ({ default: () => <p>UPDATED-AGO</p> }))
 vi.mock('../hooks/useSparklines', () => ({ useSparklines: () => ({}) }))

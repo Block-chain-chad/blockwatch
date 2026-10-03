@@ -76,6 +76,12 @@ describe('analytics privacy', () => {
     }
   })
 
+  it('sends tip_closed with only which tip and how, never the row it pointed at', () => {
+    const closes = calls.filter((c) => /^\s*'tip_closed'/.test(c.args))
+    expect(closes.length).toBeGreaterThan(0)
+    for (const c of closes) expect(c.args, c.file).toMatch(/^\s*'tip_closed',\s*\{\s*tip:\s*\w+,\s*how\s*\}\s*$/)
+  })
+
   it('lists every event in the catalog', () => {
     const catalog = readFileSync(new URL('./analytics.js', import.meta.url), 'utf8')
     const names = new Set(calls.map((c) => /^\s*'([a-z_]+)'/.exec(c.args)?.[1]))
