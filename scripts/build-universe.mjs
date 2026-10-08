@@ -348,6 +348,11 @@ console.log(
     `its gap reads blank (api/_symbols.test.js fails the build first).`
 )
 console.log(
+  `ALSO: node scripts/build-tokens.mjs and node scripts/build-coins.mjs, the\n` +
+    `allowlists for token candles (api/candles.js) and token price history\n` +
+    `(api/token-history.js). Their tests fail the build until they run.`
+)
+console.log(
   `THEN: node scripts/verify-mints.mjs — until it runs, any new or changed\n` +
     `mint is untradeable in the app (that is deliberate: CoinGecko's address is\n` +
     `not the issuer's word, and this one spends real money).`
