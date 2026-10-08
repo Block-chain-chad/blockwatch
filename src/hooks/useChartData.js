@@ -213,14 +213,19 @@ export function useChartData(asset, range, retryKey = 0) {
       }
     }
 
+    // A slot is spent when the retry fires, not when it is scheduled, so a
+    // timer cancelled by "Try again" or by leaving the asset or range does
+    // not use one up.
+    const spent = () => autoRetries.current.get(key) ?? 0
     function scheduleRetry(problem) {
-      if (!problem || problem.kind === 'missing') return
-      const used = autoRetries.current.get(key) ?? 0
-      if (used >= AUTO_RETRY_LIMIT) return
-      autoRetries.current.set(key, used + 1)
+      if (!problem || problem.kind === 'missing' || spent() >= AUTO_RETRY_LIMIT) return
       const at = Number.isFinite(problem.retryAt) ? problem.retryAt : Date.now() + HISTORY_COOLDOWN_MS
       const delay = Math.max(0, at - Date.now()) + Math.round(Math.random() * AUTO_RETRY_SPREAD_MS)
-      timer = setTimeout(() => go(true), delay)
+      timer = setTimeout(() => {
+        if (spent() >= AUTO_RETRY_LIMIT) return
+        autoRetries.current.set(key, spent() + 1)
+        go(true)
+      }, delay)
     }
 
     async function go(automatic) {

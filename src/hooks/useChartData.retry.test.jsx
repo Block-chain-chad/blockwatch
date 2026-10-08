@@ -204,6 +204,33 @@ describe('useChartData automatic retry', () => {
     expect(fetchTokenHistory.mock.calls).toEqual([['nvidia-ondo-tokenized-stock', 7]])
   })
 
+  it('does not spend a slot on a retry that Try again cancelled', async () => {
+    fetchTokenHistory.mockImplementation(async () => {
+      throw busy()
+    })
+    getTokenCandles.mockResolvedValue(thinPool)
+    await mount({ retryKey: 0 })
+    await advance(MIN / 2) // a retry is pending
+    await mount({ retryKey: 1 }) // Try again: asks at once, cancels the pending one
+    expect(fetchTokenHistory).toHaveBeenCalledTimes(2)
+    await advance(60 * MIN)
+    // Both automatic retries are still there to spend.
+    expect(fetchTokenHistory).toHaveBeenCalledTimes(2 + AUTO_RETRY_LIMIT)
+  })
+
+  it('still retries by itself after leaving the range before the retry and coming back', async () => {
+    fetchTokenHistory.mockImplementation(async () => {
+      throw busy()
+    })
+    getTokenCandles.mockResolvedValue(thinPool)
+    await mount({ range: '1D' })
+    await mount({ range: '1W' }) // left before the 1D retry fired
+    await mount({ range: '1D' }) // and came back
+    fetchTokenHistory.mockClear()
+    await advance(60 * MIN)
+    expect(fetchTokenHistory.mock.calls).toEqual(Array(AUTO_RETRY_LIMIT).fill([asset.id, 1]))
+  })
+
   it('still asks at once when Try again is pressed, after the automatic retries are spent', async () => {
     fetchTokenHistory.mockImplementation(async () => {
       throw busy()
