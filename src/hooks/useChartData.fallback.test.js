@@ -21,12 +21,11 @@ const { mergeAssets } = await import('../lib/prices')
 const { BY_ID } = await import('../data/universe')
 
 const NOW = Date.parse('2026-09-28T16:00:00Z')
+const HOUR = 3_600_000
 const nvdax = mergeAssets([BY_ID['nvidia-xstock']], {}, {})[0]
-const candles = [
-  { time: (NOW - 10 * 86_400_000) / 1000, close: 170 }, // outside the 1W window
-  { time: (NOW - 2 * 3_600_000) / 1000, close: 180.1 },
-  { time: (NOW - 3_600_000) / 1000, close: 180.4 },
-]
+// A busy pool: hourly candles across the whole week, and one outside it.
+const weekOfHours = Array.from({ length: 7 * 24 }, (_, i) => ({ time: (NOW - (7 * 24 - 1 - i) * HOUR) / 1000, close: 180 + i / 100 }))
+const candles = [{ time: (NOW - 10 * 86_400_000) / 1000, close: 170 }, ...weekOfHours]
 
 beforeEach(() => {
   fetchTokenHistory.mockReset()
@@ -47,7 +46,8 @@ describe('loadTokenHistory', () => {
     const out = await loadTokenHistory(nvdax, '1W', NOW)
     expect(getTokenCandles).toHaveBeenCalledWith(nvdax, POOL_TIMEFRAME['1W'])
     expect(out.source).toBe('pool')
-    expect(out.token.map((p) => p.v)).toEqual([180.1, 180.4])
+    expect(out.token).toHaveLength(7 * 24)
+    expect(out.token[0].v).toBe(180)
     expect(out.problem).toEqual({ kind: 'busy', retryAt: NOW + 60_000 })
   })
 
@@ -70,6 +70,26 @@ describe('loadTokenHistory', () => {
     fetchTokenHistory.mockResolvedValue([])
     getTokenCandles.mockResolvedValue(null)
     expect(await loadTokenHistory(nvdax, '1D', NOW)).toEqual({ token: [], source: null, problem: null })
+  })
+
+  it('does not draw from a pool too thin to stand in: the CRCLon pool of October 7', async () => {
+    // The only five 5-minute candles of the day, checked at 04:30 UTC
+    // (9:30 PM Arizona); lib/poolCoverage.js refuses them on every check.
+    const now = Date.parse('2026-10-08T04:30:00Z')
+    const crclon = mergeAssets([BY_ID['circle-internet-group-ondo-tokenized-stock']], {}, {})[0]
+    fetchTokenHistory.mockRejectedValue(new HistoryUnavailable('busy', now + 58_000))
+    getTokenCandles.mockResolvedValue({
+      candles: [
+        ['2026-10-07T08:55:00Z', 82.55],
+        ['2026-10-07T11:00:00Z', 82.21],
+        ['2026-10-07T11:30:00Z', 81.88],
+        ['2026-10-07T11:45:00Z', 81.6],
+        ['2026-10-07T15:25:00Z', 80.21],
+      ].map(([iso, close]) => ({ time: Date.parse(iso) / 1000, close })),
+    })
+    const out = await loadTokenHistory(crclon, '1D', now)
+    expect(getTokenCandles).toHaveBeenCalled()
+    expect(out).toEqual({ token: [], source: null, problem: { kind: 'busy', retryAt: now + 58_000 } })
   })
 
   it('has a pool timeframe for every chart range', async () => {

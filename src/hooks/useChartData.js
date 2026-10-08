@@ -3,6 +3,7 @@ import { fetchTokenHistory } from '../services/coingecko'
 import { getStockHistory } from '../services/stocks'
 import { getTokenCandles } from '../services/candles'
 import { gapCheck, sharesPerToken, MAX_PLAUSIBLE_GAP_PCT } from '../lib/gapCheck'
+import { poolCoverage } from '../lib/poolCoverage'
 
 // Range → CoinGecko days + Yahoo interval/range. For 1D we ask Yahoo for 5d
 // and clip: on weekends "1d" would return only Friday's session, entirely
@@ -42,6 +43,9 @@ export async function poolTokenHistory(asset, range, now = Date.now()) {
  * { token, source: 'coingecko' | 'pool' | null, problem }. `problem` is why
  * CoinGecko gave nothing ({ kind, retryAt } from HistoryUnavailable), kept
  * even when the pool stood in so the caller can say which source it drew.
+ * The pool stands in only when it covers the range's window well enough
+ * (lib/poolCoverage.js); a thinner pool counts as no pool, so the phone
+ * chart, the desktop chart and the Readout all show the problem instead.
  */
 export async function loadTokenHistory(asset, range, now = Date.now()) {
   let raw = []
@@ -66,7 +70,7 @@ export async function loadTokenHistory(asset, range, now = Date.now()) {
   // GeckoTerminal budget on a series that is refused anyway.
   const convertible = (asset.issuer === 'xStocks' && asset.mint) || asset.issuer === 'Ondo'
   const pool = convertible ? await poolTokenHistory(asset, range, now).catch(() => []) : []
-  if (pool.length >= 2) return { token: pool, source: 'pool', problem }
+  if (poolCoverage(pool, CHART_RANGES[range].days * 86_400_000, now).ok) return { token: pool, source: 'pool', problem }
   return { token: raw, source: raw.length ? 'coingecko' : null, problem }
 }
 
