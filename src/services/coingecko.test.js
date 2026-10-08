@@ -1,4 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+
+// coingecko.js reaches services/apiBase, which reads window.location as it
+// loads. This file tests the development transport (PROD is false here);
+// coingecko.history.test.js covers production.
+vi.hoisted(() => {
+  globalThis.window = { location: { origin: 'https://onstock.test', protocol: 'https:' } }
+})
 import { loadPriceCache, fetchTokenMarkets } from './coingecko'
 import { TOKEN_PRICE_MAX_AGE_MS } from '../lib/gapCheck'
 

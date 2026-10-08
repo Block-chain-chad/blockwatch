@@ -2,10 +2,15 @@
 // Free/demo tier: we stay well under limits by batching every tracked id into
 // ONE /coins/markets request per poll cycle and caching the last good response
 // in localStorage (survives reloads; powers the "last updated X ago" fallback).
+//
+// Live prices come from CoinGecko directly. Price history, in production,
+// comes through our own /api/token-history (see fetchTokenHistory below).
 
 import { TOKEN_PRICE_MAX_AGE_MS } from '../lib/gapCheck'
+import { API_BASE, API_CACHE_SUFFIX } from './apiBase'
 
-const API_BASE = 'https://api.coingecko.com/api/v3'
+const COINGECKO_BASE = 'https://api.coingecko.com/api/v3'
+const IS_PROD = import.meta.env.PROD
 const DEMO_KEY = import.meta.env.VITE_COINGECKO_API_KEY // optional; raises rate limits
 const CACHE_KEY = 'bw.priceCache.v1'
 
@@ -59,7 +64,7 @@ async function fetchMarketsChunk(ids) {
   const headers = { accept: 'application/json' }
   if (DEMO_KEY) headers['x-cg-demo-api-key'] = DEMO_KEY
 
-  const res = await fetch(`${API_BASE}/coins/markets?${params}`, { headers })
+  const res = await fetch(`${COINGECKO_BASE}/coins/markets?${params}`, { headers })
   if (!res.ok) throw new Error(`CoinGecko ${res.status}`)
   const rows = await res.json()
 
@@ -109,7 +114,7 @@ export async function fetchSparklines(ids) {
   })
   const headers = { accept: 'application/json' }
   if (DEMO_KEY) headers['x-cg-demo-api-key'] = DEMO_KEY
-  const res = await fetch(`${API_BASE}/coins/markets?${params}`, { headers })
+  const res = await fetch(`${COINGECKO_BASE}/coins/markets?${params}`, { headers })
   if (!res.ok) throw new Error(`CoinGecko sparkline ${res.status}`)
   const rows = await res.json()
   const map = {}
@@ -128,15 +133,21 @@ const historyInflight = new Map()
 const HISTORY_TTL = 5 * 60_000
 
 /*
- * The keyless API allows only a few calls a minute per visitor, and a fresh
- * desktop visit already spends three on /coins/markets (the core ids, then
- * the Board's 261 ids in two chunks) before the Readout asks for history.
- * The history call is the one refused. CoinGecko's 429 carries no
- * Access-Control-Allow-Origin header, so the browser reports it as a network
- * error and Retry-After cannot be read (it said 58 s when checked on
- * 2026-09-29). Any refusal or network failure therefore opens a cooldown
- * with jitter, during which history calls fail at once instead of spending
- * more of the budget the price poll needs.
+ * Where history comes from. In production, from our own /api/token-history
+ * (website and iPhone app alike, through API_BASE and the app's cache lane):
+ * one CoinGecko answer cached at the edge for every visitor. The browser used
+ * to ask CoinGecko itself, on the keyless per-visitor limit, and a fresh
+ * desktop visit spends three of those calls on /coins/markets (the core ids,
+ * then the Board's 261 ids in two chunks) before the Readout asks for
+ * history, so the history call was the one refused. Development still asks
+ * CoinGecko directly, which has no serverless functions to ask.
+ *
+ * After any refusal or failure, history calls fail at once until it is worth
+ * asking again, instead of spending more requests. The route says when in
+ * Retry-After. CoinGecko's own 429 carries no Access-Control-Allow-Origin
+ * header, so in development the browser reports a network error and
+ * Retry-After cannot be read (it said 58 s when checked on 2026-09-29); those
+ * cases fall back to a cooldown with jitter.
  */
 export const HISTORY_COOLDOWN_MS = 60_000
 let historyBusyUntil = 0
@@ -160,6 +171,27 @@ function coolDown() {
   return historyBusyUntil
 }
 
+/** Hold history calls until the response's Retry-After, or a cooldown when it has none. */
+function holdFor(res) {
+  const seconds = Number(res.headers?.get?.('Retry-After'))
+  if (!(seconds > 0)) return coolDown()
+  historyBusyUntil = Date.now() + seconds * 1000
+  return historyBusyUntil
+}
+
+function historyRequest(id, days) {
+  if (IS_PROD) {
+    return fetch(`${API_BASE}/api/token-history?id=${encodeURIComponent(id)}&days=${days}${API_CACHE_SUFFIX}`, {
+      headers: { accept: 'application/json' },
+    })
+  }
+  const headers = { accept: 'application/json' }
+  if (DEMO_KEY) headers['x-cg-demo-api-key'] = DEMO_KEY
+  return fetch(`${COINGECKO_BASE}/coins/${encodeURIComponent(id)}/market_chart?vs_currency=usd&days=${days}`, {
+    headers,
+  })
+}
+
 /** Test seam: forget the cooldown and the cache between cases. */
 export function resetHistoryState() {
   historyBusyUntil = 0
@@ -169,7 +201,10 @@ export function resetHistoryState() {
 
 /**
  * Fetch token price history. Returns [{ t: msEpoch, v: usd }]. Throws
- * HistoryUnavailable. Concurrent callers for one series share a request.
+ * HistoryUnavailable: 404 is missing; 429 and 503 (CoinGecko or our route
+ * refusing) are busy; a network error or any other failure is unreachable.
+ * retryAt comes from Retry-After when the response has one. Concurrent
+ * callers for one series share a request.
  */
 export async function fetchTokenHistory(id, days) {
   const key = `${id}|${days}`
@@ -179,19 +214,15 @@ export async function fetchTokenHistory(id, days) {
   if (Date.now() < historyBusyUntil) throw new HistoryUnavailable('busy', historyBusyUntil)
 
   const promise = (async () => {
-    const headers = { accept: 'application/json' }
-    if (DEMO_KEY) headers['x-cg-demo-api-key'] = DEMO_KEY
     let res
     try {
-      res = await fetch(`${API_BASE}/coins/${encodeURIComponent(id)}/market_chart?vs_currency=usd&days=${days}`, {
-        headers,
-      })
+      res = await historyRequest(id, days)
     } catch {
       throw new HistoryUnavailable('unreachable', coolDown())
     }
     if (res.status === 404) throw new HistoryUnavailable('missing', null)
-    if (res.status === 429) throw new HistoryUnavailable('busy', coolDown())
-    if (!res.ok) throw new HistoryUnavailable('unreachable', coolDown())
+    if (res.status === 429 || res.status === 503) throw new HistoryUnavailable('busy', holdFor(res))
+    if (!res.ok) throw new HistoryUnavailable('unreachable', holdFor(res))
     const json = await res.json()
     const data = (json.prices ?? []).map(([t, v]) => ({ t, v }))
     historyCache.set(key, { at: Date.now(), data })
@@ -232,7 +263,7 @@ export async function fetchNewListings(excludeIds) {
   const settled = await Promise.allSettled(
     LISTING_CATEGORIES.map(async (cat) => {
       const res = await fetch(
-        `${API_BASE}/coins/markets?vs_currency=usd&category=${cat.id}&order=market_cap_desc&per_page=30`,
+        `${COINGECKO_BASE}/coins/markets?vs_currency=usd&category=${cat.id}&order=market_cap_desc&per_page=30`,
         { headers }
       )
       if (!res.ok) return []
