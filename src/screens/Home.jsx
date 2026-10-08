@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Header from '../components/Header'
 import UpdatedAgo from '../components/UpdatedAgo'
 import InstallPrompt from '../components/InstallPrompt'
 import TreasuryYields from '../components/TreasuryYields'
 import LearnCards, { LearnSheet } from '../components/LearnCards'
+import { TAP_GUARD_MS } from '../components/TipBubble'
 import { useAnySheetOpen } from '../hooks/useAnySheetOpen'
 import { track } from '../services/analytics'
 import { TIP_COPY, tipAnchors, currentTip, readSeen, writeSeen } from '../lib/tips'
@@ -110,9 +111,15 @@ const deviceStorage = () => localStorage
  * A tip closes four ways: Got it, a tap on its row, Escape, or opening its
  * lesson (Marcus, 2026-10-07: someone who reads the lesson has seen it).
  *
- * Returns the row's tip props for one asset id, or null, and the open lesson.
+ * For TAP_GUARD_MS after a tip closes any way but a row tap, row taps are
+ * ignored: the second tap of a double tap on "Got it" lands on whatever row
+ * was under the bubble and must not open it. A row tap that closes the tip
+ * still opens its row.
+ *
+ * Returns the row's tip props for one asset id, or null, the guarded row
+ * opener, and the open lesson.
  */
-function useHomeTip(visible, covered) {
+function useHomeTip(visible, covered, onOpenAsset) {
   const { status } = usePrices()
   const sheetOpen = useAnySheetOpen()
   const [seen, setSeen] = useState(() => readSeen(deviceStorage))
@@ -120,9 +127,11 @@ function useHomeTip(visible, covered) {
   const now = Date.now()
   const current = currentTip({ seen, status, covered: covered || sheetOpen, anchors: tipAnchors(visible, now) })
   const kind = current?.tip ?? null
+  const closedAt = useRef(-Infinity)
 
   const close = useCallback(
     (how) => {
+      if (how !== 'row') closedAt.current = Date.now()
       writeSeen(deviceStorage, kind)
       setSeen((s) => ({ ...s, [kind]: true }))
       // Only these two values: with how 'row', never the ticker or the row.
@@ -164,6 +173,9 @@ function useHomeTip(visible, covered) {
 
   return {
     tipFor: (id) => (current?.assetId === id ? tip : null),
+    openRow: (asset) => {
+      if (Date.now() - closedAt.current >= TAP_GUARD_MS) onOpenAsset(asset)
+    },
     lessonSheet: lesson && <LearnSheet id={lesson} onClose={() => setLesson(null)} />,
   }
 }
@@ -182,7 +194,7 @@ export default function Home({ onOpenProfile, onOpenAsset, onOpenSearch, covered
   // behind search.
   const watched = assets.filter((a) => watchlistIds.includes(a.id))
   const visible = filterAssets(watched, filter)
-  const { tipFor, lessonSheet } = useHomeTip(visible, covered)
+  const { tipFor, openRow, lessonSheet } = useHomeTip(visible, covered, onOpenAsset)
 
   return (
     <div className="pb-24">
@@ -222,7 +234,7 @@ export default function Home({ onOpenProfile, onOpenAsset, onOpenSearch, covered
           <AssetRow
             key={a.id}
             asset={a}
-            onOpen={onOpenAsset}
+            onOpen={openRow}
             spark={sparks[a.id]}
             marketOpen={marketOpen}
             tip={tipFor(a.id)}
@@ -236,7 +248,7 @@ export default function Home({ onOpenProfile, onOpenAsset, onOpenSearch, covered
           <AssetTableRow
             key={a.id}
             asset={a}
-            onOpen={onOpenAsset}
+            onOpen={openRow}
             spark={sparks[a.id]}
             marketOpen={marketOpen}
             tip={tipFor(a.id)}

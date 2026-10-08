@@ -335,6 +335,43 @@ describe('the three ways it counts as seen (criteria 8, 13)', () => {
     expect(track.mock.calls.filter(([e]) => e === 'tip_closed')).toEqual([['tip_closed', { tip: 'gap', how: 'row' }]])
   })
 
+  it('ignores the second tap of a double tap on Got it when it lands on the row under the bubble', () => {
+    market(OPEN) // a weekday: no tip 2 follows, so the row under the bubble is bare
+    mount()
+    tap(button('Got it', bubble()))
+    expect(bubble()).toBeNull()
+    click(rowFor('SPYx'))
+    expect(onOpenAsset).not.toHaveBeenCalled()
+  })
+
+  it('opens a row tapped 301 ms after the tip closed', () => {
+    market(OPEN)
+    mount()
+    tap(button('Got it', bubble()))
+    vi.setSystemTime(Date.now() + 301)
+    click(rowFor('SPYx'))
+    expect(onOpenAsset).toHaveBeenCalledWith(expect.objectContaining({ id: SPYX }))
+  })
+
+  it('guards row taps after Escape and after opening a lesson too', () => {
+    market(OPEN)
+    mount()
+    escape()
+    click(rowFor('SPYx'))
+    expect(onOpenAsset).not.toHaveBeenCalled()
+
+    market(WEEKEND, FRIDAY_CLOSE)
+    store['bw.tip.premium.v1'] = '1'
+    remount()
+    tap(button('Why weekend prices drift', bubble()))
+    click(button('Got it', document.querySelector('[role="dialog"]')))
+    click(rowFor('SPYx'))
+    expect(onOpenAsset).not.toHaveBeenCalled()
+    vi.setSystemTime(Date.now() + 301)
+    click(rowFor('SPYx'))
+    expect(onOpenAsset).toHaveBeenCalledTimes(1)
+  })
+
   it('a tap on another row also opens normally and leaves the tip alone', () => {
     market(OPEN)
     mount()
