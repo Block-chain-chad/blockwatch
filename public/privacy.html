@@ -43,7 +43,7 @@
 <main>
   <div class="brand"><span>▲</span> Onstock</div>
   <h1>Privacy Policy</h1>
-  <div class="date">Last updated September 30, 2026 · applies to onstock.app, the Onstock iPhone app and their test versions. Onstock was called BlockWatch until 2026, and blockwatch.app now redirects here.</div>
+  <div class="date">Last updated October 8, 2026 · applies to onstock.app, the Onstock iPhone app and their test versions. Onstock was called BlockWatch until 2026, and blockwatch.app now redirects here.</div>
 
   <div class="tldr">
     <p>The short version</p>
@@ -98,13 +98,14 @@
       address. We have set Sentry not to store IP addresses.</li>
     <li><strong>Server logs.</strong> Our host, Vercel, keeps standard request logs, such as IP
       address, time, the page or data requested (for example a stock ticker) and browser type.</li>
-    <li><strong>Market data requests.</strong> To show prices, your device asks CoinGecko and
-      Jupiter for token prices directly, so they see your IP address and which tokens are being
-      priced. Company logos load directly from Finnhub's image servers, which see your IP address
-      and which logos loaded. Stock quotes, price history, news headlines and Treasury yields come
-      through our own servers from Finnhub, Yahoo Finance, GeckoTerminal, Google News and the
-      Federal Reserve Bank of St. Louis (its FRED service), so those providers see our server, not
-      you. Tapping a headline opens the news site, which sees that visit.</li>
+    <li><strong>Market data requests.</strong> To show current token prices, your device asks
+      CoinGecko and Jupiter directly, so they see your IP address and which tokens are being priced.
+      The small 7-day price lines in lists also come directly from CoinGecko. Company logos load
+      directly from Finnhub's image servers, which see your IP address and which logos loaded. Stock
+      quotes, the price history behind the charts, news headlines and Treasury yields come through our
+      own servers from CoinGecko, Finnhub, Yahoo Finance, GeckoTerminal, Google News and the Federal
+      Reserve Bank of St. Louis (its FRED service), so those providers see our server, not you.
+      Tapping a headline opens the news site, which sees that visit.</li>
   </ul>
 
   <h3>If you joined the trading waitlist</h3>
@@ -184,8 +185,8 @@
     <tr><td>Resend</td><td>Sends our sign-in, confirmation, password reset and waitlist emails</td><td>Your email address and the message we send</td></tr>
     <tr><td>Cloudflare</td><td>Domain and email forwarding</td><td>Emails you send us</td></tr>
     <tr><td>Apple</td><td>Sign in with Apple, the App Store</td><td>What Apple's own privacy policy covers</td></tr>
-    <tr><td>CoinGecko, Jupiter, Finnhub (logos)</td><td>Market data your device requests directly</td><td>IP address and which tokens or logos</td></tr>
-    <tr><td>Finnhub, Yahoo Finance, GeckoTerminal, Google News, FRED</td><td>Market data and news through our servers</td><td>Tickers requested, not your data</td></tr>
+    <tr><td>CoinGecko, Jupiter, Finnhub (logos)</td><td>Current prices, 7-day lines and logos your device requests directly</td><td>IP address and which tokens or logos</td></tr>
+    <tr><td>CoinGecko (chart history), Finnhub, Yahoo Finance, GeckoTerminal, Google News, FRED</td><td>Market data and news through our servers</td><td>Tokens or tickers requested, not your data</td></tr>
   </table>
   <p>
     Each provider processes data to provide its service to us under its own terms. We do not sell

@@ -60,7 +60,7 @@ describe('privacy.html', () => {
   })
 
   it('reads as a finished policy under the current name and address', () => {
-    expect(privacy).toContain('Last updated September 30, 2026')
+    expect(privacy).toContain('Last updated October 8, 2026')
     expect(privacy).not.toMatch(/OnStock|mailto:contact@blockwatch|\[[A-Z]|Reviewer note|DRAFT/)
     expect(privacy).not.toContain('—')
     expect(privacy).toContain('mailto:contact@onstock.app')
