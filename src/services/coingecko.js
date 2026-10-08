@@ -8,6 +8,8 @@
 
 import { TOKEN_PRICE_MAX_AGE_MS } from '../lib/gapCheck'
 import { API_BASE, API_CACHE_SUFFIX } from './apiBase'
+import { isNativeApp } from '../lib/platform'
+import { CLIENT_HEADER, CLIENT_HEADER_VALUE } from '../../api/_clientGate.js'
 
 const COINGECKO_BASE = 'https://api.coingecko.com/api/v3'
 const IS_PROD = import.meta.env.PROD
@@ -181,8 +183,13 @@ function holdFor(res) {
 
 function historyRequest(id, days) {
   if (IS_PROD) {
+    // The route's light gate (api/_clientGate.js): the website says it is the
+    // website. The iPhone app's cross-origin requests carry its Origin
+    // instead, and a custom header there would cost a CORS preflight.
+    const headers = { accept: 'application/json' }
+    if (!isNativeApp()) headers[CLIENT_HEADER] = CLIENT_HEADER_VALUE
     return fetch(`${API_BASE}/api/token-history?id=${encodeURIComponent(id)}&days=${days}${API_CACHE_SUFFIX}`, {
-      headers: { accept: 'application/json' },
+      headers,
     })
   }
   const headers = { accept: 'application/json' }

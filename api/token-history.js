@@ -11,8 +11,9 @@
 // from a pool holding about $2,700. Here one answer is cached at the edge and
 // shared by every visitor, so ordinary traffic never runs this function.
 //
-// Gates, in the order they run: CORS and origin (./_cors.js), the query
-// allowlist (./_params.js), a per-caller bucket, the coin-id allowlist
+// Gates, in the order they run: CORS and origin (./_cors.js), the light
+// client gate (./_clientGate.js), the query allowlist (./_params.js), a
+// per-caller bucket, the coin-id allowlist
 // (./_coins.js, generated from universe.json, exact case) and the days
 // allowlist, then the breaker in front of CoinGecko. Every param is an enum,
 // so the edge-cache key space is bounded: 711 ids x 5 ranges x 2 lanes.
@@ -25,6 +26,8 @@
 // Answers:
 //   200  the points, edge-cached per range (CACHE below).
 //   400  a param off the allowlists.
+//   403  a foreign Origin, or a request with neither an Origin nor the
+//        website's X-Onstock-Client header (./_clientGate.js).
 //   404  CoinGecko has no such coin. The client reads it as missing.
 //   429  this caller's own bucket is empty (sendTooManyRequests).
 //   502  CoinGecko could not be reached or answered with an error.
@@ -39,6 +42,7 @@
 import { applyCors, handlePreflight, refuseForeignOrigin } from './_cors.js'
 import { rejectUnknownParams } from './_params.js'
 import { isAllowedCoin } from './_coins.js'
+import { passesClientGate, GATE_VARY } from './_clientGate.js'
 import { clientKey, createRateLimiter, sendTooManyRequests } from './_rateLimit.js'
 
 /** The chart's ranges in CoinGecko days (src/hooks/useChartData.js CHART_RANGES). */
@@ -134,9 +138,13 @@ export default async function handler(req, res) {
   if (handlePreflight(req, res)) return
   if (refuseForeignOrigin(req, res)) return
   applyCors(req, res)
+  // Origin, as applyCors set it, plus the gate's header: an answer cached for
+  // a request that passed is never handed to one that would not.
+  res.setHeader('Vary', GATE_VARY)
   res.setHeader('Access-Control-Expose-Headers', 'Retry-After')
   // Every answer is a failure until the one success below says otherwise.
   res.setHeader('Cache-Control', 'no-store')
+  if (!passesClientGate(req)) return res.status(403).json({ error: 'forbidden' })
   if (rejectUnknownParams(req, res, ALLOWED_PARAMS)) return
 
   const client = perClient.take(clientKey(req))

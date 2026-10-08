@@ -178,7 +178,7 @@ describe('api/token-history: CORS', () => {
     expect(res.statusCode).toBe(200)
     expect(res.headers['Access-Control-Allow-Origin']).toBe('capacitor://localhost')
     expect(res.headers['Access-Control-Expose-Headers']).toBe('Retry-After')
-    expect(res.headers.Vary).toBe('Origin')
+    expect(res.headers.Vary).toBe('Origin, X-Onstock-Client')
   })
 
   it('refuses a foreign origin before anything else', async () => {
@@ -194,6 +194,55 @@ describe('api/token-history: CORS', () => {
       expect(res.statusCode).toBe(204)
     }
     expect((await call(ask(), from('5.5.5.3'))).statusCode).toBe(200)
+  })
+})
+
+/*
+ * Fix round 1, item 5: a light gate (api/_clientGate.js) so the route does
+ * not serve as an open mirror of CoinGecko's history. A deterrent, not
+ * security: the website sends X-Onstock-Client, the iPhone app always sends
+ * its Origin, a bare script sends neither.
+ */
+describe('api/token-history: the client gate', () => {
+  const bare = { host: 'onstock.app' }
+
+  it('refuses a request with neither an Origin nor the website’s header, before anything else', async () => {
+    const res = await call(ask(), { origin: undefined, ...bare, ...from('9.1.1.1') })
+    expect(res.statusCode).toBe(403)
+    expect(res.headers['Cache-Control']).toBe('no-store')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('serves the website’s same-origin request, which carries the header but often no Origin', async () => {
+    const res = await call(ask(), { origin: undefined, ...bare, 'x-onstock-client': 'web', ...from('9.1.1.2') })
+    expect(res.statusCode).toBe(200)
+  })
+
+  it('refuses a header with any other value', async () => {
+    for (const [i, value] of ['1', 'Web', '', 'web '].entries()) {
+      const res = await call(ask(), { origin: undefined, ...bare, 'x-onstock-client': value, ...from(`9.1.2.${i}`) })
+      expect(res.statusCode, JSON.stringify(value)).toBe(403)
+    }
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('serves the iPhone app, which sends its Origin and no custom header', async () => {
+    const res = await call(ask({ c: 'app' }), { origin: 'capacitor://localhost', host: 'onstock.app', ...from('9.1.3.1') })
+    expect(res.statusCode).toBe(200)
+  })
+
+  it('names both gating headers in Vary on every answer, so the edge never hands a passed answer to a refused request', async () => {
+    const ok = await call(ask(), { origin: undefined, ...bare, 'x-onstock-client': 'web', ...from('9.1.4.1') })
+    const refused = await call(ask(), { origin: undefined, ...bare, ...from('9.1.4.2') })
+    expect(ok.headers.Vary).toBe('Origin, X-Onstock-Client')
+    expect(ok.headers['Cache-Control']).toBe(CACHE['1'])
+    expect(refused.headers.Vary).toBe('Origin, X-Onstock-Client')
+  })
+
+  it('still refuses a foreign Origin, which the gate alone would let through', async () => {
+    const res = await call(ask(), { origin: 'https://evil.example', host: 'onstock.app', 'x-onstock-client': 'web', ...from('9.1.5.1') })
+    expect(res.statusCode).toBe(403)
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })
 

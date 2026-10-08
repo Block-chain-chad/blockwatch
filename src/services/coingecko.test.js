@@ -83,6 +83,10 @@ describe('fetchTokenHistory', () => {
     const fetch = vi.fn(async () => ok([[1, 10], [2, 11]]))
     vi.stubGlobal('fetch', fetch)
     expect(await fetchTokenHistory('nvidia-xstock', 7)).toEqual([{ t: 1, v: 10 }, { t: 2, v: 11 }])
+    // Development asks CoinGecko itself, without our gate header (which would
+    // make CoinGecko answer a CORS preflight first).
+    expect(String(fetch.mock.calls[0][0])).toMatch(/^https:\/\/api\.coingecko\.com\/api\/v3\/coins\/nvidia-xstock\/market_chart/)
+    expect(fetch.mock.calls[0][1].headers).not.toHaveProperty('X-Onstock-Client')
     await fetchTokenHistory('nvidia-xstock', 7)
     expect(fetch).toHaveBeenCalledTimes(1)
   })

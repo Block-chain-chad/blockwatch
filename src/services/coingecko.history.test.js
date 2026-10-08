@@ -54,7 +54,8 @@ describe('fetchTokenHistory in production', () => {
     ])
     expect(fetch).toHaveBeenCalledOnce()
     expect(fetch.mock.calls[0][0]).toBe('/api/token-history?id=circle-internet-group-ondo-tokenized-stock&days=1')
-    expect(fetch.mock.calls[0][1].headers).toEqual({ accept: 'application/json' })
+    // The website says it is the website (api/_clientGate.js).
+    expect(fetch.mock.calls[0][1].headers).toEqual({ accept: 'application/json', 'X-Onstock-Client': 'web' })
   })
 
   it('uses the app’s address and cache lane in the iPhone app', async () => {
@@ -66,6 +67,9 @@ describe('fetchTokenHistory in production', () => {
       vi.stubGlobal('fetch', fetch)
       await fetchTokenHistory('nvidia-xstock', 7)
       expect(fetch.mock.calls[0][0]).toBe('https://onstock.app/api/token-history?id=nvidia-xstock&days=7&c=app')
+      // No custom header in the app: it would cost a CORS preflight, and the
+      // app's Origin already passes the gate.
+      expect(fetch.mock.calls[0][1].headers).toEqual({ accept: 'application/json' })
     } finally {
       vi.unstubAllEnvs()
       vi.stubEnv('PROD', true)
