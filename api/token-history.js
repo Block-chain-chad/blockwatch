@@ -47,21 +47,29 @@ export const DAYS = new Set(['1', '7', '30', '90', '365'])
 const ALLOWED_PARAMS = new Set(['id', 'days', 'c'])
 
 /*
- * Edge cache per range. Fresh for about as long as the data's own step makes
- * worth it: CoinGecko serves 5-minute points for 1 day, hourly up to 90 days
- * and daily beyond, and the client keeps an answer for 5 minutes too
- * (src/services/coingecko.js HISTORY_TTL). stale-while-revalidate hides the
- * refetch from the viewer; stale-if-error lets the edge keep serving the last
- * good copy while CoinGecko refuses (this route then answers 503 or 502,
- * which the edge treats as an error), bounded so a long outage does not pass
- * a day-old "Past day" line off as recent.
+ * Edge cache per range. CoinGecko serves 5-minute points for 1 day, hourly
+ * up to 90 days and daily beyond. stale-while-revalidate hides the refetch
+ * from the viewer; stale-if-error lets the edge keep serving the last good
+ * copy while CoinGecko refuses (this route then answers 503 or 502, which the
+ * edge treats as an error), bounded so a long outage does not pass a day-old
+ * "Past day" line off as recent.
+ *
+ * Two limits set these numbers:
+ *   - The free Demo key allows about 10,000 calls a month, and every coin,
+ *     range and cache lane can refetch on each expiry, so "Past day" is held
+ *     15 minutes, not the client's 5 (src/services/coingecko.js HISTORY_TTL;
+ *     a client refetch inside the 15 minutes is an edge hit).
+ *   - CoinGecko's API terms (clause 6.1.1) ask for data to be refreshed at
+ *     least every 24 hours, so for every range s-maxage plus the longer of
+ *     stale-while-revalidate and stale-if-error stays at or under 24 hours.
+ *     api/token-history.test.js checks it.
  */
 export const CACHE = Object.freeze({
-  1: 'public, s-maxage=300, stale-while-revalidate=600, stale-if-error=3600',
+  1: 'public, s-maxage=900, stale-while-revalidate=1800, stale-if-error=3600',
   7: 'public, s-maxage=1800, stale-while-revalidate=3600, stale-if-error=7200',
   30: 'public, s-maxage=3600, stale-while-revalidate=7200, stale-if-error=14400',
   90: 'public, s-maxage=10800, stale-while-revalidate=21600, stale-if-error=43200',
-  365: 'public, s-maxage=21600, stale-while-revalidate=43200, stale-if-error=86400',
+  365: 'public, s-maxage=21600, stale-while-revalidate=43200, stale-if-error=43200',
 })
 
 /** Retry-After when CoinGecko sends none, and the longest one we pass on. */

@@ -89,8 +89,19 @@ describe('api/token-history: a good answer', () => {
       expect(res.headers['Cache-Control']).toMatch(/^public, s-maxage=\d+, stale-while-revalidate=\d+, stale-if-error=\d+$/)
       fresh.push(Number(/s-maxage=(\d+)/.exec(res.headers['Cache-Control'])[1]))
     }
-    expect(fresh[0]).toBe(300) // the client's own 5-minute cache, for "Past day"
+    expect(fresh[0]).toBe(900) // "Past day": 15 minutes, for the Demo key's monthly allowance
     expect(fresh).toEqual([...fresh].sort((a, b) => a - b))
+  })
+
+  it('never keeps an answer longer than 24 hours, stale copies included (CoinGecko terms 6.1.1)', () => {
+    const seconds = (header, name) => Number(new RegExp(`${name}=(\\d+)`).exec(header)[1])
+    for (const days of ['1', '7', '30', '90', '365']) {
+      const header = CACHE[days]
+      const fresh = seconds(header, 's-maxage')
+      expect(fresh + seconds(header, 'stale-if-error'), `${days}: s-maxage + stale-if-error`).toBeLessThanOrEqual(86_400)
+      expect(fresh + seconds(header, 'stale-while-revalidate'), `${days}: s-maxage + stale-while-revalidate`).toBeLessThanOrEqual(86_400)
+    }
+    expect(CACHE['365']).toContain('stale-if-error=43200')
   })
 
   it('drops malformed points rather than relaying them', () => {
