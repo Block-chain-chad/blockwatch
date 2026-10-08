@@ -145,3 +145,46 @@ describe('ChartWorkspace legend attribution', () => {
     expect(html).toContain('Market closed · Data is delayed · NASDAQ by Finnhub')
   })
 })
+
+/*
+ * Chart history fix brief (2026-10-07), part D. The note that a line came
+ * from the token's trading pool sat only in the legend row and the Readout,
+ * and the Meter's full-width view has neither: CRCLon's five-trade line was
+ * shown there with nothing saying where it came from.
+ */
+const { POOL_SOURCE_NOTE } = await import('../../lib/historyStatus')
+
+describe('ChartWorkspace pool note', () => {
+  const day = Array.from({ length: 288 }, (_, i) => ({ t: NOW - (287 - i) * 300_000, v: 218 }))
+  const drillIn = { onExit() {}, onSheet() {}, onShortcuts() {} }
+  const count = (html) => html.split(POOL_SOURCE_NOTE).length - 1
+
+  function renderWith(chart, props = {}) {
+    workspace.chart = { token: [], stock: [], premium: [], loading: false, error: null, ...chart }
+    Object.assign(settings, { mode: 'gap', side: 'token', range: '1D' })
+    try {
+      return renderToStaticMarkup(
+        <ChartWorkspace assetId="nvdax" onSelectAsset={() => {}} onScrub={() => {}} {...props} />
+      )
+    } finally {
+      workspace.chart = { token: [], stock: [], premium: [], loading: false, error: null }
+    }
+  }
+
+  it('shows the pool note once in the full-width view, under the chart', () => {
+    const html = renderWith({ tokenSource: 'pool', token: day }, { drillIn })
+    expect(count(html)).toBe(1)
+    expect(html.indexOf(POOL_SOURCE_NOTE)).toBeGreaterThan(html.indexOf('data-stub="dual-line"'))
+  })
+
+  it('still shows it once in the legend row of the ordinary view', () => {
+    const html = renderWith({ tokenSource: 'pool', token: day })
+    expect(count(html)).toBe(1)
+    expect(html.indexOf(POOL_SOURCE_NOTE)).toBeLessThan(html.indexOf('data-stub="dual-line"'))
+  })
+
+  it('says nothing about the pool for a CoinGecko line or while loading', () => {
+    expect(count(renderWith({ tokenSource: 'coingecko', token: day }, { drillIn }))).toBe(0)
+    expect(count(renderWith({ tokenSource: 'pool', token: day, loading: true }, { drillIn }))).toBe(0)
+  })
+})

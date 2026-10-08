@@ -487,6 +487,12 @@ function Workspace({ assetId, onSelectAsset, onScrub, searchRef, actionsRef, dri
                 idleHint="Hover the chart to inspect"
               />
             </div>
+            {/* The full-width view hides the legend row above, where this
+                note otherwise sits, and has no Readout, so a line drawn from
+                the pool says so here, as a caption under the chart. */}
+            {drillIn && chart.tokenSource === 'pool' && !chart.loading && (
+              <p className="t-caption px-2 pt-1.5 text-zinc-500">{poolSourceNote(chart.token, CHART_RANGES[range]?.days)}</p>
+            )}
             <div className="flex items-center justify-center gap-2 pt-2">
               {asset.underlying && chart.stock.length >= 2 && (
                 <button
