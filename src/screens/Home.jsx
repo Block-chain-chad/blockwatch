@@ -107,6 +107,9 @@ const deviceStorage = () => localStorage
  * an asset); sheets are seen through useAnySheetOpen. Either hides the
  * bubble, and it comes back when they close if it is still due.
  *
+ * A tip closes four ways: Got it, a tap on its row, Escape, or opening its
+ * lesson (Marcus, 2026-10-07: someone who reads the lesson has seen it).
+ *
  * Returns the row's tip props for one asset id, or null, and the open lesson.
  */
 function useHomeTip(visible, covered) {
@@ -151,6 +154,7 @@ function useHomeTip(visible, covered) {
       body: label ? label.title : copy.body,
       link: copy.link,
       onLink: () => {
+        close('lesson')
         setLesson(copy.lesson)
         track('learn_open', { source: 'tip', lesson: copy.lesson })
       },

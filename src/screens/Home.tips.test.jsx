@@ -266,20 +266,40 @@ describe('tip 2, Market closed (criteria 3, 4, 5)', () => {
 })
 
 describe('sheets and overlays (criterion 7)', () => {
-  it('hides while its lesson is open, counts the open, and comes back after', () => {
+  it('closes the tip when its lesson opens: key written at once, one tip_closed, and it does not come back', () => {
     market(OPEN)
     mount()
     tap(button("What's a premium?", bubble()))
+    expect(store['bw.tip.premium.v1']).toBe('1')
+    expect(track.mock.calls.filter(([e]) => e === 'tip_closed')).toEqual([['tip_closed', { tip: 'gap', how: 'lesson' }]])
     expect(track).toHaveBeenCalledWith('learn_open', { source: 'tip', lesson: 'premium' })
     const sheet = document.querySelector('[role="dialog"]')
     expect(sheet.textContent).toContain("What's a premium?")
     expect(container.querySelector('[data-tip-bubble]')).toBeNull()
     click(button('Got it', sheet))
     expect(document.querySelector('[role="dialog"]')).toBeNull()
-    expect(titleOf(bubble())).toBe('The gap')
-    // Opening a lesson does not close the tip.
-    expect(store['bw.tip.premium.v1']).toBeUndefined()
-    expect(track).not.toHaveBeenCalledWith('tip_closed', expect.anything())
+    expect(container.querySelector('[data-tip-bubble]')).toBeNull()
+  })
+
+  it('moves the focus to the anchor row before the lesson opens, so the sheet returns it there', () => {
+    market(OPEN)
+    mount()
+    tap(button("What's a premium?", bubble()))
+    click(button('Got it', document.querySelector('[role="dialog"]')))
+    expect(document.activeElement).toBe(rowFor('NVDAx'))
+  })
+
+  it('shows tip 2 on a weekend after the lesson opened from tip 1 closes', () => {
+    market(WEEKEND, FRIDAY_CLOSE)
+    mount()
+    tap(button("What's a premium?", bubble()))
+    expect(container.querySelector('[data-tip-bubble]')).toBeNull()
+    click(button('Got it', document.querySelector('[role="dialog"]')))
+    expect(titleOf(bubble())).toBe('Market closed')
+    tap(button('Why weekend prices drift', bubble()))
+    expect(store['bw.tip.closed.v1']).toBe('1')
+    expect(track).toHaveBeenCalledWith('tip_closed', { tip: 'closed', how: 'lesson' })
+    expect(track).toHaveBeenCalledWith('learn_open', { source: 'tip', lesson: 'weekend' })
   })
 
   it('hides under any other sheet', () => {
