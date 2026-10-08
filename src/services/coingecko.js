@@ -182,19 +182,20 @@ function holdFor(res) {
 }
 
 function historyRequest(id, days) {
-  if (IS_PROD) {
-    // The route's light gate (api/_clientGate.js): the website says it is the
-    // website. The iPhone app's cross-origin requests carry its Origin
-    // instead, and a custom header there would cost a CORS preflight.
+  // Development first, so a production build drops this branch entirely.
+  if (!IS_PROD) {
     const headers = { accept: 'application/json' }
-    if (!isNativeApp()) headers[CLIENT_HEADER] = CLIENT_HEADER_VALUE
-    return fetch(`${API_BASE}/api/token-history?id=${encodeURIComponent(id)}&days=${days}${API_CACHE_SUFFIX}`, {
+    if (DEMO_KEY) headers['x-cg-demo-api-key'] = DEMO_KEY
+    return fetch(`${COINGECKO_BASE}/coins/${encodeURIComponent(id)}/market_chart?vs_currency=usd&days=${days}`, {
       headers,
     })
   }
+  // The route's light gate (api/_clientGate.js): the website says it is the
+  // website. The iPhone app's cross-origin requests carry its Origin
+  // instead, and a custom header there would cost a CORS preflight.
   const headers = { accept: 'application/json' }
-  if (DEMO_KEY) headers['x-cg-demo-api-key'] = DEMO_KEY
-  return fetch(`${COINGECKO_BASE}/coins/${encodeURIComponent(id)}/market_chart?vs_currency=usd&days=${days}`, {
+  if (!isNativeApp()) headers[CLIENT_HEADER] = CLIENT_HEADER_VALUE
+  return fetch(`${API_BASE}/api/token-history?id=${encodeURIComponent(id)}&days=${days}${API_CACHE_SUFFIX}`, {
     headers,
   })
 }
