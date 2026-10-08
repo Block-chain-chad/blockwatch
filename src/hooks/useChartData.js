@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { fetchTokenHistory, HISTORY_COOLDOWN_MS } from '../services/coingecko'
 import { getStockHistory } from '../services/stocks'
 import { getTokenCandles } from '../services/candles'
+import { timeframeById } from '../lib/candles'
 import { gapCheck, sharesPerToken, MAX_PLAUSIBLE_GAP_PCT } from '../lib/gapCheck'
 import { poolCoverage } from '../lib/poolCoverage'
 
@@ -30,6 +31,14 @@ export const CHART_RANGES = {
  * they skip the Ondo division the CoinGecko series needs.
  */
 export const POOL_TIMEFRAME = Object.freeze({ '1D': '5m', '1W': '1h', '1M': '4h', '3M': '1d', '1Y': '1d' })
+
+const UNIT_MS = Object.freeze({ minute: 60_000, hour: 3_600_000, day: 86_400_000 })
+
+/** The length of one pool candle on this range, in ms. */
+export function poolCandleMs(range) {
+  const t = timeframeById(POOL_TIMEFRAME[range])
+  return UNIT_MS[t.timeframe] * t.aggregate
+}
 
 /** Pool closes as a price series inside the range's window, or [] with none. */
 export async function poolTokenHistory(asset, range, now = Date.now()) {
@@ -70,7 +79,7 @@ export async function loadTokenHistory(asset, range, now = Date.now()) {
   // GeckoTerminal budget on a series that is refused anyway.
   const convertible = (asset.issuer === 'xStocks' && asset.mint) || asset.issuer === 'Ondo'
   const pool = convertible ? await poolTokenHistory(asset, range, now).catch(() => []) : []
-  if (poolCoverage(pool, CHART_RANGES[range].days * 86_400_000, now).ok) return { token: pool, source: 'pool', problem }
+  if (poolCoverage(pool, CHART_RANGES[range].days * 86_400_000, now, poolCandleMs(range)).ok) return { token: pool, source: 'pool', problem }
   return { token: raw, source: raw.length ? 'coingecko' : null, problem }
 }
 

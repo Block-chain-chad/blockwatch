@@ -1,5 +1,12 @@
-import { describe, it, expect } from 'vitest'
-import { poolCoverage, POOL_MAX_AGE_SHARE, POOL_MIN_SPAN_SHARE, POOL_MAX_GAP_SHARE } from './poolCoverage'
+import { describe, it, expect, vi } from 'vitest'
+
+// The per-range cases read the chart's ranges from hooks/useChartData.js,
+// whose imports reach services/apiBase, which reads window.location as it loads.
+vi.hoisted(() => {
+  globalThis.window = { location: { origin: 'https://onstock.test', protocol: 'https:' } }
+})
+import { poolCoverage, POOL_MAX_AGE_SHARE, POOL_MIN_SPAN_SHARE, POOL_MAX_GAP_SHARE, POOL_MAX_AGE_MS } from './poolCoverage'
+import { CHART_RANGES, POOL_TIMEFRAME, poolCandleMs } from '../hooks/useChartData'
 
 /*
  * Chart history fix brief (2026-10-07), part C. The fixture is the real case:
@@ -78,5 +85,62 @@ describe('poolCoverage', () => {
     expect(poolCoverage([{ t: NOW - 60_000, v: 1 }], DAY, NOW).ok).toBe(false)
     expect(poolCoverage([], DAY, NOW).ok).toBe(false)
     expect(poolCoverage(null, DAY, NOW).ok).toBe(false)
+  })
+})
+
+/*
+ * Fix round 1: freshness is capped at a day on the long ranges, and measured
+ * from the end of the newest candle, so a pool that traded in the current
+ * candle is never refused at a candle boundary.
+ */
+describe('poolCoverage freshness per range', () => {
+  const MIN = 60_000
+  // [range, candle length, the longest the newest candle may have been over]
+  const CASES = [
+    ['1D', 5 * MIN, 2.4 * HOUR],
+    ['1W', HOUR, 16.8 * HOUR],
+    ['1M', 4 * HOUR, DAY],
+    ['3M', DAY, DAY],
+    ['1Y', DAY, DAY],
+  ]
+
+  /** Candles every `candle` ms back from the newest open, filling the window. */
+  function candlesEndingAt(newestOpen, candle, windowMs) {
+    const out = []
+    for (let t = newestOpen; t >= NOW - windowMs; t -= candle) out.unshift({ t, v: 80 })
+    return out
+  }
+
+  it('uses each range’s pool candle length', () => {
+    expect(CASES.map(([range]) => [range, POOL_TIMEFRAME[range], poolCandleMs(range)])).toEqual(
+      CASES.map(([range, candle]) => [range, POOL_TIMEFRAME[range], candle]),
+    )
+    expect(POOL_MAX_AGE_MS).toBe(DAY)
+  })
+
+  for (const [range, candle, maxAge] of CASES) {
+    const windowMs = CHART_RANGES[range].days * DAY
+    it(`${range}: passes when the newest candle ended ${maxAge / HOUR} h ago, fails 1 ms later`, () => {
+      expect(Math.min(POOL_MAX_AGE_SHARE * windowMs, POOL_MAX_AGE_MS)).toBe(maxAge)
+      const atLimit = candlesEndingAt(NOW - maxAge - candle, candle, windowMs)
+      expect(poolCoverage(atLimit, windowMs, NOW, candle)).toEqual({ ok: true, failed: [] })
+      const past = candlesEndingAt(NOW - maxAge - candle - 1, candle, windowMs)
+      expect(poolCoverage(past, windowMs, NOW, candle)).toEqual({ ok: false, failed: ['fresh'] })
+    })
+
+    it(`${range}: never refuses a pool trading in the current candle`, () => {
+      const current = candlesEndingAt(NOW - candle + 1, candle, windowMs)
+      expect(poolCoverage(current, windowMs, NOW, candle).ok).toBe(true)
+    })
+  }
+
+  it('1Y: a daily candle stamped at 00:00 UTC counts until the next day ends', () => {
+    const windowMs = 365 * DAY
+    const yesterday = Date.parse('2026-10-07T00:00:00Z')
+    const series = candlesEndingAt(yesterday, DAY, windowMs + 2 * DAY)
+    // That candle ended at 00:00 today; at 23:59 tonight it is still fresh.
+    expect(poolCoverage(series, windowMs, Date.parse('2026-10-08T23:59:59Z'), DAY).ok).toBe(true)
+    // A whole day after it ended, with nothing since, it is not.
+    expect(poolCoverage(series, windowMs, Date.parse('2026-10-09T00:00:01Z'), DAY).failed).toEqual(['fresh'])
   })
 })

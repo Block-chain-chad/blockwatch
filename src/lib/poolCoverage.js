@@ -9,8 +9,13 @@
 //
 // So a pool series stands in only when its points inside the range's window
 // (length W) pass all three checks:
-//   1. fresh:  the newest point is no older than POOL_MAX_AGE_SHARE of W
-//              (2.4 hours on Past day);
+//   1. fresh:  the newest candle ended no longer ago than POOL_MAX_AGE_SHARE
+//              of W, and never more than POOL_MAX_AGE_MS (one day): 2.4
+//              hours on Past day, 16.8 hours on a week, a day on a month or
+//              longer. Measured from the END of the newest candle (its stamp
+//              is its open; daily candles open at 00:00 UTC), so a pool that
+//              traded in the current candle is never refused at a candle
+//              boundary;
 //   2. span:   the points cover at least POOL_MIN_SPAN_SHARE of W;
 //   3. gaps:   no two neighboring points are more than POOL_MAX_GAP_SHARE of
 //              W apart (2.4 hours on Past day, about 17 hours on a week).
@@ -20,22 +25,25 @@
 // about 300 of 365 days, which still passes.
 
 export const POOL_MAX_AGE_SHARE = 0.1
+export const POOL_MAX_AGE_MS = 86_400_000
 export const POOL_MIN_SPAN_SHARE = 0.5
 export const POOL_MAX_GAP_SHARE = 0.1
 
 /**
- * poolCoverage(points, windowMs, now) -> { ok, failed }
- * `points` are [{ t: ms, v }] ascending; only those inside [now - windowMs,
- * now] count. `failed` lists the checks that failed: 'fresh', 'span', 'gaps'.
+ * poolCoverage(points, windowMs, now, candleMs) -> { ok, failed }
+ * `points` are [{ t: ms, v }] ascending, stamped at each candle's open;
+ * `candleMs` is the candle length. Only points inside [now - windowMs, now]
+ * count. `failed` lists the checks that failed: 'fresh', 'span', 'gaps'.
  * Fewer than two points in the window fail all three.
  */
-export function poolCoverage(points, windowMs, now = Date.now()) {
+export function poolCoverage(points, windowMs, now = Date.now(), candleMs = 0) {
   const start = now - windowMs
   const inside = (points ?? []).filter((p) => Number.isFinite(p?.t) && p.t >= start && p.t <= now)
   if (inside.length < 2) return { ok: false, failed: ['fresh', 'span', 'gaps'] }
 
   const failed = []
-  if (now - inside[inside.length - 1].t > POOL_MAX_AGE_SHARE * windowMs) failed.push('fresh')
+  const newestEnded = inside[inside.length - 1].t + candleMs
+  if (now - newestEnded > Math.min(POOL_MAX_AGE_SHARE * windowMs, POOL_MAX_AGE_MS)) failed.push('fresh')
   if (inside[inside.length - 1].t - inside[0].t < POOL_MIN_SPAN_SHARE * windowMs) failed.push('span')
   let longestGap = 0
   for (let i = 1; i < inside.length; i += 1) longestGap = Math.max(longestGap, inside[i].t - inside[i - 1].t)
