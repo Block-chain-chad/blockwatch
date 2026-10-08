@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { fetchTokenHistory } from '../services/coingecko'
+import { useEffect, useRef, useState } from 'react'
+import { fetchTokenHistory, HISTORY_COOLDOWN_MS } from '../services/coingecko'
 import { getStockHistory } from '../services/stocks'
 import { getTokenCandles } from '../services/candles'
 import { gapCheck, sharesPerToken, MAX_PLAUSIBLE_GAP_PCT } from '../lib/gapCheck'
@@ -129,6 +129,20 @@ export function gatedPremium(asset, premium, now) {
   return gapCheck(asset, now).status === 'ok' ? premium : []
 }
 
+/*
+ * Asking CoinGecko again by itself. When the line came from the pool, or
+ * nothing could be drawn, because CoinGecko was busy or unreachable, the
+ * chart asks again once problem.retryAt has passed (plus up to
+ * AUTO_RETRY_SPREAD_MS, so viewers who were refused together do not come back
+ * together), at most AUTO_RETRY_LIMIT times per asset and range while the
+ * chart stays mounted. Never for 'missing': asking again cannot help.
+ * The "Try again" button still asks at once, as before.
+ */
+export const AUTO_RETRY_LIMIT = 2
+export const AUTO_RETRY_SPREAD_MS = 5_000
+
+const EMPTY = { loading: false, error: false, problem: null, tokenSource: null, token: [], stock: [], premium: [], stockIsFlat: false }
+
 /**
  * Loads both lines of the signature chart for an asset + range, plus the
  * derived premium-history series (no extra API calls).
@@ -141,25 +155,24 @@ export function gatedPremium(asset, premium, now) {
  * inside it (market closed all window, e.g. weekends on 1D), we draw a flat
  * line at the last close — that's the reference the premium is measured
  * against, labeled as such in the UI (stockIsFlat).
+ *
+ * An automatic retry (above) runs without the loading skeleton. It replaces
+ * what is shown only when CoinGecko answers, or when nothing was drawn and
+ * now something can be; a refusal keeps what is shown and only moves the
+ * countdown on.
  */
 export function useChartData(asset, range, retryKey = 0) {
-  const [state, setState] = useState({
-    loading: true,
-    error: false,
-    problem: null,
-    tokenSource: null,
-    token: [],
-    stock: [],
-    premium: [],
-    stockIsFlat: false,
-  })
+  const [state, setState] = useState({ ...EMPTY, loading: true })
+  // Automatic retries spent per `${asset.id}|${range}` while mounted.
+  const autoRetries = useRef(new Map())
 
   useEffect(() => {
     let cancelled = false
+    let timer = null
     const cfg = CHART_RANGES[range]
+    const key = `${asset.id}|${range}`
 
-    async function go() {
-      setState((s) => ({ ...s, loading: true, error: false, problem: null }))
+    async function load() {
       try {
         // Each source fails on its own: a missing share history leaves the
         // flat last-close line, a refused token history falls back to the pool.
@@ -169,11 +182,7 @@ export function useChartData(asset, range, retryKey = 0) {
             ? getStockHistory(asset.underlying, cfg).catch(() => [])
             : Promise.resolve([]),
         ])
-        if (cancelled) return
-        if (token.length < 2 && problem) {
-          setState({ loading: false, error: true, problem, tokenSource: null, token: [], stock: [], premium: [], stockIsFlat: false })
-          return
-        }
+        if (token.length < 2 && problem) return { next: { ...EMPTY, error: true, problem }, problem }
 
         const windowStart = token[0]?.t ?? 0
         let stock = stockRaw.filter((p) => p.t >= windowStart)
@@ -188,19 +197,40 @@ export function useChartData(asset, range, retryKey = 0) {
         const premium = asset.underlying
           ? buildPremiumSeries(token, stockRaw, asset.stockPrice)
           : []
-        setState({ loading: false, error: false, problem: null, tokenSource: source, token, stock, premium, stockIsFlat })
+        return { next: { ...EMPTY, tokenSource: source, token, stock, premium, stockIsFlat }, problem }
       } catch {
-        if (!cancelled)
-          setState({
-            loading: false, error: true, problem: { kind: 'unreachable', retryAt: null }, tokenSource: null,
-            token: [], stock: [], premium: [], stockIsFlat: false,
-          })
+        const problem = { kind: 'unreachable', retryAt: null }
+        return { next: { ...EMPTY, error: true, problem }, problem }
       }
     }
 
-    go()
+    function scheduleRetry(problem) {
+      if (!problem || problem.kind === 'missing') return
+      const used = autoRetries.current.get(key) ?? 0
+      if (used >= AUTO_RETRY_LIMIT) return
+      autoRetries.current.set(key, used + 1)
+      const at = Number.isFinite(problem.retryAt) ? problem.retryAt : Date.now() + HISTORY_COOLDOWN_MS
+      const delay = Math.max(0, at - Date.now()) + Math.round(Math.random() * AUTO_RETRY_SPREAD_MS)
+      timer = setTimeout(() => go(true), delay)
+    }
+
+    async function go(automatic) {
+      if (!automatic) setState((s) => ({ ...s, loading: true, error: false, problem: null }))
+      const { next, problem } = await load()
+      if (cancelled) return
+      if (!automatic) setState(next)
+      else
+        setState((s) => {
+          if (next.tokenSource === 'coingecko' || (s.error && !next.error)) return next
+          return s.error ? { ...s, problem } : s
+        })
+      scheduleRetry(problem)
+    }
+
+    go(false)
     return () => {
       cancelled = true
+      clearTimeout(timer)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [asset.id, range, retryKey])
