@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useId, useRef } from 'react'
 import { FOCUSABLE_SELECTOR, trapKeyAction } from '../lib/focusTrap'
+import { sheetOpened, sheetClosed } from '../hooks/useAnySheetOpen'
 
 /*
  * The one bottom sheet. Every sheet in the app used to be its own copy of a
@@ -75,6 +76,7 @@ export default function Sheet({
     const root = rootRef.current
     const entry = { root }
     stack.push(entry)
+    sheetOpened()
     const isTop = () => stack[stack.length - 1] === entry
 
     if (stack.length === 1) {
@@ -121,6 +123,7 @@ export default function Sheet({
       document.removeEventListener('keydown', onKeyDown)
       document.removeEventListener('focusin', onFocusIn)
       stack.splice(stack.indexOf(entry), 1)
+      sheetClosed()
       if (stack.length === 0) {
         document.body.style.overflow = bodyOverflowBefore ?? ''
         bodyOverflowBefore = null

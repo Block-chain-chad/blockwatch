@@ -1,10 +1,13 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Header from '../components/Header'
 import UpdatedAgo from '../components/UpdatedAgo'
-import OnboardingTip from '../components/OnboardingTip'
 import InstallPrompt from '../components/InstallPrompt'
 import TreasuryYields from '../components/TreasuryYields'
-import LearnCards from '../components/LearnCards'
+import LearnCards, { LearnSheet } from '../components/LearnCards'
+import { TAP_GUARD_MS } from '../components/TipBubble'
+import { useAnySheetOpen } from '../hooks/useAnySheetOpen'
+import { track } from '../services/analytics'
+import { TIP_COPY, tipAnchors, currentTip, readSeen, writeSeen } from '../lib/tips'
 import { usePrices, useAssetSubscription } from '../state/PricesContext'
 import { useFolders } from '../state/FoldersContext'
 import { useSparklines } from '../hooks/useSparklines'
@@ -93,7 +96,91 @@ function SessionLine({ onOpenAsset }) {
   )
 }
 
-export default function Home({ onOpenProfile, onOpenAsset, onOpenSearch }) {
+const deviceStorage = () => localStorage
+
+/*
+ * Home's tip bubbles (rules in lib/tips.js): which one shows, on which row,
+ * and what closing it does. One at a time, each shown once, only when its
+ * subject is on screen. They replace the inline caption that sat under the
+ * column header, so the first price row no longer moves on a first run.
+ *
+ * `covered` is true while App has a full-screen overlay over Home (search,
+ * an asset); sheets are seen through useAnySheetOpen. Either hides the
+ * bubble, and it comes back when they close if it is still due.
+ *
+ * A tip closes four ways: Got it, a tap on its row, Escape, or opening its
+ * lesson (Marcus, 2026-10-07: someone who reads the lesson has seen it).
+ *
+ * For TAP_GUARD_MS after a tip closes any way but a row tap, row taps are
+ * ignored: the second tap of a double tap on "Got it" lands on whatever row
+ * was under the bubble and must not open it. A row tap that closes the tip
+ * still opens its row.
+ *
+ * Returns the row's tip props for one asset id, or null, the guarded row
+ * opener, and the open lesson.
+ */
+function useHomeTip(visible, covered, onOpenAsset) {
+  const { status } = usePrices()
+  const sheetOpen = useAnySheetOpen()
+  const [seen, setSeen] = useState(() => readSeen(deviceStorage))
+  const [lesson, setLesson] = useState(null)
+  const now = Date.now()
+  const current = currentTip({ seen, status, covered: covered || sheetOpen, anchors: tipAnchors(visible, now) })
+  const kind = current?.tip ?? null
+  const closedAt = useRef(-Infinity)
+
+  const close = useCallback(
+    (how) => {
+      if (how !== 'row') closedAt.current = Date.now()
+      writeSeen(deviceStorage, kind)
+      setSeen((s) => ({ ...s, [kind]: true }))
+      // Only these two values: with how 'row', never the ticker or the row.
+      track('tip_closed', { tip: kind, how })
+    },
+    [kind],
+  )
+
+  // Escape on a keyboard closes it. A sheet's own Escape never reaches
+  // here: no bubble shows while a sheet is open.
+  useEffect(() => {
+    if (!kind) return
+    function onKeyDown(e) {
+      if (e.key === 'Escape' && !e.repeat && !e.defaultPrevented && !e.isComposing) close('escape')
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [kind, close])
+
+  let tip = null
+  if (current) {
+    const copy = TIP_COPY[kind]
+    // The closed bubble is the pill explained: its own tag and its title,
+    // the same sentence the desktop hover shows.
+    const label = kind === 'closed' ? closedGapLabelFor(visible.find((a) => a.id === current.assetId), now) : null
+    tip = {
+      kind,
+      title: label ? label.tag : copy.title,
+      body: label ? label.title : copy.body,
+      link: copy.link,
+      onLink: () => {
+        close('lesson')
+        setLesson(copy.lesson)
+        track('learn_open', { source: 'tip', lesson: copy.lesson })
+      },
+      onClose: close,
+    }
+  }
+
+  return {
+    tipFor: (id) => (current?.assetId === id ? tip : null),
+    openRow: (asset) => {
+      if (Date.now() - closedAt.current >= TAP_GUARD_MS) onOpenAsset(asset)
+    },
+    lessonSheet: lesson && <LearnSheet id={lesson} onClose={() => setLesson(null)} />,
+  }
+}
+
+export default function Home({ onOpenProfile, onOpenAsset, onOpenSearch, covered = false }) {
   const [filter, setFilter] = useState('all')
   const { assets, marketOpen } = usePrices()
   const { watchlistIds } = useFolders()
@@ -107,6 +194,7 @@ export default function Home({ onOpenProfile, onOpenAsset, onOpenSearch }) {
   // behind search.
   const watched = assets.filter((a) => watchlistIds.includes(a.id))
   const visible = filterAssets(watched, filter)
+  const { tipFor, openRow, lessonSheet } = useHomeTip(visible, covered, onOpenAsset)
 
   return (
     <div className="pb-24">
@@ -141,19 +229,15 @@ export default function Home({ onOpenProfile, onOpenAsset, onOpenSearch }) {
         <span className="t-micro text-zinc-500">Gap · token / stock</span>
       </div>
 
-      {/* Sits under the header it completes: the header names the column, the
-          tip says what the colours mean and that a row opens both price lines.
-          Dismiss-once, so this costs first-run height only. */}
-      <OnboardingTip />
-
       <div className="lg:hidden">
         {visible.map((a) => (
           <AssetRow
             key={a.id}
             asset={a}
-            onOpen={onOpenAsset}
+            onOpen={openRow}
             spark={sparks[a.id]}
             marketOpen={marketOpen}
+            tip={tipFor(a.id)}
           />
         ))}
       </div>
@@ -164,9 +248,10 @@ export default function Home({ onOpenProfile, onOpenAsset, onOpenSearch }) {
           <AssetTableRow
             key={a.id}
             asset={a}
-            onOpen={onOpenAsset}
+            onOpen={openRow}
             spark={sparks[a.id]}
             marketOpen={marketOpen}
+            tip={tipFor(a.id)}
           />
         ))}
       </div>
@@ -200,6 +285,8 @@ export default function Home({ onOpenProfile, onOpenAsset, onOpenSearch }) {
       <LearnCards source="home" />
 
       <Disclaimer />
+
+      {lessonSheet}
     </div>
   )
 }

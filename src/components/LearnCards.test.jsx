@@ -17,7 +17,8 @@ import { createRoot } from 'react-dom/client'
 const track = vi.fn()
 vi.mock('../services/analytics', () => ({ track: (...args) => track(...args) }))
 
-const { default: LearnCards } = await import('./LearnCards')
+const { default: LearnCards, LearnSheet } = await import('./LearnCards')
+const { TIP_COPY } = await import('../lib/tips')
 
 let container
 let root
@@ -61,6 +62,21 @@ describe('LearnCards', () => {
     const dialog = document.querySelector('[role="dialog"]')
     expect(dialog).not.toBeNull()
     expect(dialog.textContent).toContain('A tokenized stock usually trades within a whisker')
+  })
+})
+
+// Home's tip bubbles open a lesson by id; the link names the lesson it opens.
+describe('LearnSheet by id', () => {
+  it.each(['gap', 'closed'])('opens the %s tip’s lesson under the title its link shows', (tip) => {
+    const { lesson, link } = TIP_COPY[tip]
+    act(() => root.render(<LearnSheet id={lesson} onClose={() => {}} />))
+    expect(document.querySelector('[role="dialog"] h2').textContent).toBe(link)
+    expect(track).not.toHaveBeenCalled()
+  })
+
+  it('renders nothing for an unknown id', () => {
+    act(() => root.render(<LearnSheet id="nope" onClose={() => {}} />))
+    expect(document.querySelector('[role="dialog"]')).toBeNull()
   })
 })
 

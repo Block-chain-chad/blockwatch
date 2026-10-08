@@ -71,7 +71,13 @@ const LESSONS = [
   },
 ]
 
-function LearnSheet({ lesson, onClose }) {
+/**
+ * One lesson in a sheet, by id ('premium', 'weekend', ...). Exported for
+ * Home's tip bubbles, whose links open a lesson.
+ */
+export function LearnSheet({ id, onClose }) {
+  const lesson = LESSONS.find((l) => l.id === id)
+  if (!lesson) return null
   return (
     <Sheet onClose={onClose} className="z-[55]" pad={5}>
       <SheetTitle className="text-base font-semibold">{lesson.title}</SheetTitle>
@@ -127,7 +133,7 @@ export default function LearnCards({ source }) {
           <ChevronRight size={16} className="shrink-0 text-zinc-600" />
         </button>
       ))}
-      {open && <LearnSheet lesson={open} onClose={() => setOpen(null)} />}
+      {open && <LearnSheet id={open.id} onClose={() => setOpen(null)} />}
     </div>
   )
 }

@@ -7,14 +7,14 @@ import { renderToStaticMarkup } from 'react-dom/server'
  * watchlist first, then the Learn list, then the disclaimer.
  *
  * The contexts are stubbed to one watched asset and a live feed. The header,
- * the tip, the yield curve and the timestamp are stubbed out because none of
- * them is what this file is about and each reads a provider or the network of
- * its own. apiBase reads window at import, which a node test does not have.
+ * the yield curve and the timestamp are stubbed out because none of them is
+ * what this file is about and each reads a provider or the network of its
+ * own. apiBase reads window at import, which a node test does not have. The
+ * tip bubbles have their own file, Home.tips.test.jsx.
  */
 
 vi.mock('../services/analytics', () => ({ track: vi.fn(), deviceId: () => 'test-device' }))
 vi.mock('../components/Header', () => ({ default: () => null }))
-vi.mock('../components/OnboardingTip', () => ({ default: () => null }))
 vi.mock('../components/TreasuryYields', () => ({ default: () => null }))
 vi.mock('../services/apiBase', () => ({ API_BASE: '', WEB_BASE: 'https://example.test' }))
 vi.mock('../components/UpdatedAgo', () => ({ default: () => <p>UPDATED-AGO</p> }))
